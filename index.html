@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kartleggingsverktøy - Full Versjon</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+
     <style>
         :root { --primary: #2c3e50; --accent: #27ae60; --bg: #f4f7f6; --white: #ffffff; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; padding: 20px; }
@@ -25,7 +29,6 @@
         th { background: #ecf0f1; text-align: left; padding: 12px; border-bottom: 2px solid #ddd; }
         td { padding: 12px; border-bottom: 1px solid #eee; }
 
-        /* Modal / Popup */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); }
         .modal-content { background: white; margin: 2% auto; padding: 25px; width: 90%; max-width: 900px; border-radius: 10px; max-height: 90vh; overflow-y: auto; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; margin-bottom: 15px; padding-bottom: 10px; }
@@ -68,8 +71,8 @@
 
     <div class="action-bar">
         <button class="btn btn-add" onclick="aapnePopup()">+ Legg inn resultat</button>
-        <button class="btn btn-report" onclick="alert('Genererer rapport...')">Lag Rapport</button>
-        <button class="btn btn-excel" onclick="alert('Eksporterer...')">Eksporter til Excel</button>
+        <button class="btn btn-report" onclick="alert('Rapportfunksjon kommer...')">Lag Rapport</button>
+        <button class="btn btn-excel" onclick="alert('Excel-eksport kommer...')">Eksporter til Excel</button>
     </div>
 
     <table id="resultatTabell">
@@ -90,28 +93,28 @@
         </div>
         <div id="oppgArea" class="popup-grid"></div>
         <div style="background:#eee; padding:15px; border-radius:8px; display:flex; justify-content:space-between; align-items:center">
-            <strong>Total poengsum: <span id="pSum">0</span> / <span id="pMaks">0</span></strong>
-            <button class="btn btn-add" onclick="lagre()">Lagre resultat</button>
+            <strong>Total: <span id="pSum">0</span> / <span id="pMaks">0</span></strong>
+            <button class="btn btn-add" onclick="lagre()">Lagre til database</button>
         </div>
     </div>
 </div>
 
 <script>
-// --- KOMPLETT DATASTRUKTUR ---
+// --- FIREBASE SETUP ---
+const firebaseConfig = {
+    apiKey: "AIzaSyC7g1gllBUVACl3fkpYeEe7r1LfBs2ck3U",
+    authDomain: "lokal-kartlegging.firebaseapp.com",
+    projectId: "lokal-kartlegging",
+    storageBucket: "lokal-kartlegging.firebasestorage.app",
+    messagingSenderId: "913824113769",
+    appId: "1:913824113769:web:95c6fdea2d3b49813d6ef8"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// --- OPPGAVESTRUKTUR ---
 const oppgaveStruktur = {
-    "2024/2025": {
-        "Lesing": {
-            "Høst": {
-                "1": [{navn: "Rim", maks: 6}, {navn: "Stavelser", maks: 8}, {navn: "Første lyd", maks: 8}, {navn: "Lik lyd", maks: 3}, {navn: "Lydering", maks: 4}, {navn: "Dele ord i lyder", maks: 4}],
-                "2": [{navn: "Å lese ord - 1", maks: 4}, {navn: "Å lese ord - 2", maks: 9}, {navn: "Å stave ord", maks: 5}, {navn: "Å lese er å forstå - 1", maks: 3}, {navn: "Å lese er å forstå - 2", maks: 5}],
-                "3": [{navn: "Å lese ord - 1", maks: 7}, {navn: "Å lese ord - 2", maks: 12}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 3}],
-                "4": [{navn: "Å lese ord", maks: 15}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 5}],
-                "5": [{navn: "Å lese ord", maks: 18}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 5}],
-                "6": [{navn: "Å lese ord", maks: 21}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 6}],
-                "7": [{navn: "Å lese ord", maks: 21}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 7}]
-            }
-        }
-    },
     "Standard": {
         "Lesing": {
             "Høst": {
@@ -156,19 +159,18 @@ const oppgaveStruktur = {
     }
 };
 
-// --- HJELPEFUNKSJONER ---
+// --- LOGIKK ---
 function oppdater() {
     const aar = document.getElementById('mAar').value;
     const trinn = document.getElementById('mTrinn').value;
     const d = document.getElementById('optD');
     
-    // Vis/skjul klasse D
     if (trinn == "5" || (aar == "2026/2027" && trinn == "6")) d.classList.remove('hidden');
     else {
         d.classList.add('hidden');
         if (document.getElementById('mKlasse').value == "D") document.getElementById('mKlasse').value = "A";
     }
-    hentEksisterendeData();
+    hentData();
 }
 
 function aapnePopup() {
@@ -184,7 +186,7 @@ function aapnePopup() {
     let maksSum = 0;
 
     if (oppgaver) {
-        oppgaver.forEach(o => {
+        oppgaver.forEach((o, i) => {
             maksSum += o.maks;
             area.innerHTML += `
                 <div class="p-group">
@@ -216,30 +218,60 @@ function lukk() {
     document.getElementById('eNavn').value = "";
 }
 
-// --- DATABASE LOGIKK (Placeholder for Firebase) ---
-function lagre() {
+// --- FIREBASE OPERASJONER ---
+async function lagre() {
     const navn = document.getElementById('eNavn').value;
-    if (!navn) return alert("Skriv navn!");
+    if (!navn) return alert("Vennligst skriv navn på elev");
 
     const data = {
         navn: navn,
-        sum: document.getElementById('pSum').innerText,
-        maks: document.getElementById('pMaks').innerText,
-        prosent: Math.round((parseInt(document.getElementById('pSum').innerText) / parseInt(document.getElementById('pMaks').innerText)) * 100) + "%",
-        dato: new Date().toLocaleDateString()
+        sum: parseInt(document.getElementById('pSum').innerText),
+        maks: parseInt(document.getElementById('pMaks').innerText),
+        aar: document.getElementById('mAar').value,
+        trinn: document.getElementById('mTrinn').value,
+        klasse: document.getElementById('mKlasse').value,
+        fag: document.getElementById('mFag').value,
+        periode: document.getElementById('mPeriode').value,
+        dato: firebase.firestore.FieldValue.serverTimestamp()
     };
 
-    // Her ville vi gjort: db.collection('resultater').add(data);
-    alert(`Lagret ${navn} med ${data.sum} poeng!`);
-    lukk();
-    // Legg til i tabell manuelt for demo:
-    const tb = document.getElementById('tBody');
-    tb.innerHTML += `<tr><td>${data.navn}</td><td>${data.sum}</td><td>${data.maks}</td><td>${data.prosent}</td><td>${data.dato}</td></tr>`;
+    try {
+        await db.collection("resultater").add(data);
+        lukk();
+        hentData();
+    } catch (e) {
+        alert("Feil ved lagring: " + e.message);
+    }
 }
 
-function hentEksisterendeData() {
-    // Her henter vi fra Firebase basert på valgene i dashbordet
-    document.getElementById('tBody').innerHTML = ""; 
+async function hentData() {
+    const tBody = document.getElementById('tBody');
+    tBody.innerHTML = "<tr><td colspan='5'>Henter...</td></tr>";
+
+    try {
+        const snap = await db.collection("resultater")
+            .where("aar", "==", document.getElementById('mAar').value)
+            .where("trinn", "==", document.getElementById('mTrinn').value)
+            .where("klasse", "==", document.getElementById('mKlasse').value)
+            .where("fag", "==", document.getElementById('mFag').value)
+            .where("periode", "==", document.getElementById('mPeriode').value)
+            .get();
+
+        tBody.innerHTML = "";
+        if (snap.empty) {
+            tBody.innerHTML = "<tr><td colspan='5' style='text-align:center'>Ingen resultater funnet.</td></tr>";
+            return;
+        }
+
+        snap.forEach(doc => {
+            const d = doc.data();
+            const prosent = Math.round((d.sum / d.maks) * 100) + "%";
+            const dato = d.dato ? d.dato.toDate().toLocaleDateString() : "-";
+            tBody.innerHTML += `<tr><td>${d.navn}</td><td>${d.sum}</td><td>${d.maks}</td><td>${prosent}</td><td>${dato}</td></tr>`;
+        });
+    } catch (e) {
+        tBody.innerHTML = "<tr><td colspan='5'>Feil: " + e.message + "</td></tr>";
+    }
 }
 
 window.onload = oppdater;
