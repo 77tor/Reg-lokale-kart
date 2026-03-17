@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kartleggingsverktøy Pro</title>
+    <title>Kartleggingsverktøy Pro v2</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
@@ -11,40 +11,47 @@
 
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; margin: 0; background: #f0f2f5; color: #333; }
-        .container { max-width: 1300px; margin: 20px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .container { max-width: 1400px; margin: 20px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        
+        /* Menyer og verktøy */
         .header-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; background: #e9ecef; padding: 15px; border-radius: 8px; }
         .action-bar { display: flex; gap: 10px; margin-bottom: 20px; }
         
-        select, input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
-        th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; }
-        th { background: #f8f9fa; position: sticky; top: 0; }
+        select, input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box; }
+        
+        /* Tabell */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em; }
+        th, td { border: 1px solid #dee2e6; padding: 8px; text-align: center; }
+        th { background: #f8f9fa; position: sticky; top: 0; z-index: 10; }
         tr:hover { background-color: #f1f1f1; }
         
-        .btn { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 0.85em; }
+        /* Knapper */
+        .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 0.8em; }
         .btn-reg { background: #27ae60; color: white; }
         .btn-edit { background: #2980b9; color: white; }
         .btn-slett { background: #e67e22; color: white; }
         .btn-fjern { background: #95a5a6; color: white; }
+        .btn-hent { background: #2ecc71; color: white; }
         .btn-excel { background: #1f7244; color: white; }
         .btn-print { background: #34495e; color: white; }
         .btn:hover { opacity: 0.8; }
 
         /* Modal */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); }
-        .modal-content { background: white; margin: 5% auto; padding: 25px; border-radius: 12px; width: 450px; max-height: 85vh; overflow-y: auto; }
+        .modal-content { background: white; margin: 5% auto; padding: 25px; border-radius: 12px; width: 450px; max-height: 85vh; overflow-y: auto; box-shadow: 0 5px 30px rgba(0,0,0,0.3); }
         .oppgave-rad { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        
+        /* Tilstander */
         .not-registered { color: #aaa; font-style: italic; }
         .alert-low { background: #ffcccc !important; font-weight: bold; color: #c0392b; }
+        .skjult-seksjon { background: #f8f9fa; color: #7f8c8d; font-style: italic; }
 
-        /* Utskrift-stiler */
         @media print {
-            .header-grid, .btn, .modal, .action-bar, h4, hr, .ny-elev-boks { display: none !important; }
+            .header-grid, .btn, .modal, .action-bar, .ny-elev-boks, .no-print { display: none !important; }
             .container { box-shadow: none; margin: 0; padding: 0; max-width: 100%; }
             table { font-size: 9pt; width: 100%; border: 1px solid black; }
-            th, td { border: 1px solid black !important; padding: 4px; }
-            body { background: white; }
-            .print-header { display: block !important; margin-bottom: 20px; }
+            th, td { border: 1px solid black !important; }
+            .print-header { display: block !important; margin-bottom: 20px; text-align: center; }
         }
         .print-header { display: none; }
     </style>
@@ -58,7 +65,7 @@
 
     <h2>Kartlegging: Elevoversikt</h2>
     
-    <div class="header-grid">
+    <div class="header-grid no-print">
         <div><label>Skoleår:</label><select id="mAar" onchange="hentData()"><option value="2024-2025">2024-2025</option><option value="2025-2026" selected>2025-2026</option></select></div>
         <div><label>Fag:</label><select id="mFag" onchange="hentData()"><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select></div>
         <div><label>Periode:</label><select id="mPeriode" onchange="hentData()"><option value="Høst">Høst</option><option value="Vår">Vår</option></select></div>
@@ -66,7 +73,7 @@
         <div><label>Klasse:</label><select id="mKlasse" onchange="tegnTabell()"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></div>
     </div>
 
-    <div class="action-bar">
+    <div class="action-bar no-print">
         <button class="btn btn-print" onclick="forberedPrint()">Skriv ut / PDF</button>
         <button class="btn btn-excel" onclick="eksporterTilExcel()">Eksport til Excel</button>
     </div>
@@ -76,8 +83,8 @@
         <tbody id="tBody"></tbody>
     </table>
 
-    <div class="ny-elev-boks" style="margin-top: 40px; padding: 20px; background: #f8f9fa; border: 2px dashed #cbd5e0; border-radius: 8px;">
-        <h4>Legg til ny elev (mangler i listen)</h4>
+    <div class="ny-elev-boks no-print" style="margin-top: 40px; padding: 20px; background: #f8f9fa; border: 2px dashed #cbd5e0; border-radius: 8px;">
+        <h4>Legg til ny elev manuelt</h4>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             <input type="text" id="nyttEtternavn" placeholder="Etternavn" style="flex:1">
             <input type="text" id="nyttFornavn" placeholder="Fornavn" style="flex:1">
@@ -89,11 +96,11 @@
 <div id="modal" class="modal">
     <div class="modal-content">
         <h3 id="modalNavn">Navn</h3>
-        <p style="font-size: 0.8em; color: gray;">Bruk [Enter] for å gå til neste felt</p>
+        <p style="font-size: 0.75em; color: #7f8c8d;">Naviger med [Enter]. Lagre på siste felt.</p>
         <hr>
         <div id="oppgaveFelter"></div>
         <div style="margin-top: 20px; display: flex; gap: 10px;">
-            <button class="btn btn-reg" style="flex:2" onclick="lagreData()">Lagre (Enter)</button>
+            <button class="btn btn-reg" style="flex:2" onclick="lagreData()">Lagre</button>
             <button class="btn btn-fjern" style="flex:1" onclick="lukkModal()">Avbryt</button>
         </div>
     </div>
@@ -133,7 +140,6 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-
 // --- 2. OPPGAVESTRUKTUR ---
 const oppgaveStruktur = {
     "2024-2025": {
@@ -154,7 +160,7 @@ const oppgaveStruktur = {
                 "2": { grenseTotal: 17, oppgaver: Array(10).fill().map((_, i) => ({navn: "O"+(i+1), maks: [4,3,3,3,6,3,4,3,4,4][i], grense: -1})) },
                 "3": { grenseTotal: 22, oppgaver: Array(12).fill().map((_, i) => ({navn: "O"+(i+1), maks: [3,3,6,3,3,3,3,4,3,4,4,3][i], grense: -1})) },
                 "4": { grenseTotal: 21, oppgaver: Array(14).fill().map((_, i) => ({navn: "O"+(i+1), maks: [4,2,3,4,4,16,6,3,6,1,3,4,1,1][i], grense: -1})) },
-                "5": { grenseTotal: 19, oppgaver: Array(17).fill().map((_, i) => ({navn: "O"+(i+1), maks: [2,3,4,3,6,3,16,2,3,1,1,4,1,4,3,1,1][i], grense: -1})) },
+                "5": { grenseTotal: 25, oppgaver: Array(17).fill().map((_, i) => ({navn: "O"+(i+1), maks: [2,3,4,3,6,3,16,2,3,1,1,4,1,4,3,1,1][i], grense: -1})) },
                 "6": { grenseTotal: 27, oppgaver: Array(16).fill().map((_, i) => ({navn: "O"+(i+1), maks: [2,3,6,3,6,3,16,2,6,4,1,3,1,4,1,1][i], grense: -1})) },
                 "7": { grenseTotal: 33, oppgaver: Array(18).fill().map((_, i) => ({navn: "O"+(i+1), maks: [4,3,4,3,6,3,7,8,2,1,1,3,4,1,4,4,1,2][i], grense: -1})) }
             }
@@ -687,27 +693,13 @@ function hentData() {
     });
 }
 
-function filtrerElever() {
-    const valgtTrinn = parseInt(document.getElementById('mTrinn').value);
-    const valgtKlasse = document.getElementById('mKlasse').value;
-    const valgtSkoleAar = parseInt(document.getElementById('mAar').value.split('-')[0]);
-
-    return Object.keys(elevRegister).filter(navn => {
-        const elev = elevRegister[navn];
-        const currentTrinn = elev.startTrinn + (valgtSkoleAar - elev.startAar);
-        const erSkjult = lagredeResultater[navn] && lagredeResultater[navn].skjult === true;
-        return currentTrinn === valgtTrinn && elev.startKlasse === valgtKlasse && !erSkjult;
-    }).sort();
-}
-
 function tegnTabell() {
     const oppsett = hentOppsett();
-    const elever = filtrerElever();
     const tHead = document.getElementById('tHead');
     const tBody = document.getElementById('tBody');
 
     if (!oppsett) {
-        tBody.innerHTML = "<tr><td colspan='100%'>Velg innstillinger over for å se oppgaver.</td></tr>";
+        tBody.innerHTML = "<tr><td colspan='100%'>Velg innstillinger over.</td></tr>";
         return;
     }
 
@@ -717,37 +709,62 @@ function tegnTabell() {
     tHead.innerHTML = hode;
 
     tBody.innerHTML = "";
-    elever.forEach(navn => {
+    
+    let aktive = [], skjulte = [];
+    const valgtTrinn = parseInt(document.getElementById('mTrinn').value);
+    const valgtKlasse = document.getElementById('mKlasse').value;
+    const valgtSkoleAar = parseInt(document.getElementById('mAar').value.split('-')[0]);
+
+    Object.keys(elevRegister).sort().forEach(navn => {
+        const elev = elevRegister[navn];
+        const currentTrinn = elev.startTrinn + (valgtSkoleAar - elev.startAar);
+        if (currentTrinn === valgtTrinn && elev.startKlasse === valgtKlasse) {
+            if (lagredeResultater[navn] && lagredeResultater[navn].skjult === true) skjulte.push(navn);
+            else aktive.push(navn);
+        }
+    });
+
+    // Aktive elever
+    aktive.forEach(navn => {
         const d = lagredeResultater[navn];
         let rad = `<tr><td style="text-align:left"><b>${navn}</b></td>`;
-        
         if (d && d.oppgaver) {
             oppsett.oppgaver.forEach((o, i) => {
                 const p = d.oppgaver[i] || 0;
-                const cls = (o.grense !== -1 && p < o.grense) ? 'class="alert-low"' : '';
-                rad += `<td ${cls}>${p}</td>`;
+                rad += `<td ${(o.grense !== -1 && p < o.grense) ? 'class="alert-low"' : ''}>${p}</td>`;
             });
-            const sumCls = (d.sum < oppsett.grenseTotal) ? 'class="alert-low"' : '';
-            rad += `<td ${sumCls}>${d.sum}</td>`;
+            rad += `<td ${(d.sum < oppsett.grenseTotal) ? 'class="alert-low"' : ''}>${d.sum}</td>`;
             rad += `<td class="no-print">
                 <button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button>
-                <button class="btn btn-slett" onclick="slettPoeng('${navn}')">Slett poeng</button>
-                <button class="btn btn-fjern" onclick="skjulElev('${navn}')">Fjern elev</button>
+                <button class="btn btn-slett" onclick="slettPoeng('${navn}')">Nullstill</button>
+                <button class="btn btn-fjern" onclick="skjulElev('${navn}', true)">Fjern</button>
             </td>`;
         } else {
             oppsett.oppgaver.forEach(() => rad += `<td class="not-registered">-</td>`);
             rad += `<td class="not-registered">-</td>`;
             rad += `<td class="no-print">
                 <button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button>
-                <button class="btn btn-fjern" onclick="skjulElev('${navn}')">Fjern elev</button>
+                <button class="btn btn-fjern" onclick="skjulElev('${navn}', true)">Fjern</button>
             </td>`;
         }
-        rad += `</tr>`;
-        tBody.innerHTML += rad;
+        tBody.innerHTML += rad + `</tr>`;
     });
+
+    // Skjulte elever
+    if (skjulte.length > 0) {
+        tBody.innerHTML += `<tr class="no-print"><td colspan="100%" class="skjult-seksjon" style="text-align:left; padding:10px;">Fjernede elever (Papirkurv)</td></tr>`;
+        skjulte.forEach(navn => {
+            tBody.innerHTML += `
+                <tr class="no-print" style="color:#95a5a6; background:#fafafa">
+                    <td style="text-align:left"><i>${navn}</i></td>
+                    <td colspan="${oppsett.oppgaver.length + 1}"></td>
+                    <td><button class="btn btn-hent" onclick="skjulElev('${navn}', false)">Hent tilbake</button></td>
+                </tr>`;
+        });
+    }
 }
 
-// Modal & Enter-tast navigasjon
+// Modal Logikk
 function visModal(navn) {
     const oppsett = hentOppsett();
     valgtElevId = navn;
@@ -757,29 +774,22 @@ function visModal(navn) {
     const eksisterende = lagredeResultater[navn]?.oppgaver || [];
 
     oppsett.oppgaver.forEach((o, i) => {
-        const v = eksisterende[i] !== undefined ? eksisterende[i] : "";
-        container.innerHTML += `
-            <div class="oppgave-rad">
-                <label>${o.navn} (0-${o.maks}):</label>
-                <input type="number" class="oppg-input" data-index="${i}" min="0" max="${o.maks}" value="${v}" style="width:60px; text-align:center">
-            </div>`;
+        container.innerHTML += `<div class="oppgave-rad">
+            <label>${o.navn} (0-${o.maks}):</label>
+            <input type="number" class="oppg-input" data-index="${i}" min="0" max="${o.maks}" value="${eksisterende[i] !== undefined ? eksisterende[i] : ""}" style="width:60px">
+        </div>`;
     });
     document.getElementById('modal').style.display = 'block';
     setTimeout(() => { if(container.querySelector('input')) container.querySelector('input').focus(); }, 100);
 }
 
+// Enter-navigasjon
 document.addEventListener('keydown', e => {
     if (e.key === 'Enter' && document.getElementById('modal').style.display === 'block') {
         const inputs = Array.from(document.querySelectorAll('.oppg-input'));
-        const curr = document.activeElement;
-        const idx = inputs.indexOf(curr);
-        if (idx > -1 && idx < inputs.length - 1) {
-            e.preventDefault();
-            inputs[idx + 1].focus();
-            inputs[idx + 1].select();
-        } else if (idx === inputs.length - 1) {
-            lagreData();
-        }
+        const idx = inputs.indexOf(document.activeElement);
+        if (idx > -1 && idx < inputs.length - 1) { e.preventDefault(); inputs[idx+1].focus(); inputs[idx+1].select(); }
+        else if (idx === inputs.length - 1) { lagreData(); }
     }
 });
 
@@ -788,78 +798,57 @@ function lukkModal() { document.getElementById('modal').style.display = 'none'; 
 function lagreData() {
     const inputs = document.querySelectorAll('.oppg-input');
     let verdier = [], sum = 0;
-    inputs.forEach(i => {
-        const v = parseInt(i.value) || 0;
-        verdier.push(v);
-        sum += v;
-    });
-
-    const path = hentSti(valgtElevId);
-    db.ref(path).update({ oppgaver: verdier, sum: sum, dato: new Date().toISOString(), skjult: null }).then(lukkModal);
+    inputs.forEach(i => { const v = parseInt(i.value) || 0; verdier.push(v); sum += v; });
+    db.ref(hentSti(valgtElevId)).update({ oppgaver: verdier, sum: sum, dato: new Date().toISOString(), skjult: null }).then(lukkModal);
 }
 
-function slettPoeng(navn) {
-    if(confirm(`Slett alle poeng for ${navn} på denne prøven?`)) {
-        db.ref(hentSti(navn) + "/oppgaver").remove();
-        db.ref(hentSti(navn) + "/sum").remove();
-    }
-}
+function slettPoeng(navn) { if(confirm(`Nullstille poeng for ${navn}?`)) db.ref(hentSti(navn)).remove(); }
 
-function skjulElev(navn) {
-    if(confirm(`Fjerne ${navn} fra denne spesifikke oversikten?`)) {
-        db.ref(hentSti(navn) + "/skjult").set(true);
-    }
+function skjulElev(navn, status) { 
+    if(status) { if(confirm(`Fjerne ${navn} fra listen?`)) db.ref(hentSti(navn) + "/skjult").set(true); }
+    else { db.ref(hentSti(navn) + "/skjult").remove(); }
 }
 
 function hentSti(elev) {
-    const a = document.getElementById('mAar').value;
-    const f = document.getElementById('mFag').value;
-    const p = document.getElementById('mPeriode').value;
-    const t = document.getElementById('mTrinn').value;
+    const a = document.getElementById('mAar').value, f = document.getElementById('mFag').value;
+    const p = document.getElementById('mPeriode').value, t = document.getElementById('mTrinn').value;
     const k = document.getElementById('mKlasse').value;
     return `kartlegging/${a}/${f}/${p}/${t}/${k}/${elev}`;
 }
 
 function leggTilNyElev() {
-    const e = document.getElementById('nyttEtternavn').value.trim();
-    const f = document.getElementById('nyttFornavn').value.trim();
-    if(!e || !f) return alert("Vennligst fyll ut navn");
+    const e = document.getElementById('nyttEtternavn').value.trim(), f = document.getElementById('nyttFornavn').value.trim();
+    if(!e || !f) return alert("Navn mangler");
     const navn = `${e}, ${f}`;
-    const aar = parseInt(document.getElementById('mAar').value);
-    const trinn = parseInt(document.getElementById('mTrinn').value);
-    elevRegister[navn] = { startTrinn: trinn, startKlasse: document.getElementById('mKlasse').value, startAar: aar };
+    elevRegister[navn] = { startTrinn: parseInt(document.getElementById('mTrinn').value), startKlasse: document.getElementById('mKlasse').value, startAar: parseInt(document.getElementById('mAar').value) };
     tegnTabell();
-    document.getElementById('nyttEtternavn').value = "";
-    document.getElementById('nyttFornavn').value = "";
+    document.getElementById('nyttEtternavn').value = ""; document.getElementById('nyttFornavn').value = "";
 }
 
 function forberedPrint() {
-    const f = document.getElementById('mFag').value;
-    const p = document.getElementById('mPeriode').value;
-    const k = document.getElementById('mKlasse').value;
-    const t = document.getElementById('mTrinn').value;
-    document.getElementById('printTittel').innerText = `Rapport: ${f} (${p}), ${t}. trinn klasse ${k}`;
+    document.getElementById('printTittel').innerText = `Kartlegging: ${document.getElementById('mFag').value} - ${document.getElementById('mTrinn').value}${document.getElementById('mKlasse').value}`;
     window.print();
 }
 
 function eksporterTilExcel() {
-    const oppsett = hentOppsett();
-    const elever = filtrerElever();
-    if(!oppsett) return;
+    const oppsett = hentOppsett(), aktiveElever = filtrerAktive();
     let csv = "\uFEFFElevnavn;" + oppsett.oppgaver.map(o => o.navn).join(";") + ";Sum\n";
-    elever.forEach(n => {
+    aktiveElever.forEach(n => {
         const d = lagredeResultater[n];
-        if(d && d.oppgaver) {
-            csv += `${n};${d.oppgaver.join(";")};${d.sum}\n`;
-        } else {
-            csv += `${n};${oppsett.oppgaver.map(()=>"0").join(";")};0\n`;
-        }
+        csv += `${n};${(d && d.oppgaver) ? d.oppgaver.join(";") : oppsett.oppgaver.map(()=>"").join(";")};${(d && d.sum) ? d.sum : ""}\n`;
     });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `Kartlegging_${document.getElementById('mFag').value}_Klasse${document.getElementById('mKlasse').value}.csv`;
+    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    link.download = `Eksport_${document.getElementById('mFag').value}.csv`;
     link.click();
+}
+
+function filtrerAktive() {
+    const t = parseInt(document.getElementById('mTrinn').value), k = document.getElementById('mKlasse').value, a = parseInt(document.getElementById('mAar').value);
+    return Object.keys(elevRegister).filter(n => {
+        const e = elevRegister[n], curT = e.startTrinn + (a - e.startAar);
+        return curT === t && e.startKlasse === k && !(lagredeResultater[n] && lagredeResultater[n].skjult === true);
+    }).sort();
 }
 
 window.onload = hentData;
