@@ -2,28 +2,37 @@
 <html lang="no">
 <head>
     <meta charset="UTF-8">
-    <title>Kartleggingsverktøy – Med Enter-navigering</title>
+    <title>Kartleggingsverktøy – Med Endre-funksjon</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --primary: #2c3e50; --danger: #e74c3c; --success: #27ae60; --bg: #f4f7f6; }
+        :root { --primary: #2c3e50; --danger: #e74c3c; --success: #27ae60; --warning: #f39c12; --bg: #f4f7f6; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; }
         .login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: white; }
         #mainContent { display: none; }
         .user-bar { display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 30px; border-bottom: 2px solid #ddd; }
         .container { max-width: 1400px; margin: 20px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .header-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; margin-bottom: 20px; background: #eee; padding: 15px; border-radius: 5px; }
+        
+        /* STØRRE NEDTREKKSMENYER */
+        .header-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-bottom: 20px; background: #eee; padding: 20px; border-radius: 5px; }
+        select, .header-controls input { padding: 12px; border: 1px solid #ccc; border-radius: 6px; width: 100%; font-size: 1.1em; cursor: pointer; }
+        
         table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.8em; }
         th, td { border: 1px solid #ddd; padding: 6px; text-align: center; }
         th { background: var(--primary); color: white; }
         .critical-row { background-color: #ffdada !important; }
         .critical-cell { background-color: #ffeded !important; color: red; font-weight: bold; }
+        
         .btn { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; }
         .btn-google { background: #4285F4; }
         .btn-add { background: var(--success); }
+        .btn-warning { background: var(--warning); color: #fff; }
         .btn-logout { background: #95a5a6; }
-        .btn-delete { background: var(--danger); padding: 4px 8px; font-size: 0.8em; }
+        .btn-delete { background: var(--danger); }
+        .action-btns { display: flex; gap: 4px; justify-content: center; }
+        .action-btns .btn { padding: 4px 8px; font-size: 0.85em; }
+
         #modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
         .modal-content { background: white; margin: 2% auto; padding: 20px; width: 95%; max-width: 800px; border-radius: 8px; max-height: 90vh; overflow-y: auto; }
         .grid-inputs { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 15px; }
@@ -60,13 +69,17 @@
 <div id="modal">
     <div class="modal-content">
         <h3 id="modalTittel">Ny registrering</h3>
-        <input type="text" id="elevNavn" placeholder="Navn på elev" style="width:100%; padding:10px; margin-bottom:15px; box-sizing:border-box;">
+        <input type="text" id="elevNavn" placeholder="Navn på elev" style="width:100%; padding:10px; margin-bottom:15px; box-sizing:border-box; font-size:1.1em;">
         <div id="oppgaveFelter" class="grid-inputs"></div>
-        <div style="margin-top: 20px;"><button class="btn btn-add" onclick="lagreData()">Lagre i database</button> <button class="btn btn-logout" onclick="lukkModal()">Avbryt</button></div>
+        <div style="margin-top: 20px;">
+            <button class="btn btn-add" id="btnLagre" onclick="lagreData()">Lagre i database</button> 
+            <button class="btn btn-logout" onclick="lukkModal()">Avbryt</button>
+        </div>
     </div>
 </div>
 
 <script>
+// --- FIREBASE KONFIG (Region fiks inkludert) ---
 const firebaseConfig = {
     apiKey: "AIzaSyC7g1gllBUVACl3fkpYeEe7r1LfBs2ck3U",
     authDomain: "lokal-kartlegging.firebaseapp.com",
@@ -81,6 +94,9 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
+let redigererNøkkel = null; // Holder styr på om vi endrer eller legger til ny
+
+// --- AUTENTISERING ---
 function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
 function logout() { auth.signOut(); }
 
@@ -96,6 +112,7 @@ auth.onAuthStateChanged(user => {
     }
 });
 
+// --- DATASTRUKTUR (Kopiert nøyaktig fra din forrige melding) ---
 const oppgaveStruktur = {
     "2024-2025": {
         "Lesing": {
@@ -165,6 +182,21 @@ const oppgaveStruktur = {
     }
 };
 
+// --- LOGIKK ---
+function handterEnter(event) {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        const inputs = Array.from(document.querySelectorAll('#modal input'));
+        const index = inputs.indexOf(event.target);
+        if (index > -1 && index < inputs.length - 1) {
+            inputs[index + 1].focus();
+            inputs[index + 1].select();
+        } else if (index === inputs.length - 1) {
+            lagreData();
+        }
+    }
+}
+
 function getOppsett() {
     const aar = document.getElementById('mAar').value;
     const key = (aar === "2024-2025") ? "2024-2025" : "STANDARD_2025";
@@ -187,47 +219,51 @@ function byggTabellHode() {
     if (!o) { h.innerHTML = "<tr><th>Mal mangler</th></tr>"; return; }
     let html = `<tr><th>Navn</th>`;
     o.oppgaver.forEach(op => html += `<th>${op.navn}<br><small>(${op.maks})</small></th>`);
-    html += `<th>Sum</th><th>%</th><th>Status</th><th>X</th></tr>`;
+    html += `<th>Sum</th><th>%</th><th>Status</th><th>Handlinger</th></tr>`;
     h.innerHTML = html;
 }
 
-// --- NY FUNKSJON FOR ENTER-NAVIGERING ---
-function handterEnter(event) {
-    if (event.key === "Enter") {
-        event.preventDefault(); // Hindre at skjemaet sender seg selv
-        const inputs = Array.from(document.querySelectorAll('#modal input'));
-        const index = inputs.indexOf(event.target);
-        if (index > -1 && index < inputs.length - 1) {
-            inputs[index + 1].focus();
-            inputs[index + 1].select(); // Markerer tekst for rask overskriving
-        } else if (index === inputs.length - 1) {
-            lagreData(); // Lagre hvis man er på siste felt
-        }
-    }
-}
-
-function visModal() {
+// ÅPNE MODAL FOR NY ELLER ENDRING
+function visModal(eksisterendeData = null, nøkkel = null) {
     const o = getOppsett();
     if (!o) return alert("Velg periode/fag");
-    const felt = document.getElementById('oppgaveFelter');
-    felt.innerHTML = "";
     
-    // Legg til lytter på navnefeltet også
-    document.getElementById('elevNavn').onkeydown = handterEnter;
+    redigererNøkkel = nøkkel;
+    const tittel = document.getElementById('modalTittel');
+    const navnfelt = document.getElementById('elevNavn');
+    const felt = document.getElementById('oppgaveFelter');
+    const knapp = document.getElementById('btnLagre');
+    
+    felt.innerHTML = "";
+    navnfelt.onkeydown = handterEnter;
+    
+    if (eksisterendeData) {
+        tittel.innerText = "Endre registrering";
+        navnfelt.value = eksisterendeData.navn;
+        knapp.innerText = "Oppdater";
+    } else {
+        tittel.innerText = "Ny registrering";
+        navnfelt.value = "";
+        knapp.innerText = "Lagre i database";
+    }
 
     o.oppgaver.forEach((op, i) => {
         const div = document.createElement('div');
-        div.innerHTML = `<label>${op.navn}:</label><input type="number" class="pInput" max="${op.maks}" value="0">`;
+        const verdi = eksisterendeData ? eksisterendeData.detaljer[i] : 0;
+        div.innerHTML = `<label>${op.navn}:</label><input type="number" class="pInput" max="${op.maks}" value="${verdi}">`;
         const inp = div.querySelector('input');
-        inp.onkeydown = handterEnter; // Legg til enter-logikk
+        inp.onkeydown = handterEnter;
         felt.appendChild(div);
     });
     
     document.getElementById('modal').style.display = 'block';
-    document.getElementById('elevNavn').focus();
+    navnfelt.focus();
 }
 
-function lukkModal() { document.getElementById('modal').style.display = 'none'; }
+function lukkModal() { 
+    document.getElementById('modal').style.display = 'none'; 
+    redigererNøkkel = null;
+}
 
 function lagreData() {
     const n = document.getElementById('elevNavn').value;
@@ -239,9 +275,17 @@ function lagreData() {
     const maks = o.oppgaver.reduce((a, b) => a + b.maks, 0);
     const path = `kartlegging/${document.getElementById('mAar').value}/${document.getElementById('mFag').value}/${document.getElementById('mPeriode').value}/${document.getElementById('mTrinn').value}/${document.getElementById('mKlasse').value}`;
     
-    db.ref(path).push({ navn: n, detaljer, sum, maks })
-    .then(() => { lukkModal(); document.getElementById('elevNavn').value = ""; })
-    .catch(e => alert("Feil: " + e.message));
+    const data = { navn: n, detaljer, sum, maks };
+
+    if (redigererNøkkel) {
+        db.ref(path + "/" + redigererNøkkel).set(data)
+        .then(() => lukkModal())
+        .catch(e => alert("Feil: " + e.message));
+    } else {
+        db.ref(path).push(data)
+        .then(() => { lukkModal(); document.getElementById('elevNavn').value = ""; })
+        .catch(e => alert("Feil: " + e.message));
+    }
 }
 
 function hentData() {
@@ -261,14 +305,23 @@ function hentData() {
                 row += `<td class="${cellKritisk ? 'critical-cell' : ''}">${poeng}</td>`;
             });
             row += `<td>${d.sum}</td><td>${Math.round(d.sum/d.maks*100)}%</td><td>${erKritisk ? 'OPPFØLGING' : 'OK'}</td>`;
-            row += `<td><button class="btn-delete" onclick="slett('${child.key}')">Slett</button></td></tr>`;
+            row += `<td>
+                <div class="action-btns">
+                    <button class="btn btn-warning" onclick='endre("${child.key}", ${JSON.stringify(d)})'>Endre</button>
+                    <button class="btn btn-delete" onclick="slett('${child.key}')">Slett</button>
+                </div>
+            </td></tr>`;
             body.innerHTML += row;
         });
     });
 }
 
+function endre(key, data) {
+    visModal(data, key);
+}
+
 function slett(key) {
-    if (confirm("Slette?")) {
+    if (confirm("Slette denne registreringen permanent?")) {
         const path = `kartlegging/${document.getElementById('mAar').value}/${document.getElementById('mFag').value}/${document.getElementById('mPeriode').value}/${document.getElementById('mTrinn').value}/${document.getElementById('mKlasse').value}`;
         db.ref(path + "/" + key).remove();
     }
