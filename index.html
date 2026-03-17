@@ -3,161 +3,291 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lokal Kartlegging - Sikker utgave</title>
+    <title>Kartleggingsverktøy - Lærer</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f9; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
-        h1 { color: #1a73e8; text-align: center; }
-        
-        /* Logg inn-seksjon */
-        #auth-section { text-align: center; padding: 40px; }
-        .google-btn { background: white; color: #444; border: 1px solid #ddd; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 1rem; }
-        .google-btn:hover { background: #eee; }
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --bg: #f4f7f6;
+            --white: #ffffff;
+        }
 
-        /* Skjema og Innhold */
-        #app-content { display: none; }
-        .setup-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-        .input-group { display: flex; flex-direction: column; gap: 5px; }
-        select, input { padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
-        
-        .save-btn { background: #34a853; color: white; padding: 12px 25px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .logout-btn { background: #d93025; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; float: right; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 25px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
-        th { background: #f1f3f4; }
-        .user-info { font-size: 0.9rem; margin-bottom: 20px; color: #555; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--primary);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--white);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 2px solid var(--bg);
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+        }
+
+        .selectors {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+
+        .oppgave-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            background: var(--white);
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 4px solid var(--accent);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .total-section {
+            text-align: right;
+            font-size: 1.4em;
+            font-weight: bold;
+            padding: 20px;
+            border-top: 2px solid var(--bg);
+        }
+
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .info-msg {
+            color: #666;
+            font-style: italic;
+            text-align: center;
+            grid-column: 1 / -1;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="auth-section">
-        <h1>Lokale Kartlegginger</h1>
-        <p>Vennligst logg inn med din skole-konto for å fortsette.</p>
-        <button class="google-btn" id="loginBtn">Logg inn med Google</button>
+    <header>
+        <h1>Kartleggingsverktøy</h1>
+        <p>Skriv inn poengsum per oppgave</p>
+    </header>
+
+    <div class="selectors">
+        <div>
+            <label>Skoleår</label>
+            <select id="skoleaar" onchange="genererOppgaver()">
+                <option value="2024/2025">2024/2025</option>
+                <option value="2025/2026" selected>2025/2026</option>
+                <option value="2026/2027">2026/2027</option>
+                <option value="2027/2028">2027/2028</option>
+            </select>
+        </div>
+        <div>
+            <label>Fag</label>
+            <select id="fag" onchange="genererOppgaver()">
+                <option value="Lesing">Lesing</option>
+                <option value="Regning">Regning</option>
+            </select>
+        </div>
+        <div>
+            <label>Periode</label>
+            <select id="periode" onchange="genererOppgaver()">
+                <option value="Høst">Høst</option>
+                <option value="Vår">Vår</option>
+            </select>
+        </div>
+        <div>
+            <label>Trinn</label>
+            <select id="trinn" onchange="genererOppgaver()">
+                <option value="1">1. trinn</option>
+                <option value="2">2. trinn</option>
+                <option value="3">3. trinn</option>
+                <option value="4">4. trinn</option>
+                <option value="5">5. trinn</option>
+                <option value="6">6. trinn</option>
+                <option value="7">7. trinn</option>
+            </select>
+        </div>
     </div>
 
-    <div id="app-content">
-        <button class="logout-btn" id="logoutBtn">Logg ut</button>
-        <div class="user-info" id="userInfo"></div>
-        <h1>Registrering</h1>
-
-        <div class="setup-grid">
-            <div class="input-group">
-                <label>Skoleår</label>
-                <select id="skoleaar"><option>2024/2025</option><option selected>2025/2026</option></select>
-            </div>
-            <div class="input-group">
-                <label>Trinn</label>
-                <select id="trinn">
-                    <option value="1">1. Trinn</option><option value="2">2. Trinn</option>
-                    <option value="3">3. Trinn</option><option value="4">4. Trinn</option>
-                </select>
-            </div>
-            <div class="input-group">
-                <label>Fag</label>
-                <select id="fag"><option>Lesing</option><option>Regning</option></select>
-            </div>
+    <div id="oppgaverContainer" class="oppgave-grid">
         </div>
 
-        <form id="kartleggingForm" style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <input type="text" id="elevNavn" placeholder="Elevens navn" required style="flex: 2;">
-            <input type="number" id="poengsum" placeholder="Poeng" required style="flex: 1;">
-            <button type="submit" class="save-btn">Lagre</button>
-        </form>
+    <div class="total-section">
+        Total poengsum: <span id="totalSum">0</span> / <span id="maksSum">0</span>
+    </div>
 
-        <table id="resultatTabell">
-            <thead>
-                <tr><th>Elev</th><th>Trinn</th><th>Fag</th><th>Poeng</th><th>Registrert av</th></tr>
-            </thead>
-            <tbody id="tabellKropp"></tbody>
-        </table>
+    <div style="text-align: center;">
+        <button onclick="lagreData()">Lagre resultat</button>
     </div>
 </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-    import { getDatabase, ref, push, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
-
-    // DIN KONFIGURASJON
-    const firebaseConfig = {
-        apiKey: "AIzaSyC7g1gllBUVACl3fkpYeEe7r1LfBs2ck3U",
-        authDomain: "lokal-kartlegging.firebaseapp.com",
-        databaseURL: "https://lokal-kartlegging-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "lokal-kartlegging",
-        storageBucket: "lokal-kartlegging.appspot.com",
-        messagingSenderId: "913824113769",
-        appId: "1:913824113769:web:95c6fdea2d3b49813d6ef8"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getDatabase(app);
-    const provider = new GoogleAuthProvider();
-
-    const authSection = document.getElementById('auth-section');
-    const appContent = document.getElementById('app-content');
-    const userInfo = document.getElementById('userInfo');
-
-    // LOGG INN / UT FUNKSJONER
-    document.getElementById('loginBtn').onclick = () => signInWithPopup(auth, provider);
-    document.getElementById('logoutBtn').onclick = () => signOut(auth);
-
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            authSection.style.display = 'none';
-            appContent.style.display = 'block';
-            userInfo.innerText = `Innlogget som: ${user.displayName} (${user.email})`;
-            lastInnData();
-        } else {
-            authSection.style.display = 'block';
-            appContent.style.display = 'none';
+<script>
+const oppgaveStruktur = {
+    "2024/2025": {
+        "Lesing": {
+            "Høst": {
+                "1": [{navn: "Rim", maks: 6}, {navn: "Stavelser", maks: 8}, {navn: "Første lyd", maks: 8}, {navn: "Lik lyd", maks: 3}, {navn: "Lydering", maks: 4}, {navn: "Dele ord i lyder", maks: 4}],
+                "2": [{navn: "Å lese ord - 1", maks: 4}, {navn: "Å lese ord - 2", maks: 9}, {navn: "Å stave ord", maks: 5}, {navn: "Å lese er å forstå - 1", maks: 3}, {navn: "Å lese er å forstå - 2", maks: 5}],
+                "3": [{navn: "Å lese ord - 1", maks: 7}, {navn: "Å lese ord - 2", maks: 12}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 3}],
+                "4": [{navn: "Å lese ord", maks: 15}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 5}],
+                "5": [{navn: "Å lese ord", maks: 18}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 5}],
+                "6": [{navn: "Å lese ord", maks: 21}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 6}],
+                "7": [{navn: "Å lese ord", maks: 21}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 7}]
+            }
         }
+    },
+    "Standard": {
+        "Lesing": {
+            "Høst": {
+                "1": [{navn: "Rim", maks: 6}, {navn: "Stavelser", maks: 8}, {navn: "Første lyd", maks: 8}, {navn: "Lik lyd", maks: 3}, {navn: "Lydering", maks: 4}, {navn: "Dele ord i lyder", maks: 4}],
+                "2": [{navn: "Å lese ord - 1", maks: 4}, {navn: "Å lese ord - 2", maks: 9}, {navn: "Å stave ord", maks: 5}, {navn: "Å lese er å forstå - 1", maks: 3}, {navn: "Å lese er å forstå - 2", maks: 5}],
+                "3": [{navn: "Å lese ord - 1", maks: 7}, {navn: "Å lese ord - 2", maks: 6}, {navn: "Å forstå ord", maks: 5}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 3}],
+                "4": [{navn: "Å lese ord", maks: 9}, {navn: "Å forstå ord", maks: 5}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 5}],
+                "5": [{navn: "Å lese ord", maks: 12}, {navn: "Å forstå ord", maks: 6}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 5}],
+                "6": [{navn: "Å lese ord", maks: 15}, {navn: "Å forstå ord", maks: 6}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 6}],
+                "7": [{navn: "Å lese ord", maks: 12}, {navn: "Å forstå ord", maks: 9}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 7}]
+            },
+            "Vår": {
+                "1": [{navn: "Å lese ord", maks: 6}, {navn: "Å stave ord", maks: 5}, {navn: "Å lese er å forstå", maks: 4}],
+                "2": [{navn: "Å lese ord - 1", maks: 4}, {navn: "Å lese ord - 2", maks: 3}, {navn: "Å stave ord", maks: 5}, {navn: "Å lese er å forstå - 1", maks: 3}, {navn: "Å lese er å forstå - 2", maks: 5}],
+                "3": [{navn: "Å lese ord - 1", maks: 7}, {navn: "Å lese ord - 2", maks: 6}, {navn: "Å forstå ord", maks: 5}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 5}],
+                "4": [{navn: "Å lese ord", maks: 9}, {navn: "Å forstå ord", maks: 5}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 5}],
+                "5": [{navn: "Å lese ord", maks: 12}, {navn: "Å forstå ord", maks: 6}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 6}],
+                "6": [{navn: "Å lese ord", maks: 15}, {navn: "Å forstå ord", maks: 6}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 6}],
+                "7": [{navn: "Å lese ord", maks: 12}, {navn: "Å forstå ord", maks: 9}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 6}]
+            }
+        },
+        "Regning": {
+            "Høst": {
+                "1": [{navn: "Oppg 1", maks: 3}, {navn: "Oppg 2", maks: 3}, {navn: "Oppg 3", maks: 2}, {navn: "Oppg 4", maks: 3}, {navn: "Oppg 5", maks: 3}, {navn: "Oppg 6", maks: 2}, {navn: "Oppg 7", maks: 3}, {navn: "Oppg 8", maks: 2}],
+                "2": [{navn: "Oppg 1", maks: 4}, {navn: "Oppg 2", maks: 3}, {navn: "Oppg 3", maks: 3}, {navn: "Oppg 4", maks: 3}, {navn: "Oppg 5", maks: 6}, {navn: "Oppg 6", maks: 3}, {navn: "Oppg 7", maks: 4}, {navn: "Oppg 8", maks: 3}, {navn: "Oppg 9", maks: 4}, {navn: "Oppg 10", maks: 4}],
+                "3": [{navn: "Oppg 1", maks: 3}, {navn: "Oppg 2", maks: 3}, {navn: "Oppg 3", maks: 6}, {navn: "Oppg 4", maks: 3}, {navn: "Oppg 5", maks: 3}, {navn: "Oppg 6", maks: 3}, {navn: "Oppg 7", maks: 3}, {navn: "Oppg 8", maks: 4}, {navn: "Oppg 9", maks: 3}, {navn: "Oppg 10", maks: 4}, {navn: "Oppg 11", maks: 4}, {navn: "Oppg 12", maks: 3}],
+                "4": [{navn: "Oppg 1", maks: 4}, {navn: "Oppg 2", maks: 2}, {navn: "Oppg 3", maks: 3}, {navn: "Oppg 4", maks: 4}, {navn: "Oppg 5", maks: 4}, {navn: "Oppg 6", maks: 16}, {navn: "Oppg 7", maks: 6}, {navn: "Oppg 8", maks: 3}, {navn: "Oppg 9", maks: 6}, {navn: "Oppg 10", maks: 1}, {navn: "Oppg 11", maks: 3}, {navn: "Oppg 12", maks: 4}, {navn: "Oppg 13", maks: 1}, {navn: "Oppg 14", maks: 1}],
+                "5": [{navn: "Oppg 1", maks: 2}, {navn: "Oppg 2", maks: 3}, {navn: "Oppg 3", maks: 4}, {navn: "Oppg 4", maks: 3}, {navn: "Oppg 5", maks: 6}, {navn: "Oppg 6", maks: 3}, {navn: "Oppg 7", maks: 16}, {navn: "Oppg 8", maks: 2}, {navn: "Oppg 9", maks: 3}, {navn: "Oppg 10", maks: 1}, {navn: "Oppg 11", maks: 1}, {navn: "Oppg 12", maks: 4}, {navn: "Oppg 13", maks: 1}, {navn: "Oppg 14", maks: 4}, {navn: "Oppg 15", maks: 3}, {navn: "Oppg 16", maks: 1}, {navn: "Oppg 17", maks: 1}],
+                "6": [{navn: "Oppg 1", maks: 2}, {navn: "Oppg 2", maks: 3}, {navn: "Oppg 3", maks: 6}, {navn: "Oppg 4", maks: 3}, {navn: "Oppg 5", maks: 6}, {navn: "Oppg 6", maks: 3}, {navn: "Oppg 7", maks: 16}, {navn: "Oppg 8", maks: 2}, {navn: "Oppg 9", maks: 6}, {navn: "Oppg 10", maks: 4}, {navn: "Oppg 11", maks: 1}, {navn: "Oppg 12", maks: 3}, {navn: "Oppg 13", maks: 1}, {navn: "Oppg 14", maks: 4}, {navn: "Oppg 15", maks: 1}, {navn: "Oppg 16", maks: 1}],
+                "7": [{navn: "Oppg 1", maks: 4}, {navn: "Oppg 2", maks: 3}, {navn: "Oppg 3", maks: 4}, {navn: "Oppg 4", maks: 3}, {navn: "Oppg 5", maks: 6}, {navn: "Oppg 6", maks: 3}, {navn: "Oppg 7", maks: 7}, {navn: "Oppg 8", maks: 8}, {navn: "Oppg 9", maks: 2}, {navn: "Oppg 10", maks: 1}, {navn: "Oppg 11", maks: 1}, {navn: "Oppg 12", maks: 3}, {navn: "Oppg 13", maks: 4}, {navn: "Oppg 14", maks: 1}, {navn: "Oppg 15", maks: 4}, {navn: "Oppg 16", maks: 4}, {navn: "Oppg 17", maks: 1}, {navn: "Oppg 18", maks: 2}]
+            },
+            "Vår": {
+                "1": [{navn: "Oppg 1", maks: 5}, {navn: "Oppg 2", maks: 4}, {navn: "Oppg 3", maks: 2}, {navn: "Oppg 4", maks: 6}, {navn: "Oppg 5", maks: 3}, {navn: "Oppg 6", maks: 3}, {navn: "Oppg 7", maks: 4}, {navn: "Oppg 8", maks: 4}, {navn: "Oppg 9", maks: 4}, {navn: "Oppg 10", maks: 3}],
+                "2": [{navn: "Oppg 1", maks: 5}, {navn: "Oppg 2", maks: 6}, {navn: "Oppg 3", maks: 4}, {navn: "Oppg 4", maks: 3}, {navn: "Oppg 5", maks: 3}, {navn: "Oppg 6", maks: 6}, {navn: "Oppg 7", maks: 3}, {navn: "Oppg 8", maks: 3}, {navn: "Oppg 9", maks: 4}, {navn: "Oppg 10", maks: 3}, {navn: "Oppg 11", maks: 8}, {navn: "Oppg 12", maks: 8}],
+                "3": [{navn: "Oppg 1", maks: 3}, {navn: "Oppg 2", maks: 6}, {navn: "Oppg 3", maks: 3}, {navn: "Oppg 4", maks: 6}, {navn: "Oppg 5", maks: 2}, {navn: "Oppg 6", maks: 4}, {navn: "Oppg 7", maks: 4}, {navn: "Oppg 8", maks: 3}, {navn: "Oppg 9", maks: 3}, {navn: "Oppg 10", maks: 3}, {navn: "Oppg 11", maks: 6}, {navn: "Oppg 12", maks: 4}, {navn: "Oppg 13", maks: 4}, {navn: "Oppg 14", maks: 4}, {navn: "Oppg 15", maks: 4}, {navn: "Oppg 16", maks: 4}],
+                "4": [{navn: "Oppg 1", maks: 4}, {navn: "Oppg 2", maks: 6}, {navn: "Oppg 3", maks: 3}, {navn: "Oppg 4", maks: 4}, {navn: "Oppg 5", maks: 4}, {navn: "Oppg 6", maks: 4}, {navn: "Oppg 7", maks: 16}, {navn: "Oppg 8", maks: 6}, {navn: "Oppg 9", maks: 3}, {navn: "Oppg 10", maks: 6}, {navn: "Oppg 11", maks: 3}, {navn: "Oppg 12", maks: 3}, {navn: "Oppg 13", maks: 3}, {navn: "Oppg 14", maks: 1}, {navn: "Oppg 15", maks: 1}, {navn: "Oppg 16", maks: 2}],
+                "5": [{navn: "Oppg 1", maks: 2}, {navn: "Oppg 2", maks: 4}, {navn: "Oppg 3", maks: 4}, {navn: "Oppg 4", maks: 3}, {navn: "Oppg 5", maks: 6}, {navn: "Oppg 6", maks: 3}, {navn: "Oppg 7", maks: 16}, {navn: "Oppg 8", maks: 2}, {navn: "Oppg 9", maks: 3}, {navn: "Oppg 10", maks: 3}, {navn: "Oppg 11", maks: 3}, {navn: "Oppg 12", maks: 1}, {navn: "Oppg 13", maks: 4}, {navn: "Oppg 14", maks: 3}, {navn: "Oppg 15", maks: 1}, {navn: "Oppg 16", maks: 6}, {navn: "Oppg 17", maks: 1}, {navn: "Oppg 18", maks: 1}],
+                "6": [{navn: "Oppg 1", maks: 2}, {navn: "Oppg 2", maks: 4}, {navn: "Oppg 3", maks: 4}, {navn: "Oppg 4", maks: 3}, {navn: "Oppg 5", maks: 6}, {navn: "Oppg 6", maks: 3}, {navn: "Oppg 7", maks: 16}, {navn: "Oppg 8", maks: 2}, {navn: "Oppg 9", maks: 6}, {navn: "Oppg 10", maks: 1}, {navn: "Oppg 11", maks: 3}, {navn: "Oppg 12", maks: 4}, {navn: "Oppg 13", maks: 1}, {navn: "Oppg 14", maks: 1}, {navn: "Oppg 15", maks: 1}, {navn: "Oppg 16", maks: 4}],
+                "7": [{navn: "Oppg 1", maks: 4}, {navn: "Oppg 2", maks: 3}, {navn: "Oppg 3", maks: 4}, {navn: "Oppg 4", maks: 3}, {navn: "Oppg 5", maks: 6}, {navn: "Oppg 6", maks: 3}, {navn: "Oppg 7", maks: 16}, {navn: "Oppg 8", maks: 2}, {navn: "Oppg 9", maks: 2}, {navn: "Oppg 10", maks: 1}, {navn: "Oppg 11", maks: 2}, {navn: "Oppg 12", maks: 4}, {navn: "Oppg 13", maks: 1}, {navn: "Oppg 14", maks: 2}, {navn: "Oppg 15", maks: 3}, {navn: "Oppg 16", maks: 3}, {navn: "Oppg 17", maks: 3}, {navn: "Oppg 18", maks: 2}, {navn: "Oppg 19", maks: 1}]
+            }
+        }
+    }
+};
+
+function genererOppgaver() {
+    const aar = document.getElementById('skoleaar').value;
+    const fag = document.getElementById('fag').value;
+    const periode = document.getElementById('periode').value;
+    const trinn = document.getElementById('trinn').value;
+    
+    // Forsøk spesifikt år først, ellers bruk Standard
+    let oppgaver = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
+    if (!oppgaver) {
+        oppgaver = oppgaveStruktur["Standard"]?.[fag]?.[periode]?.[trinn];
+    }
+    
+    const container = document.getElementById('oppgaverContainer');
+    container.innerHTML = "";
+    let maksTotal = 0;
+
+    if (!oppgaver) {
+        container.innerHTML = "<p class='info-msg'>Ingen oppgaver funnet for dette valget.</p>";
+        oppdaterTotal(0, 0);
+        return;
+    }
+
+    oppgaver.forEach((oppg) => {
+        maksTotal += oppg.maks;
+        container.innerHTML += `
+            <div class="input-group">
+                <label>${oppg.navn} (maks ${oppg.maks})</label>
+                <input type="number" class="oppg-in" 
+                       data-maks="${oppg.maks}" 
+                       min="0" max="${oppg.maks}" 
+                       value="0" oninput="validerOgBeregn(this)">
+            </div>`;
     });
 
-    // LAGRE DATA
-    document.getElementById('kartleggingForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const data = {
-            navn: document.getElementById('elevNavn').value,
-            trinn: document.getElementById('trinn').value,
-            fag: document.getElementById('fag').value,
-            poeng: document.getElementById('poengsum').value,
-            skoleaar: document.getElementById('skoleaar').value,
-            registrertAv: auth.currentUser.displayName,
-            timestamp: Date.now()
-        };
+    oppdaterTotal(0, maksTotal);
+}
 
-        try {
-            await push(ref(db, 'kartlegginger'), data);
-            document.getElementById('elevNavn').value = "";
-            document.getElementById('poengsum').value = "";
-        } catch (error) {
-            alert("Feil: " + error.message);
-        }
-    };
+function validerOgBeregn(input) {
+    const maks = parseInt(input.dataset.maks);
+    if (input.value > maks) input.value = maks;
+    if (input.value < 0) input.value = 0;
+    beregnTotal();
+}
 
-    // VISE DATA
-    function lastInnData() {
-        const dataRef = query(ref(db, 'kartlegginger'), limitToLast(20));
-        onValue(dataRef, (snapshot) => {
-            const tabellKropp = document.getElementById('tabellKropp');
-            tabellKropp.innerHTML = "";
-            snapshot.forEach((childSnapshot) => {
-                const d = childSnapshot.val();
-                let row = `<tr>
-                    <td>${d.navn}</td>
-                    <td>${d.trinn}</td>
-                    <td>${d.fag}</td>
-                    <td><b>${d.poeng}</b></td>
-                    <td>${d.registrertAv}</td>
-                </tr>`;
-                tabellKropp.insertAdjacentHTML('afterbegin', row);
-            });
-        });
-    }
+function beregnTotal() {
+    let sum = 0;
+    document.querySelectorAll('.oppg-in').forEach(input => {
+        sum += parseInt(input.value) || 0;
+    });
+    document.getElementById('totalSum').innerText = sum;
+}
+
+function oppdaterTotal(naa, maks) {
+    document.getElementById('totalSum').innerText = naa;
+    document.getElementById('maksSum').innerText = maks;
+}
+
+function lagreData() {
+    alert("Data er beregnet til " + document.getElementById('totalSum').innerText + " poeng. Her legger vi inn lagring til Firebase!");
+}
+
+// Kjør ved oppstart
+window.onload = genererOppgaver;
 </script>
+
 </body>
 </html>
