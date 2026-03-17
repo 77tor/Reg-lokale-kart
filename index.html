@@ -3,19 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kartleggingsverktøy - Dashbord</title>
+    <title>Kartleggingsverktøy - Full Versjon</title>
     <style>
         :root { --primary: #2c3e50; --accent: #27ae60; --bg: #f4f7f6; --white: #ffffff; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; padding: 20px; }
         .container { max-width: 1100px; margin: 0 auto; background: var(--white); padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         
-        /* Dashbord-velgere */
         .selectors { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee; }
         .selectors div { display: flex; flex-direction: column; }
         label { font-size: 0.8em; font-weight: bold; margin-bottom: 4px; color: #555; }
-        select { padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
+        select, input { padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
 
-        /* Handlingsknapper */
         .action-bar { display: flex; gap: 10px; margin-bottom: 20px; }
         .btn { padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .btn-add { background: var(--accent); color: white; }
@@ -23,22 +21,19 @@
         .btn-excel { background: #e67e22; color: white; }
         .btn:hover { opacity: 0.9; transform: translateY(-1px); }
 
-        /* Tabell for eksisterende data */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th { background: #ecf0f1; text-align: left; padding: 12px; border-bottom: 2px solid #ddd; }
         td { padding: 12px; border-bottom: 1px solid #eee; }
-        tr:hover { background: #fcfcfc; }
 
-        /* Modal (Popup) */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
-        .modal-content { background: white; margin: 5% auto; padding: 25px; width: 80%; max-width: 800px; border-radius: 10px; max-height: 85vh; overflow-y: auto; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; margin-bottom: 20px; }
-        .close { font-size: 28px; cursor: pointer; }
-
-        /* Popup Grid for oppgaver */
-        .popup-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .popup-input-group { background: #f4f7f6; padding: 8px; border-radius: 4px; }
-        .popup-input-group input { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        /* Modal / Popup */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); }
+        .modal-content { background: white; margin: 2% auto; padding: 25px; width: 90%; max-width: 900px; border-radius: 10px; max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; margin-bottom: 15px; padding-bottom: 10px; }
+        
+        .popup-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .p-group { background: #f8f9fa; padding: 10px; border-radius: 5px; border: 1px solid #e9ecef; }
+        .p-group label { font-size: 0.75em; display: block; margin-bottom: 5px; }
+        .p-group input { width: 100%; border: 1px solid #ced4da; box-sizing: border-box; }
         
         .hidden { display: none; }
     </style>
@@ -46,201 +41,208 @@
 <body>
 
 <div class="container">
-    <header>
-        <h2>Administrasjon av resultater</h2>
-    </header>
+    <header><h2>Kartlegging Dashbord</h2></header>
 
     <div class="selectors">
-        <div>
-            <label>Skoleår</label>
-            <select id="mainAar" onchange="oppdaterDashbord()">
-                <option value="2024/2025">2024/2025</option>
-                <option value="2025/2026" selected>2025/2026</option>
-                <option value="2026/2027">2026/2027</option>
-            </select>
-        </div>
-        <div>
-            <label>Trinn</label>
-            <select id="mainTrinn" onchange="oppdaterDashbord()">
-                <option value="1">1. trinn</option>
-                <option value="2">2. trinn</option>
-                <option value="3">3. trinn</option>
-                <option value="4">4. trinn</option>
-                <option value="5">5. trinn</option>
-                <option value="6">6. trinn</option>
-                <option value="7">7. trinn</option>
-            </select>
-        </div>
-        <div>
-            <label>Klasse</label>
-            <select id="mainKlasse" onchange="oppdaterDashbord()">
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option id="optD" value="D" class="hidden">D</option>
-            </select>
-        </div>
-        <div>
-            <label>Fag</label>
-            <select id="mainFag" onchange="oppdaterDashbord()">
-                <option value="Lesing">Lesing</option>
-                <option value="Regning">Regning</option>
-            </select>
-        </div>
-        <div>
-            <label>Periode</label>
-            <select id="mainPeriode" onchange="oppdaterDashbord()">
-                <option value="Høst">Høst</option>
-                <option value="Vår">Vår</option>
-            </select>
-        </div>
+        <div><label>Skoleår</label><select id="mAar" onchange="oppdater()">
+            <option value="2024/2025">2024/2025</option>
+            <option value="2025/2026" selected>2025/2026</option>
+            <option value="2026/2027">2026/2027</option>
+        </select></div>
+        <div><label>Trinn</label><select id="mTrinn" onchange="oppdater()">
+            <option value="1">1. trinn</option><option value="2">2. trinn</option><option value="3">3. trinn</option>
+            <option value="4">4. trinn</option><option value="5">5. trinn</option><option value="6">6. trinn</option>
+            <option value="7">7. trinn</option>
+        </select></div>
+        <div><label>Klasse</label><select id="mKlasse" onchange="oppdater()">
+            <option value="A">A</option><option value="B">B</option><option value="C">C</option>
+            <option id="optD" value="D" class="hidden">D</option>
+        </select></div>
+        <div><label>Fag</label><select id="mFag" onchange="oppdater()">
+            <option value="Lesing">Lesing</option><option value="Regning">Regning</option>
+        </select></div>
+        <div><label>Periode</label><select id="mPeriode" onchange="oppdater()">
+            <option value="Høst">Høst</option><option value="Vår">Vår</option>
+        </select></div>
     </div>
 
     <div class="action-bar">
         <button class="btn btn-add" onclick="aapnePopup()">+ Legg inn resultat</button>
-        <button class="btn btn-report" onclick="lagRapport()">Generer Rapport</button>
-        <button class="btn btn-excel" onclick="eksporterExcel()">Eksport til Excel</button>
+        <button class="btn btn-report" onclick="alert('Genererer rapport...')">Lag Rapport</button>
+        <button class="btn btn-excel" onclick="alert('Eksporterer...')">Eksporter til Excel</button>
     </div>
 
-    <div id="oversiktSeksjon">
-        <table id="resultatTabell">
-            <thead>
-                <tr>
-                    <th>Elevnavn</th>
-                    <th>Poeng</th>
-                    <th>Prosent</th>
-                    <th>Dato registrert</th>
-                    <th>Handlinger</th>
-                </tr>
-            </thead>
-            <tbody id="tabellBody">
-                </tbody>
-        </table>
-    </div>
+    <table id="resultatTabell">
+        <thead><tr><th>Navn</th><th>Sum</th><th>Maks</th><th>Prosent</th><th>Dato</th></tr></thead>
+        <tbody id="tBody"></tbody>
+    </table>
 </div>
 
-<div id="resultatModal" class="modal">
+<div id="pop" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3 id="modalTittel">Ny registrering</h3>
-            <span class="close" onclick="lukkPopup()">&times;</span>
+            <h3 id="popTittel">Registrer resultat</h3>
+            <span style="cursor:pointer; font-size:24px" onclick="lukk()">&times;</span>
         </div>
-        
-        <div style="margin-bottom: 15px;">
-            <label>Elevens Navn</label>
-            <input type="text" id="elevNavn" placeholder="Skriv navn..." style="width:100%; padding:10px; font-size:1.1em;">
+        <div style="margin-bottom:15px">
+            <label>Elevens fulle navn</label>
+            <input type="text" id="eNavn" style="width:100%; padding:10px; margin-top:5px">
         </div>
-
-        <div id="oppgaveInputArea" class="popup-grid">
-            </div>
-
-        <div class="modal-header" style="border-top: 1px solid #eee; padding-top:15px;">
-            <h4>Total: <span id="popupSum">0</span> / <span id="popupMaks">0</span></h4>
-            <button class="btn btn-add" style="width: auto;" onclick="lagreResultat()">Lagre og Lukk</button>
+        <div id="oppgArea" class="popup-grid"></div>
+        <div style="background:#eee; padding:15px; border-radius:8px; display:flex; justify-content:space-between; align-items:center">
+            <strong>Total poengsum: <span id="pSum">0</span> / <span id="pMaks">0</span></strong>
+            <button class="btn btn-add" onclick="lagre()">Lagre resultat</button>
         </div>
     </div>
 </div>
 
 <script>
-// --- KONFIGURASJON (Gjenbruker din struktur) ---
+// --- KOMPLETT DATASTRUKTUR ---
 const oppgaveStruktur = {
-    // ... her ligger objektet vi bygde ferdig i forrige steg ...
+    "2024/2025": {
+        "Lesing": {
+            "Høst": {
+                "1": [{navn: "Rim", maks: 6}, {navn: "Stavelser", maks: 8}, {navn: "Første lyd", maks: 8}, {navn: "Lik lyd", maks: 3}, {navn: "Lydering", maks: 4}, {navn: "Dele ord i lyder", maks: 4}],
+                "2": [{navn: "Å lese ord - 1", maks: 4}, {navn: "Å lese ord - 2", maks: 9}, {navn: "Å stave ord", maks: 5}, {navn: "Å lese er å forstå - 1", maks: 3}, {navn: "Å lese er å forstå - 2", maks: 5}],
+                "3": [{navn: "Å lese ord - 1", maks: 7}, {navn: "Å lese ord - 2", maks: 12}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 3}],
+                "4": [{navn: "Å lese ord", maks: 15}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 5}],
+                "5": [{navn: "Å lese ord", maks: 18}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 5}],
+                "6": [{navn: "Å lese ord", maks: 21}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 6}],
+                "7": [{navn: "Å lese ord", maks: 21}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 7}]
+            }
+        }
+    },
+    "Standard": {
+        "Lesing": {
+            "Høst": {
+                "1": [{navn: "Rim", maks: 6}, {navn: "Stavelser", maks: 8}, {navn: "Første lyd", maks: 8}, {navn: "Lik lyd", maks: 3}, {navn: "Lydering", maks: 4}, {navn: "Dele ord i lyder", maks: 4}],
+                "2": [{navn: "Å lese ord - 1", maks: 4}, {navn: "Å lese ord - 2", maks: 9}, {navn: "Å stave ord", maks: 5}, {navn: "Å lese er å forstå - 1", maks: 3}, {navn: "Å lese er å forstå - 2", maks: 5}],
+                "3": [{navn: "Å lese ord - 1", maks: 7}, {navn: "Å lese ord - 2", maks: 6}, {navn: "Å forstå ord", maks: 5}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 3}],
+                "4": [{navn: "Å lese ord", maks: 9}, {navn: "Å forstå ord", maks: 5}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 5}],
+                "5": [{navn: "Å lese ord", maks: 12}, {navn: "Å forstå ord", maks: 6}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 5}],
+                "6": [{navn: "Å lese ord", maks: 15}, {navn: "Å forstå ord", maks: 6}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 6}],
+                "7": [{navn: "Å lese ord", maks: 12}, {navn: "Å forstå ord", maks: 9}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 7}]
+            },
+            "Vår": {
+                "1": [{navn: "Å lese ord", maks: 6}, {navn: "Å stave ord", maks: 5}, {navn: "Å lese er å forstå", maks: 4}],
+                "2": [{navn: "Å lese ord - 1", maks: 4}, {navn: "Å lese ord - 2", maks: 3}, {navn: "Å stave ord", maks: 5}, {navn: "Å lese er å forstå - 1", maks: 3}, {navn: "Å lese er å forstå - 2", maks: 5}],
+                "3": [{navn: "Å lese ord - 1", maks: 7}, {navn: "Å lese ord - 2", maks: 6}, {navn: "Å forstå ord", maks: 5}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 5}],
+                "4": [{navn: "Å lese ord", maks: 9}, {navn: "Å forstå ord", maks: 5}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 5}],
+                "5": [{navn: "Å lese ord", maks: 12}, {navn: "Å forstå ord", maks: 6}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 6}],
+                "6": [{navn: "Å lese ord", maks: 15}, {navn: "Å forstå ord", maks: 6}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 6}],
+                "7": [{navn: "Å lese ord", maks: 12}, {navn: "Å forstå ord", maks: 9}, {navn: "Å stave ord", maks: 7}, {navn: "Å lese er å forstå - 1", maks: 4}, {navn: "Å lese er å forstå - 2", maks: 6}]
+            }
+        },
+        "Regning": {
+            "Høst": {
+                "1": [{navn: "Oppg 1", maks: 3}, {navn: "Oppg 2", maks: 3}, {navn: "Oppg 3", maks: 2}, {navn: "Oppg 4", maks: 3}, {navn: "Oppg 5", maks: 3}, {navn: "Oppg 6", maks: 2}, {navn: "Oppg 7", maks: 3}, {navn: "Oppg 8", maks: 2}],
+                "2": [{navn: "Oppg 1", maks: 4}, {navn: "Oppg 2", maks: 3}, {navn: "Oppg 3", maks: 3}, {navn: "Oppg 4", maks: 3}, {navn: "Oppg 5", maks: 6}, {navn: "Oppg 6", maks: 3}, {navn: "Oppg 7", maks: 4}, {navn: "Oppg 8", maks: 3}, {navn: "Oppg 9", maks: 4}, {navn: "Oppg 10", maks: 4}],
+                "3": [{navn: "Oppg 1", maks: 3}, {navn: "Oppg 2", maks: 3}, {navn: "Oppg 3", maks: 6}, {navn: "Oppg 4", maks: 3}, {navn: "Oppg 5", maks: 3}, {navn: "Oppg 6", maks: 3}, {navn: "Oppg 7", maks: 3}, {navn: "Oppg 8", maks: 4}, {navn: "Oppg 9", maks: 3}, {navn: "Oppg 10", maks: 4}, {navn: "Oppg 11", maks: 4}, {navn: "Oppg 12", maks: 3}],
+                "4": [{navn: "Oppg 1", maks: 4}, {navn: "Oppg 2", maks: 2}, {navn: "Oppg 3", maks: 3}, {navn: "Oppg 4", maks: 4}, {navn: "Oppg 5", maks: 4}, {navn: "Oppg 6", maks: 16}, {navn: "Oppg 7", maks: 6}, {navn: "Oppg 8", maks: 3}, {navn: "Oppg 9", maks: 6}, {navn: "Oppg 10", maks: 1}, {navn: "Oppg 11", maks: 3}, {navn: "Oppg 12", maks: 4}, {navn: "Oppg 13", maks: 1}, {navn: "Oppg 14", maks: 1}],
+                "5": [{navn: "Oppg 1", maks: 2}, {navn: "Oppg 2", maks: 3}, {navn: "Oppg 3", maks: 4}, {navn: "Oppg 4", maks: 3}, {navn: "Oppg 5", maks: 6}, {navn: "Oppg 6", maks: 3}, {navn: "Oppg 7", maks: 16}, {navn: "Oppg 8", maks: 2}, {navn: "Oppg 9", maks: 3}, {navn: "Oppg 10", maks: 1}, {navn: "Oppg 11", maks: 1}, {navn: "Oppg 12", maks: 4}, {navn: "Oppg 13", maks: 1}, {navn: "Oppg 14", maks: 4}, {navn: "Oppg 15", maks: 3}, {navn: "Oppg 16", maks: 1}, {navn: "Oppg 17", maks: 1}],
+                "6": [{navn: "Oppg 1", maks: 2}, {navn: "Oppg 2", maks: 3}, {navn: "Oppg 3", maks: 6}, {navn: "Oppg 4", maks: 3}, {navn: "Oppg 5", maks: 6}, {navn: "Oppg 6", maks: 3}, {navn: "Oppg 7", maks: 16}, {navn: "Oppg 8", maks: 2}, {navn: "Oppg 9", maks: 6}, {navn: "Oppg 10", maks: 4}, {navn: "Oppg 11", maks: 1}, {navn: "Oppg 12", maks: 3}, {navn: "Oppg 13", maks: 1}, {navn: "Oppg 14", maks: 4}, {navn: "Oppg 15", maks: 1}, {navn: "Oppg 16", maks: 1}],
+                "7": [{navn: "Oppg 1", maks: 4}, {navn: "Oppg 2", maks: 3}, {navn: "Oppg 3", maks: 4}, {navn: "Oppg 4", maks: 3}, {navn: "Oppg 5", maks: 6}, {navn: "Oppg 6", maks: 3}, {navn: "Oppg 7", maks: 7}, {navn: "Oppg 8", maks: 8}, {navn: "Oppg 9", maks: 2}, {navn: "Oppg 10", maks: 1}, {navn: "Oppg 11", maks: 1}, {navn: "Oppg 12", maks: 3}, {navn: "Oppg 13", maks: 4}, {navn: "Oppg 14", maks: 1}, {navn: "Oppg 15", maks: 4}, {navn: "Oppg 16", maks: 4}, {navn: "Oppg 17", maks: 1}, {navn: "Oppg 18", maks: 2}]
+            },
+            "Vår": {
+                "1": [{navn: "Oppg 1", maks: 5}, {navn: "Oppg 2", maks: 4}, {navn: "Oppg 3", maks: 2}, {navn: "Oppg 4", maks: 6}, {navn: "Oppg 5", maks: 3}, {navn: "Oppg 6", maks: 3}, {navn: "Oppg 7", maks: 4}, {navn: "Oppg 8", maks: 4}, {navn: "Oppg 9", maks: 4}, {navn: "Oppg 10", maks: 3}],
+                "2": [{navn: "Oppg 1", maks: 5}, {navn: "Oppg 2", maks: 6}, {navn: "Oppg 3", maks: 4}, {navn: "Oppg 4", maks: 3}, {navn: "Oppg 5", maks: 3}, {navn: "Oppg 6", maks: 6}, {navn: "Oppg 7", maks: 3}, {navn: "Oppg 8", maks: 3}, {navn: "Oppg 9", maks: 4}, {navn: "Oppg 10", maks: 3}, {navn: "Oppg 11", maks: 8}, {navn: "Oppg 12", maks: 8}],
+                "3": [{navn: "Oppg 1", maks: 3}, {navn: "Oppg 2", maks: 6}, {navn: "Oppg 3", maks: 3}, {navn: "Oppg 4", maks: 6}, {navn: "Oppg 5", maks: 2}, {navn: "Oppg 6", maks: 4}, {navn: "Oppg 7", maks: 4}, {navn: "Oppg 8", maks: 3}, {navn: "Oppg 9", maks: 3}, {navn: "Oppg 10", maks: 3}, {navn: "Oppg 11", maks: 6}, {navn: "Oppg 12", maks: 4}, {navn: "Oppg 13", maks: 4}, {navn: "Oppg 14", maks: 4}, {navn: "Oppg 15", maks: 4}, {navn: "Oppg 16", maks: 4}],
+                "4": [{navn: "Oppg 1", maks: 4}, {navn: "Oppg 2", maks: 6}, {navn: "Oppg 3", maks: 3}, {navn: "Oppg 4", maks: 4}, {navn: "Oppg 5", maks: 4}, {navn: "Oppg 6", maks: 4}, {navn: "Oppg 7", maks: 16}, {navn: "Oppg 8", maks: 6}, {navn: "Oppg 9", maks: 3}, {navn: "Oppg 10", maks: 6}, {navn: "Oppg 11", maks: 3}, {navn: "Oppg 12", maks: 3}, {navn: "Oppg 13", maks: 3}, {navn: "Oppg 14", maks: 1}, {navn: "Oppg 15", maks: 1}, {navn: "Oppg 16", maks: 2}],
+                "5": [{navn: "Oppg 1", maks: 2}, {navn: "Oppg 2", maks: 4}, {navn: "Oppg 3", maks: 4}, {navn: "Oppg 4", maks: 3}, {navn: "Oppg 5", maks: 6}, {navn: "Oppg 6", maks: 3}, {navn: "Oppg 7", maks: 16}, {navn: "Oppg 8", maks: 2}, {navn: "Oppg 9", maks: 3}, {navn: "Oppg 10", maks: 3}, {navn: "Oppg 11", maks: 3}, {navn: "Oppg 12", maks: 1}, {navn: "Oppg 13", maks: 4}, {navn: "Oppg 14", maks: 3}, {navn: "Oppg 15", maks: 1}, {navn: "Oppg 16", maks: 6}, {navn: "Oppg 17", maks: 1}, {navn: "Oppg 18", maks: 1}],
+                "6": [{navn: "Oppg 1", maks: 2}, {navn: "Oppg 2", maks: 4}, {navn: "Oppg 3", maks: 4}, {navn: "Oppg 4", maks: 3}, {navn: "Oppg 5", maks: 6}, {navn: "Oppg 6", maks: 3}, {navn: "Oppg 7", maks: 16}, {navn: "Oppg 8", maks: 2}, {navn: "Oppg 9", maks: 6}, {navn: "Oppg 10", maks: 1}, {navn: "Oppg 11", maks: 3}, {navn: "Oppg 12", maks: 4}, {navn: "Oppg 13", maks: 1}, {navn: "Oppg 14", maks: 1}, {navn: "Oppg 15", maks: 1}, {navn: "Oppg 16", maks: 4}],
+                "7": [{navn: "Oppg 1", maks: 4}, {navn: "Oppg 2", maks: 3}, {navn: "Oppg 3", maks: 4}, {navn: "Oppg 4", maks: 3}, {navn: "Oppg 5", maks: 6}, {navn: "Oppg 6", maks: 3}, {navn: "Oppg 7", maks: 16}, {navn: "Oppg 8", maks: 2}, {navn: "Oppg 9", maks: 2}, {navn: "Oppg 10", maks: 1}, {navn: "Oppg 11", maks: 2}, {navn: "Oppg 12", maks: 4}, {navn: "Oppg 13", maks: 1}, {navn: "Oppg 14", maks: 2}, {navn: "Oppg 15", maks: 3}, {navn: "Oppg 16", maks: 3}, {navn: "Oppg 17", maks: 3}, {navn: "Oppg 18", maks: 2}, {navn: "Oppg 19", maks: 1}]
+            }
+        }
+    }
 };
 
-// Funksjon for å sjekke om Klasse D skal vises
-function sjekkKlasseD() {
-    const aar = document.getElementById('mainAar').value;
-    const trinn = document.getElementById('mainTrinn').value;
-    const optD = document.getElementById('optD');
+// --- HJELPEFUNKSJONER ---
+function oppdater() {
+    const aar = document.getElementById('mAar').value;
+    const trinn = document.getElementById('mTrinn').value;
+    const d = document.getElementById('optD');
     
-    if (trinn == "5" || (aar == "2026/2027" && trinn == "6")) {
-        optD.classList.remove('hidden');
-    } else {
-        optD.classList.add('hidden');
-        if (document.getElementById('mainKlasse').value == "D") document.getElementById('mainKlasse').value = "A";
+    // Vis/skjul klasse D
+    if (trinn == "5" || (aar == "2026/2027" && trinn == "6")) d.classList.remove('hidden');
+    else {
+        d.classList.add('hidden');
+        if (document.getElementById('mKlasse').value == "D") document.getElementById('mKlasse').value = "A";
     }
+    hentEksisterendeData();
 }
 
-// Oppdaterer hovedskjermen
-function oppdaterDashbord() {
-    sjekkKlasseD();
-    hentDataFraFirebase();
-}
-
-// Denne funksjonen ville normalt hentet data fra databasen
-function hentDataFraFirebase() {
-    const tbody = document.getElementById('tabellBody');
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999;">Henter data fra skyen...</td></tr>`;
-    
-    // Her kobler du på Firebase senere
-    setTimeout(() => {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999;">Ingen resultater registrert for dette valget ennå.</td></tr>`;
-    }, 500);
-}
-
-// POPUP LOGIKK
 function aapnePopup() {
-    const aar = document.getElementById('mainAar').value;
-    const fag = document.getElementById('mainFag').value;
-    const periode = document.getElementById('mainPeriode').value;
-    const trinn = document.getElementById('mainTrinn').value;
-    const klasse = document.getElementById('mainKlasse').value;
+    const aar = document.getElementById('mAar').value;
+    const fag = document.getElementById('mFag').value;
+    const per = document.getElementById('mPeriode').value;
+    const trinn = document.getElementById('mTrinn').value;
 
-    document.getElementById('modalTittel').innerText = `Registrering: ${fag} ${periode} - ${trinn}${klasse}`;
+    let oppgaver = (oppgaveStruktur[aar]?.[fag]?.[per]?.[trinn]) || (oppgaveStruktur["Standard"]?.[fag]?.[per]?.[trinn]);
     
-    // Generer oppgavene i popup-en
-    let oppgaver = (oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn]) || (oppgaveStruktur["Standard"]?.[fag]?.[periode]?.[trinn]);
-    
-    const container = document.getElementById('oppgaveInputArea');
-    container.innerHTML = "";
+    const area = document.getElementById('oppgArea');
+    area.innerHTML = "";
     let maksSum = 0;
 
     if (oppgaver) {
-        oppgaver.forEach((oppg, index) => {
-            maksSum += oppg.maks;
-            container.innerHTML += `
-                <div class="popup-input-group">
-                    <label>${oppg.navn} (max ${oppg.maks})</label>
-                    <input type="number" class="p-input" data-maks="${oppg.maks}" oninput="beregnPopupTotal()">
+        oppgaver.forEach(o => {
+            maksSum += o.maks;
+            area.innerHTML += `
+                <div class="p-group">
+                    <label>${o.navn} (max ${o.maks})</label>
+                    <input type="number" class="pop-in" data-maks="${o.maks}" value="0" oninput="sumPop()">
                 </div>`;
         });
     }
 
-    document.getElementById('popupMaks').innerText = maksSum;
-    document.getElementById('resultatModal').style.display = "block";
+    document.getElementById('pMaks').innerText = maksSum;
+    document.getElementById('pSum').innerText = "0";
+    document.getElementById('pop').style.display = "block";
 }
 
-function beregnPopupTotal() {
-    let sum = 0;
-    document.querySelectorAll('.p-input').forEach(input => {
-        let val = parseInt(input.value) || 0;
-        let maks = parseInt(input.dataset.maks);
-        if (val > maks) { val = maks; input.value = maks; }
-        if (val < 0) { val = 0; input.value = 0; }
-        sum += val;
+function sumPop() {
+    let s = 0;
+    document.querySelectorAll('.pop-in').forEach(i => {
+        let v = parseInt(i.value) || 0;
+        let m = parseInt(i.dataset.maks);
+        if (v > m) { v = m; i.value = m; }
+        if (v < 0) { v = 0; i.value = 0; }
+        s += v;
     });
-    document.getElementById('popupSum').innerText = sum;
+    document.getElementById('pSum').innerText = s;
 }
 
-function lukkPopup() {
-    document.getElementById('resultatModal').style.display = "none";
-    document.getElementById('elevNavn').value = "";
+function lukk() { 
+    document.getElementById('pop').style.display = "none";
+    document.getElementById('eNavn').value = "";
 }
 
-function lagreResultat() {
-    const navn = document.getElementById('elevNavn').value;
-    if (!navn) { alert("Vennligst skriv inn navn på elev"); return; }
-    
-    alert(`Lagrer resultat for ${navn} til Firebase...`);
-    lukkPopup();
-    hentDataFraFirebase(); // Oppdater tabellen
+// --- DATABASE LOGIKK (Placeholder for Firebase) ---
+function lagre() {
+    const navn = document.getElementById('eNavn').value;
+    if (!navn) return alert("Skriv navn!");
+
+    const data = {
+        navn: navn,
+        sum: document.getElementById('pSum').innerText,
+        maks: document.getElementById('pMaks').innerText,
+        prosent: Math.round((parseInt(document.getElementById('pSum').innerText) / parseInt(document.getElementById('pMaks').innerText)) * 100) + "%",
+        dato: new Date().toLocaleDateString()
+    };
+
+    // Her ville vi gjort: db.collection('resultater').add(data);
+    alert(`Lagret ${navn} med ${data.sum} poeng!`);
+    lukk();
+    // Legg til i tabell manuelt for demo:
+    const tb = document.getElementById('tBody');
+    tb.innerHTML += `<tr><td>${data.navn}</td><td>${data.sum}</td><td>${data.maks}</td><td>${data.prosent}</td><td>${data.dato}</td></tr>`;
 }
 
-// Funksjoner for knapper
-function lagRapport() { alert("Genererer PDF-rapport..."); }
-function eksporterExcel() { alert("Lager Excel-fil..."); }
+function hentEksisterendeData() {
+    // Her henter vi fra Firebase basert på valgene i dashbordet
+    document.getElementById('tBody').innerHTML = ""; 
+}
 
-window.onload = oppdaterDashbord;
+window.onload = oppdater;
 </script>
 </body>
 </html>
