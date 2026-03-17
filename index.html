@@ -2,75 +2,117 @@
 <html lang="no">
 <head>
     <meta charset="UTF-8">
-    <title>Kartlegging – Elevstyrt System</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kartleggingsverktøy Skole</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+
     <style>
-        :root { --primary: #2c3e50; --danger: #e74c3c; --success: #27ae60; --warning: #f39c12; --bg: #f4f7f6; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; }
-        #mainContent { display: none; padding: 20px; }
-        .user-bar { display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 30px; border-bottom: 2px solid #ddd; }
-        .container { max-width: 1400px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .header-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-bottom: 20px; background: #eee; padding: 20px; border-radius: 5px; }
-        select { padding: 12px; border: 1px solid #ccc; border-radius: 6px; width: 100%; font-size: 1.1em; }
-        .tabell-tittel { margin-top: 30px; margin-bottom: 10px; color: var(--primary); font-size: 1.5em; font-weight: bold; border-left: 5px solid var(--primary); padding-left: 15px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-        th { background: var(--primary); color: white; cursor: pointer; }
-        .critical-row { background-color: #ffdada !important; }
-        .not-registered { color: #999; font-style: italic; }
-        .btn { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; }
-        .btn-reg { background: var(--success); }
-        .btn-edit { background: var(--warning); }
-        #modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
-        .modal-content { background: white; margin: 5% auto; padding: 20px; width: 80%; max-width: 600px; border-radius: 8px; }
-        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; margin: 0; background: #f0f2f5; color: #333; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; background: #e9ecef; padding: 15px; border-radius: 8px; }
+        select, input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
+        th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; }
+        th { background: #f8f9fa; position: sticky; top: 0; }
+        tr:hover { background-color: #f1f1f1; }
+        
+        .btn { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-reg { background: #27ae60; color: white; }
+        .btn-edit { background: #2980b9; color: white; margin-right: 5px; }
+        .btn-slett { background: #e74c3c; color: white; }
+        .btn:hover { opacity: 0.8; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); }
+        .modal-content { background: white; margin: 5% auto; padding: 25px; border-radius: 12px; width: 400px; max-height: 80vh; overflow-y: auto; }
+        .oppgave-rad { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        
+        .not-registered { color: #aaa; font-style: italic; }
+        .alert-low { background: #ffcccc !important; font-weight: bold; color: #c0392b; }
     </style>
 </head>
 <body>
 
-<div id="loginScreen" style="text-align:center; margin-top:100px;">
-    <h1>Kartlegging Skole</h1>
-    <button class="btn" style="background:#4285F4; padding:15px 30px;" onclick="login()">Logg inn med Google</button>
-</div>
-
-<div id="mainContent">
-    <div class="user-bar"><span id="userInfo"></span><button onclick="logout()">Log ut</button></div>
-    <div class="container">
-        <div class="header-controls">
-            <div>År:<select id="mAar" onchange="oppdater()">
-                <option value="2025">2025-2026</option>
-                <option value="2026">2026-2027</option>
-                <option value="2027">2027-2028</option>
-            </select></div>
-            <div>Trinn:<select id="mTrinn" onchange="oppdater()"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></div>
-            <div>Klasse:<select id="mKlasse" onchange="oppdater()"><option>A</option><option>B</option><option>C</option></select></div>
-            <div>Fag:<select id="mFag" onchange="oppdater()"><option>Lesing</option><option>Regning</option></select></div>
-            <div>Periode:<select id="mPeriode" onchange="oppdater()"><option>Høst</option><option>Vår</option></select></div>
+<div class="container">
+    <h2>Kartlegging: Elevoversikt</h2>
+    
+    <div class="header-grid">
+        <div>
+            <label>Skoleår:</label>
+            <select id="mAar" onchange="hentData()">
+                <option value="2024-2025">2024-2025</option>
+                <option value="2025-2026" selected>2025-2026</option>
+            </select>
         </div>
+        <div>
+            <label>Fag:</label>
+            <select id="mFag" onchange="hentData()">
+                <option value="Lesing">Lesing</option>
+                <option value="Regning">Regning</option>
+            </select>
+        </div>
+        <div>
+            <label>Periode:</label>
+            <select id="mPeriode" onchange="hentData()">
+                <option value="Høst">Høst</option>
+                <option value="Vår">Vår</option>
+            </select>
+        </div>
+        <div>
+            <label>Trinn:</label>
+            <select id="mTrinn" onchange="hentData()">
+                <option value="1">1. Trinn</option>
+                <option value="2">2. Trinn</option>
+                <option value="3">3. Trinn</option>
+                <option value="4">4. Trinn</option>
+                <option value="5">5. Trinn</option>
+                <option value="6">6. Trinn</option>
+                <option value="7">7. Trinn</option>
+            </select>
+        </div>
+        <div>
+            <label>Klasse:</label>
+            <select id="mKlasse" onchange="tegnTabell()">
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+            </select>
+        </div>
+    </div>
 
-        <div id="dynamiskTittel" class="tabell-tittel"></div>
-        <table id="resultatTabell">
-            <thead id="tHead"></thead>
-            <tbody id="tBody"></tbody>
-        </table>
+    <table id="hovedTabell">
+        <thead id="tHead"></thead>
+        <tbody id="tBody"></tbody>
+    </table>
+
+    <div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border: 2px dashed #cbd5e0; border-radius: 8px;">
+        <h4>Legg til ny elev (mangler i listen)</h4>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <input type="text" id="nyttEtternavn" placeholder="Etternavn" style="flex:1">
+            <input type="text" id="nyttFornavn" placeholder="Fornavn" style="flex:1">
+            <button class="btn btn-reg" onclick="leggTilNyElev()">Legg til i denne klassen</button>
+        </div>
     </div>
 </div>
 
-<div id="modal">
+<div id="modal" class="modal">
     <div class="modal-content">
-        <h2 id="modalNavn"></h2>
-        <div id="oppgaveFelter" class="grid-inputs"></div>
-        <div style="margin-top:20px;">
-            <button class="btn btn-reg" onclick="lagreData()">Lagre resultat</button>
-            <button class="btn" style="background:gray" onclick="lukkModal()">Avbryt</button>
+        <h3 id="modalNavn">Navn</h3>
+        <hr>
+        <div id="oppgaveFelter"></div>
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <button class="btn btn-reg" style="flex:1" onclick="lagreData()">Lagre</button>
+            <button class="btn" style="flex:1; background:#95a5a6; color:white" onclick="lukkModal()">Avbryt</button>
         </div>
     </div>
 </div>
 
 <script>
-// --- KONFIGURASJON OG DATA ---
+// --- FIREBASE KONFIG (Region fiks inkludert) ---
 const firebaseConfig = {
     apiKey: "AIzaSyC7g1gllBUVACl3fkpYeEe7r1LfBs2ck3U",
     authDomain: "lokal-kartlegging.firebaseapp.com",
@@ -85,8 +127,9 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-let redigererNøkkel = null;
+let redigererNøkkel = null; // Holder styr på om vi endrer eller legger til ny
 
+// --- AUTENTISERING ---
 function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
 function logout() { auth.signOut(); }
 
@@ -102,8 +145,68 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-// Dette er "Masterlisten" din. 
-// Format: "Etternavn, Fornavn": { startTrinn: X, startKlasse: 'A', startAar: 2025 }
+// --- 2. OPPGAVESTRUKTUR ---
+const oppgaveStruktur = {
+    "2024-2025": {
+        "Lesing": {
+            "Høst": {
+                "1": { grenseTotal: 20, oppgaver: [{navn: "Rim", maks: 6, grense: -1}, {navn: "Stavelser", maks: 8, grense: -1}, {navn: "Første lyd", maks: 8, grense: -1}, {navn: "Lik lyd", maks: 3, grense: -1}, {navn: "Lydering", maks: 4, grense: -1}, {navn: "Dele ord", maks: 4, grense: -1}] },
+                "2": { grenseTotal: 16, oppgaver: [{navn: "Lese ord 1", maks: 4, grense: 3}, {navn: "Lese ord 2", maks: 9, grense: 6}, {navn: "Stave ord", maks: 5, grense: 3}, {navn: "Forstå 1", maks: 3, grense: 2}, {navn: "Forstå 2", maks: 5, grense: 2}] },
+                "3": { grenseTotal: 20, oppgaver: [{navn: "Lese ord 1", maks: 7, grense: 6}, {navn: "Lese ord 2", maks: 12, grense: 6}, {navn: "Stave ord", maks: 7, grense: 4}, {navn: "Forstå 1", maks: 4, grense: 2}, {navn: "Forstå 2", maks: 3, grense: 2}] },
+                "4": { grenseTotal: 20, oppgaver: [{navn: "Lese ord", maks: 15, grense: 10}, {navn: "Stave ord", maks: 7, grense: 4}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 5, grense: 3}] },
+                "5": { grenseTotal: 25, oppgaver: [{navn: "Lese ord", maks: 18, grense: 15}, {navn: "Stave ord", maks: 7, grense: 4}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 5, grense: 3}] },
+                "6": { grenseTotal: 30, oppgaver: [{navn: "Lese ord", maks: 21, grense: 17}, {navn: "Stave ord", maks: 7, grense: 5}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 6, grense: 5}] },
+                "7": { grenseTotal: 30, oppgaver: [{navn: "Lese ord", maks: 21, grense: 17}, {navn: "Stave ord", maks: 7, grense: 5}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 7, grense: 5}] }
+            }
+        },
+        "Regning": {
+            "Høst": {
+                "1": { grenseTotal: 13, oppgaver: Array(8).fill().map((_, i) => ({navn: "O"+(i+1), maks: [3,3,2,3,3,2,3,2][i], grense: -1})) },
+                "2": { grenseTotal: 17, oppgaver: Array(10).fill().map((_, i) => ({navn: "O"+(i+1), maks: [4,3,3,3,6,3,4,3,4,4][i], grense: -1})) },
+                "3": { grenseTotal: 22, oppgaver: Array(12).fill().map((_, i) => ({navn: "O"+(i+1), maks: [3,3,6,3,3,3,3,4,3,4,4,3][i], grense: -1})) },
+                "4": { grenseTotal: 21, oppgaver: Array(14).fill().map((_, i) => ({navn: "O"+(i+1), maks: [4,2,3,4,4,16,6,3,6,1,3,4,1,1][i], grense: -1})) },
+                "5": { grenseTotal: 19, oppgaver: Array(17).fill().map((_, i) => ({navn: "O"+(i+1), maks: [2,3,4,3,6,3,16,2,3,1,1,4,1,4,3,1,1][i], grense: -1})) },
+                "6": { grenseTotal: 27, oppgaver: Array(16).fill().map((_, i) => ({navn: "O"+(i+1), maks: [2,3,6,3,6,3,16,2,6,4,1,3,1,4,1,1][i], grense: -1})) },
+                "7": { grenseTotal: 33, oppgaver: Array(18).fill().map((_, i) => ({navn: "O"+(i+1), maks: [4,3,4,3,6,3,7,8,2,1,1,3,4,1,4,4,1,2][i], grense: -1})) }
+            }
+        }
+    },
+    "STANDARD_2025": {
+        "Lesing": {
+            "Høst": {
+                "1": { grenseTotal: 20, oppgaver: [{navn: "Rim", maks: 6, grense: -1}, {navn: "Stavelser", maks: 8, grense: -1}, {navn: "Første lyd", maks: 8, grense: -1}, {navn: "Lik lyd", maks: 3, grense: -1}, {navn: "Lydering", maks: 4, grense: -1}, {navn: "Dele ord", maks: 4, grense: -1}] },
+                "2": { grenseTotal: 16, oppgaver: [{navn: "Lese ord 1", maks: 4, grense: 3}, {navn: "Lese ord 2", maks: 9, grense: 6}, {navn: "Stave ord", maks: 5, grense: 3}, {navn: "Forstå 1", maks: 3, grense: 2}, {navn: "Forstå 2", maks: 5, grense: 2}] },
+                "3": { grenseTotal: 23, oppgaver: [{navn: "Lese ord 1", maks: 7, grense: 6}, {navn: "Lese ord 2", maks: 6, grense: 5}, {navn: "Forstå ord", maks: 5, grense: 4}, {navn: "Stave ord", maks: 7, grense: 4}, {navn: "Forstå 1", maks: 4, grense: 2}, {navn: "Forstå 2", maks: 3, grense: 2}] },
+                "4": { grenseTotal: 20, oppgaver: [{navn: "Lese ord", maks: 9, grense: 6}, {navn: "Forstå ord", maks: 5, grense: 4}, {navn: "Stave ord", maks: 7, grense: 4}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 5, grense: 3}] },
+                "5": { grenseTotal: 22, oppgaver: [{navn: "Lese ord", maks: 12, grense: 9}, {navn: "Forstå ord", maks: 6, grense: 3}, {navn: "Stave ord", maks: 7, grense: 4}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 5, grense: 3}] },
+                "6": { grenseTotal: 27, oppgaver: [{navn: "Lese ord", maks: 15, grense: 12}, {navn: "Forstå ord", maks: 6, grense: 4}, {navn: "Stave ord", maks: 7, grense: 5}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 6, grense: 3}] },
+                "7": { grenseTotal: 30, oppgaver: [{navn: "Lese ord", maks: 12, grense: 10}, {navn: "Forstå ord", maks: 9, grense: 7}, {navn: "Stave ord", maks: 7, grense: 5}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 7, grense: 5}] }
+            },
+            "Vår": {
+                "1": { grenseTotal: 11, oppgaver: [{navn: "Lese ord", maks: 6, grense: 5}, {navn: "Stave ord", maks: 5, grense: 3}, {navn: "Forstå", maks: 4, grense: 3}] },
+                "2": { grenseTotal: 14, oppgaver: [{navn: "Lese ord 1", maks: 4, grense: 3}, {navn: "Lese ord 2", maks: 3, grense: 2}, {navn: "Stave ord", maks: 5, grense: 3}, {navn: "Forstå 1", maks: 3, grense: 2}, {navn: "Forstå 2", maks: 5, grense: 4}] },
+                "3": { grenseTotal: 25, oppgaver: [{navn: "Lese ord 1", maks: 7, grense: 6}, {navn: "Lese ord 2", maks: 6, grense: 5}, {navn: "Forstå ord", maks: 5, grense: 4}, {navn: "Stave ord", maks: 7, grense: 4}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 5, grense: 3}] },
+                "4": { grenseTotal: 20, oppgaver: [{navn: "Lese ord", maks: 9, grense: 6}, {navn: "Forstå ord", maks: 5, grense: 4}, {navn: "Stave ord", maks: 7, grense: 4}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 5, grense: 3}] },
+                "5": { grenseTotal: 23, oppgaver: [{navn: "Lese ord", maks: 12, grense: 9}, {navn: "Forstå ord", maks: 6, grense: 3}, {navn: "Stave ord", maks: 7, grense: 4}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 6, grense: 4}] },
+                "6": { grenseTotal: 27, oppgaver: [{navn: "Lese ord", maks: 15, grense: 12}, {navn: "Forstå ord", maks: 6, grense: 4}, {navn: "Stave ord", maks: 7, grense: 5}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 6, grense: 3}] },
+                "7": { grenseTotal: 29, oppgaver: [{navn: "Lese ord", maks: 12, grense: 10}, {navn: "Forstå ord", maks: 9, grense: 7}, {navn: "Stave ord", maks: 7, grense: 5}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 6, grense: 4}] }
+            }
+        },
+        "Regning": {
+            "Høst": {
+                "1": { grenseTotal: 13, oppgaver: Array(8).fill().map((_, i) => ({navn: "O"+(i+1), maks: [3,3,2,3,3,2,3,2][i], grense: -1})) },
+                "2": { grenseTotal: 17, oppgaver: Array(10).fill().map((_, i) => ({navn: "O"+(i+1), maks: [4,3,3,3,6,3,4,3,4,4][i], grense: -1})) },
+                "3": { grenseTotal: 22, oppgaver: Array(12).fill().map((_, i) => ({navn: "O"+(i+1), maks: [3,3,6,3,3,3,3,4,3,4,4,3][i], grense: -1})) },
+                "4": { grenseTotal: 21, oppgaver: Array(14).fill().map((_, i) => ({navn: "O"+(i+1), maks: [4,2,3,4,4,16,6,3,6,1,3,4,1,1][i], grense: -1})) },
+                "5": { grenseTotal: 25, oppgaver: Array(17).fill().map((_, i) => ({navn: "O"+(i+1), maks: [2,3,4,3,6,3,16,2,3,1,1,4,1,4,3,1,1][i], grense: -1})) },
+                "6": { grenseTotal: 27, oppgaver: Array(16).fill().map((_, i) => ({navn: "O"+(i+1), maks: [2,3,6,3,6,3,16,2,6,4,1,3,1,4,1,1][i], grense: -1})) },
+                "7": { grenseTotal: 33, oppgaver: Array(18).fill().map((_, i) => ({navn: "O"+(i+1), maks: [4,3,4,3,6,3,7,8,2,1,1,3,4,1,4,4,1,2][i], grense: -1})) }
+            }
+        }
+    }
+};
+
+// --- 3. ELEVREGISTER (Lim inn dine 400 navn her) ---
 const elevRegister = {
     // 1. TRINN (Startet 2025)
     "Albert, William Denstad": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
@@ -566,107 +669,175 @@ const elevRegister = {
     "Wennberg-Brown, Kaiden Gabriel": { startTrinn: 7, startKlasse: 'C', startAar: 2025 }
 };
 
-let valgtElevId = null;
+
+// --- 4. LOGIKK OG FUNKSJONER ---
 let lagredeResultater = {};
+let valgtElevId = "";
 
-// --- LOGIKK FOR Å FINNE ELEVER ---
-function hentEleverForValg() {
-    const valgtAar = parseInt(document.getElementById('mAar').value);
-    const valgtTrinn = parseInt(document.getElementById('mTrinn').value);
-    const valgtKlasse = document.getElementById('mKlasse').value;
-
-    let liste = [];
-    for (let navn in elevRegister) {
-        const e = elevRegister[navn];
-        // Beregn trinn: valgtAar - startAar + startTrinn
-        // Eks: William startet i 1. trinn i 2025. I 2026 er han: 2026 - 2025 + 1 = 2. trinn.
-        const beregnetTrinn = (valgtAar - e.startAar) + e.startTrinn;
-        
-        if (beregnetTrinn === valgtTrinn && e.startKlasse === valgtKlasse) {
-            liste.push(navn);
-        }
-    }
-    return liste.sort();
-}
-
-// --- FIREBASE OG VISNING ---
-function oppdater() {
+// Hjelpefunksjon: Henter gjeldende konfigurasjon
+function hentOppsett() {
     const aar = document.getElementById('mAar').value;
-    const trinn = document.getElementById('mTrinn').value;
-    const klasse = document.getElementById('mKlasse').value;
     const fag = document.getElementById('mFag').value;
     const periode = document.getElementById('mPeriode').value;
-    
-    document.getElementById('dynamiskTittel').innerText = `Kartlegging ${fag} - ${trinn}${klasse} - ${periode} ${aar}`;
-    
-    // Hent data fra Firebase for denne gruppen
+    const trinn = document.getElementById('mTrinn').value;
+    try {
+        const strukturAar = oppgaveStruktur[aar] ? aar : "STANDARD_2025";
+        return oppgaveStruktur[strukturAar][fag][periode][trinn];
+    } catch (e) { return null; }
+}
+
+// Henter elever basert på valgt trinn og klasse
+function filtrerElever() {
+    const valgtTrinn = parseInt(document.getElementById('mTrinn').value);
+    const valgtKlasse = document.getElementById('mKlasse').value;
+    const valgtSkoleAar = parseInt(document.getElementById('mAar').value.split('-')[0]);
+
+    return Object.keys(elevRegister).filter(navn => {
+        const elev = elevRegister[navn];
+        const currentTrinn = elev.startTrinn + (valgtSkoleAar - elev.startAar);
+        return currentTrinn === valgtTrinn && elev.startKlasse === valgtKlasse;
+    }).sort();
+}
+
+// Henter data fra Firebase
+function hentData() {
+    const aar = document.getElementById('mAar').value;
+    const fag = document.getElementById('mFag').value;
+    const periode = document.getElementById('mPeriode').value;
+    const trinn = document.getElementById('mTrinn').value;
+    const klasse = document.getElementById('mKlasse').value;
+
     const path = `kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}`;
-    db.ref(path).on('value', snap => {
-        lagredeResultater = snap.val() || {};
+    db.ref(path).on('value', snapshot => {
+        lagredeResultater = snapshot.val() || {};
         tegnTabell();
     });
 }
 
+// Tegner tabellen
 function tegnTabell() {
-    const elever = hentEleverForValg();
+    const oppsett = hentOppsett();
+    const elever = filtrerElever();
     const tHead = document.getElementById('tHead');
     const tBody = document.getElementById('tBody');
-    
-    // Forenklet hode for demo
-    tHead.innerHTML = `<tr><th>Elev</th><th>Sum</th><th>Status</th><th>Handling</th></tr>`;
-    tBody.innerHTML = "";
 
+    if (!oppsett) {
+        tBody.innerHTML = "<tr><td colspan='100%'>Ingen oppsett funnet.</td></tr>";
+        return;
+    }
+
+    // Lag tabellhode
+    let hodeHtml = `<tr><th style="text-align:left">Elevnavn</th>`;
+    oppsett.oppgaver.forEach(o => hodeHtml += `<th>${o.navn}<br><small>max ${o.maks}</small></th>`);
+    hodeHtml += `<th>Total</th><th>Handling</th></tr>`;
+    tHead.innerHTML = hodeHtml;
+
+    tBody.innerHTML = "";
     elever.forEach(navn => {
-        const res = lagredeResultater[navn];
-        let html = `<tr><td style="text-align:left">${navn}</td>`;
+        const data = lagredeResultater[navn];
+        let radHtml = `<tr><td style="text-align:left"><b>${navn}</b></td>`;
         
-        if (res) {
-            html += `<td>${res.sum}</td><td>OK</td>`;
-            html += `<td><button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button></td>`;
+        if (data && data.oppgaver) {
+            oppsett.oppgaver.forEach((o, i) => {
+                const p = data.oppgaver[i] || 0;
+                const stil = (o.grense !== -1 && p < o.grense) ? 'class="alert-low"' : '';
+                radHtml += `<td ${stil}>${p}</td>`;
+            });
+            const sumStil = (data.sum < oppsett.grenseTotal) ? 'class="alert-low"' : '';
+            radHtml += `<td ${sumStil}>${data.sum}</td>`;
+            radHtml += `<td>
+                <button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button>
+                <button class="btn btn-slett" onclick="slettResultat('${navn}')">Slett</button>
+            </td>`;
         } else {
-            html += `<td class="not-registered">--</td><td class="not-registered">Ikke utført</td>`;
-            html += `<td><button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button></td>`;
+            oppsett.oppgaver.forEach(() => radHtml += `<td class="not-registered">-</td>`);
+            radHtml += `<td class="not-registered">-</td>`;
+            radHtml += `<td><button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button></td>`;
         }
-        html += `</tr>`;
-        tBody.innerHTML += html;
+        radHtml += `</tr>`;
+        tBody.innerHTML += radHtml;
     });
 }
 
+// Modal logikk
 function visModal(navn) {
+    const oppsett = hentOppsett();
     valgtElevId = navn;
     document.getElementById('modalNavn').innerText = navn;
-    const felter = document.getElementById('oppgaveFelter');
-    felter.innerHTML = "Oppgave 1: <input type='number' id='i1' value='0'>"; // Forenklet for demo
-    document.getElementById('modal').style.display = 'block';
-}
+    const feltContainer = document.getElementById('oppgaveFelter');
+    feltContainer.innerHTML = "";
 
-function lagreData() {
-    const aar = document.getElementById('mAar').value;
-    const trinn = document.getElementById('mTrinn').value;
-    const klasse = document.getElementById('mKlasse').value;
-    const fag = document.getElementById('mFag').value;
-    const periode = document.getElementById('mPeriode').value;
-    
-    const sum = document.getElementById('i1').value; // Hent fra alle felter i full versjon
-    
-    const path = `kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}/${valgtElevId}`;
-    db.ref(path).set({ sum: parseInt(sum), dato: new Date().toISOString() })
-    .then(() => lukkModal());
+    const eksisterende = lagredeResultater[navn]?.oppgaver || [];
+
+    oppsett.oppgaver.forEach((o, i) => {
+        const verdi = eksisterende[i] !== undefined ? eksisterende[i] : "";
+        feltContainer.innerHTML += `
+            <div class="oppgave-rad">
+                <label>${o.navn} (maks ${o.maks}):</label>
+                <input type="number" class="oppg-input" data-index="${i}" min="0" max="${o.maks}" value="${verdi}" style="width:60px">
+            </div>`;
+    });
+    document.getElementById('modal').style.display = 'block';
 }
 
 function lukkModal() { document.getElementById('modal').style.display = 'none'; }
 
-// Auth logikk her...
-function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
-function logout() { auth.signOut(); }
-firebase.auth().onAuthStateChanged(user => {
-    if (user) {
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('mainContent').style.display = 'block';
-        document.getElementById('userInfo').innerText = user.displayName;
-        oppdater();
-    }
-});
+function lagreData() {
+    const inputs = document.querySelectorAll('.oppg-input');
+    let verdier = [];
+    let sum = 0;
+
+    inputs.forEach(input => {
+        const v = parseInt(input.value) || 0;
+        verdier.push(v);
+        sum += v;
+    });
+
+    const aar = document.getElementById('mAar').value;
+    const fag = document.getElementById('mFag').value;
+    const periode = document.getElementById('mPeriode').value;
+    const trinn = document.getElementById('mTrinn').value;
+    const klasse = document.getElementById('mKlasse').value;
+
+    const path = `kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}/${valgtElevId}`;
+    db.ref(path).set({
+        oppgaver: verdier,
+        sum: sum,
+        dato: new Date().toISOString()
+    }).then(lukkModal);
+}
+
+function slettResultat(navn) {
+    if(!confirm(`Slette resultat for ${navn}?`)) return;
+    const aar = document.getElementById('mAar').value;
+    const fag = document.getElementById('mFag').value;
+    const periode = document.getElementById('mPeriode').value;
+    const trinn = document.getElementById('mTrinn').value;
+    const klasse = document.getElementById('mKlasse').value;
+
+    db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}/${navn}`).remove();
+}
+
+function leggTilNyElev() {
+    const e = document.getElementById('nyttEtternavn').value.trim();
+    const f = document.getElementById('nyttFornavn').value.trim();
+    if(!e || !f) return alert("Navn mangler");
+
+    const fulltNavn = `${e}, ${f}`;
+    const aar = parseInt(document.getElementById('mAar').value);
+    const trinn = parseInt(document.getElementById('mTrinn').value);
+    const klasse = document.getElementById('mKlasse').value;
+
+    elevRegister[fulltNavn] = { startTrinn: trinn, startKlasse: klasse, startAar: aar };
+    
+    document.getElementById('nyttEtternavn').value = "";
+    document.getElementById('nyttFornavn').value = "";
+    tegnTabell();
+}
+
+// Start app
+window.onload = hentData;
+
 </script>
 </body>
 </html>
