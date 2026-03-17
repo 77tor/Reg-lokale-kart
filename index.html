@@ -2,393 +2,644 @@
 <html lang="no">
 <head>
     <meta charset="UTF-8">
-    <title>Kartleggingsverktøy – Med Sortering</title>
+    <title>Kartlegging – Elevstyrt System</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         :root { --primary: #2c3e50; --danger: #e74c3c; --success: #27ae60; --warning: #f39c12; --bg: #f4f7f6; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; }
-        .login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: white; }
-        #mainContent { display: none; }
+        #mainContent { display: none; padding: 20px; }
         .user-bar { display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 30px; border-bottom: 2px solid #ddd; }
-        .container { max-width: 1400px; margin: 20px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        
+        .container { max-width: 1400px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .header-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-bottom: 20px; background: #eee; padding: 20px; border-radius: 5px; }
-        select { padding: 12px; border: 1px solid #ccc; border-radius: 6px; width: 100%; font-size: 1.1em; cursor: pointer; }
-        
+        select { padding: 12px; border: 1px solid #ccc; border-radius: 6px; width: 100%; font-size: 1.1em; }
         .tabell-tittel { margin-top: 30px; margin-bottom: 10px; color: var(--primary); font-size: 1.5em; font-weight: bold; border-left: 5px solid var(--primary); padding-left: 15px; }
-
-        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-        
-        /* SORTERING STIL */
-        th { background: var(--primary); color: white; cursor: pointer; user-select: none; position: relative; }
-        th:hover { background: #34495e; }
-        .sort-icon { font-size: 0.8em; margin-left: 5px; }
-
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background: var(--primary); color: white; cursor: pointer; }
         .critical-row { background-color: #ffdada !important; }
-        .critical-cell { background-color: #ffeded !important; color: red; font-weight: bold; }
-        
-        .btn { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; }
-        .btn-google { background: #4285F4; }
-        .btn-add { background: var(--success); margin-bottom: 10px; }
-        .btn-warning { background: var(--warning); color: #fff; }
-        .btn-logout { background: #95a5a6; }
-        .btn-delete { background: var(--danger); }
-        .action-btns { display: flex; gap: 4px; justify-content: center; }
-        .action-btns .btn { padding: 4px 8px; font-size: 0.85em; }
-
-        #modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
-        .modal-content { background: white; margin: 2% auto; padding: 20px; width: 95%; max-width: 800px; border-radius: 8px; max-height: 90vh; overflow-y: auto; }
-        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; margin-top: 15px; }
-        .grid-inputs label { font-size: 0.9em; font-weight: bold; display: block; margin-bottom: 5px; }
-        .pInput { padding: 8px; width: 80px; font-size: 1em; border: 1px solid #ccc; border-radius: 4px; }
-        .hidden { display: none; }
+        .not-registered { color: #999; font-style: italic; }
+        .btn { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; }
+        .btn-reg { background: var(--success); }
+        .btn-edit { background: var(--warning); }
+        #modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
+        .modal-content { background: white; margin: 5% auto; padding: 20px; width: 80%; max-width: 600px; border-radius: 8px; }
+        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     </style>
 </head>
 <body>
 
-<div id="loginScreen" class="login-screen">
+<div id="loginScreen" style="text-align:center; margin-top:100px;">
     <h1>Kartlegging Skole</h1>
-    <button class="btn btn-google" onclick="login()">Logg inn med Google</button>
+    <button class="btn" style="background:#4285F4; padding:15px 30px;" onclick="login()">Logg inn med Google</button>
 </div>
 
 <div id="mainContent">
-    <div class="user-bar">
-        <span id="userInfo"></span>
-        <button class="btn btn-logout" onclick="logout()">Logg ut</button>
-    </div>
+    <div class="user-bar"><span id="userInfo"></span><button onclick="logout()">Log ut</button></div>
     <div class="container">
         <div class="header-controls">
-            <div>År:<select id="mAar" onchange="oppdater()"><option value="2024-2025">2024-2025</option><option value="2025-2026">2025-2026</option></select></div>
-            <div>Trinn:<select id="mTrinn" onchange="oppdater()"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option></select></div>
-            <div>Klasse:<select id="mKlasse" onchange="oppdater()"><option>A</option><option>B</option><option>C</option><option id="optD" class="hidden">D</option></select></div>
+            <div>År:<select id="mAar" onchange="oppdater()">
+                <option value="2025">2025-2026</option>
+                <option value="2026">2026-2027</option>
+                <option value="2027">2027-2028</option>
+            </select></div>
+            <div>Trinn:<select id="mTrinn" onchange="oppdater()"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></div>
+            <div>Klasse:<select id="mKlasse" onchange="oppdater()"><option>A</option><option>B</option><option>C</option></select></div>
             <div>Fag:<select id="mFag" onchange="oppdater()"><option>Lesing</option><option>Regning</option></select></div>
             <div>Periode:<select id="mPeriode" onchange="oppdater()"><option>Høst</option><option>Vår</option></select></div>
         </div>
 
-        <button class="btn btn-add" onclick="visModal()">+ Legg til elev</button>
         <div id="dynamiskTittel" class="tabell-tittel"></div>
-
-        <div style="overflow-x: auto;">
-            <table id="resultatTabell"><thead id="tHead"></thead><tbody id="tBody"></tbody></table>
-        </div>
+        <table id="resultatTabell">
+            <thead id="tHead"></thead>
+            <tbody id="tBody"></tbody>
+        </table>
     </div>
 </div>
 
 <div id="modal">
     <div class="modal-content">
-        <h3 id="modalTittel">Ny registrering</h3>
-        <input type="text" id="elevNavn" placeholder="Navn på elev" style="width:100%; padding:12px; margin-bottom:15px; box-sizing:border-box; font-size:1.1em; border: 2px solid #ddd; border-radius: 6px;">
+        <h2 id="modalNavn"></h2>
         <div id="oppgaveFelter" class="grid-inputs"></div>
-        <div style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
-            <button class="btn btn-add" id="btnLagre" onclick="lagreData()">Lagre i database</button> 
-            <button class="btn btn-logout" onclick="lukkModal()">Avbryt</button>
+        <div style="margin-top:20px;">
+            <button class="btn btn-reg" onclick="lagreData()">Lagre resultat</button>
+            <button class="btn" style="background:gray" onclick="lukkModal()">Avbryt</button>
         </div>
     </div>
 </div>
 
 <script>
-// Firebase Config (som før)
-const firebaseConfig = {
-    apiKey: "AIzaSyC7g1gllBUVACl3fkpYeEe7r1LfBs2ck3U",
-    authDomain: "lokal-kartlegging.firebaseapp.com",
-    databaseURL: "https://lokal-kartlegging-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "lokal-kartlegging",
-    storageBucket: "lokal-kartlegging.firebasestorage.app",
-    messagingSenderId: "913824113769",
-    appId: "1:913824113769:web:95c6fdea2d3b49813d6ef8"
-};
-
+// --- KONFIGURASJON OG DATA ---
+const firebaseConfig = { /* Lim inn din config her som før */ };
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
 const db = firebase.database();
 
-let redigererNøkkel = null;
-let gjeldendeData = []; // Lagrer data lokalt for sortering
-let sorteringsFelt = 'navn';
-let sorteringsRetning = 1; // 1 for stigende, -1 for synkende
+// Dette er "Masterlisten" din. 
+// Format: "Etternavn, Fornavn": { startTrinn: X, startKlasse: 'A', startAar: 2025 }
+const elevRegister = {
+    // 1. TRINN (Startet 2025)
+    "Albert, William Denstad": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
+    "Barria, Cristiano": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
+    "Fossheim, Ellie Synnøve Helland": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
+    "Gudane, Isaac Ibrahim": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
+    "Halvorsen, Sindre Stensvold": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
+    "Hussain, Iman": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
+    "Høiberg, Isabel Cornejo": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
+    "Johansen, Emmeli": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
+    "Kasin-Hansen, Nikolai Alexander": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
+    "Krumm, Thale Barria": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
+    "Kvarsnes, Matheus De Souza": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
+    "Salazar, Samuel": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
+    "Seljelund, Selma Mæhle": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
+    "Simonsen-Solem, Emma": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
+    "Timenes, Tomine": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
+    "Tvedt, Linus Brådland": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
+    "Aabel, Vetle Jahnsen": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
+    "Bisseth-Isefjær, Charlotte": { startTrinn: 1, startKlasse: 'B', startAar: 2025 },
+    "Cascampas, Philippa Elea": { startTrinn: 1, startKlasse: 'B', startAar: 2025 },
+    "Chhoeuk, Eira Tveter": { startTrinn: 1, startKlasse: 'B', startAar: 2025 },
+    "Hansen, Matheo Løvheim": { startTrinn: 1, startKlasse: 'B', startAar: 2025 },
+    "Håbesland, Letizia": { startTrinn: 1, startKlasse: 'B', startAar: 2025 },
+    "Ilyas, Raima": { startTrinn: 1, startKlasse: 'B', startAar: 2025 },
+    "Jaferi, David": { startTrinn: 1, startKlasse: 'B', startAar: 2025 },
+    "Jahnsson-Rasmussen, Luis": { startTrinn: 1, startKlasse: 'B', startAar: 2025 },
+    "Jorkjend, Magnus": { startTrinn: 1, startKlasse: 'B', startAar: 2025 },
+    "Kloster, Ola Rekve": { startTrinn: 1, startKlasse: 'B', startAar: 2025 },
+    "Kristiansen, Alma": { startTrinn: 1, startKlasse: 'B', startAar: 2025 },
+    "Osland, Elida": { startTrinn: 1, startKlasse: 'B', startAar: 2025 },
+    "Qvale, Noah Nesland": { startTrinn: 1, startKlasse: 'B', startAar: 2025 },
+    "Said, Hanna Abdirisak": { startTrinn: 1, startKlasse: 'B', startAar: 2025 },
+    "Seland, Fride Vikingsdal": { startTrinn: 1, startKlasse: 'B', startAar: 2025 },
+    "Skeie, Oliver Aagaard": { startTrinn: 1, startKlasse: 'B', startAar: 2025 },
+    "Solberg, Eva Olivia": { startTrinn: 1, startKlasse: 'B', startAar: 2025 },
+    "Vold-Mørch, Ole": { startTrinn: 1, startKlasse: 'B', startAar: 2025 },
+    "Zec, Sofia Alexandra": { startTrinn: 1, startKlasse: 'B', startAar: 2025 },
+    "Agyemang, Esther Nana Akyaa": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Albert, Emmely Karin": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Andersen-Fleming, Camilla": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Askland, Ada Emelie": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Axelssen, Thorvald Willy Helland": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Finseth, Ferdinand": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Flem, Daniel Thye": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Flem, Ingrid Aurora": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Gausvik, Amanda": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Gullaksen, Thelion Alexander": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Hisdal-Fossdal, Evelyn": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Hovden, Elvira Maria": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Kadereya, Ali Mohmmad": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Nordbø, Vilma Sjøstrøm": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Nur, Nasra Hubi Abdirisaq": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Pedersen, Markus": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Schwarz, Georg Eik": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Skjelderup, Sander Konrad Liknes": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Skogrand-Arias, Aurora": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Skuterud, Jens Husaas": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Sotnedal, Elise Domansky": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Sudalaimuthu, Yalini": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
+    "Sødal, Iben Heltne": { startTrinn: 1, startKlasse: 'C', startAar: 2025 },
 
+    // 2. TRINN (Startet 2025)
+    "Al-Shalah, Kaiss": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Banouni, Sidra": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Chatat, Adm": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Da Cruz Aleixo, Ariana Maria": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Eidsaa, Vilhelm August Bragdø": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Fjellaker, Sara Rysstad": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Follerås, Emil Beqiraj": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Gabrielsen, Ivy Vinter Paddon": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Haugebo, Lucas Coward": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Jaglanian, Nova Nerhus": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Jakobsen, Kian": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Jones, Max Borgan": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Kianfar, Melora": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Moland-Krasniqi, Elian": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Ringsby, Konrad Langerud": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Solstad, Nathalie Senada": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Sørhus, Ruth": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Sørvig, Kristian Haakon": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Tabeth, Iman Said": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Viken, Madeleine Skarning": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Vingerhagen, Bjørn Flaat": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Wojtkiewicz, Maksymilian": { startTrinn: 2, startKlasse: 'A', startAar: 2025 },
+    "Andersen, Noah Nøvik": { startTrinn: 2, startKlasse: 'B', startAar: 2025 },
+    "Arntsen, Emil Loland": { startTrinn: 2, startKlasse: 'B', startAar: 2025 },
+    "Axelssen, Lauritz Helland": { startTrinn: 2, startKlasse: 'B', startAar: 2025 },
+    "Børresen, Theodor Strand": { startTrinn: 2, startKlasse: 'B', startAar: 2025 },
+    "Chhoeuk, Riley": { startTrinn: 2, startKlasse: 'B', startAar: 2025 },
+    "Dahl, Kirsti Toft": { startTrinn: 2, startKlasse: 'B', startAar: 2025 },
+    "Dybedal, Leander Dufke": { startTrinn: 2, startKlasse: 'B', startAar: 2025 },
+    "Eid, Henrik Hamnes": { startTrinn: 2, startKlasse: 'B', startAar: 2025 },
+    "Forsaa-Nilsen, Othilie": { startTrinn: 2, startKlasse: 'B', startAar: 2025 },
+    "Hansen, Kevin Forslund": { startTrinn: 2, startKlasse: 'B', startAar: 2025 },
+    "Juliussen, Kaja Salcher": { startTrinn: 2, startKlasse: 'B', startAar: 2025 },
+    "Mogstad, Lilly Wikören": { startTrinn: 2, startKlasse: 'B', startAar: 2025 },
+    "Myren, Olai": { startTrinn: 2, startKlasse: 'B', startAar: 2025 },
+    "Nydal, Sonja": { startTrinn: 2, startKlasse: 'B', startAar: 2025 },
+    "Pettersen, Jett Paul": { startTrinn: 2, startKlasse: 'B', startAar: 2025 },
+    "Rai, Aaron": { startTrinn: 2, startKlasse: 'B', startAar: 2025 },
+    "Sergejev, Viktor": { startTrinn: 2, startKlasse: 'B', startAar: 2025 },
+    "Winther-Gulla, Gustav": { startTrinn: 2, startKlasse: 'B', startAar: 2025 },
+    "Zagarnauskas, Benas": { startTrinn: 2, startKlasse: 'B', startAar: 2025 },
+    "Øvland, Mats Brevig": { startTrinn: 2, startKlasse: 'B', startAar: 2025 },
+    "Ghebremeskel, Mathias Tesfagabir": { startTrinn: 2, startKlasse: 'C', startAar: 2025 },
+    "Grindheim, Emilie Homme": { startTrinn: 2, startKlasse: 'C', startAar: 2025 },
+    "Grindheim, Mathias Homme": { startTrinn: 2, startKlasse: 'C', startAar: 2025 },
+    "Gundersen, Ellinor Mersland": { startTrinn: 2, startKlasse: 'C', startAar: 2025 },
+    "Habte, Hanna Epherm": { startTrinn: 2, startKlasse: 'C', startAar: 2025 },
+    "Hauge, Hermine": { startTrinn: 2, startKlasse: 'C', startAar: 2025 },
+    "Haugen, Johannes Ross": { startTrinn: 2, startKlasse: 'C', startAar: 2025 },
+    "Keleta, Sara Merhawi Kiflay": { startTrinn: 2, startKlasse: 'C', startAar: 2025 },
+    "Lauvnes, Alfred Widerøe": { startTrinn: 2, startKlasse: 'C', startAar: 2025 },
+    "Mangen, Lavrans": { startTrinn: 2, startKlasse: 'C', startAar: 2025 },
+    "Mortensen, Julia Rudi": { startTrinn: 2, startKlasse: 'C', startAar: 2025 },
+    "Nabiyar, Yosra": { startTrinn: 2, startKlasse: 'C', startAar: 2025 },
+    "Osnes, Leander": { startTrinn: 2, startKlasse: 'C', startAar: 2025 },
+    "Qadiri, Anja": { startTrinn: 2, startKlasse: 'C', startAar: 2025 },
+    "Ringstad, Simon": { startTrinn: 2, startKlasse: 'C', startAar: 2025 },
+    "Rosen, Yohan Andresen": { startTrinn: 2, startKlasse: 'C', startAar: 2025 },
+    "Vinknes, Franki Thurgood": { startTrinn: 2, startKlasse: 'C', startAar: 2025 },
+    "Vu, Matheo Hieu": { startTrinn: 2, startKlasse: 'C', startAar: 2025 },
+
+    // 3. TRINN (Startet 2025)
+    "Alieksieiev, Artem": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Bakke, Theo": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Bredsdorff, Josefine Sofie": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Fredriksen, Tomine Andresen": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Gudane, Ziham Ibrahim": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Gundersen, Michelle": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Iversen, Christina": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Kleba-Næss, Gabriel Anker": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Langåker, Noah": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Mydland, Storm": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Nabiyar, Ahmad": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Nygaard, Marcus Chang Tran": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Ravnaas, Elvira": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Selmer, Mina": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Skotnes, William": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Svensen, Daniel": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Sørvig, Céline Sophie": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Timenes, Amalie": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Timenes, Mathilde": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Tvedt, Selia": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Ytfesah, Sara Teklahaimanot": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Aagren, Louise Krossen": { startTrinn: 3, startKlasse: 'A', startAar: 2025 },
+    "Bøgwald-Valbuena, Nathalie Kate": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Chhoeuk, Ask Tveter": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Ellingsen, Mia Fredheim": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Haugnes, Mathilde": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Hunstad-Lende, Nikolai": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Isaksen, Finnlay Tim": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Keleta, Davina Weldezghi": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Kårtveit-Torgersen, Olve": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Malik, Alaya": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Martinsen, Celine": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Meyer, Margot Megan Gyslene": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Myre, Jakob Norvald": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Nilsen, Filip Mål": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Nordheim, Jenny Høsteland": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Nyhus, Martin Mosland": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Opthun, Jens Oskar": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Pedersen, John Pål": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Seeber, Ella": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Shabanaj, Noah": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Skilbrei, Ella": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Skjelderup, Helge Elias Liknes": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Torland, Oliver Lystvet": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Velure, Magnus Aschim": { startTrinn: 3, startKlasse: 'B', startAar: 2025 },
+    "Ali, Tala Yaser": { startTrinn: 3, startKlasse: 'C', startAar: 2025 },
+    "Bølstad, Synne Michaelsen": { startTrinn: 3, startKlasse: 'C', startAar: 2025 },
+    "Ebrahimpour, Nora Lavin": { startTrinn: 3, startKlasse: 'C', startAar: 2025 },
+    "Ege, Thea Sangereid": { startTrinn: 3, startKlasse: 'C', startAar: 2025 },
+    "Finseth, Sebastian": { startTrinn: 3, startKlasse: 'C', startAar: 2025 },
+    "Fredly, Adrian": { startTrinn: 3, startKlasse: 'C', startAar: 2025 },
+    "Holm, Mathea Khalili": { startTrinn: 3, startKlasse: 'C', startAar: 2025 },
+    "Hornnes, Leanne Jonassen": { startTrinn: 3, startKlasse: 'C', startAar: 2025 },
+    "Jeffs, Iben Noelle Mendoza": { startTrinn: 3, startKlasse: 'C', startAar: 2025 },
+    "Mangen, Olina": { startTrinn: 3, startKlasse: 'C', startAar: 2025 },
+    "Moland-Krasniqi, Alina": { startTrinn: 3, startKlasse: 'C', startAar: 2025 },
+    "Omestad, Ludvig Vang": { startTrinn: 3, startKlasse: 'C', startAar: 2025 },
+    "Peersen-Farhat, Jamil": { startTrinn: 3, startKlasse: 'C', startAar: 2025 },
+    "Riste, Ada-Emilie Josefsen": { startTrinn: 3, startKlasse: 'C', startAar: 2025 },
+    "Roland, Denise Andrade": { startTrinn: 3, startKlasse: 'C', startAar: 2025 },
+    "Roland, Leana Andrade": { startTrinn: 3, startKlasse: 'C', startAar: 2025 },
+    "Skogen, Albert": { startTrinn: 3, startKlasse: 'C', startAar: 2025 },
+    "Skretting, Daniel": { startTrinn: 3, startKlasse: 'C', startAar: 2025 },
+    "Øverland, Thomas": { startTrinn: 3, startKlasse: 'C', startAar: 2025 },
+
+    // 4. TRINN (Startet 2025)
+    "Al-Shalah, Cilin": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Andersen, Aksel Catin": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Askland, Jone": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Barria, Tilla Angelica": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Bye, Henrik Alexander Stokkelien": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Campos-Betancur, Lucas Alberto": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Chatat, Ellen": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Gundersen, Frida Mersland": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Hammersmark, Jens Dahl": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Hanslien-Bergstad, Elise": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Haugen, Tobias Ross": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Hussein, Hishaam Abdi": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Lien-Dahl, Iben Sørbotten": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Mahamud, Jibril Mahdi": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Noshaj, Angelos": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Obaid, Zeneddin": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Reinhardtsen, Marie": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Reinhardtsen, Oskar": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Soy, Kiean Villhjar Andersen": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Tvedt, Lucas Chhorm": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Vinknes, Olli Thurgood": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Wrånes, Anne Eivindson": { startTrinn: 4, startKlasse: 'A', startAar: 2025 },
+    "Ali, Azaan": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Benonisen, Marlene": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Fretland, Emma Huang": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Gjømle, Siri Breivik": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Haugebo, Adrian Coward": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Hussain, Wasna": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Igland, Theodor Andersen": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Jakobsen, Leo": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Johansen, Sebastian": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Khan, Sufyan": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Lindebø, Leopold": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Mumtaz, Sofia Yasser": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Rege, Stella Amalie": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Sajjad, Hadi": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Skeie, Edvard Aagaard": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Skåra-Sladojevic, Emilia": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Smedsland, Erik Wathne": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Stranden, Jakob": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Sørhus, Oline": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Wadsworth, Liam Jeremiah": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Øvland, Erle Brevig": { startTrinn: 4, startKlasse: 'B', startAar: 2025 },
+    "Albrecht, Wilhem Herdal": { startTrinn: 4, startKlasse: 'C', startAar: 2025 },
+    "Bisseth-Isefjær, Emily Alida": { startTrinn: 4, startKlasse: 'C', startAar: 2025 },
+    "Bobowski, Kacper": { startTrinn: 4, startKlasse: 'C', startAar: 2025 },
+    "Diser, Vilde Navjord": { startTrinn: 4, startKlasse: 'C', startAar: 2025 },
+    "Dzakic, Danis": { startTrinn: 4, startKlasse: 'C', startAar: 2025 },
+    "Gitlestad, Emily": { startTrinn: 4, startKlasse: 'C', startAar: 2025 },
+    "Hansen, Nicklas Løvheim": { startTrinn: 4, startKlasse: 'C', startAar: 2025 },
+    "Jones, Astrid Borgan": { startTrinn: 4, startKlasse: 'C', startAar: 2025 },
+    "Klausen, Benjamin Tørressen": { startTrinn: 4, startKlasse: 'C', startAar: 2025 },
+    "Mouniri, Tamina": { startTrinn: 4, startKlasse: 'C', startAar: 2025 },
+    "Nordbø, Alfred Sjøstrøm": { startTrinn: 4, startKlasse: 'C', startAar: 2025 },
+    "Nydal, Vårin": { startTrinn: 4, startKlasse: 'C', startAar: 2025 },
+    "Nygård-Andersen, Hedda": { startTrinn: 4, startKlasse: 'C', startAar: 2025 },
+    "Pettersen, Iben Wiksten": { startTrinn: 4, startKlasse: 'C', startAar: 2025 },
+    "Rugholm, Liam Lidi": { startTrinn: 4, startKlasse: 'C', startAar: 2025 },
+    "Sveindal, Robin Zamora": { startTrinn: 4, startKlasse: 'C', startAar: 2025 },
+    "Sørnes, Nathaniel René": { startTrinn: 4, startKlasse: 'C', startAar: 2025 },
+    "Terjesen, Ludvig Rosåsen": { startTrinn: 4, startKlasse: 'C', startAar: 2025 },
+    "Aarstøl, Sigurd Jacobsen": { startTrinn: 4, startKlasse: 'C', startAar: 2025 },
+
+    // 5. TRINN (Startet 2025)
+    "Aurebekk, Markus": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Bakken, Celine Christoffersen": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Beckmann, Tønnes Ljosdal": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Grimsby, Olivia Louise Haugen": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Hansen, Johannes": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Haugland, Emil": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Hollerud, Ida": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Johnsen, Markus Strandberg": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Keskin, Isak August Hanssen": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Lande, Nore Reistad": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Markham, Sofie": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Radojcic, Milan": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Riste, Alida-Angelica Josefsen": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Roland, Amila Andrade": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Sharifi, Solin": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Solberg, Emilie Hodne": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Sunnhordvik, Sanne": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Sørensen, William Arthur": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Thesen, Astrid": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Vu, Nicklas Hy": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Wiland-Svingen, Leah": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Wojtkiewicz, Natalia": { startTrinn: 5, startKlasse: 'A', startAar: 2025 },
+    "Axelssen, Carl Alfred Helland": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "Benestad, Kaja": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "El Hammani, Elias": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "Fagerland, Herman Flak": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "Haga, Sebastian": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "Hansen, Kaja-Malene Forslund": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "Haye, Abel Pedersen": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "Ilyas, Sahal": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "Juliussen, Dennis Salcher": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "Jørgensen, Sofia Vogt": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "Keleta, Diana Weldezghi": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "Mckeever, Thomas Bjunes": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "Mæland, Andrina": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "Nilsen, Julia Mål": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "Pedersen, Inea Sofie Falk": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "Phillips, Oliver": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "Schwarz, William Eik": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "Sergejeva, Veronika": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "Wennerberg, Sigurd Litland": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "Westerlund, Molly Wehus": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "Zagarnauskas, Henris": { startTrinn: 5, startKlasse: 'B', startAar: 2025 },
+    "Andersen-Fleming, Celina": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Azhar, Muhammad Durab": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Bastlien-Joakimsen, Tinde": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Bostrøm, Jenny Lædre": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Bragdø, Lykke": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Eidsaa, Victor Emanuel Bragdø": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Ferris, Lucas Kenneth Norman": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Habarugira, Liam Matheo": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Jacobsen, Stella Thu": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Jasinski, Antoni": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Kallevik, Sofie Olsen": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Langåker, Liam": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Nur, Nuradin Abdirisaq": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Roest, Lyra Sofie Lindland": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Skagestad, Jonas": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Skjelderup, Matheo Michael Liknes": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Solberg, Jake Hunter": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Sotnedal, Tomine Domansky": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Strøm, Ørjan": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Strømme, Andreas Gundersen": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Timenes, Isak Døsvik": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Waly, Akam Kamal Sharif": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Øverland, Sara Margrete": { startTrinn: 5, startKlasse: 'C', startAar: 2025 },
+    "Al-Shalah, Kassem": { startTrinn: 5, startKlasse: 'D', startAar: 2025 },
+    "Albert, Selene Ellinor": { startTrinn: 5, startKlasse: 'D', startAar: 2025 },
+    "Andersen Ocampo, Jean Pierre Henry": { startTrinn: 5, startKlasse: 'D', startAar: 2025 },
+    "Bakke, Thomas": { startTrinn: 5, startKlasse: 'D', startAar: 2025 },
+    "Balint, Emma": { startTrinn: 5, startKlasse: 'D', startAar: 2025 },
+    "Ege, Sofia Sangereid": { startTrinn: 5, startKlasse: 'D', startAar: 2025 },
+    "Eskeland, Fiona Marie": { startTrinn: 5, startKlasse: 'D', startAar: 2025 },
+    "Jaferi, Diana": { startTrinn: 5, startKlasse: 'D', startAar: 2025 },
+    "Khunsan, Sirithon": { startTrinn: 5, startKlasse: 'D', startAar: 2025 },
+    "Kianfar, Leo": { startTrinn: 5, startKlasse: 'D', startAar: 2025 },
+    "Kopperud, Sander Lunde": { startTrinn: 5, startKlasse: 'D', startAar: 2025 },
+    "Langeland, Annie Hegland": { startTrinn: 5, startKlasse: 'D', startAar: 2025 },
+    "Solli, Martine Stenberg": { startTrinn: 5, startKlasse: 'D', startAar: 2025 },
+    "Thorsteinsson, Aron Jon": { startTrinn: 5, startKlasse: 'D', startAar: 2025 },
+    "Tvedt, Theodor": { startTrinn: 5, startKlasse: 'D', startAar: 2025 },
+    "Wennberg-Brown, Mikayla Semine": { startTrinn: 5, startKlasse: 'D', startAar: 2025 },
+
+    // 6. TRINN (Startet 2025)
+    "Andersen, Aleksander Catin": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Andersen, Vetle": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Blekesaune, Karina Dusumbaeva": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Eftevåg, Johannes Kløckner": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Ellingsen, William Fredheim": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Fredly, Andreas": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Habte, Mathias Epherm": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Haidari, Matin": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Hana, Ari": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Hauge, Lykke Layan": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Larsen, Natalie Beatrice": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Legreid, Isabelle Soares": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Mikkelsen, Elias Timenes": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Mydland, Viljar": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Nygård-Andersen, Oda": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Paloka, Armper Or Arber": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Rasmussen, Jonas Juhl": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Ravnaas, Mille Aurora": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Roest, Aksel Lindland": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Timenes, Thea": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Vang-Halaas, Iben": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Ytfesah, Noah Teklahaimanot": { startTrinn: 6, startKlasse: 'A', startAar: 2025 },
+    "Almedal, Martin Angelsen": { startTrinn: 6, startKlasse: 'B', startAar: 2025 },
+    "Andersen, Ellie": { startTrinn: 6, startKlasse: 'B', startAar: 2025 },
+    "Birkeland, Jarle Vieira": { startTrinn: 6, startKlasse: 'B', startAar: 2025 },
+    "Diser, Vebjørn Navjord": { startTrinn: 6, startKlasse: 'B', startAar: 2025 },
+    "Fredheim, Jakob Greibesland": { startTrinn: 6, startKlasse: 'B', startAar: 2025 },
+    "Gudane, Noradin Ibrahim": { startTrinn: 6, startKlasse: 'B', startAar: 2025 },
+    "Helleseng, Cornelia": { startTrinn: 6, startKlasse: 'B', startAar: 2025 },
+    "Hoel, Caitlyn Angelina": { startTrinn: 6, startKlasse: 'B', startAar: 2025 },
+    "Isachsen, Marie Ropstad": { startTrinn: 6, startKlasse: 'B', startAar: 2025 },
+    "Iversen, Marcus": { startTrinn: 6, startKlasse: 'B', startAar: 2025 },
+    "Lindebø, Tidemann": { startTrinn: 6, startKlasse: 'B', startAar: 2025 },
+    "Schlezinger, Umi Emilia": { startTrinn: 6, startKlasse: 'B', startAar: 2025 },
+    "Smedsland, Johan Wathne": { startTrinn: 6, startKlasse: 'B', startAar: 2025 },
+    "Solheim, Julie": { startTrinn: 6, startKlasse: 'B', startAar: 2025 },
+    "Toleikis, Viljamas": { startTrinn: 6, startKlasse: 'B', startAar: 2025 },
+    "Torland, Aurora Lystvet": { startTrinn: 6, startKlasse: 'B', startAar: 2025 },
+    "Andersen, Oliver Nøvik": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+    "Axelssen, Ingeborg Adele Helland": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+    "Bondestad, Daniel": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+    "Dahl-Jakobsen, Maja-Eline": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+    "El Hammani, Adam": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+    "Gjerstad, Martin Leland": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+    "Gundersen, Marcus Haugland": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+    "Gyland, Chris Olai": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+    "Haileselase, Eliana Liul": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+    "Landa, Nora Rose Sandvær": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+    "Lauvrak, Sander Årnes": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+    "Nilsen, Alexandra Gudding": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+    "Nordbø, Oskar Sjøstrøm": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+    "Nur, Nasrudin Abdirisaq": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+    "Opthun, Emmy": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+    "Pettersen, Brage Wiksten": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+    "Riise, Lucas Lindset": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+    "Sarwar, Ibrahim": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+    "Shadiev, Umar Magomedovich": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+    "Wehus-Furø, Phillip": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+    "Aas, Dennis Lohne": { startTrinn: 6, startKlasse: 'C', startAar: 2025 },
+
+    // 7. TRINN (Startet 2025)
+    "Apeland, Charlotte Dybvik": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Apeland, Olaus Dybvik": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Azhar, Mubeen": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Bye, Aksel Stokkelien": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Eidsaa, Vincent Andreas Bragdø": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Frøvold, Henrik Karstensen": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Gehrken, Johann Ensby": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Jensen, Jennie Austenå": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Kjelsrud, Iben Forus": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Kleba-Næss, August Anker": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Martinsen, Vincent": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Mydland, Brage": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Myre, Ingrid Anea": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Reinhardtsen, Oline": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Roland, Adelen Andrade": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Rugholm, Eline Lidi": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Ruiz-Flaten, Saray": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Skotnes, Nicklas": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Strøm, Jørgen": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Timenes, Jakob Døsvik": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Vorland-Langmyr, Kim Andrè": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Wdowiak, Julia Aleksandra": { startTrinn: 7, startKlasse: 'A', startAar: 2025 },
+    "Albrecht, Cornelius Herdal": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "Andersen, Emma Sæterdal": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "Bjornes, Casper Brådland": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "Bredsdorff, Tobias": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "De Lange, Marcus Eikrem": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "Drivdal, Håkon": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "Fagerland, Klara Flak": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "Grimsby, August Haugen": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "Jacobsen-Bull, Johan": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "Langnes, Syver Eiklid": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "Lindebø, Georg": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "Martinsen, Krisztian Hagen": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "Mumtaz, Iman Yasser": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "Nguyen, Sebastian Eklund": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "Omestad, Maiken Vang": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "Stranden, Nellie Hermine": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "Sudalaimuthu, Yogi": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "Wilkens, Herman Iversen": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "Øverland, Sofia": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "Aanensen, Noah Nyhus": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "Aarstøl, Brage Jacobsen": { startTrinn: 7, startKlasse: 'B', startAar: 2025 },
+    "Albrigtsen, Kristian Tengesdal": { startTrinn: 7, startKlasse: 'C', startAar: 2025 },
+    "Claveau, Eilin": { startTrinn: 7, startKlasse: 'C', startAar: 2025 },
+    "Habtay, Camilla Tekle": { startTrinn: 7, startKlasse: 'C', startAar: 2025 },
+    "Hansen, Lena-Emilie Forslund": { startTrinn: 7, startKlasse: 'C', startAar: 2025 },
+    "Haye, Anna Pedersen": { startTrinn: 7, startKlasse: 'C', startAar: 2025 },
+    "Håkedal, Julie Magnussen": { startTrinn: 7, startKlasse: 'C', startAar: 2025 },
+    "Isachsen, Sofie Ropstad": { startTrinn: 7, startKlasse: 'C', startAar: 2025 },
+    "Johannessen, Nikolai": { startTrinn: 7, startKlasse: 'C', startAar: 2025 },
+    "Keleta, Mathias Weldezghi": { startTrinn: 7, startKlasse: 'C', startAar: 2025 },
+    "Mckeever, Theo Bjunes": { startTrinn: 7, startKlasse: 'C', startAar: 2025 },
+    "Moland-Krasniqi, Leona": { startTrinn: 7, startKlasse: 'C', startAar: 2025 },
+    "Nilsen, William Mål": { startTrinn: 7, startKlasse: 'C', startAar: 2025 },
+    "Qejji, Mareta Ammanuel": { startTrinn: 7, startKlasse: 'C', startAar: 2025 },
+    "Seilen, Lasse Emrik": { startTrinn: 7, startKlasse: 'C', startAar: 2025 },
+    "Selmer, Joel": { startTrinn: 7, startKlasse: 'C', startAar: 2025 },
+    "Strand, Lykke": { startTrinn: 7, startKlasse: 'C', startAar: 2025 },
+    "Wennberg-Brown, Kaiden Gabriel": { startTrinn: 7, startKlasse: 'C', startAar: 2025 }
+};
+
+let valgtElevId = null;
+let lagredeResultater = {};
+
+// --- LOGIKK FOR Å FINNE ELEVER ---
+function hentEleverForValg() {
+    const valgtAar = parseInt(document.getElementById('mAar').value);
+    const valgtTrinn = parseInt(document.getElementById('mTrinn').value);
+    const valgtKlasse = document.getElementById('mKlasse').value;
+
+    let liste = [];
+    for (let navn in elevRegister) {
+        const e = elevRegister[navn];
+        // Beregn trinn: valgtAar - startAar + startTrinn
+        // Eks: William startet i 1. trinn i 2025. I 2026 er han: 2026 - 2025 + 1 = 2. trinn.
+        const beregnetTrinn = (valgtAar - e.startAar) + e.startTrinn;
+        
+        if (beregnetTrinn === valgtTrinn && e.startKlasse === valgtKlasse) {
+            liste.push(navn);
+        }
+    }
+    return liste.sort();
+}
+
+// --- FIREBASE OG VISNING ---
+function oppdater() {
+    const aar = document.getElementById('mAar').value;
+    const trinn = document.getElementById('mTrinn').value;
+    const klasse = document.getElementById('mKlasse').value;
+    const fag = document.getElementById('mFag').value;
+    const periode = document.getElementById('mPeriode').value;
+    
+    document.getElementById('dynamiskTittel').innerText = `Kartlegging ${fag} - ${trinn}${klasse} - ${periode} ${aar}`;
+    
+    // Hent data fra Firebase for denne gruppen
+    const path = `kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}`;
+    db.ref(path).on('value', snap => {
+        lagredeResultater = snap.val() || {};
+        tegnTabell();
+    });
+}
+
+function tegnTabell() {
+    const elever = hentEleverForValg();
+    const tHead = document.getElementById('tHead');
+    const tBody = document.getElementById('tBody');
+    
+    // Forenklet hode for demo
+    tHead.innerHTML = `<tr><th>Elev</th><th>Sum</th><th>Status</th><th>Handling</th></tr>`;
+    tBody.innerHTML = "";
+
+    elever.forEach(navn => {
+        const res = lagredeResultater[navn];
+        let html = `<tr><td style="text-align:left">${navn}</td>`;
+        
+        if (res) {
+            html += `<td>${res.sum}</td><td>OK</td>`;
+            html += `<td><button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button></td>`;
+        } else {
+            html += `<td class="not-registered">--</td><td class="not-registered">Ikke utført</td>`;
+            html += `<td><button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button></td>`;
+        }
+        html += `</tr>`;
+        tBody.innerHTML += html;
+    });
+}
+
+function visModal(navn) {
+    valgtElevId = navn;
+    document.getElementById('modalNavn').innerText = navn;
+    const felter = document.getElementById('oppgaveFelter');
+    felter.innerHTML = "Oppgave 1: <input type='number' id='i1' value='0'>"; // Forenklet for demo
+    document.getElementById('modal').style.display = 'block';
+}
+
+function lagreData() {
+    const aar = document.getElementById('mAar').value;
+    const trinn = document.getElementById('mTrinn').value;
+    const klasse = document.getElementById('mKlasse').value;
+    const fag = document.getElementById('mFag').value;
+    const periode = document.getElementById('mPeriode').value;
+    
+    const sum = document.getElementById('i1').value; // Hent fra alle felter i full versjon
+    
+    const path = `kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}/${valgtElevId}`;
+    db.ref(path).set({ sum: parseInt(sum), dato: new Date().toISOString() })
+    .then(() => lukkModal());
+}
+
+function lukkModal() { document.getElementById('modal').style.display = 'none'; }
+
+// Auth logikk her...
 function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
 function logout() { auth.signOut(); }
-
-auth.onAuthStateChanged(user => {
+firebase.auth().onAuthStateChanged(user => {
     if (user) {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
         document.getElementById('userInfo').innerText = user.displayName;
         oppdater();
-    } else {
-        document.getElementById('loginScreen').style.display = 'flex';
-        document.getElementById('mainContent').style.display = 'none';
     }
 });
-
-// Datastruktur (som før)
-const oppgaveStruktur = {
-    "2024-2025": {
-        "Lesing": {
-            "Høst": {
-                "1": { grenseTotal: 20, oppgaver: [{navn: "Rim", maks: 6, grense: -1}, {navn: "Stavelser", maks: 8, grense: -1}, {navn: "Første lyd", maks: 8, grense: -1}, {navn: "Lik lyd", maks: 3, grense: -1}, {navn: "Lydering", maks: 4, grense: -1}, {navn: "Dele ord", maks: 4, grense: -1}] },
-                "2": { grenseTotal: 16, oppgaver: [{navn: "Lese ord 1", maks: 4, grense: 3}, {navn: "Lese ord 2", maks: 9, grense: 6}, {navn: "Stave ord", maks: 5, grense: 3}, {navn: "Forstå 1", maks: 3, grense: 2}, {navn: "Forstå 2", maks: 5, grense: 2}] },
-                "3": { grenseTotal: 20, oppgaver: [{navn: "Lese ord 1", maks: 7, grense: 6}, {navn: "Lese ord 2", maks: 12, grense: 6}, {navn: "Stave ord", maks: 7, grense: 4}, {navn: "Forstå 1", maks: 4, grense: 2}, {navn: "Forstå 2", maks: 3, grense: 2}] },
-                "4": { grenseTotal: 20, oppgaver: [{navn: "Lese ord", maks: 15, grense: 10}, {navn: "Stave ord", maks: 7, grense: 4}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 5, grense: 3}] },
-                "5": { grenseTotal: 25, oppgaver: [{navn: "Lese ord", maks: 18, grense: 15}, {navn: "Stave ord", maks: 7, grense: 4}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 5, grense: 3}] },
-                "6": { grenseTotal: 30, oppgaver: [{navn: "Lese ord", maks: 21, grense: 17}, {navn: "Stave ord", maks: 7, grense: 5}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 6, grense: 5}] },
-                "7": { grenseTotal: 30, oppgaver: [{navn: "Lese ord", maks: 21, grense: 17}, {navn: "Stave ord", maks: 7, grense: 5}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 7, grense: 5}] }
-            }
-        },
-        "Regning": {
-            "Høst": {
-                "1": { grenseTotal: 13, oppgaver: Array(8).fill().map((_, i) => ({navn: "O"+(i+1), maks: [3,3,2,3,3,2,3,2][i], grense: -1})) },
-                "2": { grenseTotal: 17, oppgaver: Array(10).fill().map((_, i) => ({navn: "O"+(i+1), maks: [4,3,3,3,6,3,4,3,4,4][i], grense: -1})) },
-                "3": { grenseTotal: 22, oppgaver: Array(12).fill().map((_, i) => ({navn: "O"+(i+1), maks: [3,3,6,3,3,3,3,4,3,4,4,3][i], grense: -1})) },
-                "4": { grenseTotal: 21, oppgaver: Array(14).fill().map((_, i) => ({navn: "O"+(i+1), maks: [4,2,3,4,4,16,6,3,6,1,3,4,1,1][i], grense: -1})) },
-                "5": { grenseTotal: 19, oppgaver: Array(17).fill().map((_, i) => ({navn: "O"+(i+1), maks: [2,3,4,3,6,3,16,2,3,1,1,4,1,4,3,1,1][i], grense: -1})) },
-                "6": { grenseTotal: 27, oppgaver: Array(16).fill().map((_, i) => ({navn: "O"+(i+1), maks: [2,3,6,3,6,3,16,2,6,4,1,3,1,4,1,1][i], grense: -1})) },
-                "7": { grenseTotal: 33, oppgaver: Array(18).fill().map((_, i) => ({navn: "O"+(i+1), maks: [4,3,4,3,6,3,7,8,2,1,1,3,4,1,4,4,1,2][i], grense: -1})) }
-            }
-        }
-    },
-    "STANDARD_2025": {
-        "Lesing": {
-            "Høst": {
-                "1": { grenseTotal: 20, oppgaver: [{navn: "Rim", maks: 6, grense: -1}, {navn: "Stavelser", maks: 8, grense: -1}, {navn: "Første lyd", maks: 8, grense: -1}, {navn: "Lik lyd", maks: 3, grense: -1}, {navn: "Lydering", maks: 4, grense: -1}, {navn: "Dele ord", maks: 4, grense: -1}] },
-                "2": { grenseTotal: 16, oppgaver: [{navn: "Lese ord 1", maks: 4, grense: 3}, {navn: "Lese ord 2", maks: 9, grense: 6}, {navn: "Stave ord", maks: 5, grense: 3}, {navn: "Forstå 1", maks: 3, grense: 2}, {navn: "Forstå 2", maks: 5, grense: 2}] },
-                "3": { grenseTotal: 23, oppgaver: [{navn: "Lese ord 1", maks: 7, grense: 6}, {navn: "Lese ord 2", maks: 6, grense: 5}, {navn: "Forstå ord", maks: 5, grense: 4}, {navn: "Stave ord", maks: 7, grense: 4}, {navn: "Forstå 1", maks: 4, grense: 2}, {navn: "Forstå 2", maks: 3, grense: 2}] },
-                "4": { grenseTotal: 20, oppgaver: [{navn: "Lese ord", maks: 9, grense: 6}, {navn: "Forstå ord", maks: 5, grense: 4}, {navn: "Stave ord", maks: 7, grense: 4}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 5, grense: 3}] },
-                "5": { grenseTotal: 22, oppgaver: [{navn: "Lese ord", maks: 12, grense: 9}, {navn: "Forstå ord", maks: 6, grense: 3}, {navn: "Stave ord", maks: 7, grense: 4}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 5, grense: 3}] },
-                "6": { grenseTotal: 27, oppgaver: [{navn: "Lese ord", maks: 15, grense: 12}, {navn: "Forstå ord", maks: 6, grense: 4}, {navn: "Stave ord", maks: 7, grense: 5}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 6, grense: 3}] },
-                "7": { grenseTotal: 30, oppgaver: [{navn: "Lese ord", maks: 12, grense: 10}, {navn: "Forstå ord", maks: 9, grense: 7}, {navn: "Stave ord", maks: 7, grense: 5}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 7, grense: 5}] }
-            },
-            "Vår": {
-                "1": { grenseTotal: 11, oppgaver: [{navn: "Lese ord", maks: 6, grense: 5}, {navn: "Stave ord", maks: 5, grense: 3}, {navn: "Forstå", maks: 4, grense: 3}] },
-                "2": { grenseTotal: 14, oppgaver: [{navn: "Lese ord 1", maks: 4, grense: 3}, {navn: "Lese ord 2", maks: 3, grense: 2}, {navn: "Stave ord", maks: 5, grense: 3}, {navn: "Forstå 1", maks: 3, grense: 2}, {navn: "Forstå 2", maks: 5, grense: 4}] },
-                "3": { grenseTotal: 25, oppgaver: [{navn: "Lese ord 1", maks: 7, grense: 6}, {navn: "Lese ord 2", maks: 6, grense: 5}, {navn: "Forstå ord", maks: 5, grense: 4}, {navn: "Stave ord", maks: 7, grense: 4}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 5, grense: 3}] },
-                "4": { grenseTotal: 20, oppgaver: [{navn: "Lese ord", maks: 9, grense: 6}, {navn: "Forstå ord", maks: 5, grense: 4}, {navn: "Stave ord", maks: 7, grense: 4}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 5, grense: 3}] },
-                "5": { grenseTotal: 23, oppgaver: [{navn: "Lese ord", maks: 12, grense: 9}, {navn: "Forstå ord", maks: 6, grense: 3}, {navn: "Stave ord", maks: 7, grense: 4}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 6, grense: 4}] },
-                "6": { grenseTotal: 27, oppgaver: [{navn: "Lese ord", maks: 15, grense: 12}, {navn: "Forstå ord", maks: 6, grense: 4}, {navn: "Stave ord", maks: 7, grense: 5}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 6, grense: 3}] },
-                "7": { grenseTotal: 29, oppgaver: [{navn: "Lese ord", maks: 12, grense: 10}, {navn: "Forstå ord", maks: 9, grense: 7}, {navn: "Stave ord", maks: 7, grense: 5}, {navn: "Forstå 1", maks: 4, grense: 3}, {navn: "Forstå 2", maks: 6, grense: 4}] }
-            }
-        },
-        "Regning": {
-            "Høst": {
-                "1": { grenseTotal: 13, oppgaver: Array(8).fill().map((_, i) => ({navn: "O"+(i+1), maks: [3,3,2,3,3,2,3,2][i], grense: -1})) },
-                "2": { grenseTotal: 17, oppgaver: Array(10).fill().map((_, i) => ({navn: "O"+(i+1), maks: [4,3,3,3,6,3,4,3,4,4][i], grense: -1})) },
-                "3": { grenseTotal: 22, oppgaver: Array(12).fill().map((_, i) => ({navn: "O"+(i+1), maks: [3,3,6,3,3,3,3,4,3,4,4,3][i], grense: -1})) },
-                "4": { grenseTotal: 21, oppgaver: Array(14).fill().map((_, i) => ({navn: "O"+(i+1), maks: [4,2,3,4,4,16,6,3,6,1,3,4,1,1][i], grense: -1})) },
-                "5": { grenseTotal: 25, oppgaver: Array(17).fill().map((_, i) => ({navn: "O"+(i+1), maks: [2,3,4,3,6,3,16,2,3,1,1,4,1,4,3,1,1][i], grense: -1})) },
-                "6": { grenseTotal: 27, oppgaver: Array(16).fill().map((_, i) => ({navn: "O"+(i+1), maks: [2,3,6,3,6,3,16,2,6,4,1,3,1,4,1,1][i], grense: -1})) },
-                "7": { grenseTotal: 33, oppgaver: Array(18).fill().map((_, i) => ({navn: "O"+(i+1), maks: [4,3,4,3,6,3,7,8,2,1,1,3,4,1,4,4,1,2][i], grense: -1})) }
-            }
-        }
-    }
-};
-
-// Logikk for Enter-navigering
-function handterEnter(event) {
-    if (event.key === "Enter") {
-        event.preventDefault();
-        const inputs = Array.from(document.querySelectorAll('#modal input'));
-        const index = inputs.indexOf(event.target);
-        if (index > -1 && index < inputs.length - 1) {
-            inputs[index + 1].focus();
-            inputs[index + 1].select();
-        } else if (index === inputs.length - 1) {
-            lagreData();
-        }
-    }
-}
-
-function getOppsett() {
-    const aar = document.getElementById('mAar').value;
-    const key = (aar === "2024-2025") ? "2024-2025" : "STANDARD_2025";
-    const fag = document.getElementById('mFag').value;
-    const periode = document.getElementById('mPeriode').value;
-    const trinn = document.getElementById('mTrinn').value;
-    try { return oppgaveStruktur[key][fag][periode][trinn]; } catch(e) { return null; }
-}
-
-function oppdater() {
-    const t = parseInt(document.getElementById('mTrinn').value);
-    document.getElementById('optD').classList.toggle('hidden', t < 4);
-    
-    const fag = document.getElementById('mFag').value;
-    const klasse = document.getElementById('mTrinn').value + document.getElementById('mKlasse').value;
-    const periode = document.getElementById('mPeriode').value;
-    const aar = document.getElementById('mAar').value;
-    document.getElementById('dynamiskTittel').innerText = `Kartlegging i ${fag} - ${klasse} - ${periode}en ${aar}`;
-
-    byggTabellHode();
-    hentData();
-}
-
-// NY SORTERINGSFUNKSJON
-function settSortering(felt, erOppgave = false, oppgaveIndex = -1) {
-    if (sorteringsFelt === (erOppgave ? 'oppgave_' + oppgaveIndex : felt)) {
-        sorteringsRetning *= -1; // Snu retning hvis samme kolonne klikkes
-    } else {
-        sorteringsFelt = erOppgave ? 'oppgave_' + oppgaveIndex : felt;
-        sorteringsRetning = 1;
-    }
-    tegnTabell(); // Tegn tabellen på nytt med ny sortering
-}
-
-function byggTabellHode() {
-    const o = getOppsett();
-    const h = document.getElementById('tHead');
-    if (!o) { h.innerHTML = "<tr><th>Mal mangler</th></tr>"; return; }
-    
-    let html = `<tr>`;
-    html += `<th onclick="settSortering('navn')">Navn ${hentSortIkon('navn')}</th>`;
-    
-    o.oppgaver.forEach((op, i) => {
-        html += `<th onclick="settSortering('oppgave_${i}', true, ${i})">${op.navn}<br><small>(${op.maks})</small> ${hentSortIkon('oppgave_' + i)}</th>`;
-    });
-    
-    html += `<th onclick="settSortering('sum')">Sum ${hentSortIkon('sum')}</th>`;
-    html += `<th onclick="settSortering('prosent')">% ${hentSortIkon('prosent')}</th>`;
-    html += `<th onclick="settSortering('status')">Status ${hentSortIkon('status')}</th>`;
-    html += `<th>Handlinger</th></tr>`;
-    h.innerHTML = html;
-}
-
-function hentSortIkon(felt) {
-    if (sorteringsFelt !== felt) return `<span class="sort-icon">↕</span>`;
-    return sorteringsRetning === 1 ? `<span class="sort-icon">↑</span>` : `<span class="sort-icon">↓</span>`;
-}
-
-function tegnTabell() {
-    const o = getOppsett();
-    const body = document.getElementById('tBody');
-    body.innerHTML = "";
-    if (!o) return;
-
-    // Sorter gjeldendeData før tegning
-    let dataKopi = [...gjeldendeData];
-    dataKopi.sort((a, b) => {
-        let vA, vB;
-        
-        if (sorteringsFelt.startsWith('oppgave_')) {
-            const idx = parseInt(sorteringsFelt.split('_')[1]);
-            vA = a.detaljer[idx] || 0;
-            vB = b.detaljer[idx] || 0;
-        } else if (sorteringsFelt === 'prosent') {
-            vA = a.sum / a.maks;
-            vB = b.sum / b.maks;
-        } else if (sorteringsFelt === 'status') {
-            vA = a.sum <= o.grenseTotal ? 1 : 0;
-            vB = b.sum <= o.grenseTotal ? 1 : 0;
-        } else {
-            vA = a[sorteringsFelt];
-            vB = b[sorteringsFelt];
-        }
-
-        if (typeof vA === 'string') {
-            return vA.localeCompare(vB) * sorteringsRetning;
-        }
-        return (vA - vB) * sorteringsRetning;
-    });
-
-    dataKopi.forEach(d => {
-        const erKritisk = d.sum <= o.grenseTotal;
-        let row = `<tr class="${erKritisk ? 'critical-row' : ''}"><td>${d.navn}</td>`;
-        o.oppgaver.forEach((op, i) => {
-            const poeng = d.detaljer[i] || 0;
-            const cellKritisk = op.grense !== -1 && poeng <= op.grense;
-            row += `<td class="${cellKritisk ? 'critical-cell' : ''}">${poeng}</td>`;
-        });
-        row += `<td>${d.sum}</td><td>${Math.round(d.sum/d.maks*100)}%</td><td>${erKritisk ? 'OPPFØLGING' : 'OK'}</td>`;
-        row += `<td>
-            <div class="action-btns">
-                <button class="btn btn-warning" onclick='endre("${d.id}", ${JSON.stringify(d)})'>Endre</button>
-                <button class="btn btn-delete" onclick="slett('${d.id}')">Slett</button>
-            </div>
-        </td></tr>`;
-        body.innerHTML += row;
-    });
-}
-
-function visModal(eksisterendeData = null, nøkkel = null) {
-    const o = getOppsett();
-    if (!o) return alert("Velg periode/fag");
-    redigererNøkkel = nøkkel;
-    const tittel = document.getElementById('modalTittel');
-    const navnfelt = document.getElementById('elevNavn');
-    const felt = document.getElementById('oppgaveFelter');
-    const knapp = document.getElementById('btnLagre');
-    felt.innerHTML = "";
-    navnfelt.onkeydown = handterEnter;
-    
-    if (eksisterendeData) {
-        tittel.innerText = "Endre registrering";
-        navnfelt.value = eksisterendeData.navn;
-        knapp.innerText = "Oppdater";
-    } else {
-        tittel.innerText = "Ny registrering";
-        navnfelt.value = "";
-        knapp.innerText = "Lagre i database";
-    }
-
-    o.oppgaver.forEach((op, i) => {
-        const div = document.createElement('div');
-        const verdi = eksisterendeData ? eksisterendeData.detaljer[i] : 0;
-        div.innerHTML = `<label>${op.navn} (maks ${op.maks}):</label>
-                         <input type="number" class="pInput" max="${op.maks}" min="0" value="${verdi}">`;
-        const inp = div.querySelector('input');
-        inp.onkeydown = handterEnter;
-        felt.appendChild(div);
-    });
-    document.getElementById('modal').style.display = 'block';
-    navnfelt.focus();
-}
-
-function lukkModal() { document.getElementById('modal').style.display = 'none'; redigererNøkkel = null; }
-
-function lagreData() {
-    const n = document.getElementById('elevNavn').value;
-    if (!n) return alert("Navn mangler");
-    const o = getOppsett();
-    const inputs = document.querySelectorAll('.pInput');
-    const detaljer = Array.from(inputs).map((input, i) => {
-        let v = parseInt(input.value) || 0;
-        const m = o.oppgaver[i].maks;
-        return v > m ? m : (v < 0 ? 0 : v);
-    });
-    const sum = detaljer.reduce((a, b) => a + b, 0);
-    const maksTotal = o.oppgaver.reduce((a, b) => a + b.maks, 0);
-    const path = `kartlegging/${document.getElementById('mAar').value}/${document.getElementById('mFag').value}/${document.getElementById('mPeriode').value}/${document.getElementById('mTrinn').value}/${document.getElementById('mKlasse').value}`;
-    const data = { navn: n, detaljer, sum, maks: maksTotal };
-
-    if (redigererNøkkel) {
-        db.ref(path + "/" + redigererNøkkel).set(data).then(() => lukkModal());
-    } else {
-        db.ref(path).push(data).then(() => { lukkModal(); document.getElementById('elevNavn').value = ""; });
-    }
-}
-
-function hentData() {
-    const path = `kartlegging/${document.getElementById('mAar').value}/${document.getElementById('mFag').value}/${document.getElementById('mPeriode').value}/${document.getElementById('mTrinn').value}/${document.getElementById('mKlasse').value}`;
-    db.ref(path).on('value', snap => {
-        gjeldendeData = [];
-        snap.forEach(child => {
-            let item = child.val();
-            item.id = child.key;
-            gjeldendeData.push(item);
-        });
-        byggTabellHode(); // Oppdater hode (i tilfelle sorteringsikon endres)
-        tegnTabell();
-    });
-}
-
-function endre(key, data) { visModal(data, key); }
-function slett(key) {
-    if (confirm("Slette?")) {
-        const path = `kartlegging/${document.getElementById('mAar').value}/${document.getElementById('mFag').value}/${document.getElementById('mPeriode').value}/${document.getElementById('mTrinn').value}/${document.getElementById('mKlasse').value}`;
-        db.ref(path + "/" + key).remove();
-    }
-}
 </script>
 </body>
 </html>
