@@ -3,44 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kartleggingsverktøy</title>
+    <title>Kartleggingsverktøy - Fikset Region</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     
     <style>
         :root { --primary: #2c3e50; --danger: #e74c3c; --success: #27ae60; --bg: #f4f7f6; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; }
-        
-        /* Login Skjerm */
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; }
         .login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: white; }
-        
-        /* Hovedlayout */
         #mainContent { display: none; }
         .user-bar { display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 30px; border-bottom: 2px solid #ddd; }
         .container { max-width: 1300px; margin: 20px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        
-        /* Kontroller */
         .header-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; margin-bottom: 20px; background: #eee; padding: 15px; border-radius: 5px; }
         select, input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; }
-        
-        /* Tabell */
         table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.85em; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-        th { background: var(--primary); color: white; position: sticky; top: 0; }
-        
-        /* Farger for kritisk grense */
-        .critical-row { background-color: #ffdada !important; } /* Hele raden rød */
-        .critical-cell { background-color: #ffeded !important; color: red; font-weight: bold; } /* Enkeltceller rød */
-        
-        /* Knapper */
+        th { background: var(--primary); color: white; }
+        .critical-row { background-color: #ffdada !important; }
+        .critical-cell { background-color: #ffeded !important; color: red; font-weight: bold; }
         .btn { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; }
-        .btn-google { background: #4285F4; font-size: 1.1em; }
+        .btn-google { background: #4285F4; }
         .btn-add { background: var(--success); }
-        .btn-logout { background: #95a5a6; padding: 5px 10px; }
+        .btn-logout { background: #95a5a6; }
         .btn-delete { background: var(--danger); padding: 4px 8px; font-size: 0.8em; }
-
-        /* Modal */
         #modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
         .modal-content { background: white; margin: 5% auto; padding: 20px; width: 90%; max-width: 700px; border-radius: 8px; max-height: 80vh; overflow-y: auto; }
         .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
@@ -51,7 +37,6 @@
 
 <div id="loginScreen" class="login-screen">
     <h1>Kartlegging Skole</h1>
-    <p>Vennligst logg inn for å se og registrere resultater</p>
     <button class="btn btn-google" onclick="login()">Logg inn med Google</button>
 </div>
 
@@ -60,7 +45,6 @@
         <span id="userInfo"></span>
         <button class="btn btn-logout" onclick="logout()">Logg ut</button>
     </div>
-
     <div class="container">
         <div class="header-controls">
             <div>År:<select id="mAar" onchange="oppdater()"><option value="2024-2025">2024-2025</option><option value="2025-2026">2025-2026</option></select></div>
@@ -69,35 +53,26 @@
             <div>Fag:<select id="mFag" onchange="oppdater()"><option>Lesing</option><option>Regning</option></select></div>
             <div>Periode:<select id="mPeriode" onchange="oppdater()"><option>Høst</option><option>Vår</option></select></div>
         </div>
-
         <button class="btn btn-add" onclick="visModal()">+ Legg til elev</button>
-        
-        <div style="overflow-x: auto;">
-            <table id="resultatTabell">
-                <thead id="tHead"></thead>
-                <tbody id="tBody"></tbody>
-            </table>
-        </div>
+        <table id="resultatTabell"><thead id="tHead"></thead><tbody id="tBody"></tbody></table>
     </div>
 </div>
 
 <div id="modal">
     <div class="modal-content">
         <h3>Ny registrering</h3>
-        <input type="text" id="elevNavn" placeholder="Elevens navn">
+        <input type="text" id="elevNavn" placeholder="Navn">
         <div id="oppgaveFelter" class="grid-inputs"></div>
-        <div style="margin-top: 20px; display: flex; gap: 10px;">
-            <button class="btn btn-add" onclick="lagreData()">Lagre i database</button>
-            <button class="btn btn-logout" onclick="lukkModal()">Avbryt</button>
-        </div>
+        <div style="margin-top: 20px;"><button class="btn btn-add" onclick="lagreData()">Lagre</button> <button class="btn btn-logout" onclick="lukkModal()">Avbryt</button></div>
     </div>
 </div>
 
 <script>
-// --- KONFIGURASJON ---
+// --- OPPDATERT KONFIGURASJON MED RIKTIG REGION ---
 const firebaseConfig = {
     apiKey: "AIzaSyC7g1gllBUVACl3fkpYeEe7r1LfBs2ck3U",
     authDomain: "lokal-kartlegging.firebaseapp.com",
+    databaseURL: "https://lokal-kartlegging-default-rtdb.europe-west1.firebasedatabase.app",
     projectId: "lokal-kartlegging",
     storageBucket: "lokal-kartlegging.firebasestorage.app",
     messagingSenderId: "913824113769",
@@ -108,7 +83,6 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-// --- AUTENTISERING ---
 function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
 function logout() { auth.signOut(); }
 
@@ -124,46 +98,22 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-// --- OPPGAVESTRUKTUR ---
 const oppgaveStruktur = {
     "2024-2025": {
-        "Lesing": {
-            "Høst": {
-                "1": { grenseTotal: 20, oppgaver: [{n: "Rim", m: 6, g: -1}, {n: "Stavelser", m: 8, g: -1}, {n: "Første lyd", m: 8, g: -1}, {n: "Lik lyd", m: 3, g: -1}, {n: "Lydering", m: 4, g: -1}, {n: "Dele ord", m: 4, g: -1}] },
-                "2": { grenseTotal: 16, oppgaver: [{n: "Lese 1", m: 4, g: 3}, {n: "Lese 2", m: 9, g: 6}, {n: "Stave", m: 5, g: 3}, {n: "Forstå 1", m: 3, g: 2}, {n: "Forstå 2", m: 5, g: 2}] },
-                "3": { grenseTotal: 20, oppgaver: [{n: "Lese 1", m: 7, g: 6}, {n: "Lese 2", m: 12, g: 6}, {n: "Stave", m: 7, g: 4}, {n: "Forstå 1", m: 4, g: 2}, {n: "Forstå 2", m: 3, g: 2}] }
-            }
-        },
-        "Regning": {
-            "Høst": {
-                "1": { grenseTotal: 13, oppgaver: [3,3,2,3,3,2,3,2].map((m, i) => ({n: "O"+(i+1), m: m, g: -1})) }
-            }
-        }
+        "Lesing": { "Høst": { "1": { grenseTotal: 20, oppgaver: [{n: "Rim", m: 6, g: -1}, {n: "Stavelser", m: 8, g: -1}] } } },
+        "Regning": { "Høst": { "1": { grenseTotal: 13, oppgaver: [3,3,2,3,3,2,3,2].map((m, i) => ({n: "O"+(i+1), m: m, g: -1})) } } }
     },
     "STANDARD_2025": {
         "Regning": {
             "Høst": {
                 "1": { grenseTotal: 13, oppgaver: [3,3,2,3,3,2,3,2].map((m, i) => ({n: "O"+(i+1), m: m, g: -1})) },
-                "2": { grenseTotal: 17, oppgaver: [4,3,3,3,6,3,4,3,4,4].map((m, i) => ({n: "O"+(i+1), m: m, g: -1})) },
-                "3": { grenseTotal: 22, oppgaver: [3,3,6,3,3,3,3,4,3,4,4,3].map((m, i) => ({n: "O"+(i+1), m: m, g: -1})) },
-                "4": { grenseTotal: 21, oppgaver: [4,2,3,4,4,16,6,3,6,1,3,4,1,1].map((m, i) => ({n: "O"+(i+1), m: m, g: -1})) },
-                "5": { grenseTotal: 25, oppgaver: [2,3,4,3,6,3,16,2,3,1,1,4,1,4,3,1,1].map((m, i) => ({n: "O"+(i+1), m: m, g: -1})) },
-                "6": { grenseTotal: 27, oppgaver: [2,3,6,3,6,3,16,2,6,4,1,3,1,4,1,1].map((m, i) => ({n: "O"+(i+1), m: m, g: -1})) },
-                "7": { grenseTotal: 33, oppgaver: [4,3,4,3,6,3,7,8,2,1,1,3,4,1,4,4,1,2].map((m, i) => ({n: "O"+(i+1), m: m, g: -1})) }
+                "5": { grenseTotal: 25, oppgaver: [2,3,4,3,6,3,16,2,3,1,1,4,1,4,3,1,1].map((m, i) => ({n: "O"+(i+1), m: m, g: -1})) }
             },
             "Vår": {
-                "1": { grenseTotal: 26, oppgaver: [5,4,2,6,3,3,4,4,4,3].map((m, i) => ({n: "O"+(i+1), m: m, g: -1})) },
-                "2": { grenseTotal: 30, oppgaver: [5,6,4,3,3,6,3,3,4,3,8,8].map((m, i) => ({n: "O"+(i+1), m: m, g: -1})) },
-                "3": { grenseTotal: 32, oppgaver: [3,6,3,6,2,4,4,3,3,3,6,4,4,4,4,4].map((m, i) => ({n: "O"+(i+1), m: m, g: -1})) },
-                "4": { grenseTotal: 27, oppgaver: [4,6,3,4,4,4,16,6,3,6,3,3,3,1,1,2].map((m, i) => ({n: "O"+(i+1), m: m, g: -1})) },
-                "5": { grenseTotal: 24, oppgaver: [2,4,4,3,6,3,16,2,3,3,3,1,4,3,1,6,1,1].map((m, i) => ({n: "O"+(i+1), m: m, g: -1})) },
-                "6": { grenseTotal: 27, oppgaver: [2,4,4,3,6,3,16,2,6,1,3,4,1,1,1,4].map((m, i) => ({n: "O"+(i+1), m: m, g: -1})) },
-                "7": { grenseTotal: 35, oppgaver: [4,3,4,3,6,3,16,2,2,1,2,4,1,2,3,3,3,2,1].map((m, i) => ({n: "O"+(i+1), m: m, g: -1})) }
+                "1": { grenseTotal: 26, oppgaver: [5,4,2,6,3,3,4,4,4,3].map((m, i) => ({n: "O"+(i+1), m: m, g: -1})) }
             }
         },
-        "Lesing": {
-            "Høst": { "1": { grenseTotal: 20, oppgaver: [{n: "Rim", m: 6, g: -1}] } /* her kan du fylle på */ }
-        }
+        "Lesing": { "Høst": { "1": { grenseTotal: 20, oppgaver: [{n: "Rim", m: 6, g: -1}] } } }
     }
 };
 
@@ -179,27 +129,27 @@ function getOppsett() {
 function oppdater() {
     const t = parseInt(document.getElementById('mTrinn').value);
     document.getElementById('optD').classList.toggle('hidden', t < 4);
-    byggTabellHode();
+    byggHode();
     hentData();
 }
 
-function byggTabellHode() {
+function byggHode() {
     const o = getOppsett();
     const h = document.getElementById('tHead');
-    if (!o) { h.innerHTML = "<tr><th>Ikke tilgjengelig</th></tr>"; return; }
+    if (!o) { h.innerHTML = "<tr><th>Mal mangler</th></tr>"; return; }
     let html = `<tr><th>Navn</th>`;
-    o.oppgaver.forEach(op => { html += `<th>${op.n}<br><small>(maks ${op.m})</small></th>`; });
+    o.oppgaver.forEach(op => html += `<th>${op.n}<br><small>(${op.m})</small></th>`);
     html += `<th>Sum</th><th>%</th><th>Status</th><th>X</th></tr>`;
     h.innerHTML = html;
 }
 
 function visModal() {
     const o = getOppsett();
-    if (!o) return alert("Velg gyldig trinn/fag");
-    const felt = document.getElementById('oppgaveFelter');
-    felt.innerHTML = "";
+    if (!o) return;
+    const f = document.getElementById('oppgaveFelter');
+    f.innerHTML = "";
     o.oppgaver.forEach((op, i) => {
-        felt.innerHTML += `<div><label>${op.n} (0-${op.m}):</label><input type="number" class="pInput" data-index="${i}" max="${op.m}" value="0"></div>`;
+        f.innerHTML += `<div><label>${op.n}:</label><input type="number" class="pInput" max="${op.m}" value="0"></div>`;
     });
     document.getElementById('modal').style.display = 'block';
 }
@@ -208,24 +158,21 @@ function lukkModal() { document.getElementById('modal').style.display = 'none'; 
 
 function lagreData() {
     const n = document.getElementById('elevNavn').value;
-    if (!n) return alert("Navn mangler");
     const o = getOppsett();
     const inputs = document.querySelectorAll('.pInput');
     const detaljer = Array.from(inputs).map(i => parseInt(i.value) || 0);
     const sum = detaljer.reduce((a, b) => a + b, 0);
     const maks = o.oppgaver.reduce((a, b) => a + b.m, 0);
-    
     const path = `kartlegging/${document.getElementById('mAar').value}/${document.getElementById('mFag').value}/${document.getElementById('mPeriode').value}/${document.getElementById('mTrinn').value}/${document.getElementById('mKlasse').value}`;
     
     db.ref(path).push({ navn: n, detaljer, sum, maks })
     .then(() => { lukkModal(); document.getElementById('elevNavn').value = ""; })
-    .catch(e => alert("Feil: " + e.message));
+    .catch(e => alert("Lagring feilet: " + e.message));
 }
 
 function hentData() {
-    const path = `kartlegging/${document.getElementById('mAar').value}/${document.getElementById('mFag').value}/${document.getElementById('mPeriode').value}/${document.getElementById('mTrinn').value}/${document.getElementById('mKlasse').value}`;
     const o = getOppsett();
-    
+    const path = `kartlegging/${document.getElementById('mAar').value}/${document.getElementById('mFag').value}/${document.getElementById('mPeriode').value}/${document.getElementById('mTrinn').value}/${document.getElementById('mKlasse').value}`;
     db.ref(path).on('value', snap => {
         const body = document.getElementById('tBody');
         body.innerHTML = "";
@@ -236,21 +183,18 @@ function hentData() {
             let row = `<tr class="${erKritisk ? 'critical-row' : ''}"><td>${d.navn}</td>`;
             o.oppgaver.forEach((op, i) => {
                 const poeng = d.detaljer[i] || 0;
-                const cellKritisk = op.g !== -1 && poeng <= op.g;
-                row += `<td class="${cellKritisk ? 'critical-cell' : ''}">${poeng}</td>`;
+                row += `<td>${poeng}</td>`;
             });
             row += `<td>${d.sum}</td><td>${Math.round(d.sum/d.maks*100)}%</td><td>${erKritisk ? 'OPPFØLGING' : 'OK'}</td>`;
-            row += `<td><button class="btn-delete" onclick="slett('${child.key}')">Slett</button></td></tr>`;
+            row += `<td><button class="btn-delete" onclick="slett('${child.key}')">X</button></td></tr>`;
             body.innerHTML += row;
         });
     });
 }
 
 function slett(key) {
-    if (confirm("Slette denne eleven?")) {
-        const path = `kartlegging/${document.getElementById('mAar').value}/${document.getElementById('mFag').value}/${document.getElementById('mPeriode').value}/${document.getElementById('mTrinn').value}/${document.getElementById('mKlasse').value}`;
-        db.ref(path + "/" + key).remove();
-    }
+    const path = `kartlegging/${document.getElementById('mAar').value}/${document.getElementById('mFag').value}/${document.getElementById('mPeriode').value}/${document.getElementById('mTrinn').value}/${document.getElementById('mKlasse').value}`;
+    if(confirm("Slette?")) db.ref(path + "/" + key).remove();
 }
 </script>
 </body>
