@@ -2,7 +2,7 @@
 <html lang="no">
 <head>
     <meta charset="UTF-8">
-    <title>Kartleggingsverktøy – Komplett og Korrekt</title>
+    <title>Kartleggingsverktøy – Med Enter-navigering</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -67,7 +67,6 @@
 </div>
 
 <script>
-// --- KONFIGURASJON ---
 const firebaseConfig = {
     apiKey: "AIzaSyC7g1gllBUVACl3fkpYeEe7r1LfBs2ck3U",
     authDomain: "lokal-kartlegging.firebaseapp.com",
@@ -82,7 +81,6 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-// --- INNLOGGING ---
 function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
 function logout() { auth.signOut(); }
 
@@ -98,7 +96,6 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-// --- DIN KOMPLETTE DATASTRUKTUR ---
 const oppgaveStruktur = {
     "2024-2025": {
         "Lesing": {
@@ -168,7 +165,6 @@ const oppgaveStruktur = {
     }
 };
 
-// --- LOGIKK ---
 function getOppsett() {
     const aar = document.getElementById('mAar').value;
     const key = (aar === "2024-2025") ? "2024-2025" : "STANDARD_2025";
@@ -195,15 +191,40 @@ function byggTabellHode() {
     h.innerHTML = html;
 }
 
+// --- NY FUNKSJON FOR ENTER-NAVIGERING ---
+function handterEnter(event) {
+    if (event.key === "Enter") {
+        event.preventDefault(); // Hindre at skjemaet sender seg selv
+        const inputs = Array.from(document.querySelectorAll('#modal input'));
+        const index = inputs.indexOf(event.target);
+        if (index > -1 && index < inputs.length - 1) {
+            inputs[index + 1].focus();
+            inputs[index + 1].select(); // Markerer tekst for rask overskriving
+        } else if (index === inputs.length - 1) {
+            lagreData(); // Lagre hvis man er på siste felt
+        }
+    }
+}
+
 function visModal() {
     const o = getOppsett();
     if (!o) return alert("Velg periode/fag");
     const felt = document.getElementById('oppgaveFelter');
     felt.innerHTML = "";
+    
+    // Legg til lytter på navnefeltet også
+    document.getElementById('elevNavn').onkeydown = handterEnter;
+
     o.oppgaver.forEach((op, i) => {
-        felt.innerHTML += `<div><label>${op.navn}:</label><input type="number" class="pInput" max="${op.maks}" value="0"></div>`;
+        const div = document.createElement('div');
+        div.innerHTML = `<label>${op.navn}:</label><input type="number" class="pInput" max="${op.maks}" value="0">`;
+        const inp = div.querySelector('input');
+        inp.onkeydown = handterEnter; // Legg til enter-logikk
+        felt.appendChild(div);
     });
+    
     document.getElementById('modal').style.display = 'block';
+    document.getElementById('elevNavn').focus();
 }
 
 function lukkModal() { document.getElementById('modal').style.display = 'none'; }
