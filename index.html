@@ -3,49 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kartlegging 2026 - Komplett med Pålogging</title>
+    <title>Kartlegging - Realtime Database</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
 
     <style>
         :root { --primary: #2c3e50; --accent: #27ae60; --danger: #e74c3c; --bg: #f4f7f6; --white: #ffffff; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; padding: 10px; }
         .container { max-width: 1400px; margin: 0 auto; background: var(--white); padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        
-        /* Header og Login */
         .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
         .user-info { font-size: 0.85em; display: flex; align-items: center; gap: 10px; }
-
-        /* Dashbord-velgere */
         .selectors { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee; }
         .selectors div { display: flex; flex-direction: column; }
         label { font-size: 0.75em; font-weight: bold; margin-bottom: 4px; color: #555; }
         select, input { padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.9em; }
-
         .btn { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; display: inline-flex; align-items: center; gap: 5px; }
         .btn-add { background: var(--accent); color: white; }
         .btn-login { background: #4285F4; color: white; }
-        .btn-logout { background: #95a5a6; color: white; font-size: 0.7em; }
-        
-        /* Tabell */
-        .table-wrapper { overflow-x: auto; margin-top: 10px; border-radius: 8px; box-shadow: inset 0 0 5px rgba(0,0,0,0.05); }
+        .table-wrapper { overflow-x: auto; margin-top: 10px; border-radius: 8px; }
         table { width: 100%; border-collapse: collapse; background: white; white-space: nowrap; }
-        th { background: #2c3e50; color: white; text-align: left; padding: 12px; font-size: 0.8em; text-transform: uppercase; }
+        th { background: #2c3e50; color: white; text-align: left; padding: 12px; font-size: 0.8em; }
         td { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9em; }
-        
         .critical { background-color: #ffdada !important; color: #c0392b; font-weight: bold; }
-        .btn-slett { background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
-        .btn-endre { background: #f39c12; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; margin-right: 5px; }
-
-        /* Popup */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); }
         .modal-content { background: white; margin: 2% auto; padding: 25px; width: 90%; max-width: 850px; border-radius: 10px; max-height: 90vh; overflow-y: auto; }
         .popup-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin: 20px 0; }
         .p-group { background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px solid #e9ecef; }
-        .p-group input { width: 100%; border: 1px solid #ccc; padding: 6px; box-sizing: border-box; margin-top: 5px; border-radius: 4px; }
-        
+        .p-group input { width: 100%; border: 1px solid #ccc; padding: 6px; box-sizing: border-box; }
         .hidden { display: none; }
     </style>
 </head>
@@ -53,7 +39,7 @@
 
 <div class="container">
     <div class="header-top">
-        <h2>Kartlegging 2.0</h2>
+        <h2>Kartlegging (Realtime DB)</h2>
         <div class="user-info" id="authArea">
             <button class="btn btn-login" onclick="login()">Logg inn med Google</button>
         </div>
@@ -61,16 +47,14 @@
 
     <div id="mainContent" style="opacity: 0.5; pointer-events: none;">
         <div class="selectors">
-            <div><label>Skoleår</label><select id="mAar" onchange="oppdater()"><option value="2024/2025">2024/2025</option><option value="2025/2026" selected>2025/2026</option><option value="2026/2027">2026/2027</option></select></div>
-            <div><label>Trinn</label><select id="mTrinn" onchange="oppdater()"><option value="1">1. trinn</option><option value="2">2. trinn</option><option value="3">3. trinn</option><option value="4">4. trinn</option><option value="5">5. trinn</option><option value="6">6. trinn</option><option value="7">7. trinn</option></select></div>
-            <div><label>Klasse</label><select id="mKlasse" onchange="oppdater()"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option id="optD" value="D" class="hidden">D</option></select></div>
-            <div><label>Fag</label><select id="mFag" onchange="oppdater()"><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select></div>
-            <div><label>Periode</label><select id="mPeriode" onchange="oppdater()"><option value="Høst">Høst</option><option value="Vår">Vår</option></select></div>
+            <div><label>Skoleår</label><select id="mAar" onchange="hentData()"><option value="2024/2025">2024/2025</option><option value="2025/2026" selected>2025/2026</option></select></div>
+            <div><label>Trinn</label><select id="mTrinn" onchange="oppdaterValg()"><option value="1">1. trinn</option><option value="2">2. trinn</option><option value="3">3. trinn</option></select></div>
+            <div><label>Klasse</label><select id="mKlasse" onchange="hentData()"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></div>
+            <div><label>Fag</label><select id="mFag" onchange="oppdaterValg()"><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select></div>
+            <div><label>Periode</label><select id="mPeriode" onchange="oppdaterValg()"><option value="Høst">Høst</option><option value="Vår">Vår</option></select></div>
         </div>
 
-        <div class="action-bar">
-            <button class="btn btn-add" onclick="aapnePopup()">+ Legg inn nytt resultat</button>
-        </div>
+        <button class="btn btn-add" onclick="aapnePopup()">+ Nytt resultat</button>
 
         <div class="table-wrapper">
             <table>
@@ -83,21 +67,11 @@
 
 <div id="pop" class="modal">
     <div class="modal-content">
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:10px;">
-            <h3 id="popTittel">Registrering</h3>
-            <span style="cursor:pointer; font-size:30px" onclick="lukk()">&times;</span>
-        </div>
-        
+        <h3>Registrering</h3>
         <input type="hidden" id="editId">
-        
-        <div style="margin-top:15px">
-            <label><strong>Elevens Navn</strong></label>
-            <input type="text" id="eNavn" style="width:100%; padding:10px; margin-top:5px; border:1px solid #ccc; border-radius:4px;" placeholder="Skriv navn...">
-        </div>
-
+        <input type="text" id="eNavn" style="width:100%; padding:10px; margin:10px 0;" placeholder="Elevens Navn">
         <div id="oppgArea" class="popup-grid"></div>
-
-        <div style="background:#2c3e50; color:white; padding:15px; border-radius:8px; display:flex; justify-content:space-between; align-items:center">
+        <div style="background:#2c3e50; color:white; padding:15px; display:flex; justify-content:space-between;">
             <strong>SUM: <span id="pSum">0</span> / <span id="pMaks">0</span></strong>
             <button class="btn btn-add" onclick="lagre()">LAGRE</button>
         </div>
@@ -105,10 +79,10 @@
 </div>
 
 <script>
-// --- CONFIG ---
 const firebaseConfig = {
     apiKey: "AIzaSyC7g1gllBUVACl3fkpYeEe7r1LfBs2ck3U",
     authDomain: "lokal-kartlegging.firebaseapp.com",
+    databaseURL: "https://lokal-kartlegging-default-rtdb.europe-west1.firebasedatabase.app/",
     projectId: "lokal-kartlegging",
     storageBucket: "lokal-kartlegging.firebasestorage.app",
     messagingSenderId: "913824113769",
@@ -116,199 +90,114 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const db = firebase.database();
 const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
 
-// --- OPPGAVESTRUKTUR ---
 const oppgaveStruktur = {
     "Standard": {
         "Lesing": {
-            "Høst": {
-                "1": [{navn: "Rim", maks: 6}, {navn: "Stavelser", maks: 8}, {navn: "Første lyd", maks: 8}, {navn: "Lik lyd", maks: 3}, {navn: "Lydering", maks: 4}, {navn: "Dele lyder", maks: 4}],
-                "2": [{navn: "Ord 1", maks: 4}, {navn: "Ord 2", maks: 9}, {navn: "Stave", maks: 5}, {navn: "Forstå 1", maks: 3}, {navn: "Forstå 2", maks: 5}],
-                "3": [{navn: "Ord 1", maks: 7}, {navn: "Ord 2", maks: 6}, {navn: "Forstå ord", maks: 5}, {navn: "Stave", maks: 7}, {navn: "Tekst 1", maks: 4}, {navn: "Tekst 2", maks: 3}]
-            },
-            "Vår": {
-                "1": [{navn: "Lese ord", maks: 6}, {navn: "Stave ord", maks: 5}, {navn: "Forstå", maks: 4}]
-            }
+            "Høst": { "1": [{navn: "Rim", maks: 6}, {navn: "Stavelser", maks: 8}], "2": [{navn: "Ord 1", maks: 10}] },
+            "Vår": { "1": [{navn: "Lese", maks: 10}] }
         },
         "Regning": {
-            "Høst": {
-                "1": [{navn: "O1", maks:3}, {navn: "O2", maks:3}, {navn: "O3", maks:2}, {navn: "O4", maks:3}, {navn: "O5", maks:3}, {navn: "O6", maks:2}, {navn: "O7", maks:3}, {navn: "O8", maks:2}]
-            }
+            "Høst": { "1": [{navn: "O1", maks: 5}, {navn: "O2", maks: 5}] }
         }
     }
 };
 
-// --- AUTH LOGIKK ---
 function login() { auth.signInWithPopup(provider); }
-function logout() { auth.signOut(); }
-
 auth.onAuthStateChanged(user => {
-    const authArea = document.getElementById('authArea');
     const main = document.getElementById('mainContent');
     if (user) {
-        authArea.innerHTML = `<span>${user.displayName}</span> <button class="btn btn-logout" onclick="logout()">Logg ut</button>`;
-        main.style.opacity = "1";
-        main.style.pointerEvents = "all";
-        oppdater();
+        document.getElementById('authArea').innerHTML = `<span>${user.displayName}</span> <button onclick="auth.signOut()">Ut</button>`;
+        main.style.opacity = "1"; main.style.pointerEvents = "all";
+        oppdaterValg();
     } else {
-        authArea.innerHTML = `<button class="btn btn-login" onclick="login()">Logg inn med Google</button>`;
-        main.style.opacity = "0.5";
-        main.style.pointerEvents = "none";
-        document.getElementById('tBody').innerHTML = "";
+        main.style.opacity = "0.5"; main.style.pointerEvents = "none";
     }
 });
 
-// --- CORE LOGIKK ---
 function getOppgaver() {
-    const aar = document.getElementById('mAar').value;
-    const fag = document.getElementById('mFag').value;
-    const per = document.getElementById('mPeriode').value;
-    const trinn = document.getElementById('mTrinn').value;
-    return (oppgaveStruktur[aar]?.[fag]?.[per]?.[trinn]) || (oppgaveStruktur["Standard"]?.[fag]?.[per]?.[trinn]) || [];
+    const f = document.getElementById('mFag').value, p = document.getElementById('mPeriode').value, t = document.getElementById('mTrinn').value;
+    return oppgaveStruktur["Standard"][f]?.[p]?.[t] || [];
 }
 
-async function oppdater() {
-    const trinn = document.getElementById('mTrinn').value;
-    const aar = document.getElementById('mAar').value;
-    document.getElementById('optD').classList.toggle('hidden', !(trinn == "5" || (aar == "2026/2027" && trinn == "6")));
-    
-    byggHode();
-    hentData();
-}
-
-function byggHode() {
+function oppdaterValg() {
     const oppgaver = getOppgaver();
     let html = `<tr><th>Navn</th>`;
     oppgaver.forEach(o => html += `<th>${o.navn}</th>`);
     html += `<th>SUM</th><th>%</th><th>Handling</th></tr>`;
     document.getElementById('tHead').innerHTML = html;
-}
-
-async function hentData() {
-    if (!auth.currentUser) return;
-    const tBody = document.getElementById('tBody');
-    tBody.innerHTML = "<tr><td colspan='25'>Henter data...</td></tr>";
-
-    try {
-        const snap = await db.collection("resultater")
-            .where("aar", "==", document.getElementById('mAar').value)
-            .where("trinn", "==", document.getElementById('mTrinn').value)
-            .where("klasse", "==", document.getElementById('mKlasse').value)
-            .where("fag", "==", document.getElementById('mFag').value)
-            .where("periode", "==", document.getElementById('mPeriode').value)
-            .get();
-
-        tBody.innerHTML = "";
-        const oppgaver = getOppgaver();
-
-        if (snap.empty) {
-            tBody.innerHTML = "<tr><td colspan='25' style='text-align:center'>Ingen resultater funnet.</td></tr>";
-            return;
-        }
-
-        snap.forEach(doc => {
-            const d = doc.data();
-            const prosent = Math.round((d.sum / d.maks) * 100);
-            const crit = prosent < 20 ? 'critical' : '';
-
-            let row = `<tr class="${crit}"><td><strong>${d.navn}</strong></td>`;
-            oppgaver.forEach((o, i) => {
-                row += `<td>${(d.detaljer && d.detaljer[i] !== undefined) ? d.detaljer[i] : "-"}</td>`;
-            });
-            row += `<td>${d.sum}/${d.maks}</td><td>${prosent}%</td>`;
-            row += `<td>
-                <button class="btn-endre" onclick="endre('${doc.id}')">Endre</button>
-                <button class="btn-slett" onclick="slett('${doc.id}')">Slett</button>
-            </td></tr>`;
-            tBody.innerHTML += row;
-        });
-    } catch (e) {
-        console.error("Index-feil? Sjekk Console: ", e);
-        tBody.innerHTML = `<tr><td colspan='25'>Feil. Høyreklikk -> Inspiser -> Console for å fikse (Indeks-lenke).</td></tr>`;
-    }
-}
-
-function aapnePopup(eks = null) {
-    const oppgaver = getOppgaver();
-    const area = document.getElementById('oppgArea');
-    area.innerHTML = "";
-    let mSum = 0;
-
-    oppgaver.forEach((o, i) => {
-        mSum += o.maks;
-        const val = (eks && eks.detaljer) ? eks.detaljer[i] : 0;
-        area.innerHTML += `
-            <div class="p-group">
-                <label>${o.navn} (max ${o.maks})</label>
-                <input type="number" class="pop-in" data-maks="${o.maks}" value="${val}" oninput="sumPop()">
-            </div>`;
-    });
-
-    document.getElementById('pMaks').innerText = mSum;
-    document.getElementById('editId').value = eks ? eks.id : "";
-    document.getElementById('eNavn').value = eks ? eks.navn : "";
-    document.getElementById('popTittel').innerText = eks ? "Endre resultat" : "Ny registrering";
-    document.getElementById('pop').style.display = "block";
-    sumPop();
+    hentData();
 }
 
 async function lagre() {
     const id = document.getElementById('editId').value;
-    const navn = document.getElementById('eNavn').value;
-    if (!navn) return alert("Skriv navn!");
-
     const detaljer = Array.from(document.querySelectorAll('.pop-in')).map(i => parseInt(i.value) || 0);
+    const path = `resultater/${document.getElementById('mAar').value.replace('/','-')}/${document.getElementById('mFag').value}/${document.getElementById('mTrinn').value}/${document.getElementById('mKlasse').value}`;
+    
     const data = {
-        navn: navn,
+        navn: document.getElementById('eNavn').value,
         sum: parseInt(document.getElementById('pSum').innerText),
         maks: parseInt(document.getElementById('pMaks').innerText),
-        detaljer: detaljer,
-        aar: document.getElementById('mAar').value,
-        trinn: document.getElementById('mTrinn').value,
-        klasse: document.getElementById('mKlasse').value,
-        fag: document.getElementById('mFag').value,
-        periode: document.getElementById('mPeriode').value,
-        opprettetAv: auth.currentUser.email,
-        tid: firebase.firestore.FieldValue.serverTimestamp()
+        detaljer: detaljer
     };
 
-    try {
-        if (id) await db.collection("resultater").doc(id).update(data);
-        else await db.collection("resultater").add(data);
-        lukk();
-        hentData();
-    } catch (e) { alert("Kunne ikke lagre: " + e.message); }
+    if (id) await db.ref(`${path}/${id}`).update(data);
+    else await db.ref(path).push(data);
+    
+    document.getElementById('pop').style.display = "none";
+    hentData();
 }
 
-async function endre(id) {
-    const doc = await db.collection("resultater").doc(id).get();
-    const d = doc.data();
-    d.id = id;
-    aapnePopup(d);
+function hentData() {
+    if (!auth.currentUser) return;
+    const path = `resultater/${document.getElementById('mAar').value.replace('/','-')}/${document.getElementById('mFag').value}/${document.getElementById('mTrinn').value}/${document.getElementById('mKlasse').value}`;
+    
+    db.ref(path).on('value', snap => {
+        const tBody = document.getElementById('tBody');
+        tBody.innerHTML = "";
+        const oppgaver = getOppgaver();
+        
+        snap.forEach(child => {
+            const d = child.val();
+            const pros = Math.round((d.sum / d.maks) * 100);
+            const crit = pros < 20 ? 'critical' : '';
+            let row = `<tr class="${crit}"><td>${d.navn}</td>`;
+            oppgaver.forEach((o, i) => row += `<td>${d.detaljer?.[i] || 0}</td>`);
+            row += `<td>${d.sum}/${d.maks}</td><td>${pros}%</td>`;
+            row += `<td><button onclick="slett('${child.key}')">Slett</button></td></tr>`;
+            tBody.innerHTML += row;
+        });
+    });
 }
 
-async function slett(id) {
-    if (confirm("Slette?")) {
-        await db.collection("resultater").doc(id).delete();
-        hentData();
+function slett(key) {
+    if (confirm("Slett?")) {
+        const path = `resultater/${document.getElementById('mAar').value.replace('/','-')}/${document.getElementById('mFag').value}/${document.getElementById('mTrinn').value}/${document.getElementById('mKlasse').value}`;
+        db.ref(`${path}/${key}`).remove();
     }
+}
+
+function aapnePopup() {
+    const oppgaver = getOppgaver();
+    const area = document.getElementById('oppgArea');
+    area.innerHTML = "";
+    let m = 0;
+    oppgaver.forEach((o, i) => {
+        m += o.maks;
+        area.innerHTML += `<div class="p-group"><label>${o.navn} (${o.maks})</label><input type="number" class="pop-in" data-maks="${o.maks}" value="0" oninput="sumPop()"></div>`;
+    });
+    document.getElementById('pMaks').innerText = m;
+    document.getElementById('pop').style.display = "block";
 }
 
 function sumPop() {
     let s = 0;
-    document.querySelectorAll('.pop-in').forEach(i => {
-        let v = parseInt(i.value) || 0;
-        let m = parseInt(i.dataset.maks);
-        if (v > m) { v = m; i.value = m; }
-        s += v;
-    });
+    document.querySelectorAll('.pop-in').forEach(i => s += parseInt(i.value) || 0);
     document.getElementById('pSum').innerText = s;
 }
-
-function lukk() { document.getElementById('pop').style.display = "none"; }
 </script>
 </body>
 </html>
