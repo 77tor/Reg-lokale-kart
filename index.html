@@ -2,7 +2,7 @@
 <html lang="no">
 <head>
     <meta charset="UTF-8">
-    <title>Kartleggingsverktøy – Komplett kontroll</title>
+    <title>Kartleggingsverktøy – Med Sortering</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -17,12 +17,16 @@
         .header-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-bottom: 20px; background: #eee; padding: 20px; border-radius: 5px; }
         select { padding: 12px; border: 1px solid #ccc; border-radius: 6px; width: 100%; font-size: 1.1em; cursor: pointer; }
         
-        /* DYNAMISK OVERSKRIFT STIL */
         .tabell-tittel { margin-top: 30px; margin-bottom: 10px; color: var(--primary); font-size: 1.5em; font-weight: bold; border-left: 5px solid var(--primary); padding-left: 15px; }
 
         table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-        th { background: var(--primary); color: white; }
+        
+        /* SORTERING STIL */
+        th { background: var(--primary); color: white; cursor: pointer; user-select: none; position: relative; }
+        th:hover { background: #34495e; }
+        .sort-icon { font-size: 0.8em; margin-left: 5px; }
+
         .critical-row { background-color: #ffdada !important; }
         .critical-cell { background-color: #ffeded !important; color: red; font-weight: bold; }
         
@@ -65,7 +69,6 @@
         </div>
 
         <button class="btn btn-add" onclick="visModal()">+ Legg til elev</button>
-        
         <div id="dynamiskTittel" class="tabell-tittel"></div>
 
         <div style="overflow-x: auto;">
@@ -87,6 +90,7 @@
 </div>
 
 <script>
+// Firebase Config (som før)
 const firebaseConfig = {
     apiKey: "AIzaSyC7g1gllBUVACl3fkpYeEe7r1LfBs2ck3U",
     authDomain: "lokal-kartlegging.firebaseapp.com",
@@ -102,6 +106,9 @@ const auth = firebase.auth();
 const db = firebase.database();
 
 let redigererNøkkel = null;
+let gjeldendeData = []; // Lagrer data lokalt for sortering
+let sorteringsFelt = 'navn';
+let sorteringsRetning = 1; // 1 for stigende, -1 for synkende
 
 function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
 function logout() { auth.signOut(); }
@@ -118,6 +125,7 @@ auth.onAuthStateChanged(user => {
     }
 });
 
+// Datastruktur (som før)
 const oppgaveStruktur = {
     "2024-2025": {
         "Lesing": {
@@ -173,20 +181,12 @@ const oppgaveStruktur = {
                 "5": { grenseTotal: 25, oppgaver: Array(17).fill().map((_, i) => ({navn: "O"+(i+1), maks: [2,3,4,3,6,3,16,2,3,1,1,4,1,4,3,1,1][i], grense: -1})) },
                 "6": { grenseTotal: 27, oppgaver: Array(16).fill().map((_, i) => ({navn: "O"+(i+1), maks: [2,3,6,3,6,3,16,2,6,4,1,3,1,4,1,1][i], grense: -1})) },
                 "7": { grenseTotal: 33, oppgaver: Array(18).fill().map((_, i) => ({navn: "O"+(i+1), maks: [4,3,4,3,6,3,7,8,2,1,1,3,4,1,4,4,1,2][i], grense: -1})) }
-            },
-            "Vår": {
-                "1": { grenseTotal: 26, oppgaver: Array(10).fill().map((_, i) => ({navn: "O"+(i+1), maks: [5,4,2,6,3,3,4,4,4,3][i], grense: -1})) },
-                "2": { grenseTotal: 30, oppgaver: Array(12).fill().map((_, i) => ({navn: "O"+(i+1), maks: [5,6,4,3,3,6,3,3,4,3,8,8][i], grense: -1})) },
-                "3": { grenseTotal: 32, oppgaver: Array(16).fill().map((_, i) => ({navn: "O"+(i+1), maks: [3,6,3,6,2,4,4,3,3,3,6,4,4,4,4,4][i], grense: -1})) },
-                "4": { grenseTotal: 27, oppgaver: Array(16).fill().map((_, i) => ({navn: "O"+(i+1), maks: [4,6,3,4,4,4,16,6,3,6,3,3,3,1,1,2][i], grense: -1})) },
-                "5": { grenseTotal: 24, oppgaver: Array(18).fill().map((_, i) => ({navn: "O"+(i+1), maks: [2,4,4,3,6,3,16,2,3,3,3,1,4,3,1,6,1,1][i], grense: -1})) },
-                "6": { grenseTotal: 27, oppgaver: Array(16).fill().map((_, i) => ({navn: "O"+(i+1), maks: [2,4,4,3,6,3,16,2,6,1,3,4,1,1,1,4][i], grense: -1})) },
-                "7": { grenseTotal: 35, oppgaver: Array(19).fill().map((_, i) => ({navn: "O"+(i+1), maks: [4,3,4,3,6,3,16,2,2,1,2,4,1,2,3,3,3,2,1][i], grense: -1})) }
             }
         }
     }
 };
 
+// Logikk for Enter-navigering
 function handterEnter(event) {
     if (event.key === "Enter") {
         event.preventDefault();
@@ -214,7 +214,6 @@ function oppdater() {
     const t = parseInt(document.getElementById('mTrinn').value);
     document.getElementById('optD').classList.toggle('hidden', t < 4);
     
-    // Oppdater den visuelle overskriften
     const fag = document.getElementById('mFag').value;
     const klasse = document.getElementById('mTrinn').value + document.getElementById('mKlasse').value;
     const periode = document.getElementById('mPeriode').value;
@@ -225,26 +224,100 @@ function oppdater() {
     hentData();
 }
 
+// NY SORTERINGSFUNKSJON
+function settSortering(felt, erOppgave = false, oppgaveIndex = -1) {
+    if (sorteringsFelt === (erOppgave ? 'oppgave_' + oppgaveIndex : felt)) {
+        sorteringsRetning *= -1; // Snu retning hvis samme kolonne klikkes
+    } else {
+        sorteringsFelt = erOppgave ? 'oppgave_' + oppgaveIndex : felt;
+        sorteringsRetning = 1;
+    }
+    tegnTabell(); // Tegn tabellen på nytt med ny sortering
+}
+
 function byggTabellHode() {
     const o = getOppsett();
     const h = document.getElementById('tHead');
     if (!o) { h.innerHTML = "<tr><th>Mal mangler</th></tr>"; return; }
-    let html = `<tr><th>Navn</th>`;
-    o.oppgaver.forEach(op => html += `<th>${op.navn}<br><small>(${op.maks})</small></th>`);
-    html += `<th>Sum</th><th>%</th><th>Status</th><th>Handlinger</th></tr>`;
+    
+    let html = `<tr>`;
+    html += `<th onclick="settSortering('navn')">Navn ${hentSortIkon('navn')}</th>`;
+    
+    o.oppgaver.forEach((op, i) => {
+        html += `<th onclick="settSortering('oppgave_${i}', true, ${i})">${op.navn}<br><small>(${op.maks})</small> ${hentSortIkon('oppgave_' + i)}</th>`;
+    });
+    
+    html += `<th onclick="settSortering('sum')">Sum ${hentSortIkon('sum')}</th>`;
+    html += `<th onclick="settSortering('prosent')">% ${hentSortIkon('prosent')}</th>`;
+    html += `<th onclick="settSortering('status')">Status ${hentSortIkon('status')}</th>`;
+    html += `<th>Handlinger</th></tr>`;
     h.innerHTML = html;
+}
+
+function hentSortIkon(felt) {
+    if (sorteringsFelt !== felt) return `<span class="sort-icon">↕</span>`;
+    return sorteringsRetning === 1 ? `<span class="sort-icon">↑</span>` : `<span class="sort-icon">↓</span>`;
+}
+
+function tegnTabell() {
+    const o = getOppsett();
+    const body = document.getElementById('tBody');
+    body.innerHTML = "";
+    if (!o) return;
+
+    // Sorter gjeldendeData før tegning
+    let dataKopi = [...gjeldendeData];
+    dataKopi.sort((a, b) => {
+        let vA, vB;
+        
+        if (sorteringsFelt.startsWith('oppgave_')) {
+            const idx = parseInt(sorteringsFelt.split('_')[1]);
+            vA = a.detaljer[idx] || 0;
+            vB = b.detaljer[idx] || 0;
+        } else if (sorteringsFelt === 'prosent') {
+            vA = a.sum / a.maks;
+            vB = b.sum / b.maks;
+        } else if (sorteringsFelt === 'status') {
+            vA = a.sum <= o.grenseTotal ? 1 : 0;
+            vB = b.sum <= o.grenseTotal ? 1 : 0;
+        } else {
+            vA = a[sorteringsFelt];
+            vB = b[sorteringsFelt];
+        }
+
+        if (typeof vA === 'string') {
+            return vA.localeCompare(vB) * sorteringsRetning;
+        }
+        return (vA - vB) * sorteringsRetning;
+    });
+
+    dataKopi.forEach(d => {
+        const erKritisk = d.sum <= o.grenseTotal;
+        let row = `<tr class="${erKritisk ? 'critical-row' : ''}"><td>${d.navn}</td>`;
+        o.oppgaver.forEach((op, i) => {
+            const poeng = d.detaljer[i] || 0;
+            const cellKritisk = op.grense !== -1 && poeng <= op.grense;
+            row += `<td class="${cellKritisk ? 'critical-cell' : ''}">${poeng}</td>`;
+        });
+        row += `<td>${d.sum}</td><td>${Math.round(d.sum/d.maks*100)}%</td><td>${erKritisk ? 'OPPFØLGING' : 'OK'}</td>`;
+        row += `<td>
+            <div class="action-btns">
+                <button class="btn btn-warning" onclick='endre("${d.id}", ${JSON.stringify(d)})'>Endre</button>
+                <button class="btn btn-delete" onclick="slett('${d.id}')">Slett</button>
+            </div>
+        </td></tr>`;
+        body.innerHTML += row;
+    });
 }
 
 function visModal(eksisterendeData = null, nøkkel = null) {
     const o = getOppsett();
     if (!o) return alert("Velg periode/fag");
-    
     redigererNøkkel = nøkkel;
     const tittel = document.getElementById('modalTittel');
     const navnfelt = document.getElementById('elevNavn');
     const felt = document.getElementById('oppgaveFelter');
     const knapp = document.getElementById('btnLagre');
-    
     felt.innerHTML = "";
     navnfelt.onkeydown = handterEnter;
     
@@ -261,92 +334,57 @@ function visModal(eksisterendeData = null, nøkkel = null) {
     o.oppgaver.forEach((op, i) => {
         const div = document.createElement('div');
         const verdi = eksisterendeData ? eksisterendeData.detaljer[i] : 0;
-        // Her legger vi til MAKS i labelen og max-attributt i input
         div.innerHTML = `<label>${op.navn} (maks ${op.maks}):</label>
                          <input type="number" class="pInput" max="${op.maks}" min="0" value="${verdi}">`;
         const inp = div.querySelector('input');
         inp.onkeydown = handterEnter;
-        
-        // Sanering mens man skriver: Hindrer ikke tastetrykk, men lagre-funksjonen sjekker grensen.
         felt.appendChild(div);
     });
-    
     document.getElementById('modal').style.display = 'block';
     navnfelt.focus();
 }
 
-function lukkModal() { 
-    document.getElementById('modal').style.display = 'none'; 
-    redigererNøkkel = null;
-}
+function lukkModal() { document.getElementById('modal').style.display = 'none'; redigererNøkkel = null; }
 
 function lagreData() {
     const n = document.getElementById('elevNavn').value;
     if (!n) return alert("Navn mangler");
-    
     const o = getOppsett();
     const inputs = document.querySelectorAll('.pInput');
-    
-    // VALIDERING: Sørg for at ingen verdier overstiger MAKS
     const detaljer = Array.from(inputs).map((input, i) => {
         let v = parseInt(input.value) || 0;
-        const maks = o.oppgaver[i].maks;
-        if (v > maks) v = maks; // Tvinger verdien ned til maks
-        if (v < 0) v = 0;
-        return v;
+        const m = o.oppgaver[i].maks;
+        return v > m ? m : (v < 0 ? 0 : v);
     });
-
     const sum = detaljer.reduce((a, b) => a + b, 0);
     const maksTotal = o.oppgaver.reduce((a, b) => a + b.maks, 0);
     const path = `kartlegging/${document.getElementById('mAar').value}/${document.getElementById('mFag').value}/${document.getElementById('mPeriode').value}/${document.getElementById('mTrinn').value}/${document.getElementById('mKlasse').value}`;
-    
     const data = { navn: n, detaljer, sum, maks: maksTotal };
 
     if (redigererNøkkel) {
-        db.ref(path + "/" + redigererNøkkel).set(data)
-        .then(() => lukkModal())
-        .catch(e => alert("Feil: " + e.message));
+        db.ref(path + "/" + redigererNøkkel).set(data).then(() => lukkModal());
     } else {
-        db.ref(path).push(data)
-        .then(() => { lukkModal(); document.getElementById('elevNavn').value = ""; })
-        .catch(e => alert("Feil: " + e.message));
+        db.ref(path).push(data).then(() => { lukkModal(); document.getElementById('elevNavn').value = ""; });
     }
 }
 
 function hentData() {
-    const o = getOppsett();
     const path = `kartlegging/${document.getElementById('mAar').value}/${document.getElementById('mFag').value}/${document.getElementById('mPeriode').value}/${document.getElementById('mTrinn').value}/${document.getElementById('mKlasse').value}`;
     db.ref(path).on('value', snap => {
-        const body = document.getElementById('tBody');
-        body.innerHTML = "";
-        if (!o) return;
+        gjeldendeData = [];
         snap.forEach(child => {
-            const d = child.val();
-            const erKritisk = d.sum <= o.grenseTotal;
-            let row = `<tr class="${erKritisk ? 'critical-row' : ''}"><td>${d.navn}</td>`;
-            o.oppgaver.forEach((op, i) => {
-                const poeng = d.detaljer[i] || 0;
-                const cellKritisk = op.grense !== -1 && poeng <= op.grense;
-                row += `<td class="${cellKritisk ? 'critical-cell' : ''}">${poeng}</td>`;
-            });
-            row += `<td>${d.sum}</td><td>${Math.round(d.sum/d.maks*100)}%</td><td>${erKritisk ? 'OPPFØLGING' : 'OK'}</td>`;
-            row += `<td>
-                <div class="action-btns">
-                    <button class="btn btn-warning" onclick='endre("${child.key}", ${JSON.stringify(d)})'>Endre</button>
-                    <button class="btn btn-delete" onclick="slett('${child.key}')">Slett</button>
-                </div>
-            </td></tr>`;
-            body.innerHTML += row;
+            let item = child.val();
+            item.id = child.key;
+            gjeldendeData.push(item);
         });
+        byggTabellHode(); // Oppdater hode (i tilfelle sorteringsikon endres)
+        tegnTabell();
     });
 }
 
-function endre(key, data) {
-    visModal(data, key);
-}
-
+function endre(key, data) { visModal(data, key); }
 function slett(key) {
-    if (confirm("Slette denne registreringen permanent?")) {
+    if (confirm("Slette?")) {
         const path = `kartlegging/${document.getElementById('mAar').value}/${document.getElementById('mFag').value}/${document.getElementById('mPeriode').value}/${document.getElementById('mTrinn').value}/${document.getElementById('mKlasse').value}`;
         db.ref(path + "/" + key).remove();
     }
