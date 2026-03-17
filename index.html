@@ -71,9 +71,36 @@
 
 <script>
 // --- KONFIGURASJON OG DATA ---
-const firebaseConfig = { /* Lim inn din config her som før */ };
+const firebaseConfig = {
+    apiKey: "AIzaSyC7g1gllBUVACl3fkpYeEe7r1LfBs2ck3U",
+    authDomain: "lokal-kartlegging.firebaseapp.com",
+    databaseURL: "https://lokal-kartlegging-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "lokal-kartlegging",
+    storageBucket: "lokal-kartlegging.firebasestorage.app",
+    messagingSenderId: "913824113769",
+    appId: "1:913824113769:web:95c6fdea2d3b49813d6ef8"
+};
+
 firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 const db = firebase.database();
+
+let redigererNøkkel = null;
+
+function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+function logout() { auth.signOut(); }
+
+auth.onAuthStateChanged(user => {
+    if (user) {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+        document.getElementById('userInfo').innerText = user.displayName;
+        oppdater();
+    } else {
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('mainContent').style.display = 'none';
+    }
+});
 
 // Dette er "Masterlisten" din. 
 // Format: "Etternavn, Fornavn": { startTrinn: X, startKlasse: 'A', startAar: 2025 }
