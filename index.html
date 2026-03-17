@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kartleggingsverktøy Skole</title>
+    <title>Kartleggingsverktøy Pro</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
@@ -11,77 +11,64 @@
 
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; margin: 0; background: #f0f2f5; color: #333; }
-        .container { max-width: 1200px; margin: 20px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .container { max-width: 1300px; margin: 20px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .header-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; background: #e9ecef; padding: 15px; border-radius: 8px; }
+        .action-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+        
         select, input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
         th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; }
         th { background: #f8f9fa; position: sticky; top: 0; }
         tr:hover { background-color: #f1f1f1; }
         
-        .btn { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 0.85em; }
         .btn-reg { background: #27ae60; color: white; }
-        .btn-edit { background: #2980b9; color: white; margin-right: 5px; }
-        .btn-slett { background: #e74c3c; color: white; }
+        .btn-edit { background: #2980b9; color: white; }
+        .btn-slett { background: #e67e22; color: white; }
+        .btn-fjern { background: #95a5a6; color: white; }
+        .btn-excel { background: #1f7244; color: white; }
+        .btn-print { background: #34495e; color: white; }
         .btn:hover { opacity: 0.8; }
 
         /* Modal */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); }
-        .modal-content { background: white; margin: 5% auto; padding: 25px; border-radius: 12px; width: 400px; max-height: 80vh; overflow-y: auto; }
-        .oppgave-rad { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        
+        .modal-content { background: white; margin: 5% auto; padding: 25px; border-radius: 12px; width: 450px; max-height: 85vh; overflow-y: auto; }
+        .oppgave-rad { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
         .not-registered { color: #aaa; font-style: italic; }
         .alert-low { background: #ffcccc !important; font-weight: bold; color: #c0392b; }
+
+        /* Utskrift-stiler */
+        @media print {
+            .header-grid, .btn, .modal, .action-bar, h4, hr, .ny-elev-boks { display: none !important; }
+            .container { box-shadow: none; margin: 0; padding: 0; max-width: 100%; }
+            table { font-size: 9pt; width: 100%; border: 1px solid black; }
+            th, td { border: 1px solid black !important; padding: 4px; }
+            body { background: white; }
+            .print-header { display: block !important; margin-bottom: 20px; }
+        }
+        .print-header { display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <div class="print-header">
+        <h2 id="printTittel">Kartleggingsrapport</h2>
+    </div>
+
     <h2>Kartlegging: Elevoversikt</h2>
     
     <div class="header-grid">
-        <div>
-            <label>Skoleår:</label>
-            <select id="mAar" onchange="hentData()">
-                <option value="2024-2025">2024-2025</option>
-                <option value="2025-2026" selected>2025-2026</option>
-            </select>
-        </div>
-        <div>
-            <label>Fag:</label>
-            <select id="mFag" onchange="hentData()">
-                <option value="Lesing">Lesing</option>
-                <option value="Regning">Regning</option>
-            </select>
-        </div>
-        <div>
-            <label>Periode:</label>
-            <select id="mPeriode" onchange="hentData()">
-                <option value="Høst">Høst</option>
-                <option value="Vår">Vår</option>
-            </select>
-        </div>
-        <div>
-            <label>Trinn:</label>
-            <select id="mTrinn" onchange="hentData()">
-                <option value="1">1. Trinn</option>
-                <option value="2">2. Trinn</option>
-                <option value="3">3. Trinn</option>
-                <option value="4">4. Trinn</option>
-                <option value="5">5. Trinn</option>
-                <option value="6">6. Trinn</option>
-                <option value="7">7. Trinn</option>
-            </select>
-        </div>
-        <div>
-            <label>Klasse:</label>
-            <select id="mKlasse" onchange="tegnTabell()">
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="D">D</option>
-            </select>
-        </div>
+        <div><label>Skoleår:</label><select id="mAar" onchange="hentData()"><option value="2024-2025">2024-2025</option><option value="2025-2026" selected>2025-2026</option></select></div>
+        <div><label>Fag:</label><select id="mFag" onchange="hentData()"><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select></div>
+        <div><label>Periode:</label><select id="mPeriode" onchange="hentData()"><option value="Høst">Høst</option><option value="Vår">Vår</option></select></div>
+        <div><label>Trinn:</label><select id="mTrinn" onchange="hentData()"><option value="1">1. Trinn</option><option value="2">2. Trinn</option><option value="3">3. Trinn</option><option value="4">4. Trinn</option><option value="5">5. Trinn</option><option value="6">6. Trinn</option><option value="7">7. Trinn</option></select></div>
+        <div><label>Klasse:</label><select id="mKlasse" onchange="tegnTabell()"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></div>
+    </div>
+
+    <div class="action-bar">
+        <button class="btn btn-print" onclick="forberedPrint()">Skriv ut / PDF</button>
+        <button class="btn btn-excel" onclick="eksporterTilExcel()">Eksport til Excel</button>
     </div>
 
     <table id="hovedTabell">
@@ -89,7 +76,7 @@
         <tbody id="tBody"></tbody>
     </table>
 
-    <div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border: 2px dashed #cbd5e0; border-radius: 8px;">
+    <div class="ny-elev-boks" style="margin-top: 40px; padding: 20px; background: #f8f9fa; border: 2px dashed #cbd5e0; border-radius: 8px;">
         <h4>Legg til ny elev (mangler i listen)</h4>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             <input type="text" id="nyttEtternavn" placeholder="Etternavn" style="flex:1">
@@ -102,17 +89,18 @@
 <div id="modal" class="modal">
     <div class="modal-content">
         <h3 id="modalNavn">Navn</h3>
+        <p style="font-size: 0.8em; color: gray;">Bruk [Enter] for å gå til neste felt</p>
         <hr>
         <div id="oppgaveFelter"></div>
         <div style="margin-top: 20px; display: flex; gap: 10px;">
-            <button class="btn btn-reg" style="flex:1" onclick="lagreData()">Lagre</button>
-            <button class="btn" style="flex:1; background:#95a5a6; color:white" onclick="lukkModal()">Avbryt</button>
+            <button class="btn btn-reg" style="flex:2" onclick="lagreData()">Lagre (Enter)</button>
+            <button class="btn btn-fjern" style="flex:1" onclick="lukkModal()">Avbryt</button>
         </div>
     </div>
 </div>
 
 <script>
-// --- FIREBASE KONFIG (Region fiks inkludert) ---
+// --- 1. FIREBASE CONFIG ---
 const firebaseConfig = {
     apiKey: "AIzaSyC7g1gllBUVACl3fkpYeEe7r1LfBs2ck3U",
     authDomain: "lokal-kartlegging.firebaseapp.com",
@@ -144,6 +132,7 @@ auth.onAuthStateChanged(user => {
         document.getElementById('mainContent').style.display = 'none';
     }
 });
+
 
 // --- 2. OPPGAVESTRUKTUR ---
 const oppgaveStruktur = {
@@ -206,7 +195,7 @@ const oppgaveStruktur = {
     }
 };
 
-// --- 3. ELEVREGISTER (Lim inn dine 400 navn her) ---
+// --- 3. ELEVREGISTER (Må fylles ut av deg) ---
 const elevRegister = {
     // 1. TRINN (Startet 2025)
     "Albert, William Denstad": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
@@ -670,11 +659,10 @@ const elevRegister = {
 };
 
 
-// --- 4. LOGIKK OG FUNKSJONER ---
+// --- 4. APP LOGIKK ---
 let lagredeResultater = {};
 let valgtElevId = "";
 
-// Hjelpefunksjon: Henter gjeldende konfigurasjon
 function hentOppsett() {
     const aar = document.getElementById('mAar').value;
     const fag = document.getElementById('mFag').value;
@@ -686,7 +674,19 @@ function hentOppsett() {
     } catch (e) { return null; }
 }
 
-// Henter elever basert på valgt trinn og klasse
+function hentData() {
+    const aar = document.getElementById('mAar').value;
+    const fag = document.getElementById('mFag').value;
+    const periode = document.getElementById('mPeriode').value;
+    const trinn = document.getElementById('mTrinn').value;
+    const klasse = document.getElementById('mKlasse').value;
+
+    db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}`).on('value', snapshot => {
+        lagredeResultater = snapshot.val() || {};
+        tegnTabell();
+    });
+}
+
 function filtrerElever() {
     const valgtTrinn = parseInt(document.getElementById('mTrinn').value);
     const valgtKlasse = document.getElementById('mKlasse').value;
@@ -695,26 +695,11 @@ function filtrerElever() {
     return Object.keys(elevRegister).filter(navn => {
         const elev = elevRegister[navn];
         const currentTrinn = elev.startTrinn + (valgtSkoleAar - elev.startAar);
-        return currentTrinn === valgtTrinn && elev.startKlasse === valgtKlasse;
+        const erSkjult = lagredeResultater[navn] && lagredeResultater[navn].skjult === true;
+        return currentTrinn === valgtTrinn && elev.startKlasse === valgtKlasse && !erSkjult;
     }).sort();
 }
 
-// Henter data fra Firebase
-function hentData() {
-    const aar = document.getElementById('mAar').value;
-    const fag = document.getElementById('mFag').value;
-    const periode = document.getElementById('mPeriode').value;
-    const trinn = document.getElementById('mTrinn').value;
-    const klasse = document.getElementById('mKlasse').value;
-
-    const path = `kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}`;
-    db.ref(path).on('value', snapshot => {
-        lagredeResultater = snapshot.val() || {};
-        tegnTabell();
-    });
-}
-
-// Tegner tabellen
 function tegnTabell() {
     const oppsett = hentOppsett();
     const elever = filtrerElever();
@@ -722,122 +707,162 @@ function tegnTabell() {
     const tBody = document.getElementById('tBody');
 
     if (!oppsett) {
-        tBody.innerHTML = "<tr><td colspan='100%'>Ingen oppsett funnet.</td></tr>";
+        tBody.innerHTML = "<tr><td colspan='100%'>Velg innstillinger over for å se oppgaver.</td></tr>";
         return;
     }
 
-    // Lag tabellhode
-    let hodeHtml = `<tr><th style="text-align:left">Elevnavn</th>`;
-    oppsett.oppgaver.forEach(o => hodeHtml += `<th>${o.navn}<br><small>max ${o.maks}</small></th>`);
-    hodeHtml += `<th>Total</th><th>Handling</th></tr>`;
-    tHead.innerHTML = hodeHtml;
+    let hode = `<tr><th style="text-align:left">Elevnavn</th>`;
+    oppsett.oppgaver.forEach(o => hode += `<th>${o.navn}<br><small>max ${o.maks}</small></th>`);
+    hode += `<th>Sum</th><th class="no-print">Handling</th></tr>`;
+    tHead.innerHTML = hode;
 
     tBody.innerHTML = "";
     elever.forEach(navn => {
-        const data = lagredeResultater[navn];
-        let radHtml = `<tr><td style="text-align:left"><b>${navn}</b></td>`;
+        const d = lagredeResultater[navn];
+        let rad = `<tr><td style="text-align:left"><b>${navn}</b></td>`;
         
-        if (data && data.oppgaver) {
+        if (d && d.oppgaver) {
             oppsett.oppgaver.forEach((o, i) => {
-                const p = data.oppgaver[i] || 0;
-                const stil = (o.grense !== -1 && p < o.grense) ? 'class="alert-low"' : '';
-                radHtml += `<td ${stil}>${p}</td>`;
+                const p = d.oppgaver[i] || 0;
+                const cls = (o.grense !== -1 && p < o.grense) ? 'class="alert-low"' : '';
+                rad += `<td ${cls}>${p}</td>`;
             });
-            const sumStil = (data.sum < oppsett.grenseTotal) ? 'class="alert-low"' : '';
-            radHtml += `<td ${sumStil}>${data.sum}</td>`;
-            radHtml += `<td>
+            const sumCls = (d.sum < oppsett.grenseTotal) ? 'class="alert-low"' : '';
+            rad += `<td ${sumCls}>${d.sum}</td>`;
+            rad += `<td class="no-print">
                 <button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button>
-                <button class="btn btn-slett" onclick="slettResultat('${navn}')">Slett</button>
+                <button class="btn btn-slett" onclick="slettPoeng('${navn}')">Slett poeng</button>
+                <button class="btn btn-fjern" onclick="skjulElev('${navn}')">Fjern elev</button>
             </td>`;
         } else {
-            oppsett.oppgaver.forEach(() => radHtml += `<td class="not-registered">-</td>`);
-            radHtml += `<td class="not-registered">-</td>`;
-            radHtml += `<td><button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button></td>`;
+            oppsett.oppgaver.forEach(() => rad += `<td class="not-registered">-</td>`);
+            rad += `<td class="not-registered">-</td>`;
+            rad += `<td class="no-print">
+                <button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button>
+                <button class="btn btn-fjern" onclick="skjulElev('${navn}')">Fjern elev</button>
+            </td>`;
         }
-        radHtml += `</tr>`;
-        tBody.innerHTML += radHtml;
+        rad += `</tr>`;
+        tBody.innerHTML += rad;
     });
 }
 
-// Modal logikk
+// Modal & Enter-tast navigasjon
 function visModal(navn) {
     const oppsett = hentOppsett();
     valgtElevId = navn;
     document.getElementById('modalNavn').innerText = navn;
-    const feltContainer = document.getElementById('oppgaveFelter');
-    feltContainer.innerHTML = "";
-
+    const container = document.getElementById('oppgaveFelter');
+    container.innerHTML = "";
     const eksisterende = lagredeResultater[navn]?.oppgaver || [];
 
     oppsett.oppgaver.forEach((o, i) => {
-        const verdi = eksisterende[i] !== undefined ? eksisterende[i] : "";
-        feltContainer.innerHTML += `
+        const v = eksisterende[i] !== undefined ? eksisterende[i] : "";
+        container.innerHTML += `
             <div class="oppgave-rad">
-                <label>${o.navn} (maks ${o.maks}):</label>
-                <input type="number" class="oppg-input" data-index="${i}" min="0" max="${o.maks}" value="${verdi}" style="width:60px">
+                <label>${o.navn} (0-${o.maks}):</label>
+                <input type="number" class="oppg-input" data-index="${i}" min="0" max="${o.maks}" value="${v}" style="width:60px; text-align:center">
             </div>`;
     });
     document.getElementById('modal').style.display = 'block';
+    setTimeout(() => { if(container.querySelector('input')) container.querySelector('input').focus(); }, 100);
 }
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.getElementById('modal').style.display === 'block') {
+        const inputs = Array.from(document.querySelectorAll('.oppg-input'));
+        const curr = document.activeElement;
+        const idx = inputs.indexOf(curr);
+        if (idx > -1 && idx < inputs.length - 1) {
+            e.preventDefault();
+            inputs[idx + 1].focus();
+            inputs[idx + 1].select();
+        } else if (idx === inputs.length - 1) {
+            lagreData();
+        }
+    }
+});
 
 function lukkModal() { document.getElementById('modal').style.display = 'none'; }
 
 function lagreData() {
     const inputs = document.querySelectorAll('.oppg-input');
-    let verdier = [];
-    let sum = 0;
-
-    inputs.forEach(input => {
-        const v = parseInt(input.value) || 0;
+    let verdier = [], sum = 0;
+    inputs.forEach(i => {
+        const v = parseInt(i.value) || 0;
         verdier.push(v);
         sum += v;
     });
 
-    const aar = document.getElementById('mAar').value;
-    const fag = document.getElementById('mFag').value;
-    const periode = document.getElementById('mPeriode').value;
-    const trinn = document.getElementById('mTrinn').value;
-    const klasse = document.getElementById('mKlasse').value;
-
-    const path = `kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}/${valgtElevId}`;
-    db.ref(path).set({
-        oppgaver: verdier,
-        sum: sum,
-        dato: new Date().toISOString()
-    }).then(lukkModal);
+    const path = hentSti(valgtElevId);
+    db.ref(path).update({ oppgaver: verdier, sum: sum, dato: new Date().toISOString(), skjult: null }).then(lukkModal);
 }
 
-function slettResultat(navn) {
-    if(!confirm(`Slette resultat for ${navn}?`)) return;
-    const aar = document.getElementById('mAar').value;
-    const fag = document.getElementById('mFag').value;
-    const periode = document.getElementById('mPeriode').value;
-    const trinn = document.getElementById('mTrinn').value;
-    const klasse = document.getElementById('mKlasse').value;
+function slettPoeng(navn) {
+    if(confirm(`Slett alle poeng for ${navn} på denne prøven?`)) {
+        db.ref(hentSti(navn) + "/oppgaver").remove();
+        db.ref(hentSti(navn) + "/sum").remove();
+    }
+}
 
-    db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}/${navn}`).remove();
+function skjulElev(navn) {
+    if(confirm(`Fjerne ${navn} fra denne spesifikke oversikten?`)) {
+        db.ref(hentSti(navn) + "/skjult").set(true);
+    }
+}
+
+function hentSti(elev) {
+    const a = document.getElementById('mAar').value;
+    const f = document.getElementById('mFag').value;
+    const p = document.getElementById('mPeriode').value;
+    const t = document.getElementById('mTrinn').value;
+    const k = document.getElementById('mKlasse').value;
+    return `kartlegging/${a}/${f}/${p}/${t}/${k}/${elev}`;
 }
 
 function leggTilNyElev() {
     const e = document.getElementById('nyttEtternavn').value.trim();
     const f = document.getElementById('nyttFornavn').value.trim();
-    if(!e || !f) return alert("Navn mangler");
-
-    const fulltNavn = `${e}, ${f}`;
+    if(!e || !f) return alert("Vennligst fyll ut navn");
+    const navn = `${e}, ${f}`;
     const aar = parseInt(document.getElementById('mAar').value);
     const trinn = parseInt(document.getElementById('mTrinn').value);
-    const klasse = document.getElementById('mKlasse').value;
-
-    elevRegister[fulltNavn] = { startTrinn: trinn, startKlasse: klasse, startAar: aar };
-    
+    elevRegister[navn] = { startTrinn: trinn, startKlasse: document.getElementById('mKlasse').value, startAar: aar };
+    tegnTabell();
     document.getElementById('nyttEtternavn').value = "";
     document.getElementById('nyttFornavn').value = "";
-    tegnTabell();
 }
 
-// Start app
-window.onload = hentData;
+function forberedPrint() {
+    const f = document.getElementById('mFag').value;
+    const p = document.getElementById('mPeriode').value;
+    const k = document.getElementById('mKlasse').value;
+    const t = document.getElementById('mTrinn').value;
+    document.getElementById('printTittel').innerText = `Rapport: ${f} (${p}), ${t}. trinn klasse ${k}`;
+    window.print();
+}
 
+function eksporterTilExcel() {
+    const oppsett = hentOppsett();
+    const elever = filtrerElever();
+    if(!oppsett) return;
+    let csv = "\uFEFFElevnavn;" + oppsett.oppgaver.map(o => o.navn).join(";") + ";Sum\n";
+    elever.forEach(n => {
+        const d = lagredeResultater[n];
+        if(d && d.oppgaver) {
+            csv += `${n};${d.oppgaver.join(";")};${d.sum}\n`;
+        } else {
+            csv += `${n};${oppsett.oppgaver.map(()=>"0").join(";")};0\n`;
+        }
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Kartlegging_${document.getElementById('mFag').value}_Klasse${document.getElementById('mKlasse').value}.csv`;
+    link.click();
+}
+
+window.onload = hentData;
 </script>
 </body>
 </html>
