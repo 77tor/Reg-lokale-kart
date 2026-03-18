@@ -26,7 +26,9 @@ auth.onAuthStateChanged(user => {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
         document.getElementById('userInfo').innerText = user.displayName;
-        hentData(); // ENDRET: mørter nå funksjonen under
+        
+        // Vi kaller hentData() her for å vise "Vennligst velg..." meldingen med en gang
+        hentData(); 
     } else {
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('mainContent').style.display = 'none';
@@ -70,6 +72,20 @@ function hentData() {
     const t = document.getElementById('mTrinn').value;
     const k = document.getElementById('mKlasse').value;
 
+    const tBody = document.getElementById('tBody');
+    const tHead = document.getElementById('tHead');
+
+    // Sjekk om noen av valgene mangler
+    if (!a || !f || !p || !t || !k) {
+        tHead.innerHTML = ""; // Tømmer tabelloverskrift
+        tBody.innerHTML = "<tr><td colspan='100%' style='padding:40px; color:#666;'>Vennligst velg år, fag, periode, trinn og klasse for å vise listen.</td></tr>";
+        
+        // Skjuler også overskriftene mens vi venter på valg
+        if (document.getElementById('dynamiskOverskrift')) document.getElementById('dynamiskOverskrift').innerText = "";
+        return; 
+    }
+
+    // Hvis alle valg er gjort, hent data fra Firebase
     db.ref(`kartlegging/${a}/${f}/${p}/${t}/${k}`).on('value', snapshot => {
         lagredeResultater = snapshot.val() || {};
         tegnTabell();
