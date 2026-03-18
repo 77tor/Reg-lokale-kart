@@ -76,6 +76,7 @@
     <div class="action-bar no-print">
         <button class="btn btn-print" onclick="forberedPrint()">Skriv ut / PDF</button>
         <button class="btn btn-excel" onclick="eksporterTilExcel()">Eksport til Excel</button>
+        <span id="dynamiskOverskrift" style="margin-left: 20px; font-weight: bold; font-size: 1.1em; align-self: center; color: #2c3e50;"></span>
     </div>
 
     <table id="hovedTabell">
@@ -698,7 +699,12 @@ function tegnTabell() {
     const fag = document.getElementById('mFag').value;
     const tHead = document.getElementById('tHead');
     const tBody = document.getElementById('tBody');
-
+    const trinn = document.getElementById('mTrinn').value;
+    const klasse = document.getElementById('mKlasse').value;
+    const periode = document.getElementById('mPeriode').value;
+    const aar = document.getElementById('mAar').value;
+    const overskriftTekst = `Kartlegging i ${fag.toLowerCase()} - ${trinn}${klasse} - ${periode.toLowerCase()}en ${aar}`;
+    document.getElementById('dynamiskOverskrift').innerText = overskriftTekst;
     if (!oppsett) {
         tBody.innerHTML = "<tr><td colspan='100%'>Velg innstillinger over.</td></tr>";
         return;
