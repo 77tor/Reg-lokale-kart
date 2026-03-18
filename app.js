@@ -318,4 +318,65 @@ document.addEventListener('keydown', e => {
     }
 });
 
+
+let myChart = null; // Holder på diagram-objektet
+
+async function sammenlignKlasser() {
+    const aar = document.getElementById('mAar').value;
+    const fag = document.getElementById('mFag').value;
+    const periode = document.getElementById('mPeriode').value;
+    const trinn = document.getElementById('mTrinn').value;
+    if (!aar || !fag || !periode || !trinn) return alert("Velg år, fag, periode og trinn først!");
+
+    const oppsett = hentOppsett();
+    const klasser = ["A", "B", "C", "D"];
+    const labels = oppsett.oppgaver.map(o => o.navn);
+    labels.push("Total"); // Legger til totalsum som siste søyle
+
+    let datasets = [];
+    const farger = ['rgba(41, 128, 185, 0.7)', 'rgba(39, 174, 96, 0.7)', 'rgba(230, 126, 34, 0.7)', 'rgba(155, 89, 182, 0.7)'];
+
+    for (let i = 0; i < klasser.length; i++) {
+        const k = klasser[i];
+        const snapshot = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${k}`).once('value');
+        const data = snapshot.val() || {};
+        
+        let antallElever = 0;
+        let sumPerOppgave = new Array(oppsett.oppgaver.length + 1).fill(0);
+
+        Object.keys(data).forEach(navn => {
+            if (!data[navn].skjult && data[navn].oppgaver) {
+                antallElever++;
+                data[navn].oppgaver.forEach((p, idx) => sumPerOppgave[idx] += p);
+                sumPerOppgave[oppsett.oppgaver.length] += data[navn].sum;
+            }
+        });
+
+        if (antallElever > 0) {
+            const snitt = sumPerOppgave.map(s => (s / antallElever).toFixed(1));
+            datasets.push({
+                label: `Klasse ${trinn}${k} (snitt)`,
+                data: snitt,
+                backgroundColor: farger[i],
+                borderColor: farger[i].replace('0.7', '1'),
+                borderWidth: 1
+            });
+        }
+    }
+
+    document.getElementById('chartContainer').style.display = 'block';
+    const ctx = document.getElementById('sammenligningsChart').getContext('2d');
+    
+    if (myChart) myChart.destroy(); // Slett gammelt diagram hvis det finnes
+    
+    myChart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: labels, datasets: datasets },
+        options: {
+            responsive: true,
+            scales: { y: { beginAtZero: true, title: { display: true, text: 'Gjennomsnittspoeng' } } },
+            plugins: { title: { display: true, text: `Sammenligning ${fag} - ${trinn}. trinn (${periode})` } }
+        }
+    });
+}
 window.onload = () => { if(!auth.currentUser) document.getElementById('loginScreen').style.display = 'flex'; };
