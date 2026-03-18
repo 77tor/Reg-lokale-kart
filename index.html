@@ -60,10 +60,10 @@
 
 <div class="container">
     <div class="print-header">
-        <h2 id="printTittel">Kartleggingsrapport</h2>
+        <h1 id="printTittel" style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px;"></h1>
     </div>
 
-    <h2>Kartlegging: Elevoversikt</h2>
+    <h2>Registrering av lokale kartlegginger</h2>
     
     <div class="header-grid no-print">
         <div><label>Skoleår:</label><select id="mAar" onchange="hentData()"><option value="2024-2025">2024-2025</option><option value="2025-2026" selected>2025-2026</option></select></div>
@@ -703,8 +703,15 @@ function tegnTabell() {
     const klasse = document.getElementById('mKlasse').value;
     const periode = document.getElementById('mPeriode').value;
     const aar = document.getElementById('mAar').value;
+// Lag den fulle teksten
     const overskriftTekst = `Kartlegging i ${fag.toLowerCase()} - ${trinn}${klasse} - ${periode.toLowerCase()}en ${aar}`;
+    
+    // 1. Vis ved siden av knappene (for skjerm)
     document.getElementById('dynamiskOverskrift').innerText = overskriftTekst;
+    
+    // 2. Sett som tittel på utskriftsrapporten (for printer/PDF)
+    document.getElementById('printTittel').innerText = overskriftTekst;
+
     if (!oppsett) {
         tBody.innerHTML = "<tr><td colspan='100%'>Velg innstillinger over.</td></tr>";
         return;
