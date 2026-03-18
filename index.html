@@ -54,17 +54,9 @@
         .alert-low { background: #ffcccc !important; font-weight: bold; color: #c0392b; }
         .skjult-seksjon { background: #f8f9fa; color: #7f8c8d; font-style: italic; }
 
-        @media print {
-            @page { size: landscape; margin: 1cm; }
-            .header-grid, .btn, .modal, .action-bar, .ny-elev-boks, .no-print, #loginScreen { display: none !important; }
-            .container { box-shadow: none; margin: 0; padding: 0; max-width: 100%; }
-            table { font-size: 9pt; width: 100%; border: 1px solid black; }
-            th, td { border: 1px solid black !important; padding: 4px; }
-            tr { page-break-inside: avoid; }
-            .print-header { display: block !important; margin-bottom: 20px; text-align: center; }
-            #printTittel { font-size: 18pt; margin-top: 0; text-transform: capitalize; }
-        }
-        .print-header { display: none; }
+@media print { @page { size: landscape; margin: 0.5cm; } .header-grid, .btn, .modal, .action-bar, .ny-elev-boks, .no-print, #loginScreen { display: none !important; } .container { box-shadow: none; margin: 0; padding: 0; max-width: 100%; } table { font-size: 8pt; width: 100%; border: 1px solid black; border-collapse: collapse; } th, td { border: 1px solid black !important; padding: 2px 4px; line-height: 1.1; } h1, h2, h3 { margin: 5px 0; } .print-header { display: block !important; margin-bottom: 10px; text-align: center; } #printTittel { font-size: 14pt; } }
+       .print-header { display: none; }
+
     </style>
 </head>
 <body>
