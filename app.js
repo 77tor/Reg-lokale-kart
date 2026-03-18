@@ -60,7 +60,7 @@ function hentSti(elev) {
     return `kartlegging/${a}/${f}/${p}/${t}/${k}/${elev}`;
 }
 
-// --- 4. HOVEDLOGIKK (TABELL-VISNING) ---
+// --- 4. HOVEDLOGIKK (DAGLIG REGISTRERING) ---
 function hentData() {
     const a = document.getElementById('mAar').value;
     const f = document.getElementById('mFag').value;
@@ -70,12 +70,15 @@ function hentData() {
 
     const tBody = document.getElementById('tBody');
     const tHead = document.getElementById('tHead');
+    const hovedTabell = document.getElementById('hovedTabell');
+    const hovedInnhold = document.getElementById('hovedInnhold');
 
-    if (!a || !f || !p || !t || !k) {
-        tHead.innerHTML = "";
-        tBody.innerHTML = "<tr><td colspan='100%' style='padding:40px; color:#666;'>Vennligst velg alle kriterier.</td></tr>";
-        return; 
+    // Hvis vi kommer fra en årsrapport-visning, må vi gjenopprette tabellstrukturen
+    if (!hovedTabell) {
+        hovedInnhold.innerHTML = '<table id="hovedTabell"><thead id="tHead"></thead><tbody id="tBody"></tbody></table>';
     }
+
+    if (!a || !f || !p || !t || !k) return;
 
     db.ref(`kartlegging/${a}/${f}/${p}/${t}/${k}`).on('value', snapshot => {
         lagredeResultater = snapshot.val() || {};
@@ -94,8 +97,7 @@ function tegnTabell() {
     const aar = document.getElementById('mAar').value;
 
     const overskriftTekst = `Kartlegging i ${fag} - ${trinn}${klasse} - ${periode} ${aar}`;
-    if (document.getElementById('dynamiskOverskrift')) document.getElementById('dynamiskOverskrift').innerText = overskriftTekst;
-    if (document.getElementById('printTittel')) document.getElementById('printTittel').innerText = overskriftTekst;
+    document.getElementById('printTittel').innerText = overskriftTekst;
 
     if (!oppsett) {
         tBody.innerHTML = "<tr><td colspan='100%'>Ingen oppgavemal funnet.</td></tr>";
@@ -107,71 +109,37 @@ function tegnTabell() {
     hode += `<th>Sum</th><th class="no-print">Handling</th></tr>`;
     tHead.innerHTML = hode;
 
-    let aktive = [], skjulte = [];
     const valgtTrinn = parseInt(trinn);
     const valgtSkoleAarStart = parseInt(aar.split('-')[0]);
 
+    tBody.innerHTML = "";
     Object.keys(elevRegister).sort().forEach(navn => {
         const elev = elevRegister[navn];
         const currentTrinn = elev.startTrinn + (valgtSkoleAarStart - elev.startAar);
+        
         if (currentTrinn === valgtTrinn && elev.startKlasse === klasse) {
-            if (lagredeResultater[navn] && lagredeResultater[navn].skjult === true) skjulte.push(navn);
-            else aktive.push(navn);
+            const d = lagredeResultater[navn];
+            if (d && d.skjult) return;
+
+            let rad = `<tr><td style="text-align:left"><b>${navn}</b></td>`;
+            if (d && d.oppgaver) {
+                oppsett.oppgaver.forEach((o, i) => {
+                    const p = d.oppgaver[i] || 0;
+                    let cls = (fag === "Lesing" && o.grense !== -1 && p <= o.grense) ? 'class="alert-low"' : '';
+                    rad += `<td ${cls}>${p}</td>`;
+                });
+                const sumCls = (d.sum <= oppsett.grenseTotal) ? 'class="alert-low"' : '';
+                rad += `<td ${sumCls}>${d.sum}</td><td class="no-print"><button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button> <button class="btn btn-slett" onclick="slettPoeng('${navn}')">Nullstill</button></td>`;
+            } else {
+                oppsett.oppgaver.forEach(() => rad += `<td>-</td>`);
+                rad += `<td>-</td><td class="no-print"><button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button> <button class="btn btn-fjern" onclick="skjulElev('${navn}', true)">Fjern</button></td>`;
+            }
+            tBody.innerHTML += rad + `</tr>`;
         }
     });
-
-    tBody.innerHTML = "";
-    aktive.forEach(navn => {
-        const d = lagredeResultater[navn];
-        let rad = `<tr><td style="text-align:left"><b>${navn}</b></td>`;
-        if (d && d.oppgaver) {
-            oppsett.oppgaver.forEach((o, i) => {
-                const p = d.oppgaver[i] || 0;
-                let cls = (fag === "Lesing" && o.grense !== -1 && p <= o.grense) ? 'class="alert-low"' : '';
-                rad += `<td ${cls}>${p}</td>`;
-            });
-            const sumCls = (d.sum <= oppsett.grenseTotal) ? 'class="alert-low"' : '';
-            rad += `<td ${sumCls}>${d.sum}</td><td class="no-print"><button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button> <button class="btn btn-slett" onclick="slettPoeng('${navn}')">Nullstill</button></td>`;
-        } else {
-            oppsett.oppgaver.forEach(() => rad += `<td class="not-registered">-</td>`);
-            rad += `<td class="not-registered">-</td><td class="no-print"><button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button> <button class="btn btn-fjern" onclick="skjulElev('${navn}', true)">Fjern</button></td>`;
-        }
-        tBody.innerHTML += rad + `</tr>`;
-    });
 }
 
-// --- 5. MODAL OG HANDLINGER ---
-function visModal(navn) {
-    const oppsett = hentOppsett();
-    valgtElevId = navn;
-    document.getElementById('modalNavn').innerText = navn;
-    const container = document.getElementById('oppgaveFelter');
-    container.innerHTML = "";
-    const eksisterende = lagredeResultater[navn]?.oppgaver || [];
-
-    oppsett.oppgaver.forEach((o, i) => {
-        container.innerHTML += `<div class="oppgave-rad"><label>${o.navn} (0-${o.maks}):</label><input type="number" class="oppg-input" data-index="${i}" min="0" max="${o.maks}" value="${eksisterende[i] !== undefined ? eksisterende[i] : ""}" style="width:60px"></div>`;
-    });
-    document.getElementById('modal').style.display = 'block';
-    setTimeout(() => { if(container.querySelector('input')) container.querySelector('input').focus(); }, 100);
-}
-
-function lukkModal() { document.getElementById('modal').style.display = 'none'; }
-
-function lagreData() {
-    const inputs = document.querySelectorAll('.oppg-input');
-    let verdier = [], sum = 0;
-    inputs.forEach(i => { const v = parseInt(i.value) || 0; verdier.push(v); sum += v; });
-    db.ref(hentSti(valgtElevId)).update({ oppgaver: verdier, sum: sum, dato: new Date().toISOString(), skjult: null }).then(lukkModal);
-}
-
-// --- 6. ADMIN-FUNKSJONER (ÅRSRAPPORT & SAMMENLIGNING) ---
-function sjekkAdminKode() {
-    const kode = prompt("Vennligst oppgi adminkode:");
-    if (kode === "3850") { document.getElementById('adminPanel').style.display = 'block'; }
-    else if (kode !== null) { alert("Feil kode."); }
-}
-
+// --- 5. ADMIN ÅRSRAPPORT (DYNAMISK DIREKTEVISNING) ---
 async function kjorAdminRapport(type) {
     const aar = document.getElementById('adminAar').value;
     const fag = document.getElementById('adminFag').value;
@@ -179,7 +147,9 @@ async function kjorAdminRapport(type) {
     
     document.getElementById('modalRapport').style.display = 'none';
     const hovedInnhold = document.getElementById('hovedInnhold');
-    hovedInnhold.innerHTML = "<p style='padding:20px;'>Genererer fullstendig rapport for alle trinn og klasser...</p>";
+    const printTittel = document.getElementById('printTittel');
+    
+    hovedInnhold.innerHTML = "<p style='padding:20px;' class='no-print'>Genererer fullstendig rapport for alle trinn og klasser. Vennligst vent...</p>";
     
     let samletHTML = "";
     const trinnListe = ["1", "2", "3", "4", "5", "6", "7"];
@@ -199,37 +169,89 @@ async function kjorAdminRapport(type) {
                 .filter(d => type === 'alle' || d.sum <= oppsett.grenseTotal);
 
             if (eleverData.length > 0) {
-                samletHTML += `<div class="page-break" style="margin-top:40px;">
-                    <h2 style="text-align:center; border-bottom:2px solid #333; padding-bottom:10px;">${t}. Trinn Klasse ${k} - ${fag} (${periode} ${aar})</h2>
-                    <table>
+                samletHTML += `<div class="page-break" style="padding-top:20px;">
+                    <h2 style="text-align:center; border-bottom:2px solid #333; padding-bottom:10px;">
+                        ${t}. trinn Klasse ${k} - ${fag} (${periode} ${aar})
+                        ${type === 'kritisk' ? '<br><span style="color:red; font-size:0.6em;">KUN ELEVER UNDER KRITISK GRENSE</span>' : ''}
+                    </h2>
+                    <table style="width:100%; border-collapse:collapse; margin-bottom:40px; border: 1px solid black;">
                         <thead>
-                            <tr><th style="text-align:left">Navn</th>${oppsett.oppgaver.map(o => `<th>${o.navn}</th>`).join("")}<th>Sum</th></tr>
+                            <tr style="background:#eee;">
+                                <th style="text-align:left; border:1px solid #000; padding:8px;">Navn</th>
+                                ${oppsett.oppgaver.map(o => `<th style="border:1px solid #000; padding:8px;">${o.navn}</th>`).join("")}
+                                <th style="border:1px solid #000; padding:8px;">Sum</th>
+                            </tr>
                         </thead>
                         <tbody>`;
 
                 eleverData.sort((a,b) => a.navn.localeCompare(b.navn)).forEach(d => {
-                    let rad = `<tr><td style="text-align:left"><b>${d.navn}</b></td>`;
+                    let rad = `<tr><td style="text-align:left; border:1px solid #000; padding:8px;"><b>${d.navn}</b></td>`;
                     oppsett.oppgaver.forEach((o, i) => {
                         const p = d.oppgaver[i] || 0;
-                        let c = (fag === "Lesing" && o.grense !== -1 && p <= o.grense) ? 'style="background-color:#ffcccc !important;"' : '';
-                        rad += `<td ${c}>${p}</td>`;
+                        let c = (fag === "Lesing" && o.grense !== -1 && p <= o.grense) ? 'background-color:#ffcccc !important;' : '';
+                        rad += `<td style="border:1px solid #000; padding:8px; text-align:center; ${c}">${p}</td>`;
                     });
-                    let sC = (d.sum <= oppsett.grenseTotal) ? 'style="background-color:#ffcccc !important;"' : '';
-                    rad += `<td ${sC}>${d.sum}</td></tr>`;
+                    let sC = (d.sum <= oppsett.grenseTotal) ? 'background-color:#ffcccc !important;' : '';
+                    rad += `<td style="border:1px solid #000; padding:8px; text-align:center; font-weight:bold; ${sC}">${d.sum}</td></tr>`;
                     samletHTML += rad;
                 });
                 samletHTML += `</tbody></table></div>`;
             }
         }
     }
-    document.getElementById('printTittel').innerText = `Fullstendig ${type === 'kritisk' ? 'KRITISK-' : ''}rapport: ${fag} ${periode} ${aar}`;
-    hovedInnhold.innerHTML = samletHTML || "<p style='padding:20px;'>Ingen registrerte data funnet for valgte kriterier.</p>";
+
+    if (samletHTML === "") {
+        hovedInnhold.innerHTML = "<p style='padding:20px;'>Ingen registrerte data funnet for valgte kriterier.</p>";
+    } else {
+        printTittel.innerText = ""; 
+        hovedInnhold.innerHTML = samletHTML;
+        
+        // Trigger print-dialog automatisk
+        setTimeout(() => { window.print(); }, 600);
+    }
 }
 
+// --- 6. MODAL OG HANDLINGER ---
+function visModal(navn) {
+    const oppsett = hentOppsett();
+    valgtElevId = navn;
+    document.getElementById('modalNavn').innerText = navn;
+    const container = document.getElementById('oppgaveFelter');
+    container.innerHTML = "";
+    const eksisterende = lagredeResultater[navn]?.oppgaver || [];
+
+    oppsett.oppgaver.forEach((o, i) => {
+        container.innerHTML += `<div class="oppgave-rad"><label style="display:inline-block; width:140px;">${o.navn} (max ${o.maks}):</label><input type="number" class="oppg-input" data-index="${i}" min="0" max="${o.maks}" value="${eksisterende[i] !== undefined ? eksisterende[i] : ""}" style="width:60px"></div>`;
+    });
+    document.getElementById('modal').style.display = 'block';
+    setTimeout(() => { if(container.querySelector('input')) container.querySelector('input').focus(); }, 100);
+}
+
+function lukkModal() { document.getElementById('modal').style.display = 'none'; }
+
+function lagreData() {
+    const inputs = document.querySelectorAll('.oppg-input');
+    let verdier = [], sum = 0;
+    inputs.forEach(i => { const v = parseInt(i.value) || 0; verdier.push(v); sum += v; });
+    db.ref(hentSti(valgtElevId)).update({ oppgaver: verdier, sum: sum, dato: new Date().toISOString(), skjult: null }).then(lukkModal);
+}
+
+function slettPoeng(navn) { if(confirm(`Nullstille poeng for ${navn}?`)) db.ref(hentSti(navn)).remove(); }
+
+function skjulElev(navn, status) { 
+    if(status) { if(confirm(`Fjerne ${navn} fra listen?`)) db.ref(hentSti(navn) + "/skjult").set(true); }
+}
+
+function sjekkAdminKode() {
+    const kode = prompt("Adminkode:");
+    if (kode === "3850") document.getElementById('adminPanel').style.display = 'block';
+}
+
+// --- 7. SAMMENLIGNING (CHART) ---
 async function kjorSammenligning() {
-    const aar = document.getElementById('compAar').value;
-    const fag = document.getElementById('compFag').value;
-    const periode = document.getElementById('compPeriode').value;
+    const aar = document.getElementById('mAar').value; 
+    const fag = document.getElementById('mFag').value;
+    const periode = document.getElementById('mPeriode').value;
     const trinn = document.getElementById('compTrinn').value;
     const oppsett = hentOppsettSpesifikk(aar, fag, periode, trinn);
 
@@ -274,15 +296,23 @@ async function kjorSammenligning() {
     });
 }
 
-// --- 7. EKSTRA ---
+// --- 8. UTILITIES ---
 function forberedPrint() { window.print(); }
 
-function skjulElev(navn, status) { 
-    if(status) { if(confirm(`Fjerne ${navn} fra listen?`)) db.ref(hentSti(navn) + "/skjult").set(true); }
-    else { db.ref(hentSti(navn) + "/skjult").remove(); }
+function eksporterTilExcel() {
+    const oppsett = hentOppsett();
+    let csv = "\uFEFFElevnavn;" + oppsett.oppgaver.map(o => o.navn).join(";") + ";Sum\n";
+    // Enkel loop over dagens tabellrader
+    const rader = document.querySelectorAll("#tBody tr");
+    rader.forEach(r => {
+        const celler = Array.from(r.querySelectorAll("td")).map(c => c.innerText);
+        if (celler.length > 1) csv += celler.slice(0, -1).join(";") + "\n";
+    });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    link.download = `Eksport_${document.getElementById('mFag').value}.csv`;
+    link.click();
 }
-
-function slettPoeng(navn) { if(confirm(`Nullstille poeng for ${navn}?`)) db.ref(hentSti(navn)).remove(); }
 
 document.addEventListener('keydown', e => {
     if (e.key === 'Enter' && document.getElementById('modal').style.display === 'block') {
