@@ -703,14 +703,17 @@ function tegnTabell() {
     const klasse = document.getElementById('mKlasse').value;
     const periode = document.getElementById('mPeriode').value;
     const aar = document.getElementById('mAar').value;
+
 // Lag den fulle teksten
     const overskriftTekst = `Kartlegging i ${fag.toLowerCase()} - ${trinn}${klasse} - ${periode.toLowerCase()}en ${aar}`;
     
-    // 1. Vis ved siden av knappene (for skjerm)
-    document.getElementById('dynamiskOverskrift').innerText = overskriftTekst;
+// Oppdaterer tittelen som vises ved knappene på skjermen
+    const dynOverskrift = document.getElementById('dynamiskOverskrift');
+    if (dynOverskrift) dynOverskrift.innerText = overskriftTekst;
     
-    // 2. Sett som tittel på utskriftsrapporten (for printer/PDF)
-    document.getElementById('printTittel').innerText = overskriftTekst;
+// Oppdaterer den store tittelen på selve utskriften (Rapporten)
+    const printTittel = document.getElementById('printTittel');
+    if (printTittel) printTittel.innerText = overskriftTekst;
 
     if (!oppsett) {
         tBody.innerHTML = "<tr><td colspan='100%'>Velg innstillinger over.</td></tr>";
