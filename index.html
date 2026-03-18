@@ -19,7 +19,9 @@
         #loginScreen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f0f2f5; }
         
         /* Menyer og verktøy */
-        .header-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; background: #e9ecef; padding: 15px; border-radius: 8px; }
+        .header-grid { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; background: #e9ecef; padding: 15px; border-radius: 8px; align-items: flex-end; }
+        .header-grid > div { flex: 1; min-width: 140px; }
+        .header-grid label { display: block; font-size: 0.85em; margin-bottom: 5px; font-weight: bold; color: #4a5568; }
         .action-bar { display: flex; gap: 10px; margin-bottom: 20px; }
         
         select, input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box; }
