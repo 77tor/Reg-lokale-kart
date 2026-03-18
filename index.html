@@ -737,14 +737,14 @@ function tegnTabell() {
                 let cls = "";
                 
                 // Rød celle kun hvis det er Lesing og under grensen
-                if (fag === "Lesing" && o.grense !== -1 && p < o.grense) {
+                if (fag === "Lesing" && o.grense !== -1 && p <= o.grense) {
                     cls = 'class="alert-low"';
                 }
                 rad += `<td ${cls}>${p}</td>`;
             });
 
             // Totalsummen (farges rød uansett fag hvis under grenseTotal)
-            const sumCls = (d.sum < oppsett.grenseTotal) ? 'class="alert-low"' : '';
+            const sumCls = (d.sum <= oppsett.grenseTotal) ? 'class="alert-low"' : '';
             rad += `<td ${sumCls}>${d.sum}</td>`;
 
             rad += `<td class="no-print">
