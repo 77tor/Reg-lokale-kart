@@ -16,6 +16,7 @@ const db = firebase.database();
 let redigererNøkkel = null; 
 let lagredeResultater = {};
 let valgtElevId = "";
+let myChart = null; 
 
 // --- 2. AUTENTISERING ---
 function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
@@ -26,8 +27,6 @@ auth.onAuthStateChanged(user => {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
         document.getElementById('userInfo').innerText = user.displayName;
-        
-        // Vi kaller hentData() her for å vise "Vennligst velg..." meldingen med en gang
         hentData(); 
     } else {
         document.getElementById('loginScreen').style.display = 'flex';
@@ -36,23 +35,21 @@ auth.onAuthStateChanged(user => {
 });
 
 // --- 3. HJELPEFUNKSJONER ---
+function hentOppsettSpesifikk(aar, fag, periode, trinn) {
+    try {
+        return oppgaveStruktur[aar][fag][periode][trinn];
+    } catch (e) {
+        console.error("Kunne ikke finne oppsett", e);
+        return null;
+    }
+}
+
 function hentOppsett() {
     const aar = document.getElementById('mAar').value;
     const fag = document.getElementById('mFag').value;
     const periode = document.getElementById('mPeriode').value;
     const trinn = document.getElementById('mTrinn').value;
-
-    try {
-        if (oppgaveStruktur[aar]) {
-            return oppgaveStruktur[aar][fag][periode][trinn];
-        } else {
-            // Backup hvis året ikke er definert ennå
-            return oppgaveStruktur["2024-2025"][fag][periode][trinn];
-        }
-    } catch (e) {
-        console.error("Kunne ikke finne oppsett for valget", e);
-        return null;
-    }
+    return hentOppsettSpesifikk(aar, fag, periode, trinn);
 }
 
 function hentSti(elev) {
@@ -75,17 +72,13 @@ function hentData() {
     const tBody = document.getElementById('tBody');
     const tHead = document.getElementById('tHead');
 
-    // Sjekk om noen av valgene mangler
     if (!a || !f || !p || !t || !k) {
-        tHead.innerHTML = ""; // Tømmer tabelloverskrift
+        tHead.innerHTML = "";
         tBody.innerHTML = "<tr><td colspan='100%' style='padding:40px; color:#666;'>Vennligst velg år, fag, periode, trinn og klasse for å vise listen.</td></tr>";
-        
-        // Skjuler også overskriftene mens vi venter på valg
         if (document.getElementById('dynamiskOverskrift')) document.getElementById('dynamiskOverskrift').innerText = "";
         return; 
     }
 
-    // Hvis alle valg er gjort, hent data fra Firebase
     db.ref(`kartlegging/${a}/${f}/${p}/${t}/${k}`).on('value', snapshot => {
         lagredeResultater = snapshot.val() || {};
         tegnTabell();
@@ -107,17 +100,15 @@ function tegnTabell() {
     if (document.getElementById('printTittel')) document.getElementById('printTittel').innerText = overskriftTekst;
 
     if (!oppsett) {
-        tBody.innerHTML = "<tr><td colspan='100%'>Ingen oppgavemal funnet for dette valget.</td></tr>";
+        tBody.innerHTML = "<tr><td colspan='100%'>Ingen oppgavemal funnet.</td></tr>";
         return;
     }
 
-    // Header
     let hode = `<tr><th style="text-align:left">Elevnavn</th>`;
     oppsett.oppgaver.forEach(o => hode += `<th>${o.navn}<br><small>max ${o.maks}</small></th>`);
     hode += `<th>Sum</th><th class="no-print">Handling</th></tr>`;
     tHead.innerHTML = hode;
 
-    // Filtrering av elever fra elever.js
     let aktive = [], skjulte = [];
     const valgtTrinn = parseInt(trinn);
     const valgtKlasse = klasse;
@@ -125,9 +116,7 @@ function tegnTabell() {
 
     Object.keys(elevRegister).sort().forEach(navn => {
         const elev = elevRegister[navn];
-        // Beregn nåværende trinn basert på når de startet
         const currentTrinn = elev.startTrinn + (valgtSkoleAarStart - elev.startAar);
-        
         if (currentTrinn === valgtTrinn && elev.startKlasse === valgtKlasse) {
             if (lagredeResultater[navn] && lagredeResultater[navn].skjult === true) skjulte.push(navn);
             else aktive.push(navn);
@@ -138,7 +127,6 @@ function tegnTabell() {
     aktive.forEach(navn => {
         const d = lagredeResultater[navn];
         let rad = `<tr><td style="text-align:left"><b>${navn}</b></td>`;
-        
         if (d && d.oppgaver) {
             oppsett.oppgaver.forEach((o, i) => {
                 const p = d.oppgaver[i] || 0;
@@ -146,19 +134,10 @@ function tegnTabell() {
                 rad += `<td ${cls}>${p}</td>`;
             });
             const sumCls = (d.sum <= oppsett.grenseTotal) ? 'class="alert-low"' : '';
-            rad += `<td ${sumCls}>${d.sum}</td>`;
-            rad += `<td class="no-print">
-                <button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button>
-                <button class="btn btn-slett" onclick="slettPoeng('${navn}')">Nullstill</button>
-                <button class="btn btn-fjern" onclick="skjulElev('${navn}', true)">Fjern</button>
-            </td>`;
+            rad += `<td ${sumCls}>${d.sum}</td><td class="no-print"><button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button> <button class="btn btn-slett" onclick="slettPoeng('${navn}')">Nullstill</button> <button class="btn btn-fjern" onclick="skjulElev('${navn}', true)">Fjern</button></td>`;
         } else {
             oppsett.oppgaver.forEach(() => rad += `<td class="not-registered">-</td>`);
-            rad += `<td class="not-registered">-</td>`;
-            rad += `<td class="no-print">
-                <button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button>
-                <button class="btn btn-fjern" onclick="skjulElev('${navn}', true)">Fjern</button>
-            </td>`;
+            rad += `<td class="not-registered">-</td><td class="no-print"><button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button> <button class="btn btn-fjern" onclick="skjulElev('${navn}', true)">Fjern</button></td>`;
         }
         tBody.innerHTML += rad + `</tr>`;
     });
@@ -181,10 +160,7 @@ function visModal(navn) {
     const eksisterende = lagredeResultater[navn]?.oppgaver || [];
 
     oppsett.oppgaver.forEach((o, i) => {
-        container.innerHTML += `<div class="oppgave-rad">
-            <label>${o.navn} (0-${o.maks}):</label>
-            <input type="number" class="oppg-input" data-index="${i}" min="0" max="${o.maks}" value="${eksisterende[i] !== undefined ? eksisterende[i] : ""}" style="width:60px">
-        </div>`;
+        container.innerHTML += `<div class="oppgave-rad"><label>${o.navn} (0-${o.maks}):</label><input type="number" class="oppg-input" data-index="${i}" min="0" max="${o.maks}" value="${eksisterende[i] !== undefined ? eksisterende[i] : ""}" style="width:60px"></div>`;
     });
     document.getElementById('modal').style.display = 'block';
     setTimeout(() => { if(container.querySelector('input')) container.querySelector('input').focus(); }, 100);
@@ -196,12 +172,7 @@ function lagreData() {
     const inputs = document.querySelectorAll('.oppg-input');
     let verdier = [], sum = 0;
     inputs.forEach(i => { const v = parseInt(i.value) || 0; verdier.push(v); sum += v; });
-    db.ref(hentSti(valgtElevId)).update({ 
-        oppgaver: verdier, 
-        sum: sum, 
-        dato: new Date().toISOString(), 
-        skjult: null 
-    }).then(lukkModal);
+    db.ref(hentSti(valgtElevId)).update({ oppgaver: verdier, sum: sum, dato: new Date().toISOString(), skjult: null }).then(lukkModal);
 }
 
 function slettPoeng(navn) { if(confirm(`Nullstille poeng for ${navn}?`)) db.ref(hentSti(navn)).remove(); }
@@ -216,17 +187,112 @@ function leggTilNyElev() {
     const f = document.getElementById('nyttFornavn').value.trim();
     if(!e || !f) return alert("Navn mangler");
     const navn = `${e}, ${f}`;
-    elevRegister[navn] = { 
-        startTrinn: parseInt(document.getElementById('mTrinn').value), 
-        startKlasse: document.getElementById('mKlasse').value, 
-        startAar: parseInt(document.getElementById('mAar').value.split('-')[0]) 
-    };
+    elevRegister[navn] = { startTrinn: parseInt(document.getElementById('mTrinn').value), startKlasse: document.getElementById('mKlasse').value, startAar: parseInt(document.getElementById('mAar').value.split('-')[0]) };
     tegnTabell();
-    document.getElementById('nyttEtternavn').value = ""; 
-    document.getElementById('nyttFornavn').value = "";
+    document.getElementById('nyttEtternavn').value = ""; document.getElementById('nyttFornavn').value = "";
 }
 
-// --- 6. EKSPORT OG ADMIN ---
+// --- 6. ADMIN-FUNKSJONER (NYE) ---
+
+function sjekkAdminKode() {
+    const kode = prompt("Vennligst oppgi adminkode:");
+    if (kode === "3850") { document.getElementById('adminPanel').style.display = 'block'; }
+    else if (kode !== null) { alert("Feil kode."); }
+}
+
+async function kjorAdminRapport(type) {
+    const aar = document.getElementById('adminAar').value;
+    const fag = document.getElementById('adminFag').value;
+    const periode = document.getElementById('adminPeriode').value;
+    const trinn = document.getElementById('adminTrinn').value;
+    const oppsett = hentOppsettSpesifikk(aar, fag, periode, trinn);
+    
+    if(!oppsett) return alert("Fant ikke oppsett for dette valget.");
+    document.getElementById('modalRapport').style.display = 'none';
+
+    const tBody = document.getElementById('tBody');
+    const tHead = document.getElementById('tHead');
+    tBody.innerHTML = "<tr><td colspan='100%'>Henter data for hele trinnet...</td></tr>";
+    
+    let samletData = [];
+    const klasser = ["A", "B", "C", "D"];
+
+    for (let k of klasser) {
+        const snap = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${k}`).once('value');
+        const data = snap.val() || {};
+        Object.keys(data).forEach(navn => {
+            if (!data[navn].skjult && data[navn].oppgaver) {
+                if (type === 'kritisk' && data[navn].sum > oppsett.grenseTotal) return;
+                samletData.push({ navn, klasse: k, ...data[navn] });
+            }
+        });
+    }
+
+    document.getElementById('printTittel').innerText = (type === 'kritisk' ? "Kritisk Grense Rapport: " : "Årsrapport: ") + `${fag} - ${trinn}. trinn - ${periode}en ${aar}`;
+    tHead.innerHTML = `<tr><th>Klasse</th><th style="text-align:left">Navn</th>${oppsett.oppgaver.map(o=>`<th>${o.navn}</th>`).join("")}<th>Sum</th></tr>`;
+    tBody.innerHTML = samletData.length ? "" : "<tr><td colspan='100%'>Ingen registrerte data funnet.</td></tr>";
+
+    samletData.sort((a,b) => a.klasse.localeCompare(b.klasse) || a.navn.localeCompare(b.navn)).forEach(d => {
+        let rad = `<tr><td>${d.klasse}</td><td style="text-align:left"><b>${d.navn}</b></td>`;
+        oppsett.oppgaver.forEach((o, i) => {
+            const p = d.oppgaver[i] || 0;
+            let c = (fag === "Lesing" && o.grense !== -1 && p <= o.grense) ? 'class="alert-low"' : '';
+            rad += `<td ${c}>${p}</td>`;
+        });
+        rad += `<td ${(d.sum <= oppsett.grenseTotal) ? 'class="alert-low"' : ''}>${d.sum}</td></tr>`;
+        tBody.innerHTML += rad;
+    });
+}
+
+async function kjorSammenligning() {
+    const aar = document.getElementById('compAar').value;
+    const fag = document.getElementById('compFag').value;
+    const periode = document.getElementById('compPeriode').value;
+    const trinn = document.getElementById('compTrinn').value;
+    const oppsett = hentOppsettSpesifikk(aar, fag, periode, trinn);
+
+    if(!oppsett) return alert("Fant ikke oppsett.");
+    document.getElementById('modalSammenlign').style.display = 'none';
+    document.getElementById('chartContainer').style.display = 'block';
+
+    const klasser = ["A", "B", "C", "D"];
+    const farger = ['rgba(41, 128, 185, 0.7)', 'rgba(39, 174, 96, 0.7)', 'rgba(230, 126, 34, 0.7)', 'rgba(155, 89, 182, 0.7)'];
+    let datasets = [];
+
+    for (let i = 0; i < klasser.length; i++) {
+        const snap = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasser[i]}`).once('value');
+        const data = snap.val() || {};
+        let antall = 0, summer = new Array(oppsett.oppgaver.length + 1).fill(0);
+
+        Object.keys(data).forEach(n => {
+            if (!data[n].skjult && data[n].oppgaver) {
+                antall++;
+                data[n].oppgaver.forEach((p, idx) => summer[idx] += p);
+                summer[oppsett.oppgaver.length] += data[n].sum;
+            }
+        });
+
+        if (antall > 0) {
+            datasets.push({
+                label: `Klasse ${trinn}${klasser[i]}`,
+                data: summer.map(s => (s / antall).toFixed(1)),
+                backgroundColor: farger[i],
+                borderColor: farger[i].replace('0.7', '1'),
+                borderWidth: 1
+            });
+        }
+    }
+
+    const ctx = document.getElementById('sammenligningsChart').getContext('2d');
+    if (myChart) myChart.destroy();
+    myChart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: [...oppsett.oppgaver.map(o => o.navn), "Total"], datasets },
+        options: { responsive: true, scales: { y: { beginAtZero: true } }, plugins: { title: { display: true, text: `Snitt per oppgave: ${fag} ${trinn}.trinn (${periode} ${aar})` } } }
+    });
+}
+
+// --- 7. EKSPORT OG PRINT ---
 function forberedPrint() { window.print(); }
 
 function eksporterTilExcel() {
@@ -234,13 +300,11 @@ function eksporterTilExcel() {
     const t = parseInt(document.getElementById('mTrinn').value);
     const k = document.getElementById('mKlasse').value;
     const a = parseInt(document.getElementById('mAar').value.split('-')[0]);
-
     const aktiveNavn = Object.keys(elevRegister).filter(n => {
         const e = elevRegister[n];
         const curT = e.startTrinn + (a - e.startAar);
         return curT === t && e.startKlasse === k && !(lagredeResultater[n] && lagredeResultater[n].skjult === true);
     }).sort();
-
     let csv = "\uFEFFElevnavn;" + oppsett.oppgaver.map(o => o.navn).join(";") + ";Sum\n";
     aktiveNavn.forEach(n => {
         const d = lagredeResultater[n];
@@ -252,63 +316,7 @@ function eksporterTilExcel() {
     link.click();
 }
 
-function sjekkAdminKode() {
-    const kode = prompt("Vennligst oppgi adminkode:");
-    if (kode === "3850") {
-        document.getElementById('adminPanel').style.display = 'block';
-    } else if (kode !== null) {
-        alert("Feil kode.");
-    }
-}
-
-async function genererAdminRapport(type) {
-    const aar = document.getElementById('mAar').value;
-    const fag = document.getElementById('mFag').value;
-    const periode = document.getElementById('mPeriode').value;
-    const trinn = document.getElementById('mTrinn').value;
-    const klasser = ["A", "B", "C", "D"];
-    const tBody = document.getElementById('tBody');
-    const tHead = document.getElementById('tHead');
-    const oppsett = hentOppsett();
-
-    tBody.innerHTML = "<tr><td colspan='100%'>Henter data...</td></tr>";
-    let samletData = [];
-
-    for (let k of klasser) {
-        const snapshot = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${k}`).once('value');
-        const data = snapshot.val() || {};
-        
-        Object.keys(elevRegister).forEach(navn => {
-            const elev = elevRegister[navn];
-            const startAar = parseInt(aar.split('-')[0]);
-            const curT = elev.startTrinn + (startAar - elev.startAar);
-            
-            if (curT == trinn && elev.startKlasse === k) {
-                const res = data[navn];
-                if (res && !res.skjult) {
-                    if (type === 'kritisk' && res.sum > oppsett.grenseTotal) return;
-                    samletData.push({ navn, klasse: k, ...res });
-                }
-            }
-        });
-    }
-
-    tHead.innerHTML = `<tr><th>Klasse</th><th style="text-align:left">Navn</th>${oppsett.oppgaver.map(o=>`<th>${o.navn}</th>`).join("")}<th>Sum</th></tr>`;
-    tBody.innerHTML = samletData.length ? "" : "<tr><td colspan='100%'>Ingen data funnet.</td></tr>";
-    
-    samletData.sort((a,b) => a.klasse.localeCompare(b.klasse) || a.navn.localeCompare(b.navn)).forEach(d => {
-        let r = `<tr><td>${d.klasse}</td><td style="text-align:left"><b>${d.navn}</b></td>`;
-        oppsett.oppgaver.forEach((o, i) => {
-            const p = d.oppgaver[i] || 0;
-            let c = (fag === "Lesing" && o.grense !== -1 && p <= o.grense) ? 'class="alert-low"' : '';
-            r += `<td ${c}>${p}</td>`;
-        });
-        r += `<td ${(d.sum <= oppsett.grenseTotal) ? 'class="alert-low"' : ''}>${d.sum}</td></tr>`;
-        tBody.innerHTML += r;
-    });
-}
-
-// Enter-tast i modal
+// Enter-tast logikk
 document.addEventListener('keydown', e => {
     if (e.key === 'Enter' && document.getElementById('modal').style.display === 'block') {
         const inputs = Array.from(document.querySelectorAll('.oppg-input'));
@@ -317,66 +325,3 @@ document.addEventListener('keydown', e => {
         else if (idx === inputs.length - 1) { lagreData(); }
     }
 });
-
-
-let myChart = null; // Holder på diagram-objektet
-
-async function sammenlignKlasser() {
-    const aar = document.getElementById('mAar').value;
-    const fag = document.getElementById('mFag').value;
-    const periode = document.getElementById('mPeriode').value;
-    const trinn = document.getElementById('mTrinn').value;
-    if (!aar || !fag || !periode || !trinn) return alert("Velg år, fag, periode og trinn først!");
-
-    const oppsett = hentOppsett();
-    const klasser = ["A", "B", "C", "D"];
-    const labels = oppsett.oppgaver.map(o => o.navn);
-    labels.push("Total"); // Legger til totalsum som siste søyle
-
-    let datasets = [];
-    const farger = ['rgba(41, 128, 185, 0.7)', 'rgba(39, 174, 96, 0.7)', 'rgba(230, 126, 34, 0.7)', 'rgba(155, 89, 182, 0.7)'];
-
-    for (let i = 0; i < klasser.length; i++) {
-        const k = klasser[i];
-        const snapshot = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${k}`).once('value');
-        const data = snapshot.val() || {};
-        
-        let antallElever = 0;
-        let sumPerOppgave = new Array(oppsett.oppgaver.length + 1).fill(0);
-
-        Object.keys(data).forEach(navn => {
-            if (!data[navn].skjult && data[navn].oppgaver) {
-                antallElever++;
-                data[navn].oppgaver.forEach((p, idx) => sumPerOppgave[idx] += p);
-                sumPerOppgave[oppsett.oppgaver.length] += data[navn].sum;
-            }
-        });
-
-        if (antallElever > 0) {
-            const snitt = sumPerOppgave.map(s => (s / antallElever).toFixed(1));
-            datasets.push({
-                label: `Klasse ${trinn}${k} (snitt)`,
-                data: snitt,
-                backgroundColor: farger[i],
-                borderColor: farger[i].replace('0.7', '1'),
-                borderWidth: 1
-            });
-        }
-    }
-
-    document.getElementById('chartContainer').style.display = 'block';
-    const ctx = document.getElementById('sammenligningsChart').getContext('2d');
-    
-    if (myChart) myChart.destroy(); // Slett gammelt diagram hvis det finnes
-    
-    myChart = new Chart(ctx, {
-        type: 'bar',
-        data: { labels: labels, datasets: datasets },
-        options: {
-            responsive: true,
-            scales: { y: { beginAtZero: true, title: { display: true, text: 'Gjennomsnittspoeng' } } },
-            plugins: { title: { display: true, text: `Sammenligning ${fag} - ${trinn}. trinn (${periode})` } }
-        }
-    });
-}
-window.onload = () => { if(!auth.currentUser) document.getElementById('loginScreen').style.display = 'flex'; };
