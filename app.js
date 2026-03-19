@@ -456,19 +456,20 @@ async function kjorSammenligning() {
                 datalabels: {
                     align: 'end',
                     anchor: 'end',
-                    offset: -40, // Flytter teksten ned inn i søylen
+                    offset: -45, // Justert litt ned for å gi plass til mer tekst
                     color: 'white',
                     font: { weight: 'bold', size: 10 },
                     formatter: function(value, context) {
                         const idx = context.dataIndex;
                         const maks = maksVerdier[idx];
                         const prosent = ((value / maks) * 100).toFixed(1);
-                        return value + "\n" + prosent + "%"; // Viser poeng over prosent
+                        
+                        // RETURNERER: "4.2 / 5" på første linje og "84.0%" på andre
+                        return value + " / " + maks + "\n" + prosent + "%";
                     }
                 }
             });
         }
-    }
 
     // Rød linje for kritisk grense (vi deaktiverer labels for denne linjen)
     const grenseData = [...oppsett.oppgaver.map(o => o.grense), oppsett.grenseTotal];
