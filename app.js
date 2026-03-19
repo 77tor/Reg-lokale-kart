@@ -162,10 +162,36 @@ function sjekkAdminKode() {
 }
 
 function lukkAdmin() {
+    // 1. Skjul selve admin-panelene
     document.getElementById('adminPanel').style.display = 'none';
     document.getElementById('chartContainer').style.display = 'none';
+    
+    // 2. Vis det vanlige innholdet igjen
     document.getElementById('skjemaInnhold').style.display = 'block';
     document.getElementById('hovedTabell').style.display = 'table';
+    
+    // 3. NULLSTILLING: Tøm rapport-containeren hvis den finnes
+    const rc = document.getElementById('rapportContainer');
+    if (rc) rc.innerHTML = "";
+
+    // 4. NULLSTILLING: Tøm tabellen (header og body)
+    document.getElementById('tHead').innerHTML = "";
+    document.getElementById('tBody').innerHTML = "<tr><td>Velg alle kriterier...</td></tr>";
+
+    // 5. NULLSTILLING: Sett alle nedtrekksmenyer (select) tilbake til første valg
+    // Dette gjør at du må velge på nytt for å se data
+    const filtere = ['mAar', 'mFag', 'mPeriode', 'mTrinn', 'mKlasse'];
+    filtere.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.selectedIndex = 0; 
+    });
+
+    // 6. Nullstill overskrifter og interne data
+    oppdaterOverskrifter("Velg kriterier for å vise kartlegging");
+    lagredeResultater = {}; 
+    
+    // Stopper aktiv lytting på Firebase-databasen for å spare ressurser
+    db.ref().off(); 
 }
 
 async function kjorAdminRapport(type) {
