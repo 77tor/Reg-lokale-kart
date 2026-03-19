@@ -518,6 +518,16 @@ async function kjorSammenligning() {
     });
 }
 
+// --- ELEVRAPPORT I ADMIN-FUNKSJONER ---
+function filtrerElevListe() {
+    const sok = document.getElementById('elevSokInput').value.toLowerCase();
+    const rader = document.querySelectorAll('.elev-valg-rad');
+    
+    rader.forEach(rad => {
+        const navn = rad.innerText.toLowerCase();
+        rad.style.display = navn.includes(sok) ? "block" : "none";
+    });
+}
 
 function leggTilNyElev() {
     const etternavn = document.getElementById('nyttEtternavn').value.trim();
