@@ -33,34 +33,36 @@ tr:hover { background-color: #f1f1f1; }
 
 /* KNAPPE-DEFINISJONER */
 .btn { 
-    padding: 8px 16px; /* Økt litt fra 6px 12px for å gi mer luft */
+    padding: 6px 8px; /* Økt litt fra 6px 12px for å gi mer luft */
     border: none; 
     border-radius: 4px; 
     cursor: pointer; 
     font-weight: bold; 
     transition: 0.2s; 
-    font-size: 0.85em; /* Gjort ørlite større for lesbarhet */
-    min-width: 80px;  /* Sikrer at knappene har en fin minstestørrelse */
+    font-size: 0.8em; /* Gjort ørlite større for lesbarhet */
+    min-width: 60px;  /* Sikrer at knappene har en fin minstestørrelse */
 }
 
 /* Spesifikke farger for registreringsmodus */
 .btn-reg { 
     background: #27ae60; 
     color: white;
-    min-width: 100px; /* Gir Registrer-knappen litt ekstra bredde */
+    min-width: 85px; /* Gir Registrer-knappen litt ekstra bredde */
 }
 /* Nullstill-knapp (Oransje) */
 .btn-nullstill { 
     background: #e67e22; 
-    color: white; 
+    color: white;
+    min-width: 65px; 
 }
 .btn-nullstill:hover { 
-    background: #d35400; 
+    background: #d35400;
+    min-width: 65px; 
 }
 
-.btn-edit { background: #2980b9; color: white; }   /* Blå for endre */
-.btn-slett { background: #e74c3c; color: white; }  /* Rød for slett (Endret fra oransje) */
-.btn-hent { background: #2ecc71; color: white; }   /* Lys grønn for hent tilbake */
+.btn-edit { background: #2980b9; color: white; min-width: 65px; }   /* Blå for endre */
+.btn-slett { background: #e74c3c; color: white; min-width: 65px; }  /* Rød for slett (Endret fra oransje) */
+.btn-hent { background: #2ecc71; color: white; min-width: 85px; }   /* Lys grønn for hent tilbake */
 
 /* Andre knapper */
 .btn-excel { background: #1f7244; color: white; }
