@@ -412,7 +412,6 @@ async function kjorAdminRapport(type) {
     }, 500);
 }
 
-
 async function kjorSammenligning() {
     const aar = document.getElementById('compAar').value;
     const fag = document.getElementById('compFag').value;
@@ -428,13 +427,15 @@ async function kjorSammenligning() {
     let datasets = [];
     const farger = ['rgba(41, 128, 185, 0.7)', 'rgba(39, 174, 96, 0.7)', 'rgba(230, 126, 34, 0.7)', 'rgba(155, 89, 182, 0.7)'];
 
+    // 1. Hent data for hver klasse
     for (let i = 0; i < klasser.length; i++) {
         const snap = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasser[i]}`).once('value');
         const data = snap.val() || {};
         let antall = 0, summer = new Array(oppsett.oppgaver.length + 1).fill(0);
 
         Object.keys(data).forEach(n => {
-            if (data[n].oppgaver) {
+            // Sjekker at eleven har data OG ikke er markert som slettet
+            if (data[n].oppgaver && data[n].slettet !== true) {
                 antall++;
                 data[n].oppgaver.forEach((p, idx) => summer[idx] += p);
                 summer[oppsett.oppgaver.length] += data[n].sum;
@@ -443,20 +444,61 @@ async function kjorSammenligning() {
 
         if (antall > 0) {
             datasets.push({
+                type: 'bar', // Definerer dette som søyler
                 label: `Klasse ${klasser[i]}`,
                 data: summer.map(s => (s / antall).toFixed(1)),
-                backgroundColor: farger[i]
+                backgroundColor: farger[i],
+                borderRadius: 4
             });
         }
     }
 
+    // 2. Legg til den kritiske grensen som en rød linje
+    // Vi mapper ut grensen for hver oppgave, og legger til totalgrensen til slutt
+    const grenseData = [...oppsett.oppgaver.map(o => o.grense), oppsett.grenseTotal];
+
+    datasets.push({
+        type: 'line', // Definerer dette som en linje
+        label: 'Kritisk grense',
+        data: grenseData,
+        borderColor: '#e74c3c', // Rød
+        borderWidth: 3,
+        borderDash: [5, 5],    // Gjør linjen stiplet
+        pointBackgroundColor: '#e74c3c',
+        pointRadius: 4,
+        fill: false,           // Ikke fyll farge under linjen
+        tension: 0,            // Helt rette linjer mellom punktene
+        zIndex: 10             // Sørger for at linjen ligger foran søylene
+    });
+
+    // 3. Tegn diagrammet
     const ctx = document.getElementById('sammenligningsChart').getContext('2d');
     if (myChart) myChart.destroy();
+    
     myChart = new Chart(ctx, {
-        type: 'bar',
-        data: { labels: [...oppsett.oppgaver.map(o => o.navn), "Total"], datasets }
+        data: { 
+            labels: [...oppsett.oppgaver.map(o => o.navn), "Total"], 
+            datasets: datasets 
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Gjennomsnittspoeng' }
+                }
+            },
+            plugins: {
+                legend: { position: 'top' },
+                title: {
+                    display: true,
+                    text: `Sammenligning: ${fag} - Trinn ${trinn} (${periode} ${aar})`
+                }
+            }
+        }
     });
 }
+
 function leggTilNyElev() {
     const etternavn = document.getElementById('nyttEtternavn').value.trim();
     const fornavn = document.getElementById('nyttFornavn').value.trim();
