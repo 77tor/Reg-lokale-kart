@@ -26,10 +26,7 @@
         .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 0.8em; }
         .btn-reg { background: #27ae60; color: white; }
         .btn-edit { background: #2980b9; color: white; }
-        .btn-slett { background: #e67e22; color: white; }
         .btn-fjern { background: #95a5a6; color: white; }
-        .btn-hent { background: #2ecc71; color: white; }
-        .btn-excel { background: #1f7244; color: white; }
         .btn-print { background: #34495e; color: white; }
         .btn-logout { background: #e74c3c; color: white; margin-left: 10px; }
         
@@ -37,17 +34,17 @@
         .modal-content { background: white; margin: 5% auto; padding: 25px; border-radius: 12px; width: 450px; max-height: 85vh; overflow-y: auto; }
         .alert-low { background-color: #ffcccc !important; }
 
-        /* Rapport-styling */
-        .rapport-side { margin-bottom: 50px; }
-        .print-only-header { display: none; }
+        /* Rapport-visning */
+        .rapport-klasse-blokk { margin-bottom: 50px; }
+        .rapport-tittel { display: none; text-align: center; margin-bottom: 15px; }
 
         @media print { 
-            @page { size: landscape; margin: 1cm; } 
-            .no-print, .btn, .modal, .action-bar, .header-grid, #loginScreen { display: none !important; } 
+            @page { size: landscape; margin: 0.8cm; } 
+            .no-print, .btn, .modal, .action-bar, .header-grid, .ny-elev-boks, #loginScreen { display: none !important; } 
             .container { box-shadow: none; margin: 0; padding: 0; width: 100%; } 
             .page-break { page-break-before: always; }
-            .print-only-header { display: block !important; text-align: center; margin-bottom: 10px; }
-            table { font-size: 9pt; width: 100%; }
+            .rapport-tittel { display: block !important; }
+            table { font-size: 8.5pt; width: 100%; border: 1px solid black; }
             th, td { border: 1px solid black !important; padding: 4px; }
         }
     </style>
@@ -88,34 +85,25 @@
             <span id="dynamiskOverskrift" style="margin-left: 20px; font-weight: bold; align-self: center;"></span>
         </div>
 
-        <div id="tabellOmrade">
+        <div id="tabellVisning">
             <table id="hovedTabell">
                 <thead id="tHead"></thead>
                 <tbody id="tBody"></tbody>
             </table>
         </div>
+        
         <div id="rapportContainer"></div>
-    </div>
-</div>
-
-<div id="modal" class="modal">
-    <div class="modal-content">
-        <h3 id="modalNavn"></h3>
-        <div id="oppgaveFelter"></div>
-        <button class="btn btn-reg" onclick="lagreData()">Lagre</button>
-        <button class="btn btn-fjern" onclick="lukkModal()">Avbryt</button>
     </div>
 </div>
 
 <div id="modalRapport" class="modal">
     <div class="modal-content">
-        <h3>Generer Årsrapport</h3>
+        <h3>Generer Årsrapport (Alle klasser)</h3>
         <label>Skoleår:</label><select id="adminAar"><option value="2024-2025">2024-2025</option><option value="2025-2026" selected>2025-2026</option></select>
         <label>Fag:</label><select id="adminFag"><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select>
         <label>Periode:</label><select id="adminPeriode"><option value="Høst">Høst</option><option value="Vår">Vår</option></select>
         <div style="margin-top:20px;">
             <button class="btn btn-reg" onclick="kjorAdminRapport('alle')">Vis Rapport</button>
-            <button class="btn btn-slett" onclick="kjorAdminRapport('kritisk')">Kun Kritisk</button>
             <button class="btn btn-fjern" onclick="document.getElementById('modalRapport').style.display='none'">Avbryt</button>
         </div>
     </div>
