@@ -162,17 +162,113 @@ async function kjorAdminRapport(type) {
     const fag = document.getElementById('adminFag').value;
     const periode = document.getElementById('adminPeriode').value;
     
-    oppdaterOverskrifter(`${type === 'kritisk' ? 'KRITISK-LISTE' : 'ÅRSRAPPORT'}: ${fag} - ${periode} ${aar}`);
+    const tHead = document.getElementById('tHead');
+    const tBody = document.getElementById('tBody');
+    const dynamiskOverskrift = document.getElementById('dynamiskOverskrift');
+    const printTittel = document.getElementById('printTittel');
+
+    // Tøm eksisterende innhold
+    tHead.innerHTML = "";
+    tBody.innerHTML = "Genererer rapport for alle klasser...";
+    
+    let samletInnhold = "";
+    const klasser = ["A", "B", "C", "D"];
+    const alleTrinn = ["1", "2", "3", "4", "5", "6", "7"];
+
+    for (let trinn of alleTrinn) {
+        for (let klasse av klasser) {
+            const oppsett = hentOppsettSpesifikk(aar, fag, periode, trinn);
+            if (!oppsett) continue;
+
+            // Hent data for denne spesifikke klassen
+            const snapshot = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}`).once('value');
+            const data = snapshot.val() || {};
+
+            // Lag overskrift for denne klassen
+            let seksjonOverskrift = `Kartlegging i ${fag} - ${trinn}${klasse} - ${periode} ${aar}`;
+            
+            // Bygg tabell-header
+            let tabellHtml = `<div class="page-break">
+                <h2 class="print-only" style="text-align:center; margin-top:20px;">${seksjonOverskrift}</h2>
+                <table style="width:100%; border-collapse:collapse; margin-bottom:40px;">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left">Elevnavn</th>`;
+            oppsett.oppgaver.forEach(o => tabellHtml += `<th>${o.navn}<br><small>max ${o.maks}</small></th>`);
+            tabellHtml += `<th>Sum</th></tr></thead><tbody>`;
+
+            // Filtrer elever som tilhører dette trinnet og denne klassen
+            const vStartAar = parseInt(aar.split('-')[0]);
+            let antallElever = 0;
+
+            Object.keys(elevRegister).sort().forEach(navn => {
+                const e = elevRegister[navn];
+                const cTrinn = e.startTrinn + (vStartAar - e.startAar);
+                
+                if (cTrinn == trinn && e.startKlasse === klasse) {
+                    const d = data[navn];
+                    const erKritisk = d && d.sum <= oppsett.grenseTotal;
+
+                    // Hvis "Kun Kritisk" er valgt, hopp over de som ikke er kritiske
+                    if (type === 'kritisk' && (!d || !erKritisk)) return;
+
+                    antallElever++;
+                    let rad = `<tr><td style="text-align:left"><b>${navn}</b></td>`;
+                    
+                    if (d && d.oppgaver) {
+                        oppsett.oppgaver.forEach((o, i) => {
+                            const poeng = d.oppgaver[i] || 0;
+                            let cls = (o.grense !== -1 && poeng <= o.grense) ? 'style="background-color:#ffcccc"' : '';
+                            rad += `<td ${cls}>${poeng}</td>`;
+                        });
+                        let sumCls = erKritisk ? 'style="background-color:#ffcccc"' : '';
+                        rad += `<td ${sumCls}>${d.sum}</td>`;
+                    } else {
+                        oppsett.oppgaver.forEach(() => rad += `<td class="not-registered">-</td>`);
+                        rad += `<td class="not-registered">-</td>`;
+                    }
+                    tabellHtml += rad + `</tr>`;
+                }
+            });
+
+            // Fyll ut tomme rader opp til 26 hvis det er en vanlig rapport
+            if (antallElever > 0 || type === 'alle') {
+                for (let i = antallElever; i < 26; i++) {
+                    tabellHtml += `<tr><td style="color:#eee">.</td>${oppsett.oppgaver.map(() => `<td></td>`).join('')}<td></td></tr>`;
+                }
+                tabellHtml += `</tbody></table></div>`;
+                samletInnhold += tabellHtml;
+            }
+        }
+    }
+
+    // Oppdater visningen
     document.getElementById('modalRapport').style.display = 'none';
     document.getElementById('skjemaInnhold').style.display = 'block';
     
-    const tHead = document.getElementById('tHead');
-    const tBody = document.getElementById('tBody');
-    tBody.innerHTML = "Genererer rapport...";
-
-    // Her må logikk for å hente alle trinn legges til hvis ønskelig, 
-    // men overskriften er nå på plass.
+    // Vi injiserer hele rapporten i tBody området, men fjerner standard-tabellen først
+    document.getElementById('hovedTabell').style.display = 'none';
+    
+    // Lag en container for rapporten hvis den ikke finnes
+    let rapportContainer = document.getElementById('rapportContainer');
+    if (!rapportContainer) {
+        rapportContainer = document.createElement('div');
+        rapportContainer.id = 'rapportContainer';
+        document.getElementById('skjemaInnhold').appendChild(rapportContainer);
+    }
+    rapportContainer.innerHTML = samletInnhold;
+    
+    oppdaterOverskrifter(type === 'kritisk' ? 'KRITISK-LISTE (Alle trinn)' : 'ÅRSRAPPORT (Alle trinn)');
 }
+
+// Juster hentData slik at den viser standardtabellen igjen hvis man bytter visning
+const originalHentData = hentData;
+hentData = function() {
+    document.getElementById('hovedTabell').style.display = 'table';
+    const rc = document.getElementById('rapportContainer');
+    if (rc) rc.innerHTML = "";
+    originalHentData();
+};
 
 async function kjorSammenligning() {
     const aar = document.getElementById('compAar').value;
