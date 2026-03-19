@@ -412,6 +412,7 @@ async function kjorAdminRapport(type) {
     }, 500);
 }
 
+// --- SAMMENLIGNING I ADMIN-FUNKSJONER ---
 async function kjorSammenligning() {
     const aar = document.getElementById('compAar').value;
     const fag = document.getElementById('compFag').value;
@@ -420,21 +421,25 @@ async function kjorSammenligning() {
     const oppsett = hentOppsettSpesifikk(aar, fag, periode, trinn);
     if(!oppsett) return;
 
+    // Registrer pluginen (viktig!)
+    Chart.register(ChartDataLabels);
+
     document.getElementById('modalSammenlign').style.display = 'none';
     document.getElementById('chartContainer').style.display = 'block';
 
     const klasser = ["A", "B", "C", "D"];
     let datasets = [];
-    const farger = ['rgba(41, 128, 185, 0.7)', 'rgba(39, 174, 96, 0.7)', 'rgba(230, 126, 34, 0.7)', 'rgba(155, 89, 182, 0.7)'];
+    const farger = ['rgba(41, 128, 185, 0.85)', 'rgba(39, 174, 96, 0.85)', 'rgba(230, 126, 34, 0.85)', 'rgba(155, 89, 182, 0.85)'];
 
-    // 1. Hent data for hver klasse
+    // Lag en liste over maks-poeng for hver kolonne (oppgaver + total)
+    const maksVerdier = [...oppsett.oppgaver.map(o => o.maks), oppsett.oppgaver.reduce((a, b) => a + b.maks, 0)];
+
     for (let i = 0; i < klasser.length; i++) {
         const snap = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasser[i]}`).once('value');
         const data = snap.val() || {};
         let antall = 0, summer = new Array(oppsett.oppgaver.length + 1).fill(0);
 
         Object.keys(data).forEach(n => {
-            // Sjekker at eleven har data OG ikke er markert som slettet
             if (data[n].oppgaver && data[n].slettet !== true) {
                 antall++;
                 data[n].oppgaver.forEach((p, idx) => summer[idx] += p);
@@ -444,34 +449,42 @@ async function kjorSammenligning() {
 
         if (antall > 0) {
             datasets.push({
-                type: 'bar', // Definerer dette som søyler
+                type: 'bar',
                 label: `Klasse ${klasser[i]}`,
                 data: summer.map(s => (s / antall).toFixed(1)),
                 backgroundColor: farger[i],
-                borderRadius: 4
+                datalabels: {
+                    align: 'end',
+                    anchor: 'end',
+                    offset: -40, // Flytter teksten ned inn i søylen
+                    color: 'white',
+                    font: { weight: 'bold', size: 10 },
+                    formatter: function(value, context) {
+                        const idx = context.dataIndex;
+                        const maks = maksVerdier[idx];
+                        const prosent = ((value / maks) * 100).toFixed(1);
+                        return value + "\n" + prosent + "%"; // Viser poeng over prosent
+                    }
+                }
             });
         }
     }
 
-    // 2. Legg til den kritiske grensen som en rød linje
-    // Vi mapper ut grensen for hver oppgave, og legger til totalgrensen til slutt
+    // Rød linje for kritisk grense (vi deaktiverer labels for denne linjen)
     const grenseData = [...oppsett.oppgaver.map(o => o.grense), oppsett.grenseTotal];
-
     datasets.push({
-        type: 'line', // Definerer dette som en linje
+        type: 'line',
         label: 'Kritisk grense',
         data: grenseData,
-        borderColor: '#e74c3c', // Rød
+        borderColor: '#e74c3c',
         borderWidth: 3,
-        borderDash: [5, 5],    // Gjør linjen stiplet
-        pointBackgroundColor: '#e74c3c',
+        borderDash: [5, 5],
         pointRadius: 4,
-        fill: false,           // Ikke fyll farge under linjen
-        tension: 0,            // Helt rette linjer mellom punktene
-        zIndex: 10             // Sørger for at linjen ligger foran søylene
+        fill: false,
+        tension: 0,
+        datalabels: { display: false } // Skjul tall på selve linjen
     });
 
-    // 3. Tegn diagrammet
     const ctx = document.getElementById('sammenligningsChart').getContext('2d');
     if (myChart) myChart.destroy();
     
@@ -482,22 +495,27 @@ async function kjorSammenligning() {
         },
         options: {
             responsive: true,
+            layout: { padding: { top: 20 } },
             scales: {
-                y: {
+                y: { 
                     beginAtZero: true,
-                    title: { display: true, text: 'Gjennomsnittspoeng' }
+                    max: Math.max(...maksVerdier) * 1.1 // Gir litt luft i toppen
                 }
             },
             plugins: {
                 legend: { position: 'top' },
-                title: {
-                    display: true,
-                    text: `Sammenligning: ${fag} - Trinn ${trinn} (${periode} ${aar})`
+                // Global innstilling for datalabels
+                datalabels: {
+                    textAlign: 'center',
+                    display: function(context) {
+                        return context.dataset.type === 'bar'; // Vis kun på søyler
+                    }
                 }
             }
         }
     });
 }
+
 
 function leggTilNyElev() {
     const etternavn = document.getElementById('nyttEtternavn').value.trim();
