@@ -15,41 +15,47 @@
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; margin: 0; background: #f0f2f5; color: #333; }
         .container { max-width: 1400px; margin: 20px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        #loginScreen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f0f2f5; }
-        .header-grid { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; background: #e9ecef; padding: 15px; border-radius: 8px; align-items: flex-end; }
-        .header-grid > div { flex: 1; min-width: 140px; }
-        .header-grid label { display: block; font-size: 0.85em; margin-bottom: 5px; font-weight: bold; color: #4a5568; }
-        .action-bar { display: flex; gap: 10px; margin-bottom: 20px; }
-        select, input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em; }
-        th, td { border: 1px solid #dee2e6; padding: 8px; text-align: center; }
+        .header-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px; }
+        .header-grid div { display: flex; flex-direction: column; }
+        label { font-size: 0.85em; font-weight: bold; margin-bottom: 5px; color: #555; }
+        select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 1em; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+        th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; }
         th { background: #f8f9fa; position: sticky; top: 0; z-index: 10; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
         tr:hover { background-color: #f1f1f1; }
-        .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 0.8em; }
-        .btn-reg { background: #27ae60; color: white; }
-        .btn-edit { background: #2980b9; color: white; }
-        .btn-slett { background: #e67e22; color: white; }
-        .btn-fjern { background: #95a5a6; color: white; }
-        .btn-hent { background: #2ecc71; color: white; }
-        .btn-excel { background: #1f7244; color: white; }
-        .btn-print { background: #34495e; color: white; }
-        .btn-logout { background: #e74c3c; color: white; margin-left: 10px; }
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); }
-        .modal-content { background: white; margin: 5% auto; padding: 25px; border-radius: 12px; width: 450px; max-height: 85vh; overflow-y: auto; box-shadow: 0 5px 30px rgba(0,0,0,0.3); }
-        .oppgave-rad { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        .not-registered { color: #aaa; font-style: italic; }
-        .alert-low { background: #ffcccc !important; font-weight: bold; color: #c0392b; }
-        .skjult-seksjon { background: #f8f9fa; color: #7f8c8d; font-style: italic; }
-        @media print { @page { size: landscape; margin: 0.5cm; } .header-grid, .btn, .modal, .action-bar, .ny-elev-boks, .no-print, #loginScreen { display: none !important; } .container { box-shadow: none; margin: 0; padding: 0; max-width: 100%; } table { font-size: 8pt; width: 100%; border: 1px solid black; border-collapse: collapse; } th, td { border: 1px solid black !important; padding: 2px 4px; line-height: 1.1; -webkit-print-color-adjust: exact; print-color-adjust: exact; } h1, h2, h3 { margin: 5px 0; } .print-header { display: block !important; margin-bottom: 10px; text-align: center; } #printTittel { font-size: 14pt; } .alert-low { background-color: #ffcccc !important; } }
-        .print-header { display: none; }
-        .page-break { page-break-before: always; }
+        
+        .btn { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
+        .btn-edit { background: #3498db; color: white; }
+        .btn-slett { background: #e74c3c; color: white; }
+        .btn-print { background: #2ecc71; color: white; }
+        .btn-hent { background: #f39c12; color: white; }
+        .btn-logout { background: #95a5a6; color: white; margin-left: 10px; }
+        .btn-fjern { background: #666; color: white; }
+        
+        .krt-felt { background: #ffebee; color: #c62828; font-weight: bold; }
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+        .modal-content { background: white; margin: 5% auto; padding: 25px; border-radius: 8px; width: 80%; max-width: 600px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        
+        @media print {
+            .no-print { display: none !important; }
+            .container { box-shadow: none; margin: 0; padding: 0; max-width: 100%; }
+            body { background: white; }
+            th { background: #eee !important; color: black !important; }
+        }
+
+        #loginScreen { text-align: center; padding: 100px 20px; }
+        .stat-box { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { padding: 15px; background: #ebf5fb; border-left: 5px solid #3498db; border-radius: 4px; }
     </style>
 </head>
 <body>
 
 <div id="loginScreen">
-    <h1 style="margin-bottom: 20px;">Kartleggingsverktøy Pro</h1>
-    <button class="btn btn-reg" onclick="login()" style="padding: 15px 30px; font-size: 1.2em;">Logg inn med Google</button>
+    <h1>Kartleggingsverktøy</h1>
+    <p>Vennligst logg inn med din skole-e-post</p>
+    <button class="btn btn-edit" onclick="login()" style="padding: 15px 30px; font-size: 1.2em;">Logg inn med Google</button>
 </div>
 
 <div class="container" id="mainContent" style="display: none;">
@@ -89,60 +95,129 @@
             <canvas id="sammenligningsChart"></canvas>
         </div>
         <div style="margin-top:20px;text-align:right;">
-            <button class="btn btn-fjern" onclick="document.getElementById('adminPanel').style.display='none';document.getElementById('chartContainer').style.display='none'">Lukk Panel</button>
+            <button class="btn btn-fjern" onclick="lukkAdmin()">Lukk Panel</button>
         </div>
     </div>
-    
-    <div class="header-grid no-print">
-        <div><label>Skoleår:</label><select id="mAar" onchange="hentData()"><option value="" disabled selected>Velg år...</option><option value="2024-2025">2024-2025</option><option value="2025-2026">2025-2026</option><option value="2026-2027">2026-2027</option></select></div>
-        <div><label>Fag:</label><select id="mFag" onchange="hentData()"><option value="" disabled selected>Velg fag...</option><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select></div>
-        <div><label>Periode:</label><select id="mPeriode" onchange="hentData()"><option value="" disabled selected>Velg periode...</option><option value="Høst">Høst</option><option value="Vår">Vår</option></select></div>
-        <div><label>Trinn:</label><select id="mTrinn" onchange="hentData()"><option value="" disabled selected>Velg trinn...</option><option value="1">1. Trinn</option><option value="2">2. Trinn</option><option value="3">3. Trinn</option><option value="4">4. Trinn</option><option value="5">5. Trinn</option><option value="6">6. Trinn</option><option value="7">7. Trinn</option></select></div>
-        <div><label>Klasse:</label><select id="mKlasse" onchange="hentData()"><option value="" disabled selected>Velg klasse...</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></div>
-    </div>
 
-    <div class="action-bar no-print">
-        <button class="btn btn-print" onclick="forberedPrint()">Skriv ut / PDF</button>
-        <button class="btn btn-excel" onclick="eksporterTilExcel()">Eksport til Excel</button>
-        <span id="dynamiskOverskrift" style="margin-left: 20px; font-weight: bold; font-size: 1.1em; align-self: center; color: #2c3e50;"></span>
-    </div>
+    <div id="skjemaInnhold">
+        <div class="header-grid no-print">
+            <div>
+                <label>Skoleår</label>
+                <select id="valgtAar" onchange="hentData()">
+                    <option value="2024-2025">2024-2025</option>
+                    <option value="2025-2026" selected>2025-2026</option>
+                </select>
+            </div>
+            <div>
+                <label>Fag</label>
+                <select id="valgtFag" onchange="hentData()">
+                    <option value="Lesing">Lesing</option>
+                    <option value="Regning">Regning</option>
+                </select>
+            </div>
+            <div>
+                <label>Periode</label>
+                <select id="valgtPeriode" onchange="hentData()">
+                    <option value="Høst">Høst</option>
+                    <option value="Vår">Vår</option>
+                </select>
+            </div>
+            <div>
+                <label>Trinn</label>
+                <select id="valgtTrinn" onchange="hentData()">
+                    <option value="1">1. Trinn</option>
+                    <option value="2">2. Trinn</option>
+                    <option value="3">3. Trinn</option>
+                    <option value="4">4. Trinn</option>
+                    <option value="5">5. Trinn</option>
+                    <option value="6">6. Trinn</option>
+                    <option value="7">7. Trinn</option>
+                </select>
+            </div>
+            <div>
+                <label>Klasse</label>
+                <select id="valgtKlasse" onchange="hentData()">
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                </select>
+            </div>
+            <div style="justify-content: flex-end;">
+                <button class="btn btn-print" onclick="forberedPrint()">Skriv ut liste</button>
+            </div>
+        </div>
 
-    <table id="hovedTabell">
-        <thead id="tHead"></thead>
-        <tbody id="tBody"></tbody>
-    </table>
-
-    <div class="ny-elev-boks no-print" style="margin-top: 40px; padding: 20px; background: #f8f9fa; border: 2px dashed #cbd5e0; border-radius: 8px;">
-        <h4>Legg til ny elev manuelt</h4>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <input type="text" id="nyttEtternavn" placeholder="Etternavn" style="flex:1">
-            <input type="text" id="nyttFornavn" placeholder="Fornavn" style="flex:1">
-            <button class="btn btn-reg" onclick="leggTilNyElev()">Legg til i denne klassen</button>
+        <div id="statistikk" class="stat-box no-print"></div>
+        
+        <div class="table-container">
+            <table id="hovedTabell">
+                <thead><tr id="tabellHode"></tr></thead>
+                <tbody id="tabellKropp"></tbody>
+            </table>
         </div>
     </div>
 </div>
 
-<div id="modal" class="modal">
+<div id="modalPoeng" class="modal">
     <div class="modal-content">
-        <h3 id="modalNavn">Navn</h3>
-        <p style="font-size: 0.75em; color: #7f8c8d;">Naviger med [Enter]. Lagre på siste felt.</p>
-        <hr>
-        <div id="oppgaveFelter"></div>
+        <h3 id="modalNavn">Elevnavn</h3>
+        <div id="poengInputGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
         <div style="margin-top: 20px; display: flex; gap: 10px;">
-            <button class="btn btn-reg" style="flex:2" onclick="lagreData()">Lagre</button>
-            <button class="btn btn-fjern" style="flex:1" onclick="lukkModal()">Avbryt</button>
+            <button class="btn btn-edit" style="flex: 2;" onclick="lagrePoeng()">Lagre resultater</button>
+            <button class="btn btn-fjern" style="flex: 1;" onclick="document.getElementById('modalPoeng').style.display='none'">Avbryt</button>
         </div>
     </div>
 </div>
 
+<div id="modalRapport" class="modal">
+    <div class="modal-content">
+        <h3>Generer Årsrapport</h3>
+        <p>Dette vil generere en oversikt over alle klassene på valgt trinn.</p>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-edit" style="flex:2" onclick="kjorAdminRapport('alle')">Vis Rapport</button>
+            <button class="btn btn-slett" style="flex:2" onclick="kjorAdminRapport('kritisk')">Kun Kritisk</button>
+            <button class="btn btn-fjern" style="flex:1" onclick="document.getElementById('modalRapport').style.display='none'">Avbryt</button>
+        </div>
+    </div>
+</div>
 
-<div id="modalRapport" class="modal"><div class="modal-content"><h3>Generer Årsrapport</h3><p style="font-size:0.8em;color:#666;">Dette genererer en rapport for alle trinn og klasser (A-D) for valgt fag/termin.</p><label>Skoleår:</label><select id="adminAar"><option value="2024-2025">2024-2025</option><option value="2025-2026" selected>2025-2026</option></select><label>Fag:</label><select id="adminFag"><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select><label>Periode:</label><select id="adminPeriode"><option value="Høst">Høst</option><option value="Vår">Vår</option></select><div style="margin-top:20px;display:flex;gap:10px;"><button class="btn btn-reg" style="flex:2" onclick="kjorAdminRapport('alle')">Vis Rapport</button><button class="btn btn-slett" style="flex:2" onclick="kjorAdminRapport('kritisk')">Kun Kritisk</button><button class="btn btn-fjern" style="flex:1" onclick="document.getElementById('modalRapport').style.display='none'">Avbryt</button></div></div></div>
+<div id="modalSammenlign" class="modal">
+    <div class="modal-content">
+        <h3>Sammenlign klasser</h3>
+        <label>Skoleår:</label>
+        <select id="compAar">
+            <option value="2024-2025">2024-2025</option>
+            <option value="2025-2026" selected>2025-2026</option>
+        </select>
+        <label>Fag:</label>
+        <select id="compFag">
+            <option value="Lesing">Lesing</option>
+            <option value="Regning">Regning</option>
+        </select>
+        <label>Periode:</label>
+        <select id="compPeriode">
+            <option value="Høst">Høst</option>
+            <option value="Vår">Vår</option>
+        </select>
+        <label>Trinn:</label>
+        <select id="compTrinn">
+            <option value="1">1. Trinn</option>
+            <option value="2">2. Trinn</option>
+            <option value="3">3. Trinn</option>
+            <option value="4">4. Trinn</option>
+            <option value="5">5. Trinn</option>
+            <option value="6">6. Trinn</option>
+            <option value="7">7. Trinn</option>
+        </select>
+        <div style="margin-top:20px;display:flex;gap:10px;">
+            <button class="btn btn-hent" style="flex:2" onclick="genererSammenligning()">Generer analyse</button>
+            <button class="btn btn-fjern" style="flex:1" onclick="document.getElementById('modalSammenlign').style.display='none'">Avbryt</button>
+        </div>
+    </div>
+</div>
 
-<div id="modalSammenlign" class="modal"><div class="modal-content"><h3>Sammenlign klasser</h3><label>Skoleår:</label><select id="compAar"><option value="2024-2025">2024-2025</option><option value="2025-2026" selected>2025-2026</option></select><label>Fag:</label><select id="compFag"><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select><label>Periode:</label><select id="compPeriode"><option value="Høst">Høst</option><option value="Vår">Vår</option></select><label>Trinn:</label><select id="compTrinn"><option value="1">1. Trinn</option><option value="2">2. Trinn</option><option value="3">3. Trinn</option><option value="4">4. Trinn</option><option value="5">5. Trinn</option><option value="6">6. Trinn</option><option value="7">7. Trinn</option></select><div style="margin-top:20px;display:flex;gap:10px;"><button class="btn btn-hent" style="flex:2" onclick="kjorSammenligning()">Lag Diagram</button><button class="btn btn-fjern" style="flex:1" onclick="document.getElementById('modalSammenlign').style.display='none'">Avbryt</button></div></div></div>
-
-<script src="oppsett.js"></script>
 <script src="elever.js"></script>
+<script src="oppsett.js"></script>
 <script src="app.js"></script>
-
 </body>
 </html>
