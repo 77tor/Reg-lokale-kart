@@ -196,6 +196,11 @@ function sjekkAdminKode() {
     if (prompt("Adminkode:") === "3850") { 
         document.getElementById('adminPanel').style.display = 'block'; 
         document.getElementById('skjemaInnhold').style.display = 'none';
+        
+        // SKJUL boksen når admin åpnes
+        if (document.getElementById('nyElevSeksjon')) {
+            document.getElementById('nyElevSeksjon').style.display = 'none';
+        }
     }
 }
 
@@ -208,21 +213,30 @@ function lukkAdmin() {
     document.getElementById('skjemaInnhold').style.display = 'block';
     document.getElementById('hovedTabell').style.display = 'table';
     
-    // 3. NULLSTILLING: Tøm rapport-containeren hvis den finnes
+    // 3. SKJUL "Legg til elev"-boksen (NY)
+    if (document.getElementById('nyElevSeksjon')) {
+        document.getElementById('nyElevSeksjon').style.display = 'none';
+    }
+
+    // 4. NULLSTILLING: Tøm rapport-containeren hvis den finnes
     const rc = document.getElementById('rapportContainer');
     if (rc) rc.innerHTML = "";
 
-    // 4. NULLSTILLING: Tøm tabellen (header og body)
+    // 5. NULLSTILLING: Tøm tabellen (header og body)
     document.getElementById('tHead').innerHTML = "";
     document.getElementById('tBody').innerHTML = "<tr><td>Velg alle kriterier...</td></tr>";
 
-    // 5. NULLSTILLING: Sett alle nedtrekksmenyer (select) tilbake til første valg
-    // Dette gjør at du må velge på nytt for å se data
+    // 6. NULLSTILLING: Sett alle nedtrekksmenyer (select) tilbake til første valg
     const filtere = ['mAar', 'mFag', 'mPeriode', 'mTrinn', 'mKlasse'];
     filtere.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.selectedIndex = 0; 
     });
+
+    // 7. NULLSTILLING: Overskrift og Database-lytting (NY)
+    oppdaterOverskrifter("Velg kriterier for å vise kartlegging");
+    db.ref().off(); // Stopper aktiv oppdatering i bakgrunnen
+}
 
     // 6. Nullstill overskrifter og interne data
     oppdaterOverskrifter("Velg kriterier for å vise kartlegging");
