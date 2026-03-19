@@ -78,8 +78,14 @@ function hentData() {
     const p = document.getElementById('mPeriode').value;
     const t = document.getElementById('mTrinn').value;
     const k = document.getElementById('mKlasse').value;
+    const nyElevSeksjon = document.getElementById('nyElevSeksjon'); // NYTT: Henter boksen
 
-    if (!a || !f || !p || !t || !k) return;
+    if (!a || !f || !p || !t || !k) {
+        if (nyElevSeksjon) nyElevSeksjon.style.display = 'none'; // NYTT
+        return;
+    }
+// Hvis alle valg er tatt, vis boksen!
+    if (nyElevSeksjon) nyElevSeksjon.style.display = 'block'; // NYTT
 
     oppdaterOverskrifter(`Kartlegging i ${f} - ${t}${k} - ${p} ${a}`);
 
