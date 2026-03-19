@@ -131,7 +131,9 @@ async function kjorAdminRapport(type) {
     
     document.getElementById('modalRapport').style.display = 'none';
     const hovedInnhold = document.getElementById('hovedInnhold');
-    hovedInnhold.innerHTML = "<p>Genererer rapport...</p>";
+    
+    // Viser lastebeskjed mens databasen leses
+    hovedInnhold.innerHTML = "<p style='padding:20px;'>Genererer fullstendig rapport for alle trinn og klasser...</p>";
     
     let samletHTML = "";
     const trinnListe = ["1", "2", "3", "4", "5", "6", "7"];
@@ -151,28 +153,55 @@ async function kjorAdminRapport(type) {
                 .filter(d => type === 'alle' || d.sum <= oppsett.grenseTotal);
 
             if (eleverData.length > 0) {
-                samletHTML += `<div class="page-break" style="page-break-before: always; margin-top:30px;">
-                    <h2 style="text-align:center;">${t}${k} - ${fag}</h2>
-                    <table border="1" style="width:100%; border-collapse:collapse;">
-                        <thead><tr style="background:#eee;"><th>Navn</th>${oppsett.oppgaver.map(o => `<th>${o.navn}</th>`).join("")}<th>Sum</th></tr></thead>
+                // Genererer samme tabellstruktur som på hovedsiden
+                // Bruker inline style for å tvinge liggende retning og kompakt visning
+                samletHTML += `
+                <div class="page-break" style="page-break-before: always; padding: 20px; min-height: 100vh;">
+                    <style>
+                        @media print { @page { size: landscape; margin: 1cm; } }
+                        .admin-table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+                        .admin-table th, .admin-table td { border: 1px solid #000; padding: 4px; text-align: center; }
+                        .admin-table th { background-color: #f2f2f2; }
+                    </style>
+                    <h2 style="text-align:center; margin-bottom: 10px;">${fag} - ${t}${k} (${periode} ${aar})</h2>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left; width: 200px;">Elevnavn</th>
+                                ${oppsett.oppgaver.map(o => `<th>${o.navn}<br><small>max ${o.maks}</small></th>`).join("")}
+                                <th>Sum</th>
+                            </tr>
+                        </thead>
                         <tbody>`;
+
+                // Sorterer alfabetisk
                 eleverData.sort((a,b) => a.navn.localeCompare(b.navn)).forEach(d => {
-                    let rad = `<tr><td>${d.navn}</td>`;
+                    let rad = `<tr><td style="text-align:left;"><b>${d.navn}</b></td>`;
                     oppsett.oppgaver.forEach((o, i) => {
-                        let p = d.oppgaver[i] || 0;
-                        let c = (fag === "Lesing" && o.grense !== -1 && p <= o.grense) ? 'style="background:#ffcccc"' : '';
-                        rad += `<td ${c}>${p}</td>`;
+                        const p = d.oppgaver[i] || 0;
+                        let c = (fag === "Lesing" && o.grense !== -1 && p <= o.grense) ? 'background-color:#ffcccc !important;' : '';
+                        rad += `<td style="${c}">${p}</td>`;
                     });
-                    let sC = (d.sum <= oppsett.grenseTotal) ? 'style="background:#ffcccc"' : '';
-                    rad += `<td ${sC}>${d.sum}</td></tr>`;
+                    let sC = (d.sum <= oppsett.grenseTotal) ? 'background-color:#ffcccc !important;' : '';
+                    rad += `<td style="font-weight:bold; ${sC}">${d.sum}</td></tr>`;
                     samletHTML += rad;
                 });
+
+                // Legger til tomme rader hvis det er færre enn 26 elever for å holde fast layout
+                const tommeRader = 26 - eleverData.length;
+                for(let i = 0; i < tommeRader; i++) {
+                    samletHTML += `<tr><td style="color:transparent;">.</td>${oppsett.oppgaver.map(()=>`<td></td>`).join("")}<td></td></tr>`;
+                }
+
                 samletHTML += `</tbody></table></div>`;
             }
         }
     }
-    hovedInnhold.innerHTML = samletHTML || "<p>Ingen data funnet.</p>";
+
+    document.getElementById('printTittel').innerText = ""; // Tømmer tittel for å unngå dobbel overskrift
+    hovedInnhold.innerHTML = samletHTML || "<p style='padding:20px;'>Ingen registrerte data funnet for valgte kriterier.</p>";
 }
+
 
 // --- 6. ADMIN SAMMENLIGNING (SØYLEDIAGRAM) ---
 async function kjorSammenligning() {
