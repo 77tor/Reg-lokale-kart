@@ -100,8 +100,12 @@ function tegnTabell() {
     const oppsett = hentOppsett();
     const tHead = document.getElementById('tHead');
     const tBody = document.getElementById('tBody');
-    if (!oppsett) { tBody.innerHTML = "<tr><td>Velg alle kriterier...</td></tr>"; return; }
+    if (!oppsett) { 
+        tBody.innerHTML = "<tr><td colspan='100%'>Velg alle kriterier...</td></tr>"; 
+        return; 
+    }
 
+    // 1. Lag tabellhode
     let hode = `<tr><th style="text-align:left">Elevnavn</th>`;
     oppsett.oppgaver.forEach(o => hode += `<th>${o.navn}<br><small>max ${o.maks}</small></th>`);
     hode += `<th>Sum</th><th class="no-print">Handling</th></tr>`;
@@ -109,9 +113,11 @@ function tegnTabell() {
 
     const vTrinn = parseInt(document.getElementById('mTrinn').value);
     const vKlasse = document.getElementById('mKlasse').value;
-    const vStartAar = parseInt(document.getElementById('mAar').value.split('-')[0]);
+    const vAarInput = document.getElementById('mAar').value;
+    if (!vAarInput) return;
+    const vStartAar = parseInt(vAarInput.split('-')[0]);
 
-    // Vi lager to strenger for å holde på HTML-radene
+    // Vi lager to strenger for å holde på HTML-radene (aktive øverst, slettede nederst)
     let aktiveRader = "";
     let slettedeRader = "";
 
@@ -121,14 +127,15 @@ function tegnTabell() {
         
         if (cTrinn === vTrinn && e.startKlasse === vKlasse) {
             const d = lagredeResultater[navn] || {};
-            const erSlettet = d.slettet === true; // Sjekker status i Firebase
+            const erSlettet = d.slettet === true;
 
-            // Setter stil basert på om eleven er slettet
+            // Setter visuell stil for slettede rader
             let radStil = erSlettet ? 'style="color: #a0aec0; background: #f7fafc;"' : '';
             let rad = `<tr ${radStil}><td style="text-align:left"><b>${navn}</b> ${erSlettet ? '<small>(Slettet)</small>' : ''}</td>`;
             
             // --- POENG-CELLER ---
             if (!erSlettet && d.oppgaver) {
+                // Vis tall hvis eleven er aktiv og har data
                 oppsett.oppgaver.forEach((o, i) => {
                     const poeng = d.oppgaver[i] || 0;
                     let cls = (o.grense !== -1 && poeng <= o.grense) ? 'class="alert-low"' : '';
@@ -137,23 +144,32 @@ function tegnTabell() {
                 let sumCls = (d.sum <= oppsett.grenseTotal) ? 'class="alert-low"' : '';
                 rad += `<td ${sumCls}>${d.sum}</td>`;
             } else {
-                // Viser streker hvis ikke registrert ELLER hvis slettet
+                // Vis streker hvis ikke registrert ELLER hvis slettet
                 oppsett.oppgaver.forEach(() => rad += `<td class="not-registered">-</td>`);
                 rad += `<td class="not-registered">-</td>`;
             }
 
             // --- KNAPPER (HANDLING) ---
             rad += `<td class="no-print">`;
+            
             if (erSlettet) {
-                rad += `<button class="btn" style="background:#718096; color:white;" onclick="gjenopprettElev('${navn}')">Hent tilbake</button>`;
+                // Knappen for å hente tilbake en slettet elev
+                rad += `<button class="btn btn-hent" onclick="gjenopprettElev('${navn}')">Hent tilbake</button>`;
             } else {
-                const knappTekst = d.oppgaver ? "Endre" : "Reg";
-                rad += `<button class="btn btn-edit" onclick="visModal('${navn}')">${knappTekst}</button> `;
-                rad += `<button class="btn" style="background:#e53e3e; color:white; margin-left:5px;" onclick="slettElev('${navn}')">Slett</button>`;
+                if (d.oppgaver) {
+                    // Eleven har data -> Blå "Endre"-knapp
+                    rad += `<button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button> `;
+                } else {
+                    // Eleven mangler data -> Grønn "Reg"-knapp
+                    rad += `<button class="btn btn-reg" onclick="visModal('${navn}')">Reg</button> `;
+                }
+                // Rød sletteknapp for aktive elever
+                rad += `<button class="btn btn-slett" style="margin-left:5px;" onclick="slettElev('${navn}')">Slett</button>`;
             }
+            
             rad += `</td></tr>`;
 
-            // Legg raden i riktig "bunke"
+            // Fordel raden i riktig bunke
             if (erSlettet) {
                 slettedeRader += rad;
             } else {
@@ -162,7 +178,7 @@ function tegnTabell() {
         }
     });
 
-    // Sett sammen tabellen: Aktive øverst, slettede nederst
+    // Oppdater selve tabellen i HTML
     tBody.innerHTML = aktiveRader + slettedeRader;
 }
 

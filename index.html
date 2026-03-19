@@ -13,33 +13,49 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; margin: 0; background: #f0f2f5; color: #333; }
-        .container { max-width: 1400px; margin: 20px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        #loginScreen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f0f2f5; }
-        .header-grid { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; background: #e9ecef; padding: 15px; border-radius: 8px; align-items: flex-end; }
-        .header-grid > div { flex: 1; min-width: 140px; }
-        .header-grid label { display: block; font-size: 0.85em; margin-bottom: 5px; font-weight: bold; color: #4a5568; }
-        .action-bar { display: flex; gap: 10px; margin-bottom: 20px; }
-        select, input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em; }
-        th, td { border: 1px solid #dee2e6; padding: 8px; text-align: center; }
-        th { background: #f8f9fa; position: sticky; top: 0; z-index: 10; }
-        tr:hover { background-color: #f1f1f1; }
-        .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 0.8em; }
-        .btn-reg { background: #27ae60; color: white; }
-        .btn-edit { background: #2980b9; color: white; }
-        .btn-slett { background: #e67e22; color: white; }
-        .btn-fjern { background: #95a5a6; color: white; }
-        .btn-hent { background: #2ecc71; color: white; }
-        .btn-excel { background: #1f7244; color: white; }
-        .btn-print { background: #34495e; color: white; }
-        .btn-logout { background: #e74c3c; color: white; margin-left: 10px; }
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); }
-        .modal-content { background: white; margin: 5% auto; padding: 25px; border-radius: 12px; width: 450px; max-height: 85vh; overflow-y: auto; box-shadow: 0 5px 30px rgba(0,0,0,0.3); }
-        .oppgave-rad { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        .not-registered { color: #aaa; font-style: italic; }
-        .alert-low { background: #ffcccc !important; font-weight: bold; color: #c0392b; }
-        
+/* GRUNNLEGGENDE STIL */
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; margin: 0; background: #f0f2f5; color: #333; }
+.container { max-width: 1400px; margin: 20px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+#loginScreen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f0f2f5; }
+
+/* HEADER OG FILTER */
+.header-grid { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; background: #e9ecef; padding: 15px; border-radius: 8px; align-items: flex-end; }
+.header-grid > div { flex: 1; min-width: 140px; }
+.header-grid label { display: block; font-size: 0.85em; margin-bottom: 5px; font-weight: bold; color: #4a5568; }
+.action-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+select, input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+
+/* TABELL */
+table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em; }
+th, td { border: 1px solid #dee2e6; padding: 8px; text-align: center; }
+th { background: #f8f9fa; position: sticky; top: 0; z-index: 10; }
+tr:hover { background-color: #f1f1f1; }
+
+/* KNAPPE-DEFINISJONER */
+.btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 0.8em; }
+
+/* Spesifikke farger for registreringsmodus */
+.btn-reg { background: #27ae60; color: white; }    /* Grønn for ny */
+.btn-edit { background: #2980b9; color: white; }   /* Blå for endre */
+.btn-slett { background: #e74c3c; color: white; }  /* Rød for slett (Endret fra oransje) */
+.btn-hent { background: #2ecc71; color: white; }   /* Lys grønn for hent tilbake */
+
+/* Andre knapper */
+.btn-excel { background: #1f7244; color: white; }
+.btn-print { background: #34495e; color: white; }
+.btn-logout { background: #e74c3c; color: white; margin-left: 10px; }
+.btn-fjern { background: #95a5a6; color: white; } /* Grå for nøytrale valg */
+
+/* MODAL */
+.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); }
+.modal-content { background: white; margin: 5% auto; padding: 25px; border-radius: 12px; width: 450px; max-height: 85vh; overflow-y: auto; box-shadow: 0 5px 30px rgba(0,0,0,0.3); }
+.oppgave-rad { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+
+/* STATUS-VISNING */
+.not-registered { color: #aaa; font-style: italic; }
+.alert-low { background: #ffcccc !important; font-weight: bold; color: #c0392b; }
+
+/* UTTSKRIFT */     
         @media print { 
             @page { size: landscape; margin: 0.5cm; } 
             .header-grid, .btn, .modal, .action-bar, .ny-elev-boks, .no-print, #loginScreen { display: none !important; } 
