@@ -9,6 +9,7 @@ const firebaseConfig = {
     appId: "1:913824113769:web:95c6fdea2d3b49813d6ef8"
 };
 
+// Initialisering
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
@@ -18,7 +19,11 @@ let valgtElevId = "";
 let myChart = null; 
 
 // --- 2. AUTENTISERING ---
-function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+function login() { 
+    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
+        .catch(err => console.error("Innloggingsfeil:", err)); 
+}
+
 function logout() { auth.signOut(); }
 
 auth.onAuthStateChanged(user => {
@@ -63,6 +68,11 @@ function hentSti(elev) {
 
 // --- 4. DATAHÅNDTERING ---
 function hentData() {
+    // Tilbakestill visning til standard tabell hvis rapport er åpen
+    document.getElementById('hovedTabell').style.display = 'table';
+    const rc = document.getElementById('rapportContainer');
+    if (rc) rc.innerHTML = "";
+
     const a = document.getElementById('mAar').value;
     const f = document.getElementById('mFag').value;
     const p = document.getElementById('mPeriode').value;
@@ -155,6 +165,7 @@ function lukkAdmin() {
     document.getElementById('adminPanel').style.display = 'none';
     document.getElementById('chartContainer').style.display = 'none';
     document.getElementById('skjemaInnhold').style.display = 'block';
+    document.getElementById('hovedTabell').style.display = 'table';
 }
 
 async function kjorAdminRapport(type) {
@@ -162,34 +173,26 @@ async function kjorAdminRapport(type) {
     const fag = document.getElementById('adminFag').value;
     const periode = document.getElementById('adminPeriode').value;
     
-    const tHead = document.getElementById('tHead');
-    const tBody = document.getElementById('tBody');
-    const dynamiskOverskrift = document.getElementById('dynamiskOverskrift');
-    const printTittel = document.getElementById('printTittel');
+    // Vis skjemaInnhold slik at rapporten blir synlig
+    document.getElementById('skjemaInnhold').style.display = 'block';
+    document.getElementById('hovedTabell').style.display = 'none';
 
-    // Tøm eksisterende innhold
-    tHead.innerHTML = "";
-    tBody.innerHTML = "Genererer rapport for alle klasser...";
-    
     let samletInnhold = "";
     const klasser = ["A", "B", "C", "D"];
     const alleTrinn = ["1", "2", "3", "4", "5", "6", "7"];
 
     for (let trinn of alleTrinn) {
-        for (let klasse av klasser) {
+        for (let klasse of klasser) { // Rettet fra 'av' til 'of'
             const oppsett = hentOppsettSpesifikk(aar, fag, periode, trinn);
             if (!oppsett) continue;
 
-            // Hent data for denne spesifikke klassen
             const snapshot = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}`).once('value');
             const data = snapshot.val() || {};
 
-            // Lag overskrift for denne klassen
             let seksjonOverskrift = `Kartlegging i ${fag} - ${trinn}${klasse} - ${periode} ${aar}`;
             
-            // Bygg tabell-header
             let tabellHtml = `<div class="page-break">
-                <h2 class="print-only" style="text-align:center; margin-top:20px;">${seksjonOverskrift}</h2>
+                <h2 style="text-align:center; margin-top:20px;">${seksjonOverskrift}</h2>
                 <table style="width:100%; border-collapse:collapse; margin-bottom:40px;">
                     <thead>
                         <tr>
@@ -197,7 +200,6 @@ async function kjorAdminRapport(type) {
             oppsett.oppgaver.forEach(o => tabellHtml += `<th>${o.navn}<br><small>max ${o.maks}</small></th>`);
             tabellHtml += `<th>Sum</th></tr></thead><tbody>`;
 
-            // Filtrer elever som tilhører dette trinnet og denne klassen
             const vStartAar = parseInt(aar.split('-')[0]);
             let antallElever = 0;
 
@@ -209,7 +211,6 @@ async function kjorAdminRapport(type) {
                     const d = data[navn];
                     const erKritisk = d && d.sum <= oppsett.grenseTotal;
 
-                    // Hvis "Kun Kritisk" er valgt, hopp over de som ikke er kritiske
                     if (type === 'kritisk' && (!d || !erKritisk)) return;
 
                     antallElever++;
@@ -231,8 +232,8 @@ async function kjorAdminRapport(type) {
                 }
             });
 
-            // Fyll ut tomme rader opp til 26 hvis det er en vanlig rapport
             if (antallElever > 0 || type === 'alle') {
+                // Fyll ut rader for penere utskrift hvis ønskelig
                 for (let i = antallElever; i < 26; i++) {
                     tabellHtml += `<tr><td style="color:#eee">.</td>${oppsett.oppgaver.map(() => `<td></td>`).join('')}<td></td></tr>`;
                 }
@@ -242,14 +243,8 @@ async function kjorAdminRapport(type) {
         }
     }
 
-    // Oppdater visningen
     document.getElementById('modalRapport').style.display = 'none';
-    document.getElementById('skjemaInnhold').style.display = 'block';
     
-    // Vi injiserer hele rapporten i tBody området, men fjerner standard-tabellen først
-    document.getElementById('hovedTabell').style.display = 'none';
-    
-    // Lag en container for rapporten hvis den ikke finnes
     let rapportContainer = document.getElementById('rapportContainer');
     if (!rapportContainer) {
         rapportContainer = document.createElement('div');
@@ -260,15 +255,6 @@ async function kjorAdminRapport(type) {
     
     oppdaterOverskrifter(type === 'kritisk' ? 'KRITISK-LISTE (Alle trinn)' : 'ÅRSRAPPORT (Alle trinn)');
 }
-
-// Juster hentData slik at den viser standardtabellen igjen hvis man bytter visning
-const originalHentData = hentData;
-hentData = function() {
-    document.getElementById('hovedTabell').style.display = 'table';
-    const rc = document.getElementById('rapportContainer');
-    if (rc) rc.innerHTML = "";
-    originalHentData();
-};
 
 async function kjorSammenligning() {
     const aar = document.getElementById('compAar').value;
