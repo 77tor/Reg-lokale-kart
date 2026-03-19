@@ -152,22 +152,20 @@ function tegnTabell() {
             // --- KNAPPER (HANDLING) ---
             rad += `<td class="no-print">`;
             
-            if (erSlettet) {
-                // Knappen for å hente tilbake en slettet elev
-                rad += `<button class="btn btn-hent" onclick="gjenopprettElev('${navn}')">Hent tilbake</button>`;
-            } else {
-                if (d.oppgaver) {
-                    // Eleven har data -> Blå "Endre"-knapp
-                    rad += `<button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button> `;
-                } else {
-                    // Eleven mangler data -> Grønn "Reg"-knapp
-                    rad += `<button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button> `;
-                }
-                // Rød sletteknapp for aktive elever
-                rad += `<button class="btn btn-slett" style="margin-left:5px;" onclick="slettElev('${navn}')">Slett</button>`;
-            }
-            
-            rad += `</td></tr>`;
+if (erSlettet) {
+    rad += `<button class="btn btn-hent" onclick="gjenopprettElev('${navn}')">Hent tilbake</button>`;
+} else {
+    if (d.oppgaver) {
+        // Eleven har data -> Blå "Endre" og Oransje "Nullstill"
+        rad += `<button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button> `;
+        rad += `<button class="btn btn-nullstill" style="margin-left:5px;" onclick="nullstillElev('${navn}')">Nullstill</button>`;
+    } else {
+        // Eleven mangler data -> Grønn "Registrer" og Rød "Slett"
+        rad += `<button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button> `;
+        rad += `<button class="btn btn-slett" style="margin-left:5px;" onclick="slettElev('${navn}')">Slett</button>`;
+    }
+}
+rad += `</td></tr>`;
 
             // Fordel raden i riktig bunke
             if (erSlettet) {
@@ -182,6 +180,18 @@ function tegnTabell() {
     tBody.innerHTML = aktiveRader + slettedeRader;
 }
 
+function nullstillElev(navn) {
+    if (confirm(`Vil du tømme alle poeng for ${navn}? Eleven blir stående i listen, men poengene fjernes.`)) {
+        // Vi fjerner hele objektet for denne eleven under denne stien
+        db.ref(hentSti(navn)).remove()
+        .then(() => {
+            console.log("Data nullstilt for " + navn);
+        })
+        .catch(error => {
+            console.error("Feil ved nullstilling:", error);
+        });
+    }
+}
 
 // --- 5. MODAL OG LAGRING ---
 function visModal(navn) {
