@@ -161,7 +161,7 @@ function tegnTabell() {
                     rad += `<button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button> `;
                 } else {
                     // Eleven mangler data -> Grønn "Reg"-knapp
-                    rad += `<button class="btn btn-reg" onclick="visModal('${navn}')">Reg</button> `;
+                    rad += `<button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button> `;
                 }
                 // Rød sletteknapp for aktive elever
                 rad += `<button class="btn btn-slett" style="margin-left:5px;" onclick="slettElev('${navn}')">Slett</button>`;
