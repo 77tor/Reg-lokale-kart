@@ -458,9 +458,10 @@ async function kjorSammenligning() {
                 datalabels: {
                     align: 'end',
                     anchor: 'end',
-                    offset: -45, 
+                    offset: -50, 
                     color: 'white',
-                    font: { weight: 'bold', size: 10 },
+                    font: { weight: 'bold', size: 12 },
+                    padding: 4, // Gir litt luft rundt teksten
                     formatter: function(value, context) {
                         const idx = context.dataIndex;
                         const maks = maksVerdier[idx];
