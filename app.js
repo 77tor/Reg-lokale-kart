@@ -26,250 +26,251 @@ auth.onAuthStateChanged(user => {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
         document.getElementById('userInfo').innerText = user.displayName;
-        hentData();
+        hentData(); 
     } else {
-        document.getElementById('loginScreen').style.display = 'block';
+        document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('mainContent').style.display = 'none';
     }
 });
 
-// --- 3. DATAHÅNDTERING ---
-function hentValg() {
-    return {
-        aar: document.getElementById('valgtAar').value,
-        fag: document.getElementById('valgtFag').value,
-        periode: document.getElementById('valgtPeriode').value,
-        trinn: document.getElementById('valgtTrinn').value,
-        klasse: document.getElementById('valgtKlasse').value
-    };
+// --- 3. HJELPEFUNKSJONER ---
+function hentOppsettSpesifikk(aar, fag, periode, trinn) {
+    try {
+        return oppgaveStruktur[aar][fag][periode][trinn];
+    } catch (e) {
+        console.error("Kunne ikke finne oppsett", e);
+        return null;
+    }
 }
 
-function hentSti(elevnavn) {
-    const v = hentValg();
-    return `resultater/${v.aar}/${v.fag}/${v.periode}/${v.trinn}/${elevnavn}`;
+function hentOppsett() {
+    const aar = document.getElementById('mAar').value;
+    const fag = document.getElementById('mFag').value;
+    const periode = document.getElementById('mPeriode').value;
+    const trinn = document.getElementById('mTrinn').value;
+    return hentOppsettSpesifikk(aar, fag, periode, trinn);
 }
 
+function hentSti(elev) {
+    const a = document.getElementById('mAar').value;
+    const f = document.getElementById('mFag').value;
+    const p = document.getElementById('mPeriode').value;
+    const t = document.getElementById('mTrinn').value;
+    const k = document.getElementById('mKlasse').value;
+    return `kartlegging/${a}/${f}/${p}/${t}/${k}/${elev}`;
+}
+
+// --- 4. HOVEDLOGIKK (TABELL-VISNING) ---
 function hentData() {
-    const v = hentValg();
-    document.getElementById('printTittel').innerText = `Kartlegging ${v.fag} - ${v.trinn}. trinn ${v.klasse} (${v.periode} ${v.aar})`;
-    
-    const sti = `resultater/${v.aar}/${v.fag}/${v.periode}/${v.trinn}`;
-    db.ref(sti).on('value', snapshot => {
+    const a = document.getElementById('mAar').value;
+    const f = document.getElementById('mFag').value;
+    const p = document.getElementById('mPeriode').value;
+    const t = document.getElementById('mTrinn').value;
+    const k = document.getElementById('mKlasse').value;
+
+    const tBody = document.getElementById('tBody');
+    const tHead = document.getElementById('tHead');
+
+    if (!a || !f || !p || !t || !k) {
+        tHead.innerHTML = "";
+        tBody.innerHTML = "<tr><td colspan='100%' style='padding:40px; color:#666;'>Vennligst velg alle kriterier.</td></tr>";
+        return; 
+    }
+
+    db.ref(`kartlegging/${a}/${f}/${p}/${t}/${k}`).on('value', snapshot => {
         lagredeResultater = snapshot.val() || {};
         tegnTabell();
     });
 }
 
-// --- 4. TABELLTEGNING ---
 function tegnTabell() {
-    const v = hentValg();
-    const oppsett = oppgaveStruktur[v.aar][v.fag][v.periode][v.trinn];
-    const hode = document.getElementById('tabellHode');
-    const kropp = document.getElementById('tabellKropp');
-    
-    // Overskrifter
-    let hodeHtml = `<th style="text-align:left">Elevnavn</th>`;
-    oppsett.oppgaver.forEach(o => hodeHtml += `<th>${o.navn}<br><small>(max ${o.maks})</small></th>`);
-    hodeHtml += `<th>TOTALT<br><small>(max ${oppsett.oppgaver.reduce((a,b)=>a+b.maks,0)})</small></th><th class="no-print">Handling</th>`;
-    hode.innerHTML = hodeHtml;
+    const oppsett = hentOppsett();
+    const fag = document.getElementById('mFag').value;
+    const tHead = document.getElementById('tHead');
+    const tBody = document.getElementById('tBody');
+    const trinn = document.getElementById('mTrinn').value;
+    const klasse = document.getElementById('mKlasse').value;
+    const periode = document.getElementById('mPeriode').value;
+    const aar = document.getElementById('mAar').value;
 
-    // Filtrer elever
-    const aktuelleElever = Object.keys(elevRegister).filter(navn => {
-        const e = elevRegister[navn];
-        const navaar = parseInt(v.aar.split('-')[0]);
-        const beregnetTrinn = e.startTrinn + (navaar - e.startAar);
-        return beregnetTrinn == v.trinn && e.startKlasse === v.klasse;
-    }).sort();
+    const overskriftTekst = `Kartlegging i ${fag} - ${trinn}${klasse} - ${periode} ${aar}`;
+    if (document.getElementById('dynamiskOverskrift')) document.getElementById('dynamiskOverskrift').innerText = overskriftTekst;
+    if (document.getElementById('printTittel')) document.getElementById('printTittel').innerText = overskriftTekst;
 
-    let kroppHtml = "";
-    let antKritiske = 0;
-    let sumTotal = 0;
-    let antMedPoeng = 0;
-
-    aktuelleElever.forEach(navn => {
-        const res = lagredeResultater[navn] || {};
-        if (res.skjult) return;
-
-        let radHtml = `<td style="text-align:left">${navn}</td>`;
-        let elevSum = 0;
-        let harData = false;
-
-        oppsett.oppgaver.forEach(o => {
-            const p = res[o.navn] !== undefined ? res[o.navn] : "-";
-            const krt = (o.grense !== -1 && p !== "-" && p <= o.grense) ? 'class="krt-felt"' : '';
-            radHtml += `<td ${krt}>${p}</td>`;
-            if (p !== "-") { elevSum += parseInt(p); harData = true; }
-        });
-
-        const totalKrt = (elevSum <= oppsett.grenseTotal && harData) ? 'class="krt-felt"' : '';
-        if (totalKrt) antKritiske++;
-        if (harData) { sumTotal += elevSum; antMedPoeng++; }
-
-        radHtml += `<td ${totalKrt}>${harData ? elevSum : "-"}</td>`;
-        radHtml += `<td class="no-print">
-            <button class="btn btn-edit" onclick="aapneRegistrering('${navn}')">Reg</button>
-            <button class="btn btn-slett" onclick="slettPoeng('${navn}')">✕</button>
-        </td>`;
-        kroppHtml += `<tr>${radHtml}</tr>`;
-    });
-
-    kropp.innerHTML = kroppHtml;
-
-    // Statistikk
-    const snitt = antMedPoeng > 0 ? (sumTotal / antMedPoeng).toFixed(1) : 0;
-    document.getElementById('statistikk').innerHTML = `
-        <div class="stat-card"><strong>Antall elever:</strong> ${aktuelleElever.length}</div>
-        <div class="stat-card"><strong>Under bekymringsgrense:</strong> ${antKritiske}</div>
-        <div class="stat-card"><strong>Gjennomsnitt poeng:</strong> ${snitt}</div>
-    `;
-}
-
-// --- 5. REGISTRERING ---
-function aapneRegistrering(navn) {
-    valgtElevId = navn;
-    const v = hentValg();
-    const oppsett = oppgaveStruktur[v.aar][v.fag][v.periode][v.trinn];
-    const res = lagredeResultater[navn] || {};
-    
-    document.getElementById('modalNavn').innerText = navn;
-    let gridHtml = "";
-    oppsett.oppgaver.forEach(o => {
-        const verdi = res[o.navn] !== undefined ? res[o.navn] : "";
-        gridHtml += `<div>
-            <label>${o.navn} (0-${o.maks})</label>
-            <input type="number" id="inp_${o.navn}" value="${verdi}" min="0" max="${o.maks}" style="width:100%;padding:8px;">
-        </div>`;
-    });
-    document.getElementById('poengInputGrid').innerHTML = gridHtml;
-    document.getElementById('modalPoeng').style.display = 'block';
-}
-
-function lagrePoeng() {
-    const v = hentValg();
-    const oppsett = oppgaveStruktur[v.aar][v.fag][v.periode][v.trinn];
-    const data = {};
-    
-    oppsett.oppgaver.forEach(o => {
-        const val = document.getElementById(`inp_${o.navn}`).value;
-        if (val !== "") data[o.navn] = parseInt(val);
-    });
-
-    if (Object.keys(data).length > 0) {
-        db.ref(hentSti(valgtElevId)).update(data);
-        document.getElementById('modalPoeng').style.display = 'none';
+    if (!oppsett) {
+        tBody.innerHTML = "<tr><td colspan='100%'>Ingen oppgavemal funnet.</td></tr>";
+        return;
     }
-}
 
-// --- 6. ADMIN-FUNKSJONER ---
-function sjekkAdminKode() {
-    const kode = prompt("Oppgi adminkode:");
-    if (kode === "1234") {
-        document.getElementById('adminPanel').style.display = 'block';
-        document.getElementById('skjemaInnhold').style.display = 'none';
-    } else {
-        alert("Feil kode");
-    }
-}
+    let hode = `<tr><th style="text-align:left">Elevnavn</th>`;
+    oppsett.oppgaver.forEach(o => hode += `<th>${o.navn}<br><small>max ${o.maks}</small></th>`);
+    hode += `<th>Sum</th><th class="no-print">Handling</th></tr>`;
+    tHead.innerHTML = hode;
 
-function lukkAdmin() {
-    document.getElementById('adminPanel').style.display = 'none';
-    document.getElementById('chartContainer').style.display = 'none';
-    document.getElementById('skjemaInnhold').style.display = 'block';
-}
+    let aktive = [], skjulte = [];
+    const valgtTrinn = parseInt(trinn);
+    const valgtSkoleAarStart = parseInt(aar.split('-')[0]);
 
-function kjorAdminRapport(type) {
-    const v = hentValg();
-    const oppsett = oppgaveStruktur[v.aar][v.fag][v.periode][v.trinn];
-    const sti = `resultater/${v.aar}/${v.fag}/${v.periode}/${v.trinn}`;
-    
-    db.ref(sti).once('value', snapshot => {
-        const data = snapshot.val() || {};
-        let rapportHtml = `<h2>Årsrapport ${v.fag} - ${v.trinn}. trinn (${v.periode} ${v.aar})</h2>`;
-        
-        ['A', 'B', 'C'].forEach(kl => {
-            rapportHtml += `<h3>Klasse ${kl}</h3><table border="1" style="width:100%;border-collapse:collapse;margin-bottom:20px;">`;
-            rapportHtml += `<tr><th align="left">Navn</th><th>Poengsum</th><th>Status</th></tr>`;
-            
-            Object.keys(elevRegister).filter(n => {
-                const e = elevRegister[n];
-                const navaar = parseInt(v.aar.split('-')[0]);
-                return (e.startTrinn + (navaar - e.startAar)) == v.trinn && e.startKlasse === kl;
-            }).sort().forEach(n => {
-                const res = data[n] || {};
-                let sum = 0; let harData = false;
-                oppsett.oppgaver.forEach(o => { if(res[o.navn]!==undefined){ sum += res[o.navn]; harData=true; }});
-                
-                const krt = sum <= oppsett.grenseTotal;
-                if (type === 'kritisk' && (!krt || !harData)) return;
+    Object.keys(elevRegister).sort().forEach(navn => {
+        const elev = elevRegister[navn];
+        const currentTrinn = elev.startTrinn + (valgtSkoleAarStart - elev.startAar);
+        if (currentTrinn === valgtTrinn && elev.startKlasse === klasse) {
+            if (lagredeResultater[navn] && lagredeResultater[navn].skjult === true) skjulte.push(navn);
+            else aktive.push(navn);
+        }
+    });
 
-                rapportHtml += `<tr>
-                    <td>${n}</td>
-                    <td align="center">${harData ? sum : '-'}</td>
-                    <td align="center">${harData ? (krt ? 'BEKYMRING' : 'OK') : '-'}</td>
-                </tr>`;
+    tBody.innerHTML = "";
+    aktive.forEach(navn => {
+        const d = lagredeResultater[navn];
+        let rad = `<tr><td style="text-align:left"><b>${navn}</b></td>`;
+        if (d && d.oppgaver) {
+            oppsett.oppgaver.forEach((o, i) => {
+                const p = d.oppgaver[i] || 0;
+                let cls = (fag === "Lesing" && o.grense !== -1 && p <= o.grense) ? 'class="alert-low"' : '';
+                rad += `<td ${cls}>${p}</td>`;
             });
-            rapportHtml += `</table>`;
-        });
-
-        const printWin = window.open('', '', 'width=800,height=600');
-        printWin.document.write(rapportHtml);
-        printWin.document.close();
-        printWin.print();
+            const sumCls = (d.sum <= oppsett.grenseTotal) ? 'class="alert-low"' : '';
+            rad += `<td ${sumCls}>${d.sum}</td><td class="no-print"><button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button> <button class="btn btn-slett" onclick="slettPoeng('${navn}')">Nullstill</button></td>`;
+        } else {
+            oppsett.oppgaver.forEach(() => rad += `<td class="not-registered">-</td>`);
+            rad += `<td class="not-registered">-</td><td class="no-print"><button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button> <button class="btn btn-fjern" onclick="skjulElev('${navn}', true)">Fjern</button></td>`;
+        }
+        tBody.innerHTML += rad + `</tr>`;
     });
 }
 
-function genererSammenligning() {
+// --- 5. MODAL OG HANDLINGER ---
+function visModal(navn) {
+    const oppsett = hentOppsett();
+    valgtElevId = navn;
+    document.getElementById('modalNavn').innerText = navn;
+    const container = document.getElementById('oppgaveFelter');
+    container.innerHTML = "";
+    const eksisterende = lagredeResultater[navn]?.oppgaver || [];
+
+    oppsett.oppgaver.forEach((o, i) => {
+        container.innerHTML += `<div class="oppgave-rad"><label>${o.navn} (0-${o.maks}):</label><input type="number" class="oppg-input" data-index="${i}" min="0" max="${o.maks}" value="${eksisterende[i] !== undefined ? eksisterende[i] : ""}" style="width:60px"></div>`;
+    });
+    document.getElementById('modal').style.display = 'block';
+    setTimeout(() => { if(container.querySelector('input')) container.querySelector('input').focus(); }, 100);
+}
+
+function lukkModal() { document.getElementById('modal').style.display = 'none'; }
+
+function lagreData() {
+    const inputs = document.querySelectorAll('.oppg-input');
+    let verdier = [], sum = 0;
+    inputs.forEach(i => { const v = parseInt(i.value) || 0; verdier.push(v); sum += v; });
+    db.ref(hentSti(valgtElevId)).update({ oppgaver: verdier, sum: sum, dato: new Date().toISOString(), skjult: null }).then(lukkModal);
+}
+
+// --- 6. ADMIN-FUNKSJONER (ÅRSRAPPORT & SAMMENLIGNING) ---
+function sjekkAdminKode() {
+    const kode = prompt("Vennligst oppgi adminkode:");
+    if (kode === "3850") { document.getElementById('adminPanel').style.display = 'block'; }
+    else if (kode !== null) { alert("Feil kode."); }
+}
+
+async function kjorAdminRapport(type) {
+    const aar = document.getElementById('adminAar').value;
+    const fag = document.getElementById('adminFag').value;
+    const periode = document.getElementById('adminPeriode').value;
+    
+    document.getElementById('modalRapport').style.display = 'none';
+    const hovedInnhold = document.getElementById('hovedInnhold');
+    hovedInnhold.innerHTML = "<p style='padding:20px;'>Genererer fullstendig rapport for alle trinn og klasser...</p>";
+    
+    let samletHTML = "";
+    const trinnListe = ["1", "2", "3", "4", "5", "6", "7"];
+    const klasser = ["A", "B", "C", "D"];
+
+    for (let t of trinnListe) {
+        const oppsett = hentOppsettSpesifikk(aar, fag, periode, t);
+        if (!oppsett) continue;
+
+        for (let k of klasser) {
+            const snap = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${t}/${k}`).once('value');
+            const data = snap.val() || {};
+            
+            let eleverData = Object.keys(data)
+                .map(navn => ({ navn, ...data[navn] }))
+                .filter(d => !d.skjult && d.oppgaver)
+                .filter(d => type === 'alle' || d.sum <= oppsett.grenseTotal);
+
+            if (eleverData.length > 0) {
+                samletHTML += `<div class="page-break" style="margin-top:40px;">
+                    <h2 style="text-align:center; border-bottom:2px solid #333; padding-bottom:10px;">${t}. Trinn Klasse ${k} - ${fag} (${periode} ${aar})</h2>
+                    <table>
+                        <thead>
+                            <tr><th style="text-align:left">Navn</th>${oppsett.oppgaver.map(o => `<th>${o.navn}</th>`).join("")}<th>Sum</th></tr>
+                        </thead>
+                        <tbody>`;
+
+                eleverData.sort((a,b) => a.navn.localeCompare(b.navn)).forEach(d => {
+                    let rad = `<tr><td style="text-align:left"><b>${d.navn}</b></td>`;
+                    oppsett.oppgaver.forEach((o, i) => {
+                        const p = d.oppgaver[i] || 0;
+                        let c = (fag === "Lesing" && o.grense !== -1 && p <= o.grense) ? 'style="background-color:#ffcccc !important;"' : '';
+                        rad += `<td ${c}>${p}</td>`;
+                    });
+                    let sC = (d.sum <= oppsett.grenseTotal) ? 'style="background-color:#ffcccc !important;"' : '';
+                    rad += `<td ${sC}>${d.sum}</td></tr>`;
+                    samletHTML += rad;
+                });
+                samletHTML += `</tbody></table></div>`;
+            }
+        }
+    }
+    document.getElementById('printTittel').innerText = `Fullstendig ${type === 'kritisk' ? 'KRITISK-' : ''}rapport: ${fag} ${periode} ${aar}`;
+    hovedInnhold.innerHTML = samletHTML || "<p style='padding:20px;'>Ingen registrerte data funnet for valgte kriterier.</p>";
+}
+
+async function kjorSammenligning() {
     const aar = document.getElementById('compAar').value;
     const fag = document.getElementById('compFag').value;
     const periode = document.getElementById('compPeriode').value;
     const trinn = document.getElementById('compTrinn').value;
-    const oppsett = oppgaveStruktur[aar][fag][periode][trinn];
-    
-    db.ref(`resultater/${aar}/${fag}/${periode}/${trinn}`).once('value', snapshot => {
-        const data = snapshot.val() || {};
-        const klasser = ['A', 'B', 'C'];
-        const datasets = [];
-        const farger = ['rgba(52, 152, 219, 0.7)', 'rgba(46, 204, 113, 0.7)', 'rgba(155, 89, 182, 0.7)'];
+    const oppsett = hentOppsettSpesifikk(aar, fag, periode, trinn);
 
-        klasser.forEach((kl, i) => {
-            let summer = Array(oppsett.oppgaver.length + 1).fill(0);
-            let antall = 0;
+    if(!oppsett) return alert("Fant ikke oppsett.");
+    document.getElementById('modalSammenlign').style.display = 'none';
+    document.getElementById('chartContainer').style.display = 'block';
 
-            Object.keys(elevRegister).forEach(n => {
-                const e = elevRegister[n];
-                const navaar = parseInt(aar.split('-')[0]);
-                if ((e.startTrinn + (navaar - e.startAar)) == trinn && e.startKlasse === kl && data[n]) {
-                    antall++;
-                    let elevTotal = 0;
-                    oppsett.oppgaver.forEach((o, idx) => {
-                        const p = data[n][o.navn] || 0;
-                        summer[idx] += p;
-                        elevTotal += p;
-                    });
-                    summer[oppsett.oppgaver.length] += elevTotal;
-                }
-            });
+    const klasser = ["A", "B", "C", "D"];
+    const farger = ['rgba(41, 128, 185, 0.7)', 'rgba(39, 174, 96, 0.7)', 'rgba(230, 126, 34, 0.7)', 'rgba(155, 89, 182, 0.7)'];
+    let datasets = [];
 
-            if (antall > 0) {
-                datasets.push({
-                    label: `Klasse ${trinn}${klasser[i]}`,
-                    data: summer.map(s => (s / antall).toFixed(1)),
-                    backgroundColor: farger[i],
-                    borderColor: farger[i].replace('0.7', '1'),
-                    borderWidth: 1
-                });
+    for (let i = 0; i < klasser.length; i++) {
+        const snap = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasser[i]}`).once('value');
+        const data = snap.val() || {};
+        let antall = 0, summer = new Array(oppsett.oppgaver.length + 1).fill(0);
+
+        Object.keys(data).forEach(n => {
+            if (!data[n].skjult && data[n].oppgaver) {
+                antall++;
+                data[n].oppgaver.forEach((p, idx) => summer[idx] += p);
+                summer[oppsett.oppgaver.length] += data[n].sum;
             }
         });
 
-        document.getElementById('chartContainer').style.display = 'block';
-        const ctx = document.getElementById('sammenligningsChart').getContext('2d');
-        if (myChart) myChart.destroy();
-        myChart = new Chart(ctx, {
-            type: 'bar',
-            data: { labels: [...oppsett.oppgaver.map(o => o.navn), "Total"], datasets },
-            options: { responsive: true, scales: { y: { beginAtZero: true } } }
-        });
-        document.getElementById('modalSammenlign').style.display = 'none';
+        if (antall > 0) {
+            datasets.push({
+                label: `Klasse ${trinn}${klasser[i]}`,
+                data: summer.map(s => (s / antall).toFixed(1)),
+                backgroundColor: farger[i],
+                borderColor: farger[i].replace('0.7', '1'),
+                borderWidth: 1
+            });
+        }
+    }
+
+    const ctx = document.getElementById('sammenligningsChart').getContext('2d');
+    if (myChart) myChart.destroy();
+    myChart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: [...oppsett.oppgaver.map(o => o.navn), "Total"], datasets },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
     });
 }
 
@@ -284,9 +285,10 @@ function skjulElev(navn, status) {
 function slettPoeng(navn) { if(confirm(`Nullstille poeng for ${navn}?`)) db.ref(hentSti(navn)).remove(); }
 
 document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-        document.getElementById('modalPoeng').style.display = 'none';
-        document.getElementById('modalRapport').style.display = 'none';
-        document.getElementById('modalSammenlign').style.display = 'none';
+    if (e.key === 'Enter' && document.getElementById('modal').style.display === 'block') {
+        const inputs = Array.from(document.querySelectorAll('.oppg-input'));
+        const idx = inputs.indexOf(document.activeElement);
+        if (idx > -1 && idx < inputs.length - 1) { e.preventDefault(); inputs[idx+1].focus(); inputs[idx+1].select(); }
+        else if (idx === inputs.length - 1) { lagreData(); }
     }
 });
