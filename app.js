@@ -247,17 +247,29 @@ function lagreData() {
 // --- 6. ADMIN-FUNKSJONER ---
 function sjekkAdminKode() {
     if (prompt("Adminkode:") === "3850") { 
+        // 1. Vis admin-panelet og skjul hovedskjemaet
         document.getElementById('adminPanel').style.display = 'block'; 
         document.getElementById('skjemaInnhold').style.display = 'none';
         
-        // SKJUL "Legg til elev"-boksen
+        // 2. Skjul "Legg til ny elev"-boksen
         if (document.getElementById('nyElevSeksjon')) {
             document.getElementById('nyElevSeksjon').style.display = 'none';
         }
 
-        // SKJUL "Skriv ut" og "Eksport" (Action-bar)
+        // 3. Skjul handlingsknapper (Print/Excel)
         const actionBar = document.querySelector('.action-bar');
         if (actionBar) actionBar.style.display = 'none';
+
+        // 4. NULLSTILLING AV REGISTRERINGSSKJERMAET (Dette er det nye):
+        // Tømmer tabellen slik at ingenting henger igjen fra forrige klasse
+        document.getElementById('tHead').innerHTML = "";
+        document.getElementById('tBody').innerHTML = "<tr><td>Velg alle kriterier...</td></tr>";
+        
+        // Nullstiller overskriften
+        oppdaterOverskrifter("Administrasjon og rapporter");
+
+        // Stopper aktiv lytting på Firebase-data for klassen som var åpen
+        db.ref().off();
     }
 }
 
