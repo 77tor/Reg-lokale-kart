@@ -76,6 +76,8 @@ function hentData() {
 }
 
 function tegnTabell() {
+    // Viser tabellen igjen hvis vi har vært i rapport-modus
+    document.getElementById('registreringsVisning').style.display = 'block';
     const oppsett = hentOppsett();
     const tHead = document.getElementById('tHead');
     const tBody = document.getElementById('tBody');
@@ -130,10 +132,13 @@ async function kjorAdminRapport(type) {
     const periode = document.getElementById('adminPeriode').value;
     
     document.getElementById('modalRapport').style.display = 'none';
-    const hovedInnhold = document.getElementById('hovedInnhold');
     
-    // Viser lastebeskjed mens databasen leses
-    hovedInnhold.innerHTML = "<p style='padding:20px;'>Genererer fullstendig rapport for alle trinn og klasser...</p>";
+    // SKJULER registrerings-delen for å gi plass til rapporten
+    const regVisning = document.getElementById('registreringsVisning');
+    if(regVisning) regVisning.style.display = 'none';
+
+    const hovedInnhold = document.getElementById('hovedInnhold');
+    hovedInnhold.innerHTML = "<p style='padding:20px; font-weight:bold;'>Genererer fullstendig rapport for alle trinn og klasser. Vennligst vent...</p>";
     
     let samletHTML = "";
     const trinnListe = ["1", "2", "3", "4", "5", "6", "7"];
@@ -153,41 +158,41 @@ async function kjorAdminRapport(type) {
                 .filter(d => type === 'alle' || d.sum <= oppsett.grenseTotal);
 
             if (eleverData.length > 0) {
-                // Genererer samme tabellstruktur som på hovedsiden
-                // Bruker inline style for å tvinge liggende retning og kompakt visning
                 samletHTML += `
-                <div class="page-break" style="page-break-before: always; padding: 20px; min-height: 100vh;">
+                <div style="page-break-before: always; padding: 20px; color: black; background: white;">
                     <style>
-                        @media print { @page { size: landscape; margin: 1cm; } }
-                        .admin-table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
-                        .admin-table th, .admin-table td { border: 1px solid #000; padding: 4px; text-align: center; }
-                        .admin-table th { background-color: #f2f2f2; }
+                        @media print { 
+                            @page { size: landscape; margin: 1cm; }
+                            body { background: white; }
+                        }
+                        .admin-report-table { width: 100%; border-collapse: collapse; font-size: 0.8em; margin-top: 10px; }
+                        .admin-report-table th, .admin-report-table td { border: 1px solid black; padding: 4px; text-align: center; }
+                        .admin-report-table th { background-color: #eee !important; -webkit-print-color-adjust: exact; }
                     </style>
-                    <h2 style="text-align:center; margin-bottom: 10px;">${fag} - ${t}${k} (${periode} ${aar})</h2>
-                    <table class="admin-table">
+                    <h2 style="text-align:center; margin-bottom: 5px;">${fag} - ${t}${k} (${periode} ${aar})</h2>
+                    <table class="admin-report-table">
                         <thead>
                             <tr>
-                                <th style="text-align:left; width: 200px;">Elevnavn</th>
+                                <th style="text-align:left; width: 220px;">Elevnavn</th>
                                 ${oppsett.oppgaver.map(o => `<th>${o.navn}<br><small>max ${o.maks}</small></th>`).join("")}
                                 <th>Sum</th>
                             </tr>
                         </thead>
                         <tbody>`;
 
-                // Sorterer alfabetisk
                 eleverData.sort((a,b) => a.navn.localeCompare(b.navn)).forEach(d => {
                     let rad = `<tr><td style="text-align:left;"><b>${d.navn}</b></td>`;
                     oppsett.oppgaver.forEach((o, i) => {
                         const p = d.oppgaver[i] || 0;
-                        let c = (fag === "Lesing" && o.grense !== -1 && p <= o.grense) ? 'background-color:#ffcccc !important;' : '';
+                        let c = (fag === "Lesing" && o.grense !== -1 && p <= o.grense) ? 'background-color:#ffcccc !important; -webkit-print-color-adjust: exact;' : '';
                         rad += `<td style="${c}">${p}</td>`;
                     });
-                    let sC = (d.sum <= oppsett.grenseTotal) ? 'background-color:#ffcccc !important;' : '';
+                    let sC = (d.sum <= oppsett.grenseTotal) ? 'background-color:#ffcccc !important; -webkit-print-color-adjust: exact;' : '';
                     rad += `<td style="font-weight:bold; ${sC}">${d.sum}</td></tr>`;
                     samletHTML += rad;
                 });
 
-                // Legger til tomme rader hvis det er færre enn 26 elever for å holde fast layout
+                // Fyller opp til 26 rader
                 const tommeRader = 26 - eleverData.length;
                 for(let i = 0; i < tommeRader; i++) {
                     samletHTML += `<tr><td style="color:transparent;">.</td>${oppsett.oppgaver.map(()=>`<td></td>`).join("")}<td></td></tr>`;
@@ -198,14 +203,12 @@ async function kjorAdminRapport(type) {
         }
     }
 
-    document.getElementById('printTittel').innerText = ""; // Tømmer tittel for å unngå dobbel overskrift
-    hovedInnhold.innerHTML = samletHTML || "<p style='padding:20px;'>Ingen registrerte data funnet for valgte kriterier.</p>";
+    if (document.getElementById('printTittel')) document.getElementById('printTittel').innerText = "";
+    hovedInnhold.innerHTML = samletHTML || "<p style='padding:20px;'>Ingen data funnet for valgte kriterier.</p>";
 }
-
 
 // --- 6. ADMIN SAMMENLIGNING (SØYLEDIAGRAM) ---
 async function kjorSammenligning() {
-    // Henter info fra hovedmenyens valg (eller legg til egne felt i modalSammenlign om ønskelig)
     const aar = document.getElementById('mAar').value; 
     const fag = document.getElementById('mFag').value;
     const periode = document.getElementById('mPeriode').value;
@@ -238,7 +241,7 @@ async function kjorSammenligning() {
 
         if (antall > 0) {
             let snittData = summer.map(s => (s / antall).toFixed(1));
-            snittData.push((totalSum / antall).toFixed(1)); // Legg til total-snitt til slutt
+            snittData.push((totalSum / antall).toFixed(1));
 
             datasets.push({
                 label: `Klasse ${trinn}${klasser[i]}`,
