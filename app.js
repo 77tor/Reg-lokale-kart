@@ -241,19 +241,6 @@ function lukkAdmin() {
     db.ref().off(); 
 }
 
-    // 7. NULLSTILLING: Overskrift og Database-lytting (NY)
-    oppdaterOverskrifter("Velg kriterier for å vise kartlegging");
-    db.ref().off(); // Stopper aktiv oppdatering i bakgrunnen
-}
-
-    // 6. Nullstill overskrifter og interne data
-    oppdaterOverskrifter("Velg kriterier for å vise kartlegging");
-    lagredeResultater = {}; 
-    
-    // Stopper aktiv lytting på Firebase-databasen for å spare ressurser
-    db.ref().off(); 
-}
-
 async function kjorAdminRapport(type) {
     const aar = document.getElementById('adminAar').value;
     const fag = document.getElementById('adminFag').value;
