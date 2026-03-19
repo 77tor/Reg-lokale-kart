@@ -197,10 +197,14 @@ function sjekkAdminKode() {
         document.getElementById('adminPanel').style.display = 'block'; 
         document.getElementById('skjemaInnhold').style.display = 'none';
         
-        // SKJUL boksen når admin åpnes
+        // SKJUL "Legg til elev"-boksen
         if (document.getElementById('nyElevSeksjon')) {
             document.getElementById('nyElevSeksjon').style.display = 'none';
         }
+
+        // SKJUL "Skriv ut" og "Eksport" (Action-bar)
+        const actionBar = document.querySelector('.action-bar');
+        if (actionBar) actionBar.style.display = 'none';
     }
 }
 
@@ -213,25 +217,29 @@ function lukkAdmin() {
     document.getElementById('skjemaInnhold').style.display = 'block';
     document.getElementById('hovedTabell').style.display = 'table';
     
-    // 3. SKJUL "Legg til elev"-boksen (NY)
+    // 3. SKJUL elementer som krever aktive valg
     if (document.getElementById('nyElevSeksjon')) {
         document.getElementById('nyElevSeksjon').style.display = 'none';
     }
+    const actionBar = document.querySelector('.action-bar');
+    if (actionBar) actionBar.style.display = 'none';
 
-    // 4. NULLSTILLING: Tøm rapport-containeren hvis den finnes
+    // 4. NULLSTILLING: Tøm rapport-container og tabell
     const rc = document.getElementById('rapportContainer');
     if (rc) rc.innerHTML = "";
-
-    // 5. NULLSTILLING: Tøm tabellen (header og body)
     document.getElementById('tHead').innerHTML = "";
     document.getElementById('tBody').innerHTML = "<tr><td>Velg alle kriterier...</td></tr>";
 
-    // 6. NULLSTILLING: Sett alle nedtrekksmenyer (select) tilbake til første valg
+    // 5. NULLSTILLING: Sett alle menyer tilbake til start
     const filtere = ['mAar', 'mFag', 'mPeriode', 'mTrinn', 'mKlasse'];
     filtere.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.selectedIndex = 0; 
     });
+
+    oppdaterOverskrifter("Velg kriterier for å vise kartlegging");
+    db.ref().off(); 
+}
 
     // 7. NULLSTILLING: Overskrift og Database-lytting (NY)
     oppdaterOverskrifter("Velg kriterier for å vise kartlegging");
