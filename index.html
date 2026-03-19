@@ -52,20 +52,27 @@
     <button class="btn btn-reg" onclick="login()" style="padding: 15px 30px; font-size: 1.2em;">Logg inn med Google</button>
 </div>
 
-<div class="container" id="mainContent" style="display: none;">
-    <div class="print-header">
-        <h1 id="printTittel" style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px;"></h1>
-    </div>
+<div class="container" id="mainContent" style="display:none">
+    
+    <div id="registreringsVisning">
+        <div class="header">
+            <h1>Kartleggingsverktøy</h1>
+            <div id="userInfo"></div>
+            <button class="btn btn-slett" onclick="logout()">Logg ut</button>
+        </div>
 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;" class="no-print">
-        <div>
-            <h2 style="margin: 0;">Lokal kartlegging: <span id="userInfo" style="font-weight: normal; font-size: 0.8em; color: #666;"></span></h2>
-        </div>
-        <div>
-            <button class="btn btn-print" onclick="sjekkAdminKode()">Admin</button>
-            <button class="btn btn-logout" onclick="logout()">Logg ut</button>
-        </div>
+        <div class="filters">
+            </div>
+
+        <table id="resultTable">
+            <thead id="tHead"></thead>
+            <tbody id="tBody"></tbody>
+        </table>
     </div>
+    <div id="adminPanel" style="display:none"> ... </div>
+    <div id="hovedInnhold"></div>
+    <div id="chartContainer"> ... </div>
+</div>
 
     <div id="adminPanel" class="no-print" style="display: none; background: #f8f9fa; border: 2px solid #2980b9; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: inset 0 0 10px rgba(0,0,0,0.05);">
         <h3 style="margin-top:0;color:#2980b9;border-bottom:1px solid #2980b9;padding-bottom:10px;">Administrativt panel</h3>
