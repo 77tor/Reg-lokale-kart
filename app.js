@@ -274,7 +274,7 @@ function sjekkAdminKode() {
 }
 
 function lukkAdmin() {
-    // 1. Skjul selve admin-panelene
+    // 1. Skjul selve admin-panelene og grafen
     document.getElementById('adminPanel').style.display = 'none';
     document.getElementById('chartContainer').style.display = 'none';
     
@@ -282,18 +282,20 @@ function lukkAdmin() {
     document.getElementById('skjemaInnhold').style.display = 'block';
     document.getElementById('hovedTabell').style.display = 'table';
     
-    // 3. SKJUL elementer som krever aktive valg
+    // 3. VIS elementer igjen (Her var feilen din - de sto på 'none')
     if (document.getElementById('nyElevSeksjon')) {
-        document.getElementById('nyElevSeksjon').style.display = 'none';
+        document.getElementById('nyElevSeksjon').style.display = 'block'; // Endret fra none til block
     }
     const actionBar = document.querySelector('.action-bar');
-    if (actionBar) actionBar.style.display = 'none';
+    if (actionBar) {
+        actionBar.style.display = 'flex'; // Endret fra none til flex (slik at knapper og tittel står ved siden av hverandre)
+    }
 
     // 4. NULLSTILLING: Tøm rapport-container og tabell
     const rc = document.getElementById('rapportContainer');
     if (rc) rc.innerHTML = "";
     document.getElementById('tHead').innerHTML = "";
-    document.getElementById('tBody').innerHTML = "<tr><td>Velg alle kriterier...</td></tr>";
+    document.getElementById('tBody').innerHTML = "<tr><td colspan='100%'>Velg alle kriterier...</td></tr>";
 
     // 5. NULLSTILLING: Sett alle menyer tilbake til start
     const filtere = ['mAar', 'mFag', 'mPeriode', 'mTrinn', 'mKlasse'];
@@ -302,7 +304,10 @@ function lukkAdmin() {
         if (el) el.selectedIndex = 0; 
     });
 
+    // Sett overskriften tilbake til standard instruksjon
     oppdaterOverskrifter("Velg kriterier for å vise kartlegging");
+    
+    // Stopper lytting på data
     db.ref().off(); 
 }
 
