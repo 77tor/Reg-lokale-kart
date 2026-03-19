@@ -105,20 +105,52 @@ tr:hover { background-color: #f1f1f1; }
 .not-registered { color: #aaa; font-style: italic; }
 .alert-low { background: #ffcccc !important; font-weight: bold; color: #c0392b; }
 
-/* UTTSKRIFT */     
-        @media print { 
-            @page { size: landscape; margin: 0.5cm; } 
-            .header-grid, .btn, .modal, .action-bar, .ny-elev-boks, .no-print, #loginScreen { display: none !important; } 
-            .container { box-shadow: none; margin: 0; padding: 0; max-width: 100%; } 
-            table { font-size: 8pt; width: 100%; border: 1px solid black; border-collapse: collapse; } 
-            th, td { border: 1px solid black !important; padding: 2px 4px; line-height: 1.1; -webkit-print-color-adjust: exact; print-color-adjust: exact; } 
-            h1, h2, h3 { margin: 5px 0; } 
-            .print-header { display: block !important; margin-bottom: 10px; text-align: center; } 
-            #printTittel { font-size: 14pt; display: block !important; } 
-            .alert-low { background-color: #ffcccc !important; } 
-            .page-break { page-break-before: always; }
-        }
-        .print-header { display: none; }
+/* --- UTTSKRIFT --- */
+@media print {
+    /* 1. Generelle instillinger */
+    body { background: white; margin: 0; padding: 0; }
+    .no-print, .btn, .modal, #loginScreen, .header-grid, .action-bar, .ny-elev-boks { 
+        display: none !important; 
+    }
+
+    /* 2. Spesifikk håndtering av Elevrapport vs Klasseliste */
+    /* Hvis utskriftRapportArea har innhold, skjuler vi den vanlige containeren */
+    #utskriftRapportArea:not(:empty) ~ .container { display: none !important; }
+    
+    /* Hvis utskriftRapportArea er tomt, viser vi den vanlige containeren */
+    #utskriftRapportArea:empty { display: none; }
+    #utskriftRapportArea:not(:empty) { 
+        display: block !important; 
+        visibility: visible !important;
+        position: static;
+        width: 100%;
+    }
+
+    /* 3. Tabell-instillinger for begge visninger */
+    table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        -webkit-print-color-adjust: exact; 
+        print-color-adjust: exact; 
+    }
+    th, td { 
+        border: 1px solid black !important; 
+        padding: 4px; 
+        font-size: 9pt; 
+    }
+
+    /* 4. Side-oppsett (Landscape for klasseliste, Portrait kan styres i print-dialog) */
+    @page { 
+        margin: 1cm; 
+    }
+    
+    .page-break { page-break-before: always; }
+    .alert-low { background-color: #ffcccc !important; }
+}
+
+/* Skjul utskriftsområdet på skjermen */
+#utskriftRapportArea { display: none; }
+
     </style>
 </head>
 <body>

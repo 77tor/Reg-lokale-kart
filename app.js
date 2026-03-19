@@ -529,6 +529,141 @@ function filtrerElevListe() {
     });
 }
 
+
+// Åpner modalen og fyller den med klikkbare navn fra registeret
+function aapneElevrapportValg() {
+    const container = document.getElementById('elevListeContainer');
+    container.innerHTML = "";
+    document.getElementById('elevSokInput').value = ""; // Tøm søkefelt
+    
+    // Henter alle unike navn fra elevRegisteret og lager rader
+    Object.keys(elevRegister).sort().forEach(navn => {
+        const div = document.createElement('div');
+        div.className = "elev-valg-rad";
+        div.style.padding = "10px";
+        div.style.cursor = "pointer";
+        div.style.borderBottom = "1px solid #eee";
+        div.innerText = navn;
+        div.onclick = () => genererFullElevrapport(navn);
+        container.appendChild(div);
+    });
+    
+    document.getElementById('modalElevrapport').style.display = 'block';
+}
+
+// Henter ALT fra Firebase og bygger utskriftssiden
+async function genererFullElevrapport(navn) {
+    const utskriftArea = document.getElementById('utskriftRapportArea');
+    utskriftArea.innerHTML = "<h2 style='text-align:center; padding:50px;'>Genererer rapport for " + navn + "...</h2>";
+    document.getElementById('modalElevrapport').style.display = 'none';
+
+    try {
+        const snap = await db.ref(`kartlegging`).once('value');
+        const alleData = snap.val() || {};
+        
+        let funnetData = [];
+
+        // Vi må bla gjennom hele treet for å finne denne eleven
+        for (let aar in alleData) {
+            for (let fag in alleData[aar]) {
+                for (let periode in alleData[aar][fag]) {
+                    for (let trinn in alleData[aar][fag][periode]) {
+                        for (let klasse in alleData[aar][fag][periode][trinn]) {
+                            const e = alleData[aar][fag][periode][trinn][klasse][navn];
+                            
+                            if (e && e.oppgaver && !e.slettet) {
+                                funnetData.push({
+                                    aar, fag, periode, trinn, klasse,
+                                    resultat: e,
+                                    oppsett: hentOppsettSpesifikk(aar, fag, periode, trinn)
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (funnetData.length === 0) {
+            alert("Fant ingen lagrede resultater for " + navn);
+            return;
+        }
+
+        // Sorterer etter år og periode (høst før vår)
+        funnetData.sort((a, b) => a.aar.localeCompare(b.aar) || b.periode.localeCompare(a.periode));
+
+        let html = `
+            <div style="padding: 20px; font-family: Arial, sans-serif;">
+                <h1 style="text-align:center; color:#2c3e50; margin-bottom:5px;">ELEVSRAPPORT</h1>
+                <h2 style="text-align:center; margin-top:0;">${navn}</h2>
+                <p style="text-align:center; color:#666;">Utskriftsdato: ${new Date().toLocaleDateString('nb-NO')}</p>
+                <hr style="border:1px solid #2980b9; margin: 20px 0;">
+        `;
+
+        funnetData.forEach(d => {
+            const o = d.oppsett;
+            const res = d.resultat;
+            const maksTotal = o.oppgaver.reduce((sum, op) => sum + op.maks, 0);
+
+            html += `
+                <div style="margin-bottom: 40px; page-break-inside: avoid;">
+                    <h3 style="background:#2980b9; color:white; padding:10px; border-radius:4px; margin-bottom:10px;">
+                        ${d.fag} - ${d.periode} ${d.aar} (${d.trinn}. trinn)
+                    </h3>
+                    <table style="width:100%; border-collapse: collapse; margin-bottom:10px;">
+                        <thead>
+                            <tr style="background:#ecf0f1; text-align:left;">
+                                <th style="padding:10px; border:1px solid #bdc3c7;">Oppgave</th>
+                                <th style="padding:10px; border:1px solid #bdc3c7;">Resultat</th>
+                                <th style="padding:10px; border:1px solid #bdc3c7;">Maks</th>
+                                <th style="padding:10px; border:1px solid #bdc3c7;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+            o.oppgaver.forEach((oppg, i) => {
+                const poeng = res.oppgaver[i] || 0;
+                const kritisk = oppg.grense !== -1 && poeng <= oppg.grense;
+                html += `
+                    <tr>
+                        <td style="padding:8px; border:1px solid #bdc3c7;">${oppg.navn}</td>
+                        <td style="padding:8px; border:1px solid #bdc3c7; font-weight:bold;">${poeng}</td>
+                        <td style="padding:8px; border:1px solid #bdc3c7;">${oppg.maks}</td>
+                        <td style="padding:8px; border:1px solid #bdc3c7; color:${kritisk ? '#e74c3c' : '#27ae60'}; font-weight:bold;">
+                            ${kritisk ? 'Under kritisk grense' : 'OK'}
+                        </td>
+                    </tr>`;
+            });
+
+            const totalKritisk = res.sum <= o.grenseTotal;
+            html += `
+                        <tr style="background:#f9f9f9; font-weight:bold;">
+                            <td style="padding:10px; border:1px solid #bdc3c7;">TOTAL POENSUM</td>
+                            <td style="padding:10px; border:1px solid #bdc3c7; font-size:1.1em;">${res.sum}</td>
+                            <td style="padding:10px; border:1px solid #bdc3c7;">${maksTotal}</td>
+                            <td style="padding:10px; border:1px solid #bdc3c7; color:${totalKritisk ? '#e74c3c' : '#27ae60'};">
+                                ${totalKritisk ? 'UNDER TOTALGRENSE' : 'OK'}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p style="font-size:0.9em; color:#7f8c8d;">Registrert dato: ${new Date(res.dato).toLocaleDateString('nb-NO')}</p>
+            </div>`;
+        });
+
+        html += `</div>`;
+        utskriftArea.innerHTML = html;
+
+        // Gi nettleseren et millisekund på å tegne HTML før print-dialogen kommer
+        setTimeout(() => { window.print(); }, 500);
+
+    } catch (error) {
+        console.error("Feil ved generering av rapport:", error);
+        alert("Kunne ikke hente data fra databasen.");
+    }
+}
+
+
 function leggTilNyElev() {
     const etternavn = document.getElementById('nyttEtternavn').value.trim();
     const fornavn = document.getElementById('nyttFornavn').value.trim();
