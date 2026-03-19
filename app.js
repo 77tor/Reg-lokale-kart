@@ -345,5 +345,36 @@ async function kjorSammenligning() {
         data: { labels: [...oppsett.oppgaver.map(o => o.navn), "Total"], datasets }
     });
 }
+function leggTilNyElev() {
+    const etternavn = document.getElementById('nyttEtternavn').value.trim();
+    const fornavn = document.getElementById('nyttFornavn').value.trim();
 
+    if (!etternavn || !fornavn) {
+        alert("Vennligst skriv inn både fornavn og etternavn.");
+        return;
+    }
+
+    // Formaterer navnet slik: "NORDMANN Ola"
+    const fulltNavn = `${etternavn.toUpperCase()} ${fornavn.charAt(0).toUpperCase() + fornavn.slice(1)}`;
+
+    // Lager et tomt objekt for eleven i Firebase (slik at de dukker opp i listen)
+    // Vi setter "oppgaver" til en tom liste for å starte
+    const sti = hentSti(fulltNavn);
+    
+    if (confirm(`Vil du legge til ${fulltNavn} i denne klassen?`)) {
+        db.ref(sti).set({
+            oppgaver: [],
+            sum: 0,
+            dato: new Date().toISOString()
+        }).then(() => {
+            // Tømmer feltene etter lagring
+            document.getElementById('nyttEtternavn').value = "";
+            document.getElementById('nyttFornavn').value = "";
+            alert(`${fulltNavn} er lagt til.`);
+        }).catch(error => {
+            console.error("Feil ved lagring:", error);
+            alert("Kunne ikke legge til elev. Sjekk konsollen for feil.");
+        });
+    }
+}
 function forberedPrint() { window.print(); }
