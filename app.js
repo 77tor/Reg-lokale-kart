@@ -193,18 +193,45 @@ function visModal(navn) {
     const eksisterende = lagredeResultater[navn]?.oppgaver || [];
 
     oppsett.oppgaver.forEach((o, i) => {
-        container.innerHTML += `<div class="oppgave-rad"><label>${o.navn}:</label><input type="number" class="oppg-input" data-index="${i}" min="0" max="${o.maks}" value="${eksisterende[i] !== undefined ? eksisterende[i] : ""}" style="width:60px"></div>`;
+        container.innerHTML += `<div class="oppgave-rad">
+            <label>${o.navn}:</label>
+            <input type="number" class="oppg-input" data-index="${i}" min="0" max="${o.maks}" 
+            value="${eksisterende[i] !== undefined ? eksisterende[i] : ""}" style="width:60px">
+        </div>`;
     });
+
     document.getElementById('modal').style.display = 'block';
+
+    // NYTT: Sett fokus på første feltet med en gang
+    setTimeout(() => {
+        const førsteInput = container.querySelector('.oppg-input');
+        if (førsteInput) {
+            førsteInput.focus();
+            førsteInput.select(); // Markerer tallet så du kan skrive rett over
+        }
+    }, 100);
 }
 
-function lukkModal() { document.getElementById('modal').style.display = 'none'; }
+function lukkModal() { 
+    document.getElementById('modal').style.display = 'none'; 
+}
 
 function lagreData() {
     const inputs = document.querySelectorAll('.oppg-input');
     let verdier = [], sum = 0;
-    inputs.forEach(i => { const v = parseInt(i.value) || 0; verdier.push(v); sum += v; });
-    db.ref(hentSti(valgtElevId)).update({ oppgaver: verdier, sum: sum, dato: new Date().toISOString() }).then(lukkModal);
+    inputs.forEach(i => { 
+        const v = parseInt(i.value) || 0; 
+        verdier.push(v); 
+        sum += v; 
+    });
+    
+    // Vi setter slettet: false her for å være sikker på at eleven blir aktiv ved lagring
+    db.ref(hentSti(valgtElevId)).update({ 
+        oppgaver: verdier, 
+        sum: sum, 
+        slettet: false,
+        dato: new Date().toISOString() 
+    }).then(lukkModal);
 }
 
 // --- 6. ADMIN-FUNKSJONER ---
@@ -450,4 +477,28 @@ function slettElev(navn) {
 function gjenopprettElev(navn) {
     db.ref(hentSti(navn)).update({ slettet: false });
 }
+
+// NYTT: Global lytter for Enter-tasten inni modalen
+document.addEventListener('keydown', function(e) {
+    const modal = document.getElementById('modal');
+    if (modal.style.display === 'block' && e.key === 'Enter') {
+        e.preventDefault(); // Hindrer at siden refresher eller lignende
+        
+        const inputs = Array.from(document.querySelectorAll('.oppg-input'));
+        const aktivtElement = document.activeElement;
+        const index = inputs.indexOf(aktivtElement);
+
+        if (index > -1 && index < inputs.length - 1) {
+            // Hvis vi ikke er på siste felt, gå til neste
+            inputs[index + 1].focus();
+            inputs[index + 1].select();
+        } else {
+            // Hvis vi er på siste felt, lagre dataene
+            lagreData();
+        }
+    }
+    
+    // Bonus: Lukk med Escape-tasten
+    if (e.key === 'Escape') lukkModal();
+});
 function forberedPrint() { window.print(); }
