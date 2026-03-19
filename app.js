@@ -59,7 +59,7 @@ function hentSti(elev) {
     return `kartlegging/${a}/${f}/${p}/${t}/${k}/${elev}`;
 }
 
-// --- 4. HOVEDLOGIKK (TABELL-VISNING) ---
+// --- 4. HOVEDLOGIKK & ADMIN-MODUS ---
 function hentData() {
     const a = document.getElementById('mAar').value;
     const f = document.getElementById('mFag').value;
@@ -75,9 +75,26 @@ function hentData() {
     });
 }
 
+// Funksjon for å bytte mellom vanlig visning og admin/rapport-visning
+function toggleAdminVisning(visAdmin) {
+    const regVisning = document.getElementById('registreringsVisning');
+    const adminPanel = document.getElementById('adminPanel');
+    const hovedInnhold = document.getElementById('hovedInnhold');
+    const chartContainer = document.getElementById('chartContainer');
+
+    if (visAdmin) {
+        if(regVisning) regVisning.style.display = 'none';
+        adminPanel.style.display = 'block';
+    } else {
+        if(regVisning) regVisning.style.display = 'block';
+        adminPanel.style.display = 'none';
+        hovedInnhold.innerHTML = "";
+        if(chartContainer) chartContainer.style.display = 'none';
+        tegnTabell();
+    }
+}
+
 function tegnTabell() {
-    // Viser tabellen igjen hvis vi har vært i rapport-modus
-    document.getElementById('registreringsVisning').style.display = 'block';
     const oppsett = hentOppsett();
     const tHead = document.getElementById('tHead');
     const tBody = document.getElementById('tBody');
@@ -125,22 +142,17 @@ function tegnTabell() {
     });
 }
 
-// --- 5. ADMIN ÅRSRAPPORT (ALLE TRINN, SIDE PER KLASSE) ---
+// --- 5. ADMIN ÅRSRAPPORT ---
 async function kjorAdminRapport(type) {
     const aar = document.getElementById('adminAar').value;
     const fag = document.getElementById('adminFag').value;
     const periode = document.getElementById('adminPeriode').value;
     
     document.getElementById('modalRapport').style.display = 'none';
-    
-    // SKJULER registrerings-delen for å gi plass til rapporten
-    const regVisning = document.getElementById('registreringsVisning');
-    if(regVisning) regVisning.style.display = 'none';
-
     const hovedInnhold = document.getElementById('hovedInnhold');
-    hovedInnhold.innerHTML = "<p style='padding:20px; font-weight:bold;'>Genererer fullstendig rapport for alle trinn og klasser. Vennligst vent...</p>";
+    hovedInnhold.innerHTML = "<p style='padding:20px;'>Genererer rapport for alle trinn og klasser...</p>";
     
-    let samletHTML = "";
+    let samletHTML = `<button class="btn no-print" onclick="toggleAdminVisning(false)" style="margin:20px;">← Tilbake til registrering</button>`;
     const trinnListe = ["1", "2", "3", "4", "5", "6", "7"];
     const klasser = ["A", "B", "C", "D"];
 
@@ -159,21 +171,18 @@ async function kjorAdminRapport(type) {
 
             if (eleverData.length > 0) {
                 samletHTML += `
-                <div style="page-break-before: always; padding: 20px; color: black; background: white;">
+                <div class="page-break" style="page-break-before: always; padding: 20px; background: white;">
                     <style>
-                        @media print { 
-                            @page { size: landscape; margin: 1cm; }
-                            body { background: white; }
-                        }
-                        .admin-report-table { width: 100%; border-collapse: collapse; font-size: 0.8em; margin-top: 10px; }
-                        .admin-report-table th, .admin-report-table td { border: 1px solid black; padding: 4px; text-align: center; }
-                        .admin-report-table th { background-color: #eee !important; -webkit-print-color-adjust: exact; }
+                        @media print { @page { size: landscape; margin: 1cm; } }
+                        .admin-table { width: 100%; border-collapse: collapse; font-size: 0.8em; color: black; }
+                        .admin-table th, .admin-table td { border: 1px solid black; padding: 4px; text-align: center; }
+                        .admin-table th { background-color: #eee !important; -webkit-print-color-adjust: exact; }
                     </style>
-                    <h2 style="text-align:center; margin-bottom: 5px;">${fag} - ${t}${k} (${periode} ${aar})</h2>
-                    <table class="admin-report-table">
+                    <h2 style="text-align:center;">${fag} - ${t}${k} (${periode} ${aar})</h2>
+                    <table class="admin-table">
                         <thead>
                             <tr>
-                                <th style="text-align:left; width: 220px;">Elevnavn</th>
+                                <th style="text-align:left; width: 200px;">Elevnavn</th>
                                 ${oppsett.oppgaver.map(o => `<th>${o.navn}<br><small>max ${o.maks}</small></th>`).join("")}
                                 <th>Sum</th>
                             </tr>
@@ -192,22 +201,17 @@ async function kjorAdminRapport(type) {
                     samletHTML += rad;
                 });
 
-                // Fyller opp til 26 rader
-                const tommeRader = 26 - eleverData.length;
-                for(let i = 0; i < tommeRader; i++) {
+                for(let i = 0; i < (26 - eleverData.length); i++) {
                     samletHTML += `<tr><td style="color:transparent;">.</td>${oppsett.oppgaver.map(()=>`<td></td>`).join("")}<td></td></tr>`;
                 }
-
                 samletHTML += `</tbody></table></div>`;
             }
         }
     }
-
-    if (document.getElementById('printTittel')) document.getElementById('printTittel').innerText = "";
-    hovedInnhold.innerHTML = samletHTML || "<p style='padding:20px;'>Ingen data funnet for valgte kriterier.</p>";
+    hovedInnhold.innerHTML = samletHTML;
 }
 
-// --- 6. ADMIN SAMMENLIGNING (SØYLEDIAGRAM) ---
+// --- 6. ADMIN SAMMENLIGNING ---
 async function kjorSammenligning() {
     const aar = document.getElementById('mAar').value; 
     const fag = document.getElementById('mFag').value;
@@ -215,7 +219,7 @@ async function kjorSammenligning() {
     const trinn = document.getElementById('compTrinn').value;
     const oppsett = hentOppsettSpesifikk(aar, fag, periode, trinn);
 
-    if(!oppsett) return alert("Ingen mal funnet for dette trinnet.");
+    if(!oppsett) return alert("Ingen mal funnet.");
     
     document.getElementById('modalSammenlign').style.display = 'none';
     document.getElementById('chartContainer').style.display = 'block';
@@ -227,9 +231,7 @@ async function kjorSammenligning() {
     for (let i = 0; i < klasser.length; i++) {
         const snap = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasser[i]}`).once('value');
         const data = snap.val() || {};
-        let antall = 0;
-        let summer = new Array(oppsett.oppgaver.length).fill(0);
-        let totalSum = 0;
+        let antall = 0, summer = new Array(oppsett.oppgaver.length).fill(0), totalSum = 0;
 
         Object.keys(data).forEach(n => {
             if (!data[n].skjult && data[n].oppgaver) {
@@ -242,26 +244,26 @@ async function kjorSammenligning() {
         if (antall > 0) {
             let snittData = summer.map(s => (s / antall).toFixed(1));
             snittData.push((totalSum / antall).toFixed(1));
-
-            datasets.push({
-                label: `Klasse ${trinn}${klasser[i]}`,
-                data: snittData,
-                backgroundColor: farger[i]
-            });
+            datasets.push({ label: `Klasse ${trinn}${klasser[i]}`, data: snittData, backgroundColor: farger[i] });
         }
     }
 
-    const labels = [...oppsett.oppgaver.map(o => o.navn), "TOTAL"];
     const ctx = document.getElementById('sammenligningsChart').getContext('2d');
     if (myChart) myChart.destroy();
     myChart = new Chart(ctx, {
         type: 'bar',
-        data: { labels: labels, datasets: datasets },
-        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        data: { labels: [...oppsett.oppgaver.map(o => o.navn), "TOTAL"], datasets },
+        options: { responsive: true }
     });
 }
 
-// --- 7. MODAL & LAGRING ---
+// --- 7. MODAL & HJELPEFUNKSJONER ---
+function sjekkAdminKode() {
+    if (prompt("Kode:") === "3850") {
+        toggleAdminVisning(true);
+    }
+}
+
 function visModal(navn) {
     const oppsett = hentOppsett();
     valgtElevId = navn;
@@ -278,16 +280,10 @@ function visModal(navn) {
 }
 
 function lukkModal() { document.getElementById('modal').style.display = 'none'; }
-
 function lagreData() {
     const inputs = document.querySelectorAll('.oppg-input');
     let verdier = [], sum = 0;
     inputs.forEach(i => { const v = parseInt(i.value) || 0; verdier.push(v); sum += v; });
     db.ref(hentSti(valgtElevId)).update({ oppgaver: verdier, sum: sum, dato: new Date().toISOString() }).then(lukkModal);
 }
-
-function sjekkAdminKode() {
-    if (prompt("Kode:") === "3850") document.getElementById('adminPanel').style.display = 'block';
-}
-
 function forberedPrint() { window.print(); }
