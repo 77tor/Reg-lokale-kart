@@ -39,8 +39,7 @@
         .oppgave-rad { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
         .not-registered { color: #aaa; font-style: italic; }
         .alert-low { background: #ffcccc !important; font-weight: bold; color: #c0392b; }
-        .skjult-seksjon { background: #f8f9fa; color: #7f8c8d; font-style: italic; }
-        @media print { @page { size: landscape; margin: 0.5cm; } .header-grid, .btn, .modal, .action-bar, .ny-elev-boks, .no-print, #loginScreen { display: none !important; } .container { box-shadow: none; margin: 0; padding: 0; max-width: 100%; } table { font-size: 8pt; width: 100%; border: 1px solid black; border-collapse: collapse; } th, td { border: 1px solid black !important; padding: 2px 4px; line-height: 1.1; -webkit-print-color-adjust: exact; print-color-adjust: exact; } h1, h2, h3 { margin: 5px 0; } .print-header { display: block !important; margin-bottom: 10px; text-align: center; } #printTittel { font-size: 14pt; } .alert-low { background-color: #ffcccc !important; } }
+        @media print { .header-grid, .btn, .modal, .action-bar, .ny-elev-boks, .no-print, #loginScreen { display: none !important; } .container { box-shadow: none; margin: 0; padding: 0; max-width: 100%; } .print-header { display: block !important; } }
         .print-header { display: none; }
         .page-break { page-break-before: always; }
     </style>
@@ -69,56 +68,50 @@
 
     <div id="adminPanel" class="no-print" style="display: none; background: #f8f9fa; border: 2px solid #2980b9; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: inset 0 0 10px rgba(0,0,0,0.05);">
         <h3 style="margin-top:0;color:#2980b9;border-bottom:1px solid #2980b9;padding-bottom:10px;">Administrativt panel</h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;">
-            <div style="border-right:1px solid #dee2e6;padding-right:10px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px;">
+            <div style="border-right:1px solid #dee2e6; padding-right:10px;">
                 <h4 style="margin-top:0;">Årsrapport / Kritisk</h4>
                 <p style="font-size:0.8em;color:#666;">Hent ut samlede lister for hele trinnet.</p>
                 <button class="btn btn-edit" style="width:100%;" onclick="document.getElementById('modalRapport').style.display='block'">Generer Årsrapport</button>
             </div>
-            <div style="border-right:1px solid #dee2e6;padding-right:10px;">
+            <div style="border-right:1px solid #dee2e6; padding-right:10px;">
                 <h4 style="margin-top:0;">Sammenlign klasser</h4>
                 <p style="font-size:0.8em;color:#666;">Viser gjennomsnitt per oppgave i et søylediagram.</p>
                 <button class="btn btn-hent" style="width:100%;" onclick="document.getElementById('modalSammenlign').style.display='block'">Lag sammenligning</button>
             </div>
             <div>
                 <h4 style="margin-top:0;">Status</h4>
-                <p style="font-size:0.8em;color:#666;">Bruk knappene til venstre for å starte analyse.</p>
+                <p style="font-size:0.8em;color:#666;">Vise resultater i diagramform.</p>
             </div>
         </div>
-        <div id="chartContainer" style="display:none;margin-top:20px;background:white;padding:15px;border-radius:8px;border:1px solid #ddd;">
+        <div id="chartContainer" style="display:none; margin-top:20px; background:white; padding:15px; border-radius:8px; border:1px solid #ddd;">
             <canvas id="sammenligningsChart"></canvas>
         </div>
-        <div style="margin-top:20px;text-align:right;">
-            <button class="btn btn-fjern" onclick="document.getElementById('adminPanel').style.display='none';document.getElementById('chartContainer').style.display='none'">Lukk Panel</button>
+        <div style="margin-top:20px; text-align:right;">
+            <button class="btn btn-fjern" onclick="lukkAdmin()">Lukk Panel</button>
         </div>
     </div>
-    
-    <div class="header-grid no-print">
-        <div><label>Skoleår:</label><select id="mAar" onchange="hentData()"><option value="" disabled selected>Velg år...</option><option value="2024-2025">2024-2025</option><option value="2025-2026">2025-2026</option><option value="2026-2027">2026-2027</option></select></div>
-        <div><label>Fag:</label><select id="mFag" onchange="hentData()"><option value="" disabled selected>Velg fag...</option><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select></div>
-        <div><label>Periode:</label><select id="mPeriode" onchange="hentData()"><option value="" disabled selected>Velg periode...</option><option value="Høst">Høst</option><option value="Vår">Vår</option></select></div>
-        <div><label>Trinn:</label><select id="mTrinn" onchange="hentData()"><option value="" disabled selected>Velg trinn...</option><option value="1">1. Trinn</option><option value="2">2. Trinn</option><option value="3">3. Trinn</option><option value="4">4. Trinn</option><option value="5">5. Trinn</option><option value="6">6. Trinn</option><option value="7">7. Trinn</option></select></div>
-        <div><label>Klasse:</label><select id="mKlasse" onchange="hentData()"><option value="" disabled selected>Velg klasse...</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></div>
-    </div>
 
-    <div class="action-bar no-print">
-        <button class="btn btn-print" onclick="forberedPrint()">Skriv ut / PDF</button>
-        <button class="btn btn-excel" onclick="eksporterTilExcel()">Eksport til Excel</button>
-        <span id="dynamiskOverskrift" style="margin-left: 20px; font-weight: bold; font-size: 1.1em; align-self: center; color: #2c3e50;"></span>
-    </div>
-
-    <table id="hovedTabell">
-        <thead id="tHead"></thead>
-        <tbody id="tBody"></tbody>
-    </table>
-
-    <div class="ny-elev-boks no-print" style="margin-top: 40px; padding: 20px; background: #f8f9fa; border: 2px dashed #cbd5e0; border-radius: 8px;">
-        <h4>Legg til ny elev manuelt</h4>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <input type="text" id="nyttEtternavn" placeholder="Etternavn" style="flex:1">
-            <input type="text" id="nyttFornavn" placeholder="Fornavn" style="flex:1">
-            <button class="btn btn-reg" onclick="leggTilNyElev()">Legg til i denne klassen</button>
+    <div id="skjemaInnhold">
+        <div class="header-grid no-print">
+            <div><label>Skoleår:</label><select id="mAar" onchange="hentData()"><option value="" disabled selected>Velg år...</option><option value="2024-2025">2024-2025</option><option value="2025-2026">2025-2026</option></select></div>
+            <div><label>Fag:</label><select id="mFag" onchange="hentData()"><option value="" disabled selected>Velg fag...</option><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select></div>
+            <div><label>Periode:</label><select id="mPeriode" onchange="hentData()"><option value="" disabled selected>Velg periode...</option><option value="Høst">Høst</option><option value="Vår">Vår</option></select></div>
+            <div><label>Trinn:</label><select id="mTrinn" onchange="hentData()"><option value="" disabled selected>Velg trinn...</option><option value="1">1. Trinn</option><option value="2">2. Trinn</option><option value="3">3. Trinn</option><option value="4">4. Trinn</option><option value="5">5. Trinn</option><option value="6">6. Trinn</option><option value="7">7. Trinn</option></select></div>
+            <div><label>Klasse:</label><select id="mKlasse" onchange="hentData()"><option value="" disabled selected>Velg klasse...</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></div>
         </div>
+
+        <div class="action-bar no-print">
+            <button class="btn btn-print" onclick="forberedPrint()">Skriv ut / PDF</button>
+            <span id="dynamiskOverskrift" style="margin-left: 20px; font-weight: bold; font-size: 1.1em; align-self: center; color: #2c3e50;"></span>
+        </div>
+
+        <table id="hovedTabell">
+            <thead id="tHead"></thead>
+            <tbody id="tBody"></tbody>
+        </table>
+
+        <div id="hovedInnhold" class="no-print"></div>
     </div>
 </div>
 
@@ -135,14 +128,12 @@
     </div>
 </div>
 
-
-<div id="modalRapport" class="modal"><div class="modal-content"><h3>Generer Årsrapport</h3><p style="font-size:0.8em;color:#666;">Dette genererer en rapport for alle trinn og klasser (A-D) for valgt fag/termin.</p><label>Skoleår:</label><select id="adminAar"><option value="2024-2025">2024-2025</option><option value="2025-2026" selected>2025-2026</option></select><label>Fag:</label><select id="adminFag"><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select><label>Periode:</label><select id="adminPeriode"><option value="Høst">Høst</option><option value="Vår">Vår</option></select><div style="margin-top:20px;display:flex;gap:10px;"><button class="btn btn-reg" style="flex:2" onclick="kjorAdminRapport('alle')">Vis Rapport</button><button class="btn btn-slett" style="flex:2" onclick="kjorAdminRapport('kritisk')">Kun Kritisk</button><button class="btn btn-fjern" style="flex:1" onclick="document.getElementById('modalRapport').style.display='none'">Avbryt</button></div></div></div>
+<div id="modalRapport" class="modal"><div class="modal-content"><h3>Generer Årsrapport</h3><label>Skoleår:</label><select id="adminAar"><option value="2024-2025">2024-2025</option><option value="2025-2026" selected>2025-2026</option></select><label>Fag:</label><select id="adminFag"><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select><label>Periode:</label><select id="adminPeriode"><option value="Høst">Høst</option><option value="Vår">Vår</option></select><div style="margin-top:20px;display:flex;gap:10px;"><button class="btn btn-reg" style="flex:2" onclick="kjorAdminRapport('alle')">Vis Rapport</button><button class="btn btn-slett" style="flex:2" onclick="kjorAdminRapport('kritisk')">Kun Kritisk</button><button class="btn btn-fjern" style="flex:1" onclick="document.getElementById('modalRapport').style.display='none'">Avbryt</button></div></div></div>
 
 <div id="modalSammenlign" class="modal"><div class="modal-content"><h3>Sammenlign klasser</h3><label>Skoleår:</label><select id="compAar"><option value="2024-2025">2024-2025</option><option value="2025-2026" selected>2025-2026</option></select><label>Fag:</label><select id="compFag"><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select><label>Periode:</label><select id="compPeriode"><option value="Høst">Høst</option><option value="Vår">Vår</option></select><label>Trinn:</label><select id="compTrinn"><option value="1">1. Trinn</option><option value="2">2. Trinn</option><option value="3">3. Trinn</option><option value="4">4. Trinn</option><option value="5">5. Trinn</option><option value="6">6. Trinn</option><option value="7">7. Trinn</option></select><div style="margin-top:20px;display:flex;gap:10px;"><button class="btn btn-hent" style="flex:2" onclick="kjorSammenligning()">Lag Diagram</button><button class="btn btn-fjern" style="flex:1" onclick="document.getElementById('modalSammenlign').style.display='none'">Avbryt</button></div></div></div>
 
 <script src="oppsett.js"></script>
 <script src="elever.js"></script>
 <script src="app.js"></script>
-
 </body>
 </html>
