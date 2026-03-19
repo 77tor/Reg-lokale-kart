@@ -95,6 +95,7 @@ function hentData() {
     });
 }
 
+// --- Tegn tabell ---
 function tegnTabell() {
     const oppsett = hentOppsett();
     const tHead = document.getElementById('tHead');
@@ -110,30 +111,61 @@ function tegnTabell() {
     const vKlasse = document.getElementById('mKlasse').value;
     const vStartAar = parseInt(document.getElementById('mAar').value.split('-')[0]);
 
-    tBody.innerHTML = "";
+    // Vi lager to strenger for å holde på HTML-radene
+    let aktiveRader = "";
+    let slettedeRader = "";
+
     Object.keys(elevRegister).sort().forEach(navn => {
         const e = elevRegister[navn];
         const cTrinn = e.startTrinn + (vStartAar - e.startAar);
         
         if (cTrinn === vTrinn && e.startKlasse === vKlasse) {
-            const d = lagredeResultater[navn];
-            let rad = `<tr><td style="text-align:left"><b>${navn}</b></td>`;
-            if (d && d.oppgaver) {
+            const d = lagredeResultater[navn] || {};
+            const erSlettet = d.slettet === true; // Sjekker status i Firebase
+
+            // Setter stil basert på om eleven er slettet
+            let radStil = erSlettet ? 'style="color: #a0aec0; background: #f7fafc;"' : '';
+            let rad = `<tr ${radStil}><td style="text-align:left"><b>${navn}</b> ${erSlettet ? '<small>(Slettet)</small>' : ''}</td>`;
+            
+            // --- POENG-CELLER ---
+            if (!erSlettet && d.oppgaver) {
                 oppsett.oppgaver.forEach((o, i) => {
                     const poeng = d.oppgaver[i] || 0;
                     let cls = (o.grense !== -1 && poeng <= o.grense) ? 'class="alert-low"' : '';
                     rad += `<td ${cls}>${poeng}</td>`;
                 });
                 let sumCls = (d.sum <= oppsett.grenseTotal) ? 'class="alert-low"' : '';
-                rad += `<td ${sumCls}>${d.sum}</td><td class="no-print"><button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button></td>`;
+                rad += `<td ${sumCls}>${d.sum}</td>`;
             } else {
+                // Viser streker hvis ikke registrert ELLER hvis slettet
                 oppsett.oppgaver.forEach(() => rad += `<td class="not-registered">-</td>`);
-                rad += `<td class="not-registered">-</td><td class="no-print"><button class="btn btn-reg" onclick="visModal('${navn}')">Reg</button></td>`;
+                rad += `<td class="not-registered">-</td>`;
             }
-            tBody.innerHTML += rad + `</tr>`;
+
+            // --- KNAPPER (HANDLING) ---
+            rad += `<td class="no-print">`;
+            if (erSlettet) {
+                rad += `<button class="btn" style="background:#718096; color:white;" onclick="gjenopprettElev('${navn}')">Hent tilbake</button>`;
+            } else {
+                const knappTekst = d.oppgaver ? "Endre" : "Reg";
+                rad += `<button class="btn btn-edit" onclick="visModal('${navn}')">${knappTekst}</button> `;
+                rad += `<button class="btn" style="background:#e53e3e; color:white; margin-left:5px;" onclick="slettElev('${navn}')">Slett</button>`;
+            }
+            rad += `</td></tr>`;
+
+            // Legg raden i riktig "bunke"
+            if (erSlettet) {
+                slettedeRader += rad;
+            } else {
+                aktiveRader += rad;
+            }
         }
     });
+
+    // Sett sammen tabellen: Aktive øverst, slettede nederst
+    tBody.innerHTML = aktiveRader + slettedeRader;
 }
+
 
 // --- 5. MODAL OG LAGRING ---
 function visModal(navn) {
@@ -382,5 +414,15 @@ function leggTilNyElev() {
             alert("Kunne ikke legge til elev. Sjekk konsollen for feil.");
         });
     }
+}
+
+function slettElev(navn) {
+    if (confirm(`Vil du slette ${navn} fra denne prøven?`)) {
+        db.ref(hentSti(navn)).update({ slettet: true });
+    }
+}
+
+function gjenopprettElev(navn) {
+    db.ref(hentSti(navn)).update({ slettet: false });
 }
 function forberedPrint() { window.print(); }
