@@ -412,6 +412,7 @@ async function kjorAdminRapport(type) {
     }, 500);
 }
 
+
 // --- SAMMENLIGNING I ADMIN-FUNKSJONER ---
 async function kjorSammenligning() {
     const aar = document.getElementById('compAar').value;
@@ -434,6 +435,7 @@ async function kjorSammenligning() {
     // Lag en liste over maks-poeng for hver kolonne (oppgaver + total)
     const maksVerdier = [...oppsett.oppgaver.map(o => o.maks), oppsett.oppgaver.reduce((a, b) => a + b.maks, 0)];
 
+    // START FOR-LOOP
     for (let i = 0; i < klasser.length; i++) {
         const snap = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasser[i]}`).once('value');
         const data = snap.val() || {};
@@ -456,22 +458,21 @@ async function kjorSammenligning() {
                 datalabels: {
                     align: 'end',
                     anchor: 'end',
-                    offset: -45, // Justert litt ned for å gi plass til mer tekst
+                    offset: -45, 
                     color: 'white',
                     font: { weight: 'bold', size: 10 },
                     formatter: function(value, context) {
                         const idx = context.dataIndex;
                         const maks = maksVerdier[idx];
                         const prosent = ((value / maks) * 100).toFixed(1);
-                        
-                        // RETURNERER: "4.2 / 5" på første linje og "84.0%" på andre
                         return value + " / " + maks + "\n" + prosent + "%";
                     }
                 }
             });
         }
+    } // HER skal for-loopen lukkes (Flyttet opp fra bunnen)
 
-    // Rød linje for kritisk grense (vi deaktiverer labels for denne linjen)
+    // --- Rød linje for kritisk grense ---
     const grenseData = [...oppsett.oppgaver.map(o => o.grense), oppsett.grenseTotal];
     datasets.push({
         type: 'line',
@@ -483,7 +484,7 @@ async function kjorSammenligning() {
         pointRadius: 4,
         fill: false,
         tension: 0,
-        datalabels: { display: false } // Skjul tall på selve linjen
+        datalabels: { display: false } 
     });
 
     const ctx = document.getElementById('sammenligningsChart').getContext('2d');
@@ -500,16 +501,15 @@ async function kjorSammenligning() {
             scales: {
                 y: { 
                     beginAtZero: true,
-                    max: Math.max(...maksVerdier) * 1.1 // Gir litt luft i toppen
+                    max: Math.max(...maksVerdier) * 1.2 // Økt til 1.2 for å gi plass til tekst
                 }
             },
             plugins: {
                 legend: { position: 'top' },
-                // Global innstilling for datalabels
                 datalabels: {
                     textAlign: 'center',
                     display: function(context) {
-                        return context.dataset.type === 'bar'; // Vis kun på søyler
+                        return context.dataset.type === 'bar'; 
                     }
                 }
             }
