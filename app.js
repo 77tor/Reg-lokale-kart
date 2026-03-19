@@ -273,29 +273,29 @@ function sjekkAdminKode() {
     }
 }
 
+
 function lukkAdmin() {
     // 1. Skjul selve admin-panelene og grafen
     document.getElementById('adminPanel').style.display = 'none';
-    document.getElementById('chartContainer').style.display = 'none';
+    if (document.getElementById('chartContainer')) {
+        document.getElementById('chartContainer').style.display = 'none';
+    }
     
-    // 2. Vis det vanlige innholdet igjen
+    // 2. Vis det vanlige innholdet (containeren), men tøm tabellen
     document.getElementById('skjemaInnhold').style.display = 'block';
-    document.getElementById('hovedTabell').style.display = 'table';
     
-    // 3. VIS elementer igjen (Her var feilen din - de sto på 'none')
+    // 3. SKJUL elementer (Siden alt er nullstilt, skal disse være borte)
     if (document.getElementById('nyElevSeksjon')) {
-        document.getElementById('nyElevSeksjon').style.display = 'block'; // Endret fra none til block
+        document.getElementById('nyElevSeksjon').style.display = 'none'; // Endret til none
     }
     const actionBar = document.querySelector('.action-bar');
     if (actionBar) {
-        actionBar.style.display = 'flex'; // Endret fra none til flex (slik at knapper og tittel står ved siden av hverandre)
+        actionBar.style.display = 'none'; // Skjules til valg er tatt
     }
 
-    // 4. NULLSTILLING: Tøm rapport-container og tabell
-    const rc = document.getElementById('rapportContainer');
-    if (rc) rc.innerHTML = "";
+    // 4. NULLSTILLING: Tøm tabell og sett tekst
     document.getElementById('tHead').innerHTML = "";
-    document.getElementById('tBody').innerHTML = "<tr><td colspan='100%'>Velg alle kriterier...</td></tr>";
+    document.getElementById('tBody').innerHTML = "<tr><td>Velg alle kriterier...</td></tr>";
 
     // 5. NULLSTILLING: Sett alle menyer tilbake til start
     const filtere = ['mAar', 'mFag', 'mPeriode', 'mTrinn', 'mKlasse'];
@@ -307,9 +307,12 @@ function lukkAdmin() {
     // Sett overskriften tilbake til standard instruksjon
     oppdaterOverskrifter("Velg kriterier for å vise kartlegging");
     
-    // Stopper lytting på data
+    // Koble fra Firebase-lytting
     db.ref().off(); 
+    
+    console.log("Admin lukket. Systemet er nullstilt og klart for nye valg.");
 }
+
 
 async function kjorAdminRapport(type) {
     const aar = document.getElementById('adminAar').value;
