@@ -201,7 +201,6 @@ async function kjorAdminRapport(type) {
     
     // Vis skjemaInnhold slik at rapporten blir synlig
     document.getElementById('skjemaInnhold').style.display = 'block';
-    document.querySelector('.action-bar').style.display = 'flex'; // Tvinger frem knappene
     document.getElementById('hovedTabell').style.display = 'none';
 
     let samletInnhold = "";
