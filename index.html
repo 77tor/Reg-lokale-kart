@@ -52,7 +52,28 @@
     <button class="btn btn-reg" onclick="login()" style="padding: 15px 30px; font-size: 1.2em;">Logg inn med Google</button>
 </div>
 
-<div class="container" id="mainContent" style="display: none;">
+<div class="container" id="mainContent" style="display:none">
+    
+    <div id="registreringsVisning">
+        <div class="header">
+            <h1>Kartleggingsverktøy</h1>
+            <div id="userInfo"></div>
+            <button class="btn btn-slett" onclick="logout()">Logg ut</button>
+        </div>
+
+        <div class="filters">
+            </div>
+
+        <table id="resultTable">
+            <thead id="tHead"></thead>
+            <tbody id="tBody"></tbody>
+        </table>
+    </div>
+    <div id="adminPanel" style="display:none"> ... </div>
+    <div id="hovedInnhold"></div>
+    <div id="chartContainer"> ... </div>
+</div>
+
     <div class="print-header">
         <h1 id="printTittel" style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px;"></h1>
     </div>
