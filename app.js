@@ -38,23 +38,6 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-
-const options = {
-    animation: false, // VIKTIG: Hindrer at diagrammet er tomt på utskrift
-    responsive: true,
-    maintainAspectRatio: false, // Lar diagrammet fylle plassen det får på arket
-    plugins: {
-        legend: {
-            display: true,
-            position: 'top',
-        }
-    }
-};
-// Legger til en hvit bakgrunn på selve canvas-elementet før utskrift
-const canvas = document.getElementById('myChart'); // Bytt ut med din ID
-canvas.style.backgroundColor = 'white';
-
-
 // --- 3. HJELPEFUNKSJONER ---
 function hentOppsettSpesifikk(aar, fag, periode, trinn) {
     try { return oppgaveStruktur[aar][fag][periode][trinn]; } 
@@ -548,11 +531,7 @@ async function kjorSammenligning() {
         datalabels: { display: false } 
     });
 
-const ctx = document.getElementById('sammenligningsChart').getContext('2d');
-    
-    // NYTT: Tving hvit bakgrunn på canvas slik at den vises på PDF/Utskrift
-    ctx.canvas.style.backgroundColor = 'white';
-
+    const ctx = document.getElementById('sammenligningsChart').getContext('2d');
     if (myChart) myChart.destroy();
     
     myChart = new Chart(ctx, {
@@ -561,17 +540,12 @@ const ctx = document.getElementById('sammenligningsChart').getContext('2d');
             datasets: datasets 
         },
         options: {
-            // NYTT: Slå av animasjon for stabil utskrift
-            animation: false, 
             responsive: true,
-            // NYTT: Opprettholder proporsjoner slik at den ikke blir strukket på arket
-            maintainAspectRatio: true, 
-            aspectRatio: 2, // Juster denne (f.eks 1.5 eller 2) for ønsket høyde på arket
-            layout: { padding: { top: 30 } }, // Litt mer padding for topp-tekst
+            layout: { padding: { top: 20 } },
             scales: {
                 y: { 
                     beginAtZero: true,
-                    max: Math.max(...maksVerdier) * 1.2
+                    max: Math.max(...maksVerdier) * 1.2 // Økt til 1.2 for å gi plass til tekst
                 }
             },
             plugins: {
