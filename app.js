@@ -531,7 +531,11 @@ async function kjorSammenligning() {
         datalabels: { display: false } 
     });
 
-    const ctx = document.getElementById('sammenligningsChart').getContext('2d');
+const ctx = document.getElementById('sammenligningsChart').getContext('2d');
+    
+    // Tving hvit bakgrunn på canvas-elementet (viktig for utskrift)
+    ctx.canvas.style.backgroundColor = 'white';
+
     if (myChart) myChart.destroy();
     
     myChart = new Chart(ctx, {
@@ -540,12 +544,16 @@ async function kjorSammenligning() {
             datasets: datasets 
         },
         options: {
+            // NYTT: Slå av animasjon slik at print-vinduet ikke blir tomt
+            animation: false, 
             responsive: true,
-            layout: { padding: { top: 20 } },
+            maintainAspectRatio: true,
+            aspectRatio: 2, // Gir en fin høyde på et liggende A4-ark
+            layout: { padding: { top: 30 } },
             scales: {
                 y: { 
                     beginAtZero: true,
-                    max: Math.max(...maksVerdier) * 1.2 // Økt til 1.2 for å gi plass til tekst
+                    max: Math.max(...maksVerdier) * 1.2 
                 }
             },
             plugins: {
