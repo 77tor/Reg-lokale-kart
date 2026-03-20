@@ -102,7 +102,6 @@ function hentData() {
     });
 }
 
-// --- Tegn tabell ---
 function tegnTabell() {
     const oppsett = hentOppsett();
     const tHead = document.getElementById('tHead');
@@ -112,10 +111,10 @@ function tegnTabell() {
         return; 
     }
 
-    // 1. Lag tabellhode
+    // 1. Lag tabellhode - LAGT TIL "no-print" på Handling
     let hode = `<tr><th style="text-align:left">Elevnavn</th>`;
     oppsett.oppgaver.forEach(o => hode += `<th>${o.navn}<br><small>max ${o.maks}</small></th>`);
-    hode += `<th>Sum</th><th class="no-print">Handling</th></tr>`;
+    hode += `<th>Sum</th><th class="no-print">Handling</th></tr>`; // "no-print" her
     tHead.innerHTML = hode;
 
     const vTrinn = parseInt(document.getElementById('mTrinn').value);
@@ -124,7 +123,6 @@ function tegnTabell() {
     if (!vAarInput) return;
     const vStartAar = parseInt(vAarInput.split('-')[0]);
 
-    // Vi lager to strenger for å holde på HTML-radene (aktive øverst, slettede nederst)
     let aktiveRader = "";
     let slettedeRader = "";
 
@@ -136,45 +134,41 @@ function tegnTabell() {
             const d = lagredeResultater[navn] || {};
             const erSlettet = d.slettet === true;
 
-            // Setter visuell stil for slettede rader
+            // LAGT TIL "no-print" på slettede rader så de ikke kommer på papiret
+            let printKlasse = erSlettet ? 'class="no-print"' : ''; 
             let radStil = erSlettet ? 'style="color: #a0aec0; background: #f7fafc;"' : '';
-            let rad = `<tr ${radStil}><td style="text-align:left"><b>${navn}</b> ${erSlettet ? '<small>(Slettet)</small>' : ''}</td>`;
             
-            // --- POENG-CELLER ---
+            let rad = `<tr ${printKlasse} ${radStil}><td style="text-align:left"><b>${navn}</b> ${erSlettet ? '<small>(Slettet)</small>' : ''}</td>`;
+            
             if (!erSlettet && d.oppgaver) {
-                // Vis tall hvis eleven er aktiv og har data
                 oppsett.oppgaver.forEach((o, i) => {
                     const poeng = d.oppgaver[i] || 0;
+                    // Sjekker grense for fargekoding
                     let cls = (o.grense !== -1 && poeng <= o.grense) ? 'class="alert-low"' : '';
                     rad += `<td ${cls}>${poeng}</td>`;
                 });
                 let sumCls = (d.sum <= oppsett.grenseTotal) ? 'class="alert-low"' : '';
                 rad += `<td ${sumCls}>${d.sum}</td>`;
             } else {
-                // Vis streker hvis ikke registrert ELLER hvis slettet
                 oppsett.oppgaver.forEach(() => rad += `<td class="not-registered">-</td>`);
                 rad += `<td class="not-registered">-</td>`;
             }
 
-            // --- KNAPPER (HANDLING) ---
             rad += `<td class="no-print">`;
             
-if (erSlettet) {
-    rad += `<button class="btn btn-hent" onclick="gjenopprettElev('${navn}')">Hent tilbake</button>`;
-} else {
-    if (d.oppgaver) {
-        // Eleven har data -> Blå "Endre" og Oransje "Nullstill"
-        rad += `<button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button> `;
-        rad += `<button class="btn btn-nullstill" style="margin-left:5px;" onclick="nullstillElev('${navn}')">Nullstill</button>`;
-    } else {
-        // Eleven mangler data -> Grønn "Registrer" og Rød "Slett"
-        rad += `<button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button> `;
-        rad += `<button class="btn btn-slett" style="margin-left:5px;" onclick="slettElev('${navn}')">Slett</button>`;
-    }
-}
-rad += `</td></tr>`;
+            if (erSlettet) {
+                rad += `<button class="btn btn-hent" onclick="gjenopprettElev('${navn}')">Hent tilbake</button>`;
+            } else {
+                if (d.oppgaver) {
+                    rad += `<button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button> `;
+                    rad += `<button class="btn btn-nullstill" style="margin-left:5px;" onclick="nullstillElev('${navn}')">Nullstill</button>`;
+                } else {
+                    rad += `<button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button> `;
+                    rad += `<button class="btn btn-slett" style="margin-left:5px;" onclick="slettElev('${navn}')">Slett</button>`;
+                }
+            }
+            rad += `</td></tr>`;
 
-            // Fordel raden i riktig bunke
             if (erSlettet) {
                 slettedeRader += rad;
             } else {
@@ -183,9 +177,9 @@ rad += `</td></tr>`;
         }
     });
 
-    // Oppdater selve tabellen i HTML
     tBody.innerHTML = aktiveRader + slettedeRader;
 }
+
 
 function nullstillElev(navn) {
     if (confirm(`Vil du tømme alle poeng for ${navn}? Eleven blir stående i listen, men poengene fjernes.`)) {

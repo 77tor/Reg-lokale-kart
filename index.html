@@ -105,23 +105,28 @@ tr:hover { background-color: #f1f1f1; }
 .not-registered { color: #aaa; font-style: italic; }
 .alert-low { background: #ffcccc !important; font-weight: bold; color: #c0392b; }
 
-/* --- UTTSKRIFT-LOGIKK (ALT I LIGGENDE) --- */
+/* --- UTTSKRIFT-LOGIKK (ALT I LIGGENDE - OPTIMALISERT) --- */
 @media print {
-    /* 1. Tving liggende format for alle utskrifter */
+    /* 1. Tving liggende format og fjern unødvendig marg-støy */
     @page { 
         size: landscape; 
-        margin: 1cm; 
+        margin: 0.5cm; /* Litt mindre marg gir bedre plass til brede tabeller */
     }
 
-    body { background: white; margin: 0; padding: 0; }
+    body { 
+        background: white; 
+        margin: 0; 
+        padding: 0; 
+        width: 100%;
+    }
 
-    /* 2. Skjul elementer som ikke skal på papiret */
+    /* 2. Skjul alt som ikke skal på papiret */
     .no-print, .btn, .modal, #loginScreen, .header-grid, 
-    .action-bar, .ny-elev-boks, #adminPanel, .chart-container { 
+    .action-bar, .ny-elev-boks, #adminPanel, .chart-container, #chartContainer { 
         display: none !important; 
     }
 
-    /* Sørg for at farger (rødt/grønt/blått) blir med */
+    /* Sørg for at farger blir med */
     * { 
         -webkit-print-color-adjust: exact !important; 
         print-color-adjust: exact !important; 
@@ -134,7 +139,7 @@ tr:hover { background-color: #f1f1f1; }
         width: 100% !important;
     }
 
-    /* Skjul den vanlige klasselisten HVIS elevrapporten er aktiv */
+    /* Skjul hovedcontaineren HVIS elevrapporten er aktiv */
     #utskriftRapportArea:not(:empty) ~ .container {
         display: none !important;
     }
@@ -144,26 +149,43 @@ tr:hover { background-color: #f1f1f1; }
         display: block !important;
         visibility: visible !important;
         width: 100% !important;
+        max-width: none !important; /* Fjerner begrensninger på bredde */
         margin: 0 !important;
         padding: 0 !important;
     }
 
-    /* 5. Tabell-innstillinger (Optimalisert for liggende A4) */
+    /* 5. Tabell-innstillinger (Kopiert logikk fra Årsrapport) */
     table { 
         width: 100% !important; 
         border-collapse: collapse !important; 
-        font-size: 9pt !important; /* Litt større siden vi har god plass i bredden */
-        margin-bottom: 20px;
+        font-size: 8pt !important; /* Litt mindre skrift for å tvinge alt på en sidebredde */
+        table-layout: auto;
+        page-break-inside: auto;
+    }
+
+    /* Gjenta tabelloverskrift hvis klassen går over flere sider */
+    thead {
+        display: table-header-group !important;
+    }
+
+    tr { 
+        page-break-inside: avoid !important; /* Hindrer at en elev deles i to av et sideskift */
+        page-break-after: auto; 
     }
 
     th, td { 
         border: 1px solid black !important; 
-        padding: 6px !important; 
+        padding: 4px !important; 
         text-align: center;
+        word-wrap: break-word; /* Hindrer at tekst sprenger cellene */
     }
 
-    /* Overskrifter i rapporten */
-    h1, h2, h3 { color: black !important; text-align: center; }
+    /* Overskrifter */
+    h1, h2, h3 { 
+        color: black !important; 
+        text-align: center; 
+        margin: 10px 0;
+    }
     
     .page-break { page-break-before: always; }
     .alert-low { background-color: #ffcccc !important; }
