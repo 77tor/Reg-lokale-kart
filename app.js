@@ -78,17 +78,24 @@ function hentData() {
     const p = document.getElementById('mPeriode').value;
     const t = document.getElementById('mTrinn').value;
     const k = document.getElementById('mKlasse').value;
-    const nyElevSeksjon = document.getElementById('nyElevSeksjon'); // NYTT: Henter boksen
+    
+    const nyElevSeksjon = document.getElementById('nyElevSeksjon');
+    const actionBar = document.querySelector('.action-bar'); // Henter knapperaden
 
+    // Hvis ikke alle valg er tatt: Skjul boksene og avslutt
     if (!a || !f || !p || !t || !k) {
-        if (nyElevSeksjon) nyElevSeksjon.style.display = 'none'; // NYTT
+        if (nyElevSeksjon) nyElevSeksjon.style.display = 'none';
+        if (actionBar) actionBar.style.display = 'none'; // Skjul knapper
         return;
     }
-// Hvis alle valg er tatt, vis boksen!
-    if (nyElevSeksjon) nyElevSeksjon.style.display = 'block'; // NYTT
+
+    // --- HVIS ALLE VALG ER TATT: VIS ELEMENTENE ---
+    if (nyElevSeksjon) nyElevSeksjon.style.display = 'block';
+    if (actionBar) actionBar.style.display = 'flex'; // Vis Print/Excel-knapper igjen!
 
     oppdaterOverskrifter(`Kartlegging i ${f} - ${t}${k} - ${p} ${a}`);
 
+    // Start lytting på Firebase
     db.ref(`kartlegging/${a}/${f}/${p}/${t}/${k}`).on('value', snapshot => {
         lagredeResultater = snapshot.val() || {};
         tegnTabell();
