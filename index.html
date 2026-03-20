@@ -122,27 +122,9 @@ tr:hover { background-color: #f1f1f1; }
 
     /* 2. Skjul alt som ikke skal på papiret */
     .no-print, .btn, .modal, #loginScreen, .header-grid, 
-    .action-bar, .ny-elev-boks { 
+    .action-bar, .ny-elev-boks, #adminPanel, .chart-container, #chartContainer { 
         display: none !important; 
     }
-
-
-
-/* 2. LEGG TIL denne regelen for å tvinge diagrammene frem */
-    #adminPanel, .chart-container, #chartContainer {
-        display: block !important;
-        width: 100% !important;
-        height: auto !important;
-        break-inside: avoid !important; /* Hindrer at et diagram deles mellom to sider */
-        margin-top: 20px;
-    }
-
-    canvas {
-        max-width: 100% !important;
-        height: auto !important;
-    }
-
-
 
     /* Sørg for at farger blir med */
     * { 
@@ -259,21 +241,11 @@ tr:hover { background-color: #f1f1f1; }
                 <button class="btn btn-edit" style="width:100%;" onclick="document.getElementById('modalRapport').style.display='block'">Generer Årsrapport</button>
                 <p style="font-size:0.8em;color:#666;">Lager rapport over alle klasser i gitt år/periode/fag.</p>
             </div>
-<div style="border-right:1px solid #dee2e6; padding-right:10px;">
-    <h4>Sammenlign klasser</h4>
-    
-    <div style="display: flex; gap: 5px; margin-bottom: 5px;">
-        <button class="btn btn-hent" style="flex: 2;" onclick="document.getElementById('modalSammenlign').style.display='block'">
-            Lag sammenligning
-        </button>
-        
-        <button class="btn btn-print no-print" style="flex: 1; background-color: #4a5568; color: white;" onclick="window.print()">
-            🖨️ Print
-        </button>
-    </div>
-    
-    <p style="font-size:0.8em;color:#666;">Sammenligner poengskår på trinn med diagram-visning</p>
-</div>
+            <div style="border-right:1px solid #dee2e6; padding-right:10px;">
+                <h4>Sammenlign klasser</h4>
+                <button class="btn btn-hent" style="width:100%;" onclick="document.getElementById('modalSammenlign').style.display='block'">Lag sammenligning</button>
+                <p style="font-size:0.8em;color:#666;">Sammenligner poengskår på trinn med diagram-visning</p>
+            </div>
 <div>
     <h4>Enkeltelver</h4>
     <button class="btn btn-print" style="width:100%;" onclick="aapneElevrapportValg()">Elevrapport</button>
