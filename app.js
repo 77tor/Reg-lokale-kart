@@ -102,6 +102,7 @@ function hentData() {
     });
 }
 
+
 function tegnTabell() {
     const oppsett = hentOppsett();
     const tHead = document.getElementById('tHead');
@@ -111,10 +112,10 @@ function tegnTabell() {
         return; 
     }
 
-    // 1. Lag tabellhode - LAGT TIL "no-print" på Handling
+    // 1. Lag tabellhode
     let hode = `<tr><th style="text-align:left">Elevnavn</th>`;
     oppsett.oppgaver.forEach(o => hode += `<th>${o.navn}<br><small>max ${o.maks}</small></th>`);
-    hode += `<th>Sum</th><th class="no-print">Handling</th></tr>`; // "no-print" her
+    hode += `<th>Sum</th><th class="no-print">Handling</th></tr>`;
     tHead.innerHTML = hode;
 
     const vTrinn = parseInt(document.getElementById('mTrinn').value);
@@ -122,6 +123,11 @@ function tegnTabell() {
     const vAarInput = document.getElementById('mAar').value;
     if (!vAarInput) return;
     const vStartAar = parseInt(vAarInput.split('-')[0]);
+
+    // --- VARIABLER FOR GJENNOMSNITT ---
+    let antallAktiveMedData = 0;
+    let kolonneSummer = new Array(oppsett.oppgaver.length).fill(0);
+    let totalSumKlasse = 0;
 
     let aktiveRader = "";
     let slettedeRader = "";
@@ -134,19 +140,27 @@ function tegnTabell() {
             const d = lagredeResultater[navn] || {};
             const erSlettet = d.slettet === true;
 
-            // LAGT TIL "no-print" på slettede rader så de ikke kommer på papiret
             let printKlasse = erSlettet ? 'class="no-print"' : ''; 
             let radStil = erSlettet ? 'style="color: #a0aec0; background: #f7fafc;"' : '';
             
             let rad = `<tr ${printKlasse} ${radStil}><td style="text-align:left"><b>${navn}</b> ${erSlettet ? '<small>(Slettet)</small>' : ''}</td>`;
             
             if (!erSlettet && d.oppgaver) {
+                // NYTT: Tell denne eleven med i gjennomsnittet
+                antallAktiveMedData++;
+                
                 oppsett.oppgaver.forEach((o, i) => {
                     const poeng = d.oppgaver[i] || 0;
-                    // Sjekker grense for fargekoding
+                    // NYTT: Legg til i summen for denne spesifikke oppgaven
+                    kolonneSummer[i] += poeng;
+
                     let cls = (o.grense !== -1 && poeng <= o.grense) ? 'class="alert-low"' : '';
                     rad += `<td ${cls}>${poeng}</td>`;
                 });
+
+                // NYTT: Legg til i den totale summen
+                totalSumKlasse += d.sum;
+
                 let sumCls = (d.sum <= oppsett.grenseTotal) ? 'class="alert-low"' : '';
                 rad += `<td ${sumCls}>${d.sum}</td>`;
             } else {
@@ -155,7 +169,6 @@ function tegnTabell() {
             }
 
             rad += `<td class="no-print">`;
-            
             if (erSlettet) {
                 rad += `<button class="btn btn-hent" onclick="gjenopprettElev('${navn}')">Hent tilbake</button>`;
             } else {
@@ -177,7 +190,24 @@ function tegnTabell() {
         }
     });
 
-    tBody.innerHTML = aktiveRader + slettedeRader;
+    // --- 2. GENERER GJENNOMSNITT-RAD ---
+    let snittRad = "";
+    if (antallAktiveMedData > 0) {
+        snittRad = `<tr style="background:#f1f5f9; font-weight:bold; border-top: 2px solid #334155;">
+                        <td style="text-align:left">GJENNOMSNITT KLASSE</td>`;
+        
+        kolonneSummer.forEach((sum, i) => {
+            const snitt = (sum / antallAktiveMedData).toFixed(1);
+            snittRad += `<td>${snitt}</td>`;
+        });
+
+        const totalSnitt = (totalSumKlasse / antallAktiveMedData).toFixed(1);
+        snittRad += `<td>${totalSnitt}</td>`;
+        snittRad += `<td class="no-print"></td></tr>`;
+    }
+
+    // Sett sammen tabellen: Aktive elever -> Snitt -> Slettede (skjult ved print)
+    tBody.innerHTML = aktiveRader + snittRad + slettedeRader;
 }
 
 
