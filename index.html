@@ -341,7 +341,16 @@ tr:hover { background-color: #f1f1f1; }
         <h3 id="modalNavn">Navn</h3>
         <p style="font-size: 0.75em; color: #7f8c8d;">Naviger med [Enter]. Lagre på siste felt.</p>
         <hr>
+        
         <div id="oppgaveFelter"></div>
+
+        <div style="margin-top: 15px; padding: 10px; background: #fff5f5; border: 1px solid #feb2b2; border-radius: 6px;">
+            <label style="display: flex; align-items: center; cursor: pointer; font-weight: bold; color: #c53030;">
+                <input type="checkbox" id="ikkeGjennomfort" style="width: 18px; height: 18px; margin-right: 10px;">
+                Ikke gjennomført (f.eks. syk/fritak)
+            </label>
+        </div>
+
         <div style="margin-top: 20px; display: flex; gap: 10px;">
             <button class="btn btn-reg" style="flex:2" onclick="lagreData()">Lagre</button>
             <button class="btn btn-fjern" style="flex:1" onclick="lukkModal()">Avbryt</button>

@@ -102,7 +102,7 @@ function hentData() {
     });
 }
 
-// --- TEGN TABELL (Inkludert gjennomsnitt og utskriftsoptimalisering) ---
+// --- TEGN TABELL (Inkludert gjennomsnitt og håndtering av ikke gjennomført) ---
 function tegnTabell() {
     const oppsett = hentOppsett();
     const tHead = document.getElementById('tHead');
@@ -141,26 +141,41 @@ function tegnTabell() {
         if (cTrinn === vTrinn && e.startKlasse === vKlasse) {
             const d = lagredeResultater[navn] || {};
             const erSlettet = d.slettet === true;
+            const erIkkeGjennomfort = d.ikkeGjennomfort === true; // Sjekker ny status
 
             // CSS-klasser for utskrift og stil
             let printKlasse = erSlettet ? 'class="no-print"' : ''; 
-            let radStil = erSlettet ? 'style="color: #a0aec0; background: #f7fafc;"' : '';
+            let radStil = "";
+            if (erSlettet) {
+                radStil = 'style="color: #a0aec0; background: #f7fafc;"';
+            } else if (erIkkeGjennomfort) {
+                radStil = 'style="background: #fff5f5;"'; // Svak rødlig bakgrunn
+            }
             
             let rad = `<tr ${printKlasse} ${radStil}><td style="text-align:left"><b>${navn}</b> ${erSlettet ? '<small>(Slettet)</small>' : ''}</td>`;
             
-            if (!erSlettet && d.oppgaver) {
+            // --- LOGIKK FOR VISNING OG BEREGNING ---
+            
+            if (!erSlettet && erIkkeGjennomfort) {
+                // VISNING FOR IKKE GJENNOMFØRT: Slå sammen celler (oppgaver + sum)
+                const antallKolonner = oppsett.oppgaver.length + 1;
+                rad += `<td colspan="${antallKolonner}" style="color: #c53030; font-style: italic; font-weight: bold;">Ikke gjennomført</td>`;
+                
+                // Vi øker IKKE antallAktiveMedData, så denne eleven teller ikke i snittet
+            } 
+            else if (!erSlettet && d.oppgaver) {
                 // Tell denne eleven med i gjennomsnittsberegningen
                 antallAktiveMedData++;
                 
                 oppsett.oppgaver.forEach((o, i) => {
                     const poeng = d.oppgaver[i] || 0;
-                    kolonneSummer[i] += poeng; // Legg til i kolonne-totalen
+                    kolonneSummer[i] += poeng;
 
                     let cls = (o.grense !== -1 && poeng <= o.grense) ? 'class="alert-low"' : '';
                     rad += `<td ${cls}>${poeng}</td>`;
                 });
 
-                totalSumKlasse += d.sum; // Legg til i klasse-totalen
+                totalSumKlasse += d.sum;
 
                 let sumCls = (d.sum <= oppsett.grenseTotal) ? 'class="alert-low"' : '';
                 rad += `<td ${sumCls}>${d.sum}</td>`;
@@ -175,7 +190,8 @@ function tegnTabell() {
             if (erSlettet) {
                 rad += `<button class="btn btn-hent" onclick="gjenopprettElev('${navn}')">Hent tilbake</button>`;
             } else {
-                if (d.oppgaver) {
+                // Hvis registrert (enten med poeng eller som ikke gjennomført)
+                if (d.oppgaver || erIkkeGjennomfort) {
                     rad += `<button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button> `;
                     rad += `<button class="btn btn-nullstill" style="margin-left:5px;" onclick="nullstillElev('${navn}')">Nullstill</button>`;
                 } else {
@@ -185,7 +201,6 @@ function tegnTabell() {
             }
             rad += `</td></tr>`;
 
-            // Fordel raden i riktig bunke
             if (erSlettet) slettedeRader += rad;
             else aktiveRader += rad;
         }
@@ -194,9 +209,8 @@ function tegnTabell() {
     // 3. GENERER GJENNOMSNITTS-RAD
     let snittRad = "";
     if (antallAktiveMedData > 0) {
-        // Vi bruker class="snitt-rad" som vi har styrt i CSS-en (index.html)
         snittRad = `<tr class="snitt-rad" style="background:#f1f5f9; font-weight:bold; border-top: 2px solid #334155;">
-                        <td style="text-align:left">GJENNOMSNITT KLASSE</td>`;
+                        <td style="text-align:left">GJENNOMSNITT KLASSE (${antallAktiveMedData} elev.)</td>`;
         
         kolonneSummer.forEach((sum, i) => {
             const snitt = (sum / antallAktiveMedData).toFixed(1);
@@ -209,24 +223,23 @@ function tegnTabell() {
     }
 
     // 4. OPPDATER HTML
-    // Rekkefølge: Aktive elever -> Gjennomsnitt -> Slettede elever (skjult ved print)
     tBody.innerHTML = aktiveRader + snittRad + slettedeRader;
 }
 
-
-
 function nullstillElev(navn) {
     if (confirm(`Vil du tømme alle poeng for ${navn}? Eleven blir stående i listen, men poengene fjernes.`)) {
-        // Vi fjerner hele objektet for denne eleven under denne stien
+        // Vi fjerner hele objektet (inkludert "ikke gjennomført"-status)
         db.ref(hentSti(navn)).remove()
         .then(() => {
             console.log("Data nullstilt for " + navn);
+            tegnTabell(); // Legg til denne for at skjermen oppdateres umiddelbart!
         })
         .catch(error => {
             console.error("Feil ved nullstilling:", error);
         });
     }
 }
+
 
 // --- 5. MODAL OG LAGRING ---
 function visModal(navn) {
@@ -262,22 +275,38 @@ function lukkModal() {
 }
 
 function lagreData() {
-    const inputs = document.querySelectorAll('.oppg-input');
-    let verdier = [], sum = 0;
-    inputs.forEach(i => { 
-        const v = parseInt(i.value) || 0; 
-        verdier.push(v); 
-        sum += v; 
-    });
+    const oppsett = hentOppsett();
+    const erIkkeGjennomfort = document.getElementById('ikkeGjennomfort').checked;
     
-    // Vi setter slettet: false her for å være sikker på at eleven blir aktiv ved lagring
-    db.ref(hentSti(valgtElevId)).update({ 
-        oppgaver: verdier, 
-        sum: sum, 
+    let dataSomSkalLagres = {
         slettet: false,
-        dato: new Date().toISOString() 
-    }).then(lukkModal);
+        dato: new Date().toISOString(),
+        ikkeGjennomfort: erIkkeGjennomfort
+    };
+
+    if (erIkkeGjennomfort) {
+        // Hvis eleven IKKE har gjennomført:
+        // Vi setter tomme verdier/null slik at de ikke påvirker snittet
+        dataSomSkalLagres.oppgaver = null; 
+        dataSomSkalLagres.sum = 0;
+    } else {
+        // Hvis eleven HAR gjennomført (vanlig lagring):
+        const inputs = document.querySelectorAll('.oppg-input');
+        let verdier = [], sum = 0;
+        inputs.forEach(i => { 
+            const v = parseInt(i.value) || 0; 
+            verdier.push(v); 
+            sum += v; 
+        });
+        dataSomSkalLagres.oppgaver = verdier;
+        dataSomSkalLagres.sum = sum;
+    }
+    
+    // Lagre til Firebase (vi bruker .set i stedet for .update for å fjerne gamle poeng 
+    // hvis man endrer en elev fra "Gjennomført" til "Ikke gjennomført")
+    db.ref(hentSti(valgtElevId)).set(dataSomSkalLagres).then(lukkModal);
 }
+
 
 // --- 6. ADMIN-FUNKSJONER ---
 function sjekkAdminKode() {
