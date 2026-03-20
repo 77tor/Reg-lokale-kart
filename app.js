@@ -666,18 +666,26 @@ async function genererFullElevrapport(navn) {
             </div>`;
         });
 
-        html += `</div>`;
+       html += `</div>`;
         utskriftArea.innerHTML = html;
 
-        // Gi nettleseren et millisekund på å tegne HTML før print-dialogen kommer
-        setTimeout(() => { window.print(); }, 500);
+        // Gi nettleseren tid til å tegne HTML før print-dialogen kommer
+        setTimeout(() => { 
+            window.print(); 
+        }, 500);
+
+        // NYTT: Tømmer rapportområdet etter at print-vinduet lukkes 
+        // slik at vanlig klasseliste-utskrift fungerer etterpå.
+        window.onafterprint = function() {
+            utskriftArea.innerHTML = "";
+            console.log("Rapportområde tømt etter utskrift.");
+        };
 
     } catch (error) {
         console.error("Feil ved generering av rapport:", error);
         alert("Kunne ikke hente data fra databasen.");
     }
-}
-
+} 
 
 function leggTilNyElev() {
     const etternavn = document.getElementById('nyttEtternavn').value.trim();
