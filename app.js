@@ -102,7 +102,6 @@ function hentData() {
     });
 }
 
-
 // --- TEGN TABELL (Inkludert gjennomsnitt og utskriftsoptimalisering) ---
 function tegnTabell() {
     const oppsett = hentOppsett();
@@ -214,26 +213,6 @@ function tegnTabell() {
     tBody.innerHTML = aktiveRader + snittRad + slettedeRader;
 }
 
-
-    // --- 2. GENERER GJENNOMSNITT-RAD ---
-    let snittRad = "";
-    if (antallAktiveMedData > 0) {
-        snittRad = `<tr style="background:#f1f5f9; font-weight:bold; border-top: 2px solid #334155;">
-                        <td style="text-align:left">GJENNOMSNITT KLASSE</td>`;
-        
-        kolonneSummer.forEach((sum, i) => {
-            const snitt = (sum / antallAktiveMedData).toFixed(1);
-            snittRad += `<td>${snitt}</td>`;
-        });
-
-        const totalSnitt = (totalSumKlasse / antallAktiveMedData).toFixed(1);
-        snittRad += `<td>${totalSnitt}</td>`;
-        snittRad += `<td class="no-print"></td></tr>`;
-    }
-
-    // Sett sammen tabellen: Aktive elever -> Snitt -> Slettede (skjult ved print)
-    tBody.innerHTML = aktiveRader + snittRad + slettedeRader;
-}
 
 
 function nullstillElev(navn) {
