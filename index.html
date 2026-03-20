@@ -107,17 +107,16 @@ tr:hover { background-color: #f1f1f1; }
 
 /* --- UTTSKRIFT-LOGIKK (ALT I LIGGENDE - OPTIMALISERT) --- */
 @media print {
-    /* 1. Tving liggende format og fjern margin-støy */
+    /* 1. Tving liggende format og fjern unødvendig marg-støy */
     @page { 
         size: landscape; 
-        margin: 0.5cm; /* Setter margen som nettleseren skal forholde seg til */
+        margin: 0.5cm; 
     }
 
-    /* NYTT: Tvinger innholdet helt opp til margen */
-    html, body { 
+    body { 
         background: white; 
-        margin: 0 !important; 
-        padding: 0 !important; 
+        margin: 0; 
+        padding: 0; 
         width: 100%;
     }
 
@@ -162,6 +161,7 @@ tr:hover { background-color: #f1f1f1; }
         font-size: 8.5pt !important; 
         table-layout: auto;
         page-break-inside: auto;
+        /* NYTT: Komprimering for å unngå at snitt-raden hopper til side 2 */
         margin-bottom: 0 !important;
         transform: scale(0.96); 
         transform-origin: top center;
@@ -176,29 +176,29 @@ tr:hover { background-color: #f1f1f1; }
         page-break-after: auto; 
     }
 
-    /* Spesifikk beskyttelse for snitt-raden */
+    /* NYTT: Spesifikk beskyttelse for snitt-raden */
     tr.snitt-rad {
         page-break-before: avoid !important;
         break-before: avoid !important;
         background-color: #f1f5f9 !important;
+        padding: 8px 4px !important; 
+        border-top: 2px solid black !important;
     }
 
-    /* NYTT: Lagt til litt mer luft i cellene nå som vi har fjernet topp/bunn-støy */
     th, td { 
         border: 1px solid black !important; 
-        padding: 6px 4px !important; 
+        padding: 5px 4px !important; 
         text-align: center;
         word-wrap: break-word; 
         line-height: 1.2 !important;
     }
 
-    /* JUSTERT: Fjerner all luft over overskriften */
     h1, h2, h3 { 
         color: black !important; 
         text-align: center; 
-        margin: 0 0 10px 0 !important; /* 0 i topp fjerner luften helt */
+        margin: 5px 0 !important; /* Redusert margin fra 10px til 5px */
         padding: 0 !important;
-        font-size: 16pt !important;
+        font-size: 14pt !important; /* Tvinger overskriften til å ikke være for dominerende */
     }
     
     .page-break { page-break-before: always; }
@@ -207,7 +207,6 @@ tr:hover { background-color: #f1f1f1; }
 
 /* Skjul utskriftsområdet helt på vanlig skjerm */
 #utskriftRapportArea { display: none; }
-
 
 
     </style>
