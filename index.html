@@ -126,21 +126,6 @@ tr:hover { background-color: #f1f1f1; }
         display: none !important; 
     }
 
-/* Tving admin-panel og diagram til å vises */
-    #adminPanel, #chartContainer {
-        display: block !important;
-        visibility: visible !important;
-        width: 100% !important;
-        border: none !important; /* Fjern rammer på print */
-    }
-
-    canvas {
-        max-width: 100% !important;
-        height: auto !important;
-    }
-
-
-
     /* Sørg for at farger blir med */
     * { 
         -webkit-print-color-adjust: exact !important; 
@@ -266,19 +251,13 @@ tr:hover { background-color: #f1f1f1; }
     <button class="btn btn-print" style="width:100%;" onclick="aapneElevrapportValg()">Elevrapport</button>
     <p style="font-size:0.8em;color:#666;">Samler alle historiske prøver for valgt elev på ett ark.</p>
 </div>
-</div>
-        <div id="chartContainer" style="display:none; margin-top:20px; background:white; padding:15px; border-radius:8px; border:1px solid #ddd;">
-    
-    <div class="chart-controls no-print" style="display: flex; justify-content: space-between; align-items: center; background: #f1f5f9; padding: 12px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #cbd5e1;">
-        <span style="font-weight: bold; color: #1e293b;">📊 Diagrammet er klart</span>
-        <div style="display: flex; gap: 8px;">
-            <button class="btn btn-print" onclick="window.print()">🖨️ Skriv ut diagram</button>
-            <button class="btn btn-fjern" onclick="document.getElementById('chartContainer').style.display='none'">Avbryt / Lukk</button>
         </div>
-    </div>
-    
-    <canvas id="sammenligningsChart"></canvas>
-</div>
+        <div id="chartContainer" style="display:none; margin-top:20px; background:white; padding:15px; border-radius:8px; border:1px solid #ddd;">
+            <canvas id="sammenligningsChart"></canvas>
+        </div>
+        <div style="margin-top:20px; text-align:right;">
+            <button class="btn btn-fjern" onclick="lukkAdmin()">Lukk Panel</button>
+        </div>
     </div>
 
 <div id="skjemaInnhold">
