@@ -110,7 +110,7 @@ tr:hover { background-color: #f1f1f1; }
     /* 1. Tving liggende format og fjern unødvendig marg-støy */
     @page { 
         size: landscape; 
-        margin: 0.5cm; /* Litt mindre marg gir bedre plass til brede tabeller */
+        margin: 0.5cm; 
     }
 
     body { 
@@ -149,38 +149,47 @@ tr:hover { background-color: #f1f1f1; }
         display: block !important;
         visibility: visible !important;
         width: 100% !important;
-        max-width: none !important; /* Fjerner begrensninger på bredde */
+        max-width: none !important; 
         margin: 0 !important;
         padding: 0 !important;
     }
 
-    /* 5. Tabell-innstillinger (Kopiert logikk fra Årsrapport) */
+    /* 5. Tabell-innstillinger */
     table { 
         width: 100% !important; 
         border-collapse: collapse !important; 
-        font-size: 8pt !important; /* Litt mindre skrift for å tvinge alt på en sidebredde */
+        font-size: 8pt !important; 
         table-layout: auto;
         page-break-inside: auto;
+        /* NYTT: Komprimering for å unngå at snitt-raden hopper til side 2 */
+        margin-bottom: 0 !important;
+        transform: scale(0.98); 
+        transform-origin: top center;
     }
 
-    /* Gjenta tabelloverskrift hvis klassen går over flere sider */
     thead {
         display: table-header-group !important;
     }
 
     tr { 
-        page-break-inside: avoid !important; /* Hindrer at en elev deles i to av et sideskift */
+        page-break-inside: avoid !important; 
         page-break-after: auto; 
+    }
+
+    /* NYTT: Spesifikk beskyttelse for snitt-raden */
+    tr.snitt-rad {
+        page-break-before: avoid !important;
+        break-before: avoid !important;
+        background-color: #f1f5f9 !important;
     }
 
     th, td { 
         border: 1px solid black !important; 
         padding: 4px !important; 
         text-align: center;
-        word-wrap: break-word; /* Hindrer at tekst sprenger cellene */
+        word-wrap: break-word; 
     }
 
-    /* Overskrifter */
     h1, h2, h3 { 
         color: black !important; 
         text-align: center; 
