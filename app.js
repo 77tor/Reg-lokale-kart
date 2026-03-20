@@ -103,16 +103,18 @@ function hentData() {
 }
 
 
+// --- TEGN TABELL (Inkludert gjennomsnitt og utskriftsoptimalisering) ---
 function tegnTabell() {
     const oppsett = hentOppsett();
     const tHead = document.getElementById('tHead');
     const tBody = document.getElementById('tBody');
+    
     if (!oppsett) { 
         tBody.innerHTML = "<tr><td colspan='100%'>Velg alle kriterier...</td></tr>"; 
         return; 
     }
 
-    // 1. Lag tabellhode
+    // 1. LAG TABELLHODE
     let hode = `<tr><th style="text-align:left">Elevnavn</th>`;
     oppsett.oppgaver.forEach(o => hode += `<th>${o.navn}<br><small>max ${o.maks}</small></th>`);
     hode += `<th>Sum</th><th class="no-print">Handling</th></tr>`;
@@ -132,6 +134,7 @@ function tegnTabell() {
     let aktiveRader = "";
     let slettedeRader = "";
 
+    // 2. GÅ GJENNOM ALLE ELEVER
     Object.keys(elevRegister).sort().forEach(navn => {
         const e = elevRegister[navn];
         const cTrinn = e.startTrinn + (vStartAar - e.startAar);
@@ -140,34 +143,35 @@ function tegnTabell() {
             const d = lagredeResultater[navn] || {};
             const erSlettet = d.slettet === true;
 
+            // CSS-klasser for utskrift og stil
             let printKlasse = erSlettet ? 'class="no-print"' : ''; 
             let radStil = erSlettet ? 'style="color: #a0aec0; background: #f7fafc;"' : '';
             
             let rad = `<tr ${printKlasse} ${radStil}><td style="text-align:left"><b>${navn}</b> ${erSlettet ? '<small>(Slettet)</small>' : ''}</td>`;
             
             if (!erSlettet && d.oppgaver) {
-                // NYTT: Tell denne eleven med i gjennomsnittet
+                // Tell denne eleven med i gjennomsnittsberegningen
                 antallAktiveMedData++;
                 
                 oppsett.oppgaver.forEach((o, i) => {
                     const poeng = d.oppgaver[i] || 0;
-                    // NYTT: Legg til i summen for denne spesifikke oppgaven
-                    kolonneSummer[i] += poeng;
+                    kolonneSummer[i] += poeng; // Legg til i kolonne-totalen
 
                     let cls = (o.grense !== -1 && poeng <= o.grense) ? 'class="alert-low"' : '';
                     rad += `<td ${cls}>${poeng}</td>`;
                 });
 
-                // NYTT: Legg til i den totale summen
-                totalSumKlasse += d.sum;
+                totalSumKlasse += d.sum; // Legg til i klasse-totalen
 
                 let sumCls = (d.sum <= oppsett.grenseTotal) ? 'class="alert-low"' : '';
                 rad += `<td ${sumCls}>${d.sum}</td>`;
             } else {
+                // Vis streker hvis ikke registrert eller slettet
                 oppsett.oppgaver.forEach(() => rad += `<td class="not-registered">-</td>`);
                 rad += `<td class="not-registered">-</td>`;
             }
 
+            // --- HANDLING-KNAPPER (no-print) ---
             rad += `<td class="no-print">`;
             if (erSlettet) {
                 rad += `<button class="btn btn-hent" onclick="gjenopprettElev('${navn}')">Hent tilbake</button>`;
@@ -182,13 +186,34 @@ function tegnTabell() {
             }
             rad += `</td></tr>`;
 
-            if (erSlettet) {
-                slettedeRader += rad;
-            } else {
-                aktiveRader += rad;
-            }
+            // Fordel raden i riktig bunke
+            if (erSlettet) slettedeRader += rad;
+            else aktiveRader += rad;
         }
     });
+
+    // 3. GENERER GJENNOMSNITTS-RAD
+    let snittRad = "";
+    if (antallAktiveMedData > 0) {
+        // Vi bruker class="snitt-rad" som vi har styrt i CSS-en (index.html)
+        snittRad = `<tr class="snitt-rad" style="background:#f1f5f9; font-weight:bold; border-top: 2px solid #334155;">
+                        <td style="text-align:left">GJENNOMSNITT KLASSE</td>`;
+        
+        kolonneSummer.forEach((sum, i) => {
+            const snitt = (sum / antallAktiveMedData).toFixed(1);
+            snittRad += `<td>${snitt}</td>`;
+        });
+
+        const totalSnitt = (totalSumKlasse / antallAktiveMedData).toFixed(1);
+        snittRad += `<td>${totalSnitt}</td>`;
+        snittRad += `<td class="no-print"></td></tr>`;
+    }
+
+    // 4. OPPDATER HTML
+    // Rekkefølge: Aktive elever -> Gjennomsnitt -> Slettede elever (skjult ved print)
+    tBody.innerHTML = aktiveRader + snittRad + slettedeRader;
+}
+
 
     // --- 2. GENERER GJENNOMSNITT-RAD ---
     let snittRad = "";
