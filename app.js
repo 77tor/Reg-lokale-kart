@@ -923,11 +923,13 @@ async function kjorFullSkoleEksport() {
     const vFag = document.getElementById('teFag').value;
     const vPeriode = document.getElementById('tePeriode').value;
 
-    // Sjekk om år er valgt (siden du nå har "-- Velg år --" som standard)
     if (!vAar || vAar === "") {
         alert("Vennligst velg et skoleår først.");
         return;
     }
+
+    // 1. MAL-TRIKKET: Finn ut hvilket år vi skal hente oppsettet fra
+    const aarIMal = oppgaveStruktur[vAar] ? vAar : "2025-2026";
 
     try {
         const snapshot = await db.ref(`kartlegging/${vAar}/${vFag}/${vPeriode}`).once('value');
@@ -937,18 +939,17 @@ async function kjorFullSkoleEksport() {
         const trinnListe = ["1", "2", "3", "4", "5", "6", "7"];
         const klasseListe = ["A", "B", "C", "D"];
         
-        // Henter ut første årstall fra valget (f.eks. 2026 fra "2026-2027")
         const valgtStartAar = parseInt(vAar.split('-')[0]);
         let harDataOverhode = false;
 
         trinnListe.forEach(trinnNummer => {
             const trinnInt = parseInt(trinnNummer);
             
-            // Henter oppsettet for dette trinnet fra din oppgaveStruktur
-            const trinnOppsett = (oppgaveStruktur[vAar] && 
-                                  oppgaveStruktur[vAar][vFag] && 
-                                  oppgaveStruktur[vAar][vFag][vPeriode]) 
-                                  ? oppgaveStruktur[vAar][vFag][vPeriode][trinnNummer] 
+            // 2. BRUKER aarIMal her for å hente kolonneoverskrifter og oppgaver
+            const trinnOppsett = (oppgaveStruktur[aarIMal] && 
+                                  oppgaveStruktur[aarIMal][vFag] && 
+                                  oppgaveStruktur[aarIMal][vFag][vPeriode]) 
+                                  ? oppgaveStruktur[aarIMal][vFag][vPeriode][trinnNummer] 
                                   : null;
             
             if (!trinnOppsett) return; 
@@ -959,16 +960,10 @@ async function kjorFullSkoleEksport() {
                 const klasseData = trinnData[kl] || {};
                 let rader = [];
                 
-                // DYNAMISK TRINN-BEREGNING:
+                // 3. DYNAMISK TRINN-BEREGNING (Med parseInt for sikkerhet)
                 const elever = Object.keys(elevRegister).filter(navn => {
                     const e = elevRegister[navn];
-                    
-                    // Her skjer magien:
-                    // Differansen mellom år nå og startår + starttrinn
-                    // Eks: 2027 (valgt) - 2025 (start) = 2 år senere. 
-                    // 1. trinn + 2 år = 3. trinn.
-                    const beregnetTrinn = e.startTrinn + (valgtStartAar - e.startAar);
-                    
+                    const beregnetTrinn = parseInt(e.startTrinn) + (valgtStartAar - parseInt(e.startAar));
                     return beregnetTrinn === trinnInt && e.startKlasse === kl;
                 }).sort();
 
@@ -984,6 +979,7 @@ async function kjorFullSkoleEksport() {
                             trinnOppsett.oppgaver.forEach(() => rad.push("Ikke gjennomført"));
                             rad.push(0);
                         } else if (d.oppgaver) {
+                            // Vi mapper poengene basert på oppsettet fra mal-året
                             trinnOppsett.oppgaver.forEach((_, i) => rad.push(d.oppgaver[i] || 0));
                             rad.push(d.sum || 0);
                         } else {
@@ -1003,7 +999,7 @@ async function kjorFullSkoleEksport() {
         });
 
         if (!harDataOverhode) {
-            alert("Fant ingen elever eller data for " + vFag + " trinn 1-7 i " + vAar);
+            alert("Fant ingen elever eller data for " + vFag + " i " + vAar);
             return;
         }
 
@@ -1012,7 +1008,7 @@ async function kjorFullSkoleEksport() {
 
     } catch (err) {
         console.error("Eksport-feil:", err);
-        alert("Noe gikk galt. Sjekk at oppgaveStruktur har data for valgt år.");
+        alert("Noe gikk galt under eksporten.");
     }
 }
 
