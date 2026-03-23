@@ -248,24 +248,40 @@ function visModal(navn) {
     document.getElementById('modalNavn').innerText = navn;
     const container = document.getElementById('oppgaveFelter');
     container.innerHTML = "";
-    const eksisterende = lagredeResultater[navn]?.oppgaver || [];
+    
+    // Hent lagret data for denne eleven
+    const d = lagredeResultater[navn] || {};
+    const eksisterende = d.oppgaver || [];
+    const erIkkeGjennomfort = d.ikkeGjennomfort || false;
 
+    // 1. VIKTIG: Oppdater checkboxen basert på lagret data (slik at den ikke "henger igjen")
+    const checkBoks = document.getElementById('ikkeGjennomfort');
+    if (checkBoks) {
+        checkBoks.checked = erIkkeGjennomfort;
+    }
+
+    // 2. Lag oppgavefeltene
     oppsett.oppgaver.forEach((o, i) => {
-        container.innerHTML += `<div class="oppgave-rad">
+        // Vi sjekker om feltet skal være deaktivert (disabled) hvis ikke gjennomført er valgt
+        const stil = erIkkeGjennomfort ? 'opacity:0.3;' : '';
+        const deaktivert = erIkkeGjennomfort ? 'disabled' : '';
+
+        container.innerHTML += `<div class="oppgave-rad" style="margin-bottom:10px; ${stil}">
             <label>${o.navn}:</label>
             <input type="number" class="oppg-input" data-index="${i}" min="0" max="${o.maks}" 
-            value="${eksisterende[i] !== undefined ? eksisterende[i] : ""}" style="width:60px">
+            value="${eksisterende[i] !== undefined ? eksisterende[i] : ""}" 
+            ${deaktivert} style="width:60px; float:right;">
         </div>`;
     });
 
     document.getElementById('modal').style.display = 'block';
 
-    // NYTT: Sett fokus på første feltet med en gang
+    // 3. Sett fokus på første feltet hvis det ikke er låst
     setTimeout(() => {
         const førsteInput = container.querySelector('.oppg-input');
-        if (førsteInput) {
+        if (førsteInput && !erIkkeGjennomfort) {
             førsteInput.focus();
-            førsteInput.select(); // Markerer tallet så du kan skrive rett over
+            førsteInput.select();
         }
     }, 100);
 }
@@ -286,11 +302,10 @@ function lagreData() {
 
     if (erIkkeGjennomfort) {
         // Hvis eleven IKKE har gjennomført:
-        // Vi setter tomme verdier/null slik at de ikke påvirker snittet
         dataSomSkalLagres.oppgaver = null; 
         dataSomSkalLagres.sum = 0;
     } else {
-        // Hvis eleven HAR gjennomført (vanlig lagring):
+        // Hvis eleven HAR gjennomført:
         const inputs = document.querySelectorAll('.oppg-input');
         let verdier = [], sum = 0;
         inputs.forEach(i => { 
@@ -301,6 +316,28 @@ function lagreData() {
         dataSomSkalLagres.oppgaver = verdier;
         dataSomSkalLagres.sum = sum;
     }
+    
+    // Lagre til Firebase og oppdater tabellen
+    db.ref(hentSti(valgtElevId)).set(dataSomSkalLagres).then(() => {
+        lukkModal();
+        if (typeof tegnTabell === "function") tegnTabell();
+    });
+}
+
+// NYTT: Legg til denne helt nederst i app.js for å gjøre modalen interaktiv
+// Denne gjør at poengfeltene låses/låses opp umiddelbart når du trykker på haken
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.id === 'ikkeGjennomfort') {
+        const inputs = document.querySelectorAll('.oppg-input');
+        const erHuket = e.target.checked;
+        
+        inputs.forEach(inp => {
+            inp.disabled = erHuket;
+            inp.parentElement.style.opacity = erHuket ? "0.3" : "1";
+            if (erHuket) inp.value = ""; // Tømmer tallene hvis man velger "Ikke gjennomført"
+        });
+    }
+});
     
     // Lagre til Firebase (vi bruker .set i stedet for .update for å fjerne gamle poeng 
     // hvis man endrer en elev fra "Gjennomført" til "Ikke gjennomført")
