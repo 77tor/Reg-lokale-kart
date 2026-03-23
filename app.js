@@ -66,51 +66,63 @@ function hentSti(elev) {
     return `kartlegging/${a}/${f}/${p}/${t}/${k}/${elev}`;
 }
 
+
 // --- 4. DATAHÅNDTERING ---
 function hentData() {
-    // Tilbakestill visning til standard tabell hvis rapport er åpen
-    document.getElementById('hovedTabell').style.display = 'table';
+    // 1. Skjul rapportvisning hvis den er åpen
+    const hovedTabell = document.getElementById('hovedTabell');
+    if (hovedTabell) hovedTabell.style.display = 'table';
+    
     const rc = document.getElementById('rapportContainer');
     if (rc) rc.innerHTML = "";
 
-    const a = document.getElementById('mAar').value;
-    const f = document.getElementById('mFag').value;
-    const p = document.getElementById('mPeriode').value;
-    const t = document.getElementById('mTrinn').value;
-    const k = document.getElementById('mKlasse').value;
+    // 2. Hent verdiene fra menyen
+    const a = document.getElementById('mAar').value; // År (f.eks "2024-2025")
+    const f = document.getElementById('mFag').value; // Fag
+    const p = document.getElementById('mPeriode').value; // Periode
+    const t = document.getElementById('mTrinn').value; // Trinn
+    const k = document.getElementById('mKlasse').value; // Klasse
     
     const nyElevSeksjon = document.getElementById('nyElevSeksjon');
-    const actionBar = document.querySelector('.action-bar'); // Henter knapperaden
+    const actionBar = document.querySelector('.action-bar');
 
-    // Hvis ikke alle valg er tatt: Skjul boksene og avslutt
+    // 3. Validering: Hvis ikke alle valg er tatt, skjul tabell og knapper
     if (!a || !f || !p || !t || !k) {
         if (nyElevSeksjon) nyElevSeksjon.style.display = 'none';
-        if (actionBar) actionBar.style.display = 'none'; // Skjul knapper
+        if (actionBar) actionBar.style.display = 'none';
+        // Tøm tabellen så man ikke ser gamle data fra forrige valg
+        document.getElementById('tBody').innerHTML = "<tr><td colspan='100%'>Velg alle kriterier over...</td></tr>";
         return;
     }
 
-    // --- HVIS ALLE VALG ER TATT: VIS ELEMENTENE ---
+    // 4. Hvis alle valg er tatt: Vis registreringsboks og knapper
     if (nyElevSeksjon) nyElevSeksjon.style.display = 'block';
-    if (actionBar) actionBar.style.display = 'flex'; // Vis Print/Excel-knapper igjen!
+    if (actionBar) actionBar.style.display = 'flex';
 
+    // Oppdater overskriften på siden
     oppdaterOverskrifter(`Kartlegging i ${f} - ${t}${k} - ${p} ${a}`);
 
-    // Start lytting på Firebase
-    db.ref(`kartlegging/${a}/${f}/${p}/${t}/${k}`).on('value', snapshot => {
+    // 5. Oppdater dropdown-listen med elever (viktig for at riktige elever skal vises der)
+    oppdaterElevListe();
+
+    // 6. Start lytting på Firebase (OFF skrur av gamle lyttere så vi ikke får "ekko")
+    const sti = `kartlegging/${a}/${f}/${p}/${t}/${k}`;
+    db.ref(sti).off(); // Stopper forrige lytter før vi starter ny
+    
+    db.ref(sti).on('value', snapshot => {
         lagredeResultater = snapshot.val() || {};
-        tegnTabell();
+        tegnTabell(); // Denne kaller nå den nye tegnTabell vi fikset istreid
     });
 }
 
 // --- TEGN TABELL (Inkludert gjennomsnitt og håndtering av ikke gjennomført) ---
-// --- TEGN TABELL (Oppdatert for dynamisk årstall og trinn) ---
 function tegnTabell() {
-    // 1. HENT VERDIER FRA HOVEDMENYEN
-    const vAar = document.getElementById('valgtAar').value;
-    const vFag = document.getElementById('valgtFag').value;
-    const vPeriode = document.getElementById('valgtPeriode').value;
-    const vTrinn = document.getElementById('valgtTrinn').value;
-    const vKlasse = document.getElementById('valgtKlasse').value;
+    // 1. HENT VERDIER FRA DINE SPESIFIKKE ID-er (mAar, mFag, osv)
+    const vAar = document.getElementById('mAar').value;
+    const vFag = document.getElementById('mFag').value;
+    const vPeriode = document.getElementById('mPeriode').value;
+    const vTrinn = document.getElementById('mTrinn').value;
+    const vKlasse = document.getElementById('mKlasse').value;
 
     const tHead = document.getElementById('tHead');
     const tBody = document.getElementById('tBody');
@@ -121,7 +133,7 @@ function tegnTabell() {
         return;
     }
 
-    // 2. HENT RIKTIG OPPGAVESTRUKTUR (År -> Fag -> Periode -> Trinn)
+    // 2. HENT RIKTIG OPPGAVESTRUKTUR
     const oppsett = (oppgaveStruktur[vAar] && 
                      oppgaveStruktur[vAar][vFag] && 
                      oppgaveStruktur[vAar][vFag][vPeriode]) 
@@ -129,7 +141,7 @@ function tegnTabell() {
                      : null;
 
     if (!oppsett) {
-        tBody.innerHTML = `<tr><td colspan='100%'>Fant ikke oppgaveoppsett for ${vFag} ${vPeriode} på ${vTrinn}. trinn i ${vAar}.</td></tr>`;
+        tBody.innerHTML = `<tr><td colspan='100%'>Fant ikke oppsett for ${vFag} ${vPeriode} på ${vTrinn}. trinn i ${vAar}.</td></tr>`;
         return;
     }
 
@@ -151,30 +163,26 @@ function tegnTabell() {
     let slettedeRader = "";
 
     // 5. GÅ GJENNOM ELEVREGISTERET
-    Object.keys(elevRegister).sort().forEach(navn => {
+    const alleNavn = Object.keys(elevRegister).sort();
+    
+    alleNavn.forEach(navn => {
         const e = elevRegister[navn];
         
         // DYNAMISK TRINN-BEREGNING
-        // Formel: Starttrinn + (Valgt år - Startår)
-        const cTrinn = e.startTrinn + (vStartAarValgt - e.startAar);
+        // Formel: Elevens starttrinn + (Valgt skoleår-start - Elevens startår)
+        const cTrinn = parseInt(e.startTrinn) + (vStartAarValgt - parseInt(e.startAar));
 
-        // Sjekk om eleven hører til valgt trinn og klasse dette skoleåret
+        // Sjekk om eleven skal vises i denne klassen akkurat nå
         if (cTrinn == vTrinn && e.startKlasse === vKlasse) {
             const d = lagredeResultater[navn] || {};
             const erSlettet = d.slettet === true;
             const erIkkeGjennomfort = d.ikkeGjennomfort === true;
 
             let printKlasse = erSlettet ? 'class="no-print"' : '';
-            let radStil = "";
-            if (erSlettet) {
-                radStil = 'style="color: #a0aec0; background: #f7fafc;"';
-            } else if (erIkkeGjennomfort) {
-                radStil = 'style="background: #fff5f5;"';
-            }
+            let radStil = erSlettet ? 'style="color: #a0aec0; background: #f7fafc;"' : (erIkkeGjennomfort ? 'style="background: #fff5f5;"' : '');
 
             let rad = `<tr ${printKlasse} ${radStil}><td style="text-align:left"><b>${navn}</b> ${erSlettet ? '<small>(Slettet)</small>' : ''}</td>`;
 
-            // LOGIKK FOR VISNING
             if (!erSlettet && erIkkeGjennomfort) {
                 const antallKolonner = oppsett.oppgaver.length + 1;
                 rad += `<td colspan="${antallKolonner}" style="color: #c53030; font-style: italic; font-weight: bold;">Ikke gjennomført</td>`;
@@ -214,6 +222,20 @@ function tegnTabell() {
             else aktiveRader += rad;
         }
     });
+
+    // 6. LEGG TIL GJENNOMSNITT
+    let snittHtml = "";
+    if (antallAktiveMedData > 0) {
+        snittHtml = `<tr class="snitt-rad" style="background:#edf2f7; font-weight:bold;"><td style="text-align:left">Gjennomsnitt ${vTrinn}${vKlasse}</td>`;
+        kolonneSummer.forEach(sum => {
+            snittHtml += `<td> ${(sum / antallAktiveMedData).toFixed(1)} </td>`;
+        });
+        snittHtml += `<td> ${(totalSumKlasse / antallAktiveMedData).toFixed(1)} </td><td class="no-print"></td></tr>`;
+    }
+
+    tBody.innerHTML = aktiveRader + snittHtml + slettedeRader;
+}
+
 
     // 6. LEGG TIL GJENNOMSNITTSRAD (hvis det er data)
     let snittRad = "";
