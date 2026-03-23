@@ -67,6 +67,39 @@ function hentSti(elev) {
 }
 
 
+// --- OPPDATER ELEVLISTE (Dropdown i registrerings-modalen) ---
+function oppdaterElevListe() {
+    const vAar = document.getElementById('mAar').value;
+    const vTrinn = document.getElementById('mTrinn').value;
+    const vKlasse = document.getElementById('mKlasse').value;
+    const select = document.getElementById('regElev');
+    
+    if (!select) return;
+    
+    // Tøm listen før vi legger til nye
+    select.innerHTML = '<option value="">-- Velg elev --</option>';
+
+    if (!vAar || !vTrinn || !vKlasse) return;
+    
+    const vStartAarValgt = parseInt(vAar.split('-')[0]);
+
+    // Gå gjennom registeret og finn elevene som hører til her i valgt år
+    Object.keys(elevRegister).sort().forEach(navn => {
+        const e = elevRegister[navn];
+        
+        // Beregn trinn: Starttrinn + (Valgt år - Startår)
+        const cTrinn = parseInt(e.startTrinn) + (vStartAarValgt - parseInt(e.startAar));
+
+        if (cTrinn == vTrinn && e.startKlasse === vKlasse) {
+            const opt = document.createElement('option');
+            opt.value = navn;
+            opt.textContent = navn;
+            select.appendChild(opt);
+        }
+    });
+}
+
+
 // --- 4. DATAHÅNDTERING ---
 function hentData() {
     // 1. Skjul rapportvisning og klargjør tabellvisning
