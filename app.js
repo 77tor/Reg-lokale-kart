@@ -103,29 +103,46 @@ function hentData() {
 }
 
 // --- TEGN TABELL (Inkludert gjennomsnitt og håndtering av ikke gjennomført) ---
+// --- TEGN TABELL (Oppdatert for dynamisk årstall og trinn) ---
 function tegnTabell() {
-    const oppsett = hentOppsett();
+    // 1. HENT VERDIER FRA HOVEDMENYEN
+    const vAar = document.getElementById('valgtAar').value;
+    const vFag = document.getElementById('valgtFag').value;
+    const vPeriode = document.getElementById('valgtPeriode').value;
+    const vTrinn = document.getElementById('valgtTrinn').value;
+    const vKlasse = document.getElementById('valgtKlasse').value;
+
     const tHead = document.getElementById('tHead');
     const tBody = document.getElementById('tBody');
-    
-    if (!oppsett) { 
-        tBody.innerHTML = "<tr><td colspan='100%'>Velg alle kriterier...</td></tr>"; 
-        return; 
+
+    // Sjekk om alle valg er gjort
+    if (!vAar || !vFag || !vPeriode || !vTrinn || !vKlasse) {
+        tBody.innerHTML = "<tr><td colspan='100%'>Vennligst velg alle kriterier i menyen over...</td></tr>";
+        return;
     }
 
-    // 1. LAG TABELLHODE
+    // 2. HENT RIKTIG OPPGAVESTRUKTUR (År -> Fag -> Periode -> Trinn)
+    const oppsett = (oppgaveStruktur[vAar] && 
+                     oppgaveStruktur[vAar][vFag] && 
+                     oppgaveStruktur[vAar][vFag][vPeriode]) 
+                     ? oppgaveStruktur[vAar][vFag][vPeriode][vTrinn] 
+                     : null;
+
+    if (!oppsett) {
+        tBody.innerHTML = `<tr><td colspan='100%'>Fant ikke oppgaveoppsett for ${vFag} ${vPeriode} på ${vTrinn}. trinn i ${vAar}.</td></tr>`;
+        return;
+    }
+
+    // 3. LAG TABELLHODE
     let hode = `<tr><th style="text-align:left">Elevnavn</th>`;
-    oppsett.oppgaver.forEach(o => hode += `<th>${o.navn}<br><small>max ${o.maks}</small></th>`);
+    oppsett.oppgaver.forEach(o => {
+        hode += `<th>${o.navn}<br><small>max ${o.maks}</small></th>`;
+    });
     hode += `<th>Sum</th><th class="no-print">Handling</th></tr>`;
     tHead.innerHTML = hode;
 
-    const vTrinn = parseInt(document.getElementById('mTrinn').value);
-    const vKlasse = document.getElementById('mKlasse').value;
-    const vAarInput = document.getElementById('mAar').value;
-    if (!vAarInput) return;
-    const vStartAar = parseInt(vAarInput.split('-')[0]);
-
-    // --- VARIABLER FOR GJENNOMSNITT ---
+    // 4. FORBERED BEREGNINGER
+    const vStartAarValgt = parseInt(vAar.split('-')[0]);
     let antallAktiveMedData = 0;
     let kolonneSummer = new Array(oppsett.oppgaver.length).fill(0);
     let totalSumKlasse = 0;
@@ -133,64 +150,56 @@ function tegnTabell() {
     let aktiveRader = "";
     let slettedeRader = "";
 
-    // 2. GÅ GJENNOM ALLE ELEVER
+    // 5. GÅ GJENNOM ELEVREGISTERET
     Object.keys(elevRegister).sort().forEach(navn => {
         const e = elevRegister[navn];
-        const cTrinn = e.startTrinn + (vStartAar - e.startAar);
         
+        // DYNAMISK TRINN-BEREGNING
+        // Formel: Starttrinn + (Valgt år - Startår)
+        const cTrinn = e.startTrinn + (vStartAarValgt - e.startAar);
+
+        // Sjekk om eleven hører til valgt trinn og klasse dette skoleåret
         if (cTrinn == vTrinn && e.startKlasse === vKlasse) {
             const d = lagredeResultater[navn] || {};
             const erSlettet = d.slettet === true;
-            const erIkkeGjennomfort = d.ikkeGjennomfort === true; // Sjekker ny status
+            const erIkkeGjennomfort = d.ikkeGjennomfort === true;
 
-            // CSS-klasser for utskrift og stil
-            let printKlasse = erSlettet ? 'class="no-print"' : ''; 
+            let printKlasse = erSlettet ? 'class="no-print"' : '';
             let radStil = "";
             if (erSlettet) {
                 radStil = 'style="color: #a0aec0; background: #f7fafc;"';
             } else if (erIkkeGjennomfort) {
-                radStil = 'style="background: #fff5f5;"'; // Svak rødlig bakgrunn
+                radStil = 'style="background: #fff5f5;"';
             }
-            
+
             let rad = `<tr ${printKlasse} ${radStil}><td style="text-align:left"><b>${navn}</b> ${erSlettet ? '<small>(Slettet)</small>' : ''}</td>`;
-            
-            // --- LOGIKK FOR VISNING OG BEREGNING ---
-            
+
+            // LOGIKK FOR VISNING
             if (!erSlettet && erIkkeGjennomfort) {
-                // VISNING FOR IKKE GJENNOMFØRT: Slå sammen celler (oppgaver + sum)
                 const antallKolonner = oppsett.oppgaver.length + 1;
                 rad += `<td colspan="${antallKolonner}" style="color: #c53030; font-style: italic; font-weight: bold;">Ikke gjennomført</td>`;
-                
-                // Vi øker IKKE antallAktiveMedData, så denne eleven teller ikke i snittet
             } 
             else if (!erSlettet && d.oppgaver) {
-                // Tell denne eleven med i gjennomsnittsberegningen
                 antallAktiveMedData++;
-                
                 oppsett.oppgaver.forEach((o, i) => {
                     const poeng = d.oppgaver[i] || 0;
                     kolonneSummer[i] += poeng;
-
                     let cls = (o.grense !== -1 && poeng <= o.grense) ? 'class="alert-low"' : '';
                     rad += `<td ${cls}>${poeng}</td>`;
                 });
-
                 totalSumKlasse += d.sum;
-
                 let sumCls = (d.sum <= oppsett.grenseTotal) ? 'class="alert-low"' : '';
                 rad += `<td ${sumCls}>${d.sum}</td>`;
             } else {
-                // Vis streker hvis ikke registrert eller slettet
                 oppsett.oppgaver.forEach(() => rad += `<td class="not-registered">-</td>`);
                 rad += `<td class="not-registered">-</td>`;
             }
 
-            // --- HANDLING-KNAPPER (no-print) ---
+            // HANDLING-KNAPPER
             rad += `<td class="no-print">`;
             if (erSlettet) {
                 rad += `<button class="btn btn-hent" onclick="gjenopprettElev('${navn}')">Hent tilbake</button>`;
             } else {
-                // Hvis registrert (enten med poeng eller som ikke gjennomført)
                 if (d.oppgaver || erIkkeGjennomfort) {
                     rad += `<button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button> `;
                     rad += `<button class="btn btn-nullstill" style="margin-left:5px;" onclick="nullstillElev('${navn}')">Nullstill</button>`;
@@ -206,23 +215,16 @@ function tegnTabell() {
         }
     });
 
-    // 3. GENERER GJENNOMSNITTS-RAD
+    // 6. LEGG TIL GJENNOMSNITTSRAD (hvis det er data)
     let snittRad = "";
     if (antallAktiveMedData > 0) {
-        snittRad = `<tr class="snitt-rad" style="background:#f1f5f9; font-weight:bold; border-top: 2px solid #334155;">
-                        <td style="text-align:left">GJENNOMSNITT KLASSE (${antallAktiveMedData} elev.)</td>`;
-        
-        kolonneSummer.forEach((sum, i) => {
-            const snitt = (sum / antallAktiveMedData).toFixed(1);
-            snittRad += `<td>${snitt}</td>`;
+        snittRad = `<tr class="snitt-rad" style="background:#edf2f7; font-weight:bold;"><td style="text-align:left">Gjennomsnitt ${vTrinn}${vKlasse}</td>`;
+        kolonneSummer.forEach(sum => {
+            snittRad += `<td> ${(sum / antallAktiveMedData).toFixed(1)} </td>`;
         });
-
-        const totalSnitt = (totalSumKlasse / antallAktiveMedData).toFixed(1);
-        snittRad += `<td>${totalSnitt}</td>`;
-        snittRad += `<td class="no-print"></td></tr>`;
+        snittRad += `<td> ${(totalSumKlasse / antallAktiveMedData).toFixed(1)} </td><td class="no-print"></td></tr>`;
     }
 
-    // 4. OPPDATER HTML
     tBody.innerHTML = aktiveRader + snittRad + slettedeRader;
 }
 
