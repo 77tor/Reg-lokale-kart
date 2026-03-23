@@ -160,7 +160,7 @@ function tegnTabell() {
 // --- LOGIKK FOR Å HENTE OPPSETT ---
     // Vi sjekker om det valgte året finnes i oppsett.js. 
     // Hvis ikke, bruker vi "2024-2025" som standard mal.
-    const aarIMal = oppgaveStruktur[vAar] ? vAar : "2024-2025";
+    const aarIMal = oppgaveStruktur[vAar] ? vAar : "2025-2026";
     
     const oppsett = (oppgaveStruktur[aarIMal] && 
                      oppgaveStruktur[aarIMal][vFag] && 
