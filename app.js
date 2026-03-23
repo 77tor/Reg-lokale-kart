@@ -567,6 +567,13 @@ async function kjorSammenligning() {
     const periode = document.getElementById('compPeriode').value;
     const trinn = document.getElementById('compTrinn').value;
 
+// --- NYTT: Oppdater overskrift over diagrammet ---
+    const overskriftTekst = `Sammenligning: ${aar} - ${fag} - ${trinn}. trinn (${periode})`;
+    const overskriftElement = document.getElementById('chartOverskrift');
+    if (overskriftElement) {
+        overskriftElement.innerText = overskriftTekst;
+    }
+
     // 1. FINN MAL-ÅRET (Fallback til 2025-2026 hvis valgt år mangler)
     const aarIMal = oppgaveStruktur[aar] ? aar : "2025-2026";
 
