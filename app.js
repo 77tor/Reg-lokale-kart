@@ -676,7 +676,88 @@ function aapneElevrapportValg() {
     document.getElementById('modalElevrapport').style.display = 'block';
 }
 
+// EKSPORT - ALLE KLASSER
+async function eksporterAlleKlasser() {
+    const oppsett = hentOppsett();
+    
+    // Vi bruker verdiene fra hovedmenyene (mAar, mFag osv) 
+    // siden adminpanelet uansett krever at disse er valgt for å vite hvilket oppsett som skal brukes.
+    const vAar = document.getElementById('mAar').value;
+    const vFag = document.getElementById('mFag').value;
+    const vPeriode = document.getElementById('mPeriode').value;
+    const vTrinn = document.getElementById('mTrinn').value;
 
+    if (!vAar || !vFag || !vPeriode || !vTrinn) {
+        return alert("Vennligst velg år, fag, periode og trinn i hovedmenyene først.");
+    }
+
+    try {
+        const sti = `kartlegging/${vAar}/${vFag}/${vPeriode}/${vTrinn}`;
+        const snapshot = await db.ref(sti).once('value');
+        const alleKlasseData = snapshot.val() || {};
+        
+        const wb = XLSX.utils.book_new();
+        let harData = false;
+
+        // Vi sjekker alle mulige klasser (A-D)
+        const klasser = ["A", "B", "C", "D"]; 
+        const vStartAar = parseInt(vAar.split('-')[0]);
+
+        klasser.forEach(klasseNavn => {
+            const klasseResultater = alleKlasseData[klasseNavn] || {};
+            let rader = [];
+            
+            // Finn elever i denne spesifikke klassen fra registeret
+            const relevanteElever = Object.keys(elevRegister).filter(navn => {
+                const e = elevRegister[navn];
+                const cTrinn = e.startTrinn + (vStartAar - e.startAar);
+                return cTrinn == vTrinn && e.startKlasse === klasseNavn;
+            }).sort();
+
+            if (relevanteElever.length > 0) {
+                // Overskrifter for denne klassens fane
+                let headers = ["Elevnavn"];
+                oppsett.oppgaver.forEach(o => headers.push(o.navn));
+                headers.push("Sum");
+
+                relevanteElever.forEach(navn => {
+                    const d = klasseResultater[navn] || {};
+                    if (d.slettet) return;
+
+                    let rad = [navn];
+                    if (d.ikkeGjennomfort) {
+                        oppsett.oppgaver.forEach(() => rad.push("Ikke gjennomført"));
+                        rad.push(0);
+                    } else if (d.oppgaver) {
+                        oppsett.oppgaver.forEach((o, i) => rad.push(d.oppgaver[i] || 0));
+                        rad.push(d.sum || 0);
+                    } else {
+                        oppsett.oppgaver.forEach(() => rad.push("-"));
+                        rad.push("-");
+                    }
+                    rader.push(rad);
+                });
+
+                if (rader.length > 0) {
+                    const ws = XLSX.utils.aoa_to_sheet([headers, ...rader]);
+                    XLSX.utils.book_append_sheet(wb, ws, `Klasse ${vTrinn}${klasseNavn}`);
+                    harData = true;
+                }
+            }
+        });
+
+        if (!harData) {
+            alert("Fant ingen lagrede resultater for dette trinnet.");
+            return;
+        }
+
+        XLSX.writeFile(wb, `Backup_${vFag}_${vTrinn}trinn_${vPeriode}_${vAar}.xlsx`);
+
+    } catch (err) {
+        console.error("Backup-feil:", err);
+        alert("Kunne ikke generere backup. Se konsollen for detaljer.");
+    }
+}
 
 // IMPORT FRA EXCEL
 let midlertidigImportData = []; // Lagrer data fra Excel mens vi kobler navn
