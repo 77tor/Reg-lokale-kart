@@ -138,7 +138,7 @@ function tegnTabell() {
         const e = elevRegister[navn];
         const cTrinn = e.startTrinn + (vStartAar - e.startAar);
         
-        if (cTrinn === vTrinn && e.startKlasse === vKlasse) {
+        if (cTrinn == vTrinn && e.startKlasse === vKlasse) {
             const d = lagredeResultater[navn] || {};
             const erSlettet = d.slettet === true;
             const erIkkeGjennomfort = d.ikkeGjennomfort === true; // Sjekker ny status
@@ -432,7 +432,10 @@ async function kjorAdminRapport(type) {
 
     for (let trinn of alleTrinn) {
         for (let klasse of klasser) {
-            const oppsett = hentOppsettSpesifikk(aar, fag, periode, trinn);
+// ENDRET: Bruker den nye dype strukturen med [aar] først
+        const oppsett = (oppgaveStruktur[aar] && oppgaveStruktur[aar][fag] && oppgaveStruktur[aar][fag][periode]) 
+                        ? oppgaveStruktur[aar][fag][periode][trinn] 
+                        : null;
             if (!oppsett) continue;
 
             const snapshot = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}`).once('value');
@@ -544,7 +547,11 @@ async function kjorSammenligning() {
     const fag = document.getElementById('compFag').value;
     const periode = document.getElementById('compPeriode').value;
     const trinn = document.getElementById('compTrinn').value;
-    const oppsett = hentOppsettSpesifikk(aar, fag, periode, trinn);
+
+// ENDRET: Henter oppsettet fra riktig år
+    const oppsett = (oppgaveStruktur[aar] && oppgaveStruktur[aar][fag] && oppgaveStruktur[aar][fag][periode]) 
+                    ? oppgaveStruktur[aar][fag][periode][trinn] 
+                    : null;
     if(!oppsett) return;
 
     // Registrer pluginen (viktig!)
@@ -877,38 +884,53 @@ async function kjorFullSkoleEksport() {
     const vFag = document.getElementById('teFag').value;
     const vPeriode = document.getElementById('tePeriode').value;
 
+    // Sjekk om år er valgt (siden du nå har "-- Velg år --" som standard)
+    if (!vAar || vAar === "") {
+        alert("Vennligst velg et skoleår først.");
+        return;
+    }
+
     try {
-        // 1. Hent ALL data for valgt år/fag/periode fra Firebase
         const snapshot = await db.ref(`kartlegging/${vAar}/${vFag}/${vPeriode}`).once('value');
         const alleData = snapshot.val() || {};
         
         const wb = XLSX.utils.book_new();
         const trinnListe = ["1", "2", "3", "4", "5", "6", "7"];
         const klasseListe = ["A", "B", "C", "D"];
-        const vStartAar = parseInt(vAar.split('-')[0]);
+        
+        // Henter ut første årstall fra valget (f.eks. 2026 fra "2026-2027")
+        const valgtStartAar = parseInt(vAar.split('-')[0]);
         let harDataOverhode = false;
 
-        trinnListe.forEach(trinn => {
-            // RETTELSE: Vi må gå via [vAar][vFag][vPeriode][trinn] i oppgaveStruktur
+        trinnListe.forEach(trinnNummer => {
+            const trinnInt = parseInt(trinnNummer);
+            
+            // Henter oppsettet for dette trinnet fra din oppgaveStruktur
             const trinnOppsett = (oppgaveStruktur[vAar] && 
                                   oppgaveStruktur[vAar][vFag] && 
                                   oppgaveStruktur[vAar][vFag][vPeriode]) 
-                                  ? oppgaveStruktur[vAar][vFag][vPeriode][trinn] 
+                                  ? oppgaveStruktur[vAar][vFag][vPeriode][trinnNummer] 
                                   : null;
             
             if (!trinnOppsett) return; 
 
-            const trinnData = alleData[trinn] || {};
+            const trinnData = alleData[trinnNummer] || {};
 
             klasseListe.forEach(kl => {
                 const klasseData = trinnData[kl] || {};
                 let rader = [];
                 
-                // Finn elever som hører til dette trinnet og denne klassen
+                // DYNAMISK TRINN-BEREGNING:
                 const elever = Object.keys(elevRegister).filter(navn => {
                     const e = elevRegister[navn];
-                    const cTrinn = e.startTrinn + (vStartAar - e.startAar);
-                    return cTrinn == trinn && e.startKlasse === kl;
+                    
+                    // Her skjer magien:
+                    // Differansen mellom år nå og startår + starttrinn
+                    // Eks: 2027 (valgt) - 2025 (start) = 2 år senere. 
+                    // 1. trinn + 2 år = 3. trinn.
+                    const beregnetTrinn = e.startTrinn + (valgtStartAar - e.startAar);
+                    
+                    return beregnetTrinn === trinnInt && e.startKlasse === kl;
                 }).sort();
 
                 if (elever.length > 0) {
@@ -932,10 +954,9 @@ async function kjorFullSkoleEksport() {
                         rader.push(rad);
                     });
 
-                    // Lag fane (f.eks. "1A", "1B"...)
                     if (rader.length > 0) {
                         const ws = XLSX.utils.aoa_to_sheet([headers, ...rader]);
-                        XLSX.utils.book_append_sheet(wb, ws, `${trinn}${kl}`);
+                        XLSX.utils.book_append_sheet(wb, ws, `${trinnNummer}${kl}`);
                         harDataOverhode = true;
                     }
                 }
@@ -943,7 +964,7 @@ async function kjorFullSkoleEksport() {
         });
 
         if (!harDataOverhode) {
-            alert("Fant ingen data i databasen for " + vFag + " " + vPeriode + " " + vAar);
+            alert("Fant ingen elever eller data for " + vFag + " trinn 1-7 i " + vAar);
             return;
         }
 
@@ -951,11 +972,10 @@ async function kjorFullSkoleEksport() {
         document.getElementById('modalTotalEksport').style.display = 'none';
 
     } catch (err) {
-        console.error("Kritisk feil ved eksport:", err);
-        alert("Noe gikk galt. Sjekk konsollen (F12) for detaljer.");
+        console.error("Eksport-feil:", err);
+        alert("Noe gikk galt. Sjekk at oppgaveStruktur har data for valgt år.");
     }
 }
-
 
 
 
