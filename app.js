@@ -190,7 +190,7 @@ function tegnTabell() {
         // Dynamisk trinn-beregning
         const cTrinn = parseInt(e.startTrinn) + (vStartAarValgt - parseInt(e.startAar));
 
-        if (cTrinn == vTrinn && e.startKlasse === vKlasse) {
+        if (cTrinn === vTrinn && e.startKlasse === vKlasse) {
             const d = lagredeResultater[navn] || {};
             const erSlettet = d.slettet === true;
             const erIkkeGjennomfort = d.ikkeGjennomfort === true;
