@@ -442,6 +442,7 @@ function lukkAdmin() {
 
 
 // --- ÅRSRAPPORT I ADMIN-FUNKSJONER (Oppdatert med snitt og Ikke gjennomført) ---
+// --- ÅRSRAPPORT I ADMIN-FUNKSJONER (Oppdatert for fremtidige år) ---
 async function kjorAdminRapport(type) {
     const aar = document.getElementById('adminAar').value;
     const fag = document.getElementById('adminFag').value;
@@ -458,18 +459,24 @@ async function kjorAdminRapport(type) {
     const klasser = ["A", "B", "C", "D"];
     const alleTrinn = ["1", "2", "3", "4", "5", "6", "7"];
 
+    // 1. FINN MAL-ÅRET (Hvis valgt år ikke finnes i oppsett.js, bruk 2025-2026)
+    const aarIMal = oppgaveStruktur[aar] ? aar : "2025-2026";
+
     for (let trinn of alleTrinn) {
         for (let klasse of klasser) {
-// ENDRET: Bruker den nye dype strukturen med [aar] først
-        const oppsett = (oppgaveStruktur[aar] && oppgaveStruktur[aar][fag] && oppgaveStruktur[aar][fag][periode]) 
-                        ? oppgaveStruktur[aar][fag][periode][trinn] 
-                        : null;
+            // Bruker aarIMal for å hente oppgavestruktur
+            const oppsett = (oppgaveStruktur[aarIMal] && 
+                             oppgaveStruktur[aarIMal][fag] && 
+                             oppgaveStruktur[aarIMal][fag][periode]) 
+                             ? oppgaveStruktur[aarIMal][fag][periode][trinn] 
+                             : null;
+            
             if (!oppsett) continue;
 
+            // Henter data fra Firebase basert på det FAKTISKE valgte året (aar)
             const snapshot = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}`).once('value');
             const data = snapshot.val() || {};
 
-            // --- VARIABLER FOR KLASSESNITT ---
             let antallMedData = 0;
             let kolonneSummer = new Array(oppsett.oppgaver.length).fill(0);
             let totalSumKlasse = 0;
@@ -488,9 +495,11 @@ async function kjorAdminRapport(type) {
 
             Object.keys(elevRegister).sort().forEach(navn => {
                 const e = elevRegister[navn];
-                const cTrinn = e.startTrinn + (vStartAar - e.startAar);
+                // 2. BEREGN TRINN DYNAMISK (Viktig for 2026/27)
+                const cTrinn = parseInt(e.startTrinn) + (vStartAar - parseInt(e.startAar));
                 
-                if (cTrinn == trinn && e.startKlasse === klasse) {
+                // Sammenlign tall mot tall ved å bruke parseInt på 'trinn' fra loopen
+                if (cTrinn === parseInt(trinn) && e.startKlasse === klasse) {
                     const d = data[navn] || {};
                     const erSlettet = d.slettet === true;
                     const erIkkeGjennomfort = d.ikkeGjennomfort === true;
@@ -506,9 +515,7 @@ async function kjorAdminRapport(type) {
                     if (erIkkeGjennomfort) {
                         const colSpan = oppsett.oppgaver.length + 1;
                         tabellHtml += `<td colspan="${colSpan}" align="center" style="color:red; font-style:italic;">Ikke gjennomført</td>`;
-                    } 
-                    else if (d.oppgaver) {
-                        // Tell med i snittet
+                    } else if (d.oppgaver) {
                         antallMedData++;
                         oppsett.oppgaver.forEach((o, i) => {
                             const poeng = d.oppgaver[i] || 0;
@@ -526,7 +533,6 @@ async function kjorAdminRapport(type) {
                 }
             });
 
-            // --- LEGG TIL SNITTRAD I BUNNEN AV TABELLEN ---
             if (antallMedData > 0 && type !== 'kritisk') {
                 tabellHtml += `<tr style="background:#eeeeee; font-weight:bold;"><td>Gjennomsnitt (${antallMedData} elev.)</td>`;
                 kolonneSummer.forEach(sum => {
@@ -541,6 +547,12 @@ async function kjorAdminRapport(type) {
             }
         }
     }
+    
+    // Husket å legge til utskrift-triggeren som manglet i snutten din
+    printDiv.innerHTML = samletInnhold;
+    window.print();
+    document.body.removeChild(printDiv);
+}
 
     // --- UTSKRIFT ---
     const printVindu = window.open('', '_blank');
