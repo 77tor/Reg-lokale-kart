@@ -70,27 +70,27 @@ function hentSti(elev) {
 // --- OPPDATER ELEVLISTE (Dropdown i registrerings-modalen) ---
 function oppdaterElevListe() {
     const vAar = document.getElementById('mAar').value;
-    const vTrinn = document.getElementById('mTrinn').value;
+    const vTrinnValgt = parseInt(document.getElementById('mTrinn').value); // Gjør om til tall med en gang
     const vKlasse = document.getElementById('mKlasse').value;
     const select = document.getElementById('regElev');
     
     if (!select) return;
-    
-    // Tøm listen før vi legger til nye
     select.innerHTML = '<option value="">-- Velg elev --</option>';
 
-    if (!vAar || !vTrinn || !vKlasse) return;
+    if (!vAar || isNaN(vTrinnValgt) || !vKlasse) return;
     
     const vStartAarValgt = parseInt(vAar.split('-')[0]);
 
-    // Gå gjennom registeret og finn elevene som hører til her i valgt år
     Object.keys(elevRegister).sort().forEach(navn => {
         const e = elevRegister[navn];
         
-        // Beregn trinn: Starttrinn + (Valgt år - Startår)
+        // Beregn hvilket trinn eleven går på i det valgte skoleåret
         const cTrinn = parseInt(e.startTrinn) + (vStartAarValgt - parseInt(e.startAar));
 
-        if (cTrinn == vTrinn && e.startKlasse === vKlasse) {
+        // Debug-hjelp: Se i F12-konsollen hvis navnene ikke dukker opp
+        // console.log(`${navn}: Beregnet trinn ${cTrinn}, Valgt trinn ${vTrinnValgt}`);
+
+        if (cTrinn === vTrinnValgt && e.startKlasse === vKlasse) {
             const opt = document.createElement('option');
             opt.value = navn;
             opt.textContent = navn;
@@ -102,14 +102,12 @@ function oppdaterElevListe() {
 
 // --- 4. DATAHÅNDTERING ---
 function hentData() {
-    // 1. Skjul rapportvisning og klargjør tabellvisning
     const hovedTabell = document.getElementById('hovedTabell');
     if (hovedTabell) hovedTabell.style.display = 'table';
     
     const rc = document.getElementById('rapportContainer');
     if (rc) rc.innerHTML = "";
 
-    // 2. Hent verdiene fra menyen (Bruker dine ID-er: mAar, mFag, etc.)
     const a = document.getElementById('mAar').value; 
     const f = document.getElementById('mFag').value; 
     const p = document.getElementById('mPeriode').value; 
@@ -119,39 +117,28 @@ function hentData() {
     const nyElevSeksjon = document.getElementById('nyElevSeksjon');
     const actionBar = document.querySelector('.action-bar');
 
-    // 3. Validering: Hvis ikke alle valg er tatt, skjul elementer og tøm tabell
     if (!a || !f || !p || !t || !k) {
         if (nyElevSeksjon) nyElevSeksjon.style.display = 'none';
         if (actionBar) actionBar.style.display = 'none';
-        
-        const tBody = document.getElementById('tBody');
-        if (tBody) {
-            tBody.innerHTML = "<tr><td colspan='100%'>Vennligst velg alle kriterier over...</td></tr>";
-        }
-        return; // Avbryter funksjonen her hvis valg mangler
+        document.getElementById('tBody').innerHTML = "<tr><td colspan='100%'>Vennligst velg alle kriterier over...</td></tr>";
+        return;
     }
 
-    // 4. Hvis alle valg er tatt: Vis registreringsfelt og knapper
     if (nyElevSeksjon) nyElevSeksjon.style.display = 'block';
     if (actionBar) actionBar.style.display = 'flex';
 
-    // 5. Oppdater visuelle elementer
     oppdaterOverskrifter(`Kartlegging i ${f} - ${t}${k} - ${p} ${a}`);
-    oppdaterElevListe(); // Sørger for at dropdown-menyen for registrering har riktige elever
+    
+    // VIKTIG: Vi kjører denne her for å sikre at lista i registrerings-boksen også blir rett
+    oppdaterElevListe();
 
-    // 6. Start lytting på Firebase for den valgte klassen
     const sti = `kartlegging/${a}/${f}/${p}/${t}/${k}`;
-    
-    // Rydd opp: Skru av gamle lyttere for å unngå dobbeltkjøring
     db.ref(sti).off(); 
-    
-    // Start ny lytter
     db.ref(sti).on('value', snapshot => {
         lagredeResultater = snapshot.val() || {};
-        // Kall tegnTabell for å oppdatere skjermen med de nye dataene
-        tegnTabell(); 
+        tegnTabell();
     });
-} // <--- SLUTT PÅ hentData
+}
 
 
 // --- TEGN TABELL (Inkludert gjennomsnitt og håndtering av ikke gjennomført) ---
