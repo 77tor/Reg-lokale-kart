@@ -12,8 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
     <style>
 /* GRUNNLEGGENDE STIL */
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; margin: 0; background: #f0f2f5; color: #333; }
@@ -317,7 +316,7 @@ tr:hover { background-color: #f1f1f1; }
 
 <div class="action-bar no-print" style="display: flex; gap: 10px; align-items: center;">
     <button class="btn btn-print" onclick="forberedPrint()">Skriv ut / PDF</button>
-    <button class="btn btn-excel" onclick="eksporterTilExcel()">Eksport til Excel</button>
+    <button class="btn btn-excel" onclick="eksporter()">Eksport til Excel</button>
     
     <button class="btn btn-hent" onclick="document.getElementById('excelInput').click()" style="background-color: #4a5568;">📥 Import fra Excel</button>
     
