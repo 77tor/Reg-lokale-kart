@@ -12,6 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <style>
 /* GRUNNLEGGENDE STIL */
@@ -314,11 +315,29 @@ tr:hover { background-color: #f1f1f1; }
     </div>
 
 
-        <div class="action-bar no-print">
-            <button class="btn btn-print" onclick="forberedPrint()">Skriv ut / PDF</button>
-            <button class="btn btn-excel" onclick="eksporterTilExcel()">Eksport til Excel</button>
-            <span id="dynamiskOverskrift" style="margin-left: 20px; font-weight: bold; font-size: 1.1em; align-self: center; color: #2c3e50;"></span>
+<div class="action-bar no-print" style="display: flex; gap: 10px; align-items: center;">
+    <button class="btn btn-print" onclick="forberedPrint()">Skriv ut / PDF</button>
+    <button class="btn btn-excel" onclick="eksporterTilExcel()">Eksport til Excel</button>
+    
+    <button class="btn btn-hent" onclick="document.getElementById('excelInput').click()" style="background-color: #4a5568;">📥 Import fra Excel</button>
+    
+    <input type="file" id="excelInput" style="display:none" accept=".xlsx, .xls, .csv" onchange="handterExcelFil(this)">
+
+    <span id="dynamiskOverskrift" style="margin-left: 20px; font-weight: bold; font-size: 1.1em; align-self: center; color: #2c3e50;"></span>
+</div>
+
+<div id="modalMapping" class="modal" style="display:none; z-index:2000;">
+    <div class="modal-content" style="width: 600px; max-width: 95%;">
+        <h3>Koble navn fra Excel</h3>
+        <p style="font-size: 0.9em; color: #4a5568;">Vi fant navn i Excel-filen som ikke matcher listen din helt. Velg hvem som er hvem:</p>
+        <hr>
+        <div id="mappingContainer" style="max-height: 400px; overflow-y: auto; margin: 15px 0;"></div>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-reg" style="flex:2" onclick="fullforImport()">Fullfør import</button>
+            <button class="btn btn-fjern" style="flex:1" onclick="document.getElementById('modalMapping').style.display='none'">Avbryt</button>
         </div>
+    </div>
+</div>
 
         <table id="hovedTabell">
             <thead id="tHead"></thead>

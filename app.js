@@ -676,6 +676,143 @@ function aapneElevrapportValg() {
     document.getElementById('modalElevrapport').style.display = 'block';
 }
 
+
+
+// IMPORT FRA EXCEL
+let midlertidigImportData = []; // Lagrer data fra Excel mens vi kobler navn
+
+function handterExcelFil(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(firstSheet);
+
+        analyserImportData(json);
+    };
+    reader.readAsArrayBuffer(file);
+    input.value = ""; // Nullstill input så samme fil kan velges igjen
+}
+
+function analyserImportData(data) {
+    const oppsett = hentOppsett();
+    const vTrinn = parseInt(document.getElementById('mTrinn').value);
+    const vKlasse = document.getElementById('mKlasse').value;
+    const vAar = document.getElementById('mAar').value;
+    const vStartAar = parseInt(vAar.split('-')[0]);
+
+    // Finn alle aktive elever i valgt klasse
+    const aktuelleElever = Object.keys(elevRegister).filter(navn => {
+        const e = elevRegister[navn];
+        const cTrinn = e.startTrinn + (vStartAar - e.startAar);
+        return cTrinn === vTrinn && e.startKlasse === vKlasse;
+    });
+
+    midlertidigImportData = [];
+    let uidentifiserteNavn = [];
+
+    data.forEach(rad => {
+        // Finn kolonnen som ligner på "Navn" eller "Elev"
+        const excelNavn = rad["Elevnavn"] || rad["Navn"] || rad["Elev"] || Object.values(rad)[0];
+        if (!excelNavn) return;
+
+        // Prøv eksakt match
+        if (aktuelleElever.includes(excelNavn)) {
+            midlertidigImportData.push({ id: excelNavn, data: rad });
+        } else {
+            uidentifiserteNavn.push(excelNavn);
+            midlertidigImportData.push({ id: null, originalNavn: excelNavn, data: rad });
+        }
+    });
+
+    if (uidentifiserteNavn.length > 0) {
+        visMappingVindu(uidentifiserteNavn, aktuelleElever);
+    } else {
+        if(confirm(`Klar til å importere data for ${midlertidigImportData.length} elever?`)) {
+            fullforImport();
+        }
+    }
+}
+
+function visMappingVindu(ukjente, systemElever) {
+    const container = document.getElementById('mappingContainer');
+    container.innerHTML = "";
+    
+    ukjente.forEach(ukjentNavn => {
+        let html = `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
+                <span style="font-weight:bold; width: 45%;">${ukjentNavn}</span>
+                <span style="width: 10%;">➡</span>
+                <select class="mapping-select" data-original="${ukjentNavn}" style="width: 45%; padding: 5px;">
+                    <option value="">-- Velg elev fra liste --</option>
+                    <option value="SKIP">Hopp over denne</option>
+                    ${systemElever.map(s => `<option value="${s}">${s}</option>`).join('')}
+                </select>
+            </div>`;
+        container.innerHTML += html;
+    });
+    
+    document.getElementById('modalMapping').style.display = 'block';
+}
+
+function fullforImport() {
+    const oppsett = hentOppsett();
+    const selects = document.querySelectorAll('.mapping-select');
+    
+    // Oppdater midlertidig data med valgene fra mappingen
+    selects.forEach(sel => {
+        const original = sel.dataset.original;
+        const valgt = sel.value;
+        const index = midlertidigImportData.findIndex(d => d.originalNavn === original);
+        if (index > -1) {
+            midlertidigImportData[index].id = (valgt === "SKIP" || valgt === "") ? null : valgt;
+        }
+    });
+
+    let lagringsLøfter = [];
+
+    midlertidigImportData.forEach(item => {
+        if (!item.id) return;
+
+        // Her må vi tolke poengene fra Excel-raden
+        // Vi antar at Excel-kolonnene heter det samme som oppgavene dine (f.eks. "Oppgave 1")
+        let poeng = [];
+        let sum = 0;
+        
+        oppsett.oppgaver.forEach(o => {
+            const v = parseInt(item.data[o.navn]) || 0;
+            poeng.push(v);
+            sum += v;
+        });
+
+        const dataTilLagring = {
+            oppgaver: poeng,
+            sum: sum,
+            slettet: false,
+            dato: new Date().toISOString(),
+            ikkeGjennomfort: false
+        };
+
+        lagringsLøfter.push(db.ref(hentSti(item.id)).set(dataTilLagring));
+    });
+
+    Promise.all(lagringsLøfter).then(() => {
+        alert("Import fullført!");
+        document.getElementById('modalMapping').style.display = 'none';
+        tegnTabell();
+    });
+}
+
+
+
+
+
+
+
 // Henter ALT fra Firebase og bygger utskriftssiden
 async function genererFullElevrapport(navn) {
     const utskriftArea = document.getElementById('utskriftRapportArea');
