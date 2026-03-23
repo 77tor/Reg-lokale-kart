@@ -238,7 +238,7 @@ function tegnTabell() {
                     rad += `<button class="btn btn-nullstill" style="margin-left:5px;" onclick="nullstillElev('${navn}')">Nullstill</button>`;
                 } else {
                     // Hvis IKKE registrert: Vis "Registrer" og "Slett"
-                    rad += `<button class="btn btn-reg" onclick="visModal('${navn}')">Reg</button> `;
+                    rad += `<button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button> `;
                     rad += `<button class="btn btn-slett" style="margin-left:5px;" onclick="slettElev('${navn}')">Slett</button>`;
                 }
             }
