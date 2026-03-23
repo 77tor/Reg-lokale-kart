@@ -258,7 +258,7 @@ tr:hover { background-color: #f1f1f1; }
 
         <div>
             <h4>Total-eksport</h4>
-            <button class="btn btn-excel" style="width:100%; background-color: #27ae60;" onclick="eksporterAlleKlasser()">Hele trinnet (Faner)</button>
+            <button class="btn btn-excel" style="width:100%; background-color: #1f7244;" onclick="document.getElementById('modalTotalEksport').style.display='block'">Alle klasser (Faner)</button>
             <p style="font-size:0.8em;color:#666;">Lager én Excel-fil med egne faner for hver klasse på trinnet.</p>
         </div>
 
@@ -270,6 +270,37 @@ tr:hover { background-color: #f1f1f1; }
 
     <div style="margin-top:20px; text-align:right;">
         <button class="btn btn-fjern" onclick="lukkAdmin()">Lukk Panel</button>
+    </div>
+</div>
+
+<div id="modalTotalEksport" class="modal">
+    <div class="modal-content" style="width: 350px;">
+        <h3 style="margin-top:0; color: #1f7244;">Full skole-eksport</h3>
+        <p style="font-size: 0.85em; color: #666;">Dette lager én fil med alle trinn (1-7) og alle klasser (A-D) som egne faner.</p>
+        <hr>
+        <label>Skoleår:</label>
+        <select id="teAar">
+            <option value="2024-2025">2024-2025</option>
+            <option value="2025-2026" selected>2025-2026</option>
+            <option value="2026-2027">2026-2027</option>
+        </select>
+
+        <label>Fag:</label>
+        <select id="teFag">
+            <option value="Lesing">Lesing</option>
+            <option value="Regning">Regning</option>
+        </select>
+
+        <label>Periode:</label>
+        <select id="tePeriode">
+            <option value="Høst">Høst</option>
+            <option value="Vår">Vår</option>
+        </select>
+
+        <div style="margin-top:20px; display:flex; gap:10px;">
+            <button class="btn btn-reg" style="flex:2; background-color: #1f7244;" onclick="kjorFullSkoleEksport()">Last ned alt</button>
+            <button class="btn btn-fjern" style="flex:1" onclick="document.getElementById('modalTotalEksport').style.display='none'">Avbryt</button>
+        </div>
     </div>
 </div>
 

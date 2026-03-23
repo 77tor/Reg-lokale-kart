@@ -871,6 +871,86 @@ function oppdaterMappingValg() {
     });
 }
 
+
+
+async function kjorFullSkoleEksport() {
+    const vAar = document.getElementById('teAar').value;
+    const vFag = document.getElementById('teFag').value;
+    const vPeriode = document.getElementById('tePeriode').value;
+
+    try {
+        // 1. Hent ALL data for hele faget/året/perioden i én omgang
+        const snapshot = await db.ref(`kartlegging/${vAar}/${vFag}/${vPeriode}`).once('value');
+        const alleData = snapshot.val() || {};
+        
+        const wb = XLSX.utils.book_new();
+        const trinnListe = ["1", "2", "3", "4", "5", "6", "7"];
+        const klasseListe = ["A", "B", "C", "D"];
+        const vStartAar = parseInt(vAar.split('-')[0]);
+        let harDataOverhode = false;
+
+        // 2. Loop gjennom hvert trinn
+        trinnListe.forEach(trinn => {
+            const oppsett = oppsettRegister[vFag] ? oppsettRegister[vFag][trinn] : null;
+            if (!oppsett) return; // Hopper over hvis trinn/fag ikke har oppsett (f.eks. Regning 1. trinn)
+
+            const trinnData = alleData[trinn] || {};
+
+            // 3. Loop gjennom hver klasse i trinnet
+            klasseListe.forEach(kl => {
+                const klasseData = trinnData[kl] || {};
+                let rader = [];
+                
+                // Finn elever som tilhører dette trinnet og denne klassen
+                const elever = Object.keys(elevRegister).filter(navn => {
+                    const e = elevRegister[navn];
+                    const cTrinn = e.startTrinn + (vStartAar - e.startAar);
+                    return cTrinn == trinn && e.startKlasse === kl;
+                }).sort();
+
+                if (elever.length > 0) {
+                    let headers = ["Elevnavn", ...oppsett.oppgaver.map(o => o.navn), "Sum"];
+                    
+                    elever.forEach(navn => {
+                        const d = klasseData[navn] || {};
+                        if (d.slettet) return;
+
+                        let rad = [navn];
+                        if (d.ikkeGjennomfort) {
+                            oppsett.oppgaver.forEach(() => rad.push("Ikke gjennomført"));
+                            rad.push(0);
+                        } else if (d.oppgaver) {
+                            oppsett.oppgaver.forEach((_, i) => rad.push(d.oppgaver[i] || 0));
+                            rad.push(d.sum || 0);
+                        } else {
+                            oppsett.oppgaver.forEach(() => rad.push("-"));
+                            rad.push("-");
+                        }
+                        rader.push(rad);
+                    });
+
+                    // 4. Lag fane (f.eks. "2B")
+                    const ws = XLSX.utils.aoa_to_sheet([headers, ...rader]);
+                    XLSX.utils.book_append_sheet(wb, ws, `${trinn}${kl}`);
+                    harDataOverhode = true;
+                }
+            });
+        });
+
+        if (!harDataOverhode) {
+            return alert("Fant ingen elever eller data for valgt år/periode.");
+        }
+
+        // 5. Lagre den ferdige boken med alle fanene
+        XLSX.writeFile(wb, `FULL_BACKUP_${vFag}_${vPeriode}_${vAar}.xlsx`);
+        document.getElementById('modalTotalEksport').style.display = 'none';
+
+    } catch (err) {
+        console.error("Feil ved full eksport:", err);
+        alert("Noe gikk galt under henting av data.");
+    }
+}
+
 function fullforImport() {
     const oppsett = hentOppsett();
     const selects = document.querySelectorAll('.mapping-select');
