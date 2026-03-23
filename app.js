@@ -878,6 +878,7 @@ async function kjorFullSkoleEksport() {
     const vPeriode = document.getElementById('tePeriode').value;
 
     try {
+        // 1. Hent ALL data for valgt år/fag/periode fra Firebase
         const snapshot = await db.ref(`kartlegging/${vAar}/${vFag}/${vPeriode}`).once('value');
         const alleData = snapshot.val() || {};
         
@@ -888,8 +889,13 @@ async function kjorFullSkoleEksport() {
         let harDataOverhode = false;
 
         trinnListe.forEach(trinn => {
-            // RETTELSE: Endret fra oppsettRegister til oppsett
-            const trinnOppsett = oppsett[vFag] ? oppsett[vFag][trinn] : null;
+            // RETTELSE: Vi må gå via [vAar][vFag][vPeriode][trinn] i oppgaveStruktur
+            const trinnOppsett = (oppgaveStruktur[vAar] && 
+                                  oppgaveStruktur[vAar][vFag] && 
+                                  oppgaveStruktur[vAar][vFag][vPeriode]) 
+                                  ? oppgaveStruktur[vAar][vFag][vPeriode][trinn] 
+                                  : null;
+            
             if (!trinnOppsett) return; 
 
             const trinnData = alleData[trinn] || {};
@@ -898,6 +904,7 @@ async function kjorFullSkoleEksport() {
                 const klasseData = trinnData[kl] || {};
                 let rader = [];
                 
+                // Finn elever som hører til dette trinnet og denne klassen
                 const elever = Object.keys(elevRegister).filter(navn => {
                     const e = elevRegister[navn];
                     const cTrinn = e.startTrinn + (vStartAar - e.startAar);
@@ -905,7 +912,6 @@ async function kjorFullSkoleEksport() {
                 }).sort();
 
                 if (elever.length > 0) {
-                    // Bruker trinnOppsett her også
                     let headers = ["Elevnavn", ...trinnOppsett.oppgaver.map(o => o.navn), "Sum"];
                     
                     elever.forEach(navn => {
@@ -926,25 +932,31 @@ async function kjorFullSkoleEksport() {
                         rader.push(rad);
                     });
 
-                    const ws = XLSX.utils.aoa_to_sheet([headers, ...rader]);
-                    XLSX.utils.book_append_sheet(wb, ws, `${trinn}${kl}`);
-                    harDataOverhode = true;
+                    // Lag fane (f.eks. "1A", "1B"...)
+                    if (rader.length > 0) {
+                        const ws = XLSX.utils.aoa_to_sheet([headers, ...rader]);
+                        XLSX.utils.book_append_sheet(wb, ws, `${trinn}${kl}`);
+                        harDataOverhode = true;
+                    }
                 }
             });
         });
 
         if (!harDataOverhode) {
-            return alert("Fant ingen elever eller data for valgt år/periode.");
+            alert("Fant ingen data i databasen for " + vFag + " " + vPeriode + " " + vAar);
+            return;
         }
 
         XLSX.writeFile(wb, `FULL_BACKUP_${vFag}_${vPeriode}_${vAar}.xlsx`);
         document.getElementById('modalTotalEksport').style.display = 'none';
 
     } catch (err) {
-        console.error("Feil ved full eksport:", err);
-        alert("Noe gikk galt under henting av data.");
+        console.error("Kritisk feil ved eksport:", err);
+        alert("Noe gikk galt. Sjekk konsollen (F12) for detaljer.");
     }
 }
+
+
 
 
 function fullforImport() {
