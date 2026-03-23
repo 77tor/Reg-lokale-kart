@@ -224,12 +224,23 @@ function tegnTabell() {
                 rad += `<td class="not-registered">-</td>`;
             }
 
+           // --- HANDLING-KNAPPER (no-print) ---
             rad += `<td class="no-print">`;
+            
             if (erSlettet) {
+                // Hvis eleven er slettet, vis bare "Hent tilbake"-knappen
                 rad += `<button class="btn btn-hent" onclick="gjenopprettElev('${navn}')">Hent</button>`;
             } else {
-                const btnTekst = (d.oppgaver || erIkkeGjennomfort) ? 'Endre' : 'Reg';
-                rad += `<button class="btn btn-reg" onclick="visModal('${navn}')">${btnTekst}</button>`;
+                // Sjekk om eleven har registrert data (poeng eller 'ikke gjennomført')
+                if (d.oppgaver || erIkkeGjennomfort) {
+                    // Hvis registrert: Vis "Endre" og "Nullstill"
+                    rad += `<button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button> `;
+                    rad += `<button class="btn btn-nullstill" style="margin-left:5px;" onclick="nullstillElev('${navn}')">Nullstill</button>`;
+                } else {
+                    // Hvis IKKE registrert: Vis "Registrer" og "Slett"
+                    rad += `<button class="btn btn-reg" onclick="visModal('${navn}')">Reg</button> `;
+                    rad += `<button class="btn btn-slett" style="margin-left:5px;" onclick="slettElev('${navn}')">Slett</button>`;
+                }
             }
             rad += `</td></tr>`;
 
