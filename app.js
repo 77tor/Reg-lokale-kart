@@ -763,7 +763,7 @@ function fullforImport() {
     const oppsett = hentOppsett();
     const selects = document.querySelectorAll('.mapping-select');
     
-    // Oppdater midlertidig data med valgene fra mappingen
+    // 1. Oppdater midlertidig data med valgene fra mapping-vinduet
     selects.forEach(sel => {
         const original = sel.dataset.original;
         const valgt = sel.value;
@@ -778,17 +778,37 @@ function fullforImport() {
     midlertidigImportData.forEach(item => {
         if (!item.id) return;
 
-        // Her må vi tolke poengene fra Excel-raden
-        // Vi antar at Excel-kolonnene heter det samme som oppgavene dine (f.eks. "Oppgave 1")
         let poeng = [];
         let sum = 0;
         
-        oppsett.oppgaver.forEach(o => {
-            const v = parseInt(item.data[o.navn]) || 0;
-            poeng.push(v);
-            sum += v;
+        // 2. Gå gjennom oppgavene i systemet
+        oppsett.oppgaver.forEach((o, index) => {
+            // Vi prøver å finne verdien i Excel-raden på tre måter:
+            // A: Direkte match på navn (f.eks. "Oppgave 1")
+            // B: Ved å fjerne mellomrom og gjøre til små bokstaver (f.eks. "oppgave1")
+            // C: Ved å bruke rekkefølgen (hvis Oppgave 1 er kolonne nr 2 i Excel)
+            
+            let verdi = 0;
+            const systemNavnRenset = o.navn.toLowerCase().replace(/\s/g, '');
+            
+            // Finn den nøkkelen i Excel-raden som ligner mest
+            const excelNøkler = Object.keys(item.data);
+            const matchNøkkel = excelNøkler.find(n => n.toLowerCase().replace(/\s/g, '') === systemNavnRenset);
+            
+            if (matchNøkkel) {
+                verdi = parseInt(item.data[matchNøkkel]);
+            } else {
+                // Hvis vi ikke finner navnet, prøv å ta kolonne nr (index + 1 siden Navn er kolonne 0)
+                const verdier = Object.values(item.data);
+                verdi = parseInt(verdier[index + 1]); 
+            }
+
+            const endeligPoeng = isNaN(verdi) ? 0 : verdi;
+            poeng.push(endeligPoeng);
+            sum += endeligPoeng;
         });
 
+        // 3. Lagre objektet slik systemet forventer det
         const dataTilLagring = {
             oppgaver: poeng,
             sum: sum,
@@ -797,16 +817,19 @@ function fullforImport() {
             ikkeGjennomfort: false
         };
 
+        // Lagre til Firebase under riktig elev-ID (navn)
         lagringsLøfter.push(db.ref(hentSti(item.id)).set(dataTilLagring));
     });
 
     Promise.all(lagringsLøfter).then(() => {
-        alert("Import fullført!");
+        alert("Import fullført for " + lagringsLøfter.length + " elever!");
         document.getElementById('modalMapping').style.display = 'none';
-        tegnTabell();
+        tegnTabell(); // Oppdater skjermen
+    }).catch(err => {
+        console.error("Importfeil:", err);
+        alert("Det oppstod en feil under lagring.");
     });
 }
-
 
 
 
