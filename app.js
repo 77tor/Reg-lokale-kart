@@ -252,9 +252,9 @@ function visModal(navn) {
     // Hent lagret data for denne eleven
     const d = lagredeResultater[navn] || {};
     const eksisterende = d.oppgaver || [];
-    const erIkkeGjennomfort = d.ikkeGjennomfort || false;
+    const erIkkeGjennomfort = d.ikkeGjennomfort === true;
 
-    // 1. VIKTIG: Oppdater checkboxen basert på lagret data (slik at den ikke "henger igjen")
+    // 1. Oppdater checkboxen basert på lagret data
     const checkBoks = document.getElementById('ikkeGjennomfort');
     if (checkBoks) {
         checkBoks.checked = erIkkeGjennomfort;
@@ -262,7 +262,6 @@ function visModal(navn) {
 
     // 2. Lag oppgavefeltene
     oppsett.oppgaver.forEach((o, i) => {
-        // Vi sjekker om feltet skal være deaktivert (disabled) hvis ikke gjennomført er valgt
         const stil = erIkkeGjennomfort ? 'opacity:0.3;' : '';
         const deaktivert = erIkkeGjennomfort ? 'disabled' : '';
 
@@ -301,11 +300,11 @@ function lagreData() {
     };
 
     if (erIkkeGjennomfort) {
-        // Hvis eleven IKKE har gjennomført:
+        // Hvis eleven IKKE har gjennomført
         dataSomSkalLagres.oppgaver = null; 
         dataSomSkalLagres.sum = 0;
     } else {
-        // Hvis eleven HAR gjennomført:
+        // Hvis eleven HAR gjennomført
         const inputs = document.querySelectorAll('.oppg-input');
         let verdier = [], sum = 0;
         inputs.forEach(i => { 
@@ -321,11 +320,12 @@ function lagreData() {
     db.ref(hentSti(valgtElevId)).set(dataSomSkalLagres).then(() => {
         lukkModal();
         if (typeof tegnTabell === "function") tegnTabell();
+    }).catch(error => {
+        console.error("Feil ved lagring:", error);
     });
 }
 
-// NYTT: Legg til denne helt nederst i app.js for å gjøre modalen interaktiv
-// Denne gjør at poengfeltene låses/låses opp umiddelbart når du trykker på haken
+// NYTT: Gjør modalen interaktiv (låser felter når man haker av)
 document.addEventListener('change', function(e) {
     if (e.target && e.target.id === 'ikkeGjennomfort') {
         const inputs = document.querySelectorAll('.oppg-input');
@@ -333,16 +333,14 @@ document.addEventListener('change', function(e) {
         
         inputs.forEach(inp => {
             inp.disabled = erHuket;
-            inp.parentElement.style.opacity = erHuket ? "0.3" : "1";
-            if (erHuket) inp.value = ""; // Tømmer tallene hvis man velger "Ikke gjennomført"
+            // Endrer stilen på foreldre-diven (oppgave-rad)
+            if (inp.parentElement) {
+                inp.parentElement.style.opacity = erHuket ? "0.3" : "1";
+            }
+            if (erHuket) inp.value = ""; 
         });
     }
 });
-    
-    // Lagre til Firebase (vi bruker .set i stedet for .update for å fjerne gamle poeng 
-    // hvis man endrer en elev fra "Gjennomført" til "Ikke gjennomført")
-    db.ref(hentSti(valgtElevId)).set(dataSomSkalLagres).then(lukkModal);
-}
 
 
 // --- 6. ADMIN-FUNKSJONER ---
