@@ -872,14 +872,12 @@ function oppdaterMappingValg() {
 }
 
 
-
 async function kjorFullSkoleEksport() {
     const vAar = document.getElementById('teAar').value;
     const vFag = document.getElementById('teFag').value;
     const vPeriode = document.getElementById('tePeriode').value;
 
     try {
-        // 1. Hent ALL data for hele faget/året/perioden i én omgang
         const snapshot = await db.ref(`kartlegging/${vAar}/${vFag}/${vPeriode}`).once('value');
         const alleData = snapshot.val() || {};
         
@@ -889,19 +887,17 @@ async function kjorFullSkoleEksport() {
         const vStartAar = parseInt(vAar.split('-')[0]);
         let harDataOverhode = false;
 
-        // 2. Loop gjennom hvert trinn
         trinnListe.forEach(trinn => {
-            const oppsett = oppsettRegister[vFag] ? oppsettRegister[vFag][trinn] : null;
-            if (!oppsett) return; // Hopper over hvis trinn/fag ikke har oppsett (f.eks. Regning 1. trinn)
+            // RETTELSE: Endret fra oppsettRegister til oppsett
+            const trinnOppsett = oppsett[vFag] ? oppsett[vFag][trinn] : null;
+            if (!trinnOppsett) return; 
 
             const trinnData = alleData[trinn] || {};
 
-            // 3. Loop gjennom hver klasse i trinnet
             klasseListe.forEach(kl => {
                 const klasseData = trinnData[kl] || {};
                 let rader = [];
                 
-                // Finn elever som tilhører dette trinnet og denne klassen
                 const elever = Object.keys(elevRegister).filter(navn => {
                     const e = elevRegister[navn];
                     const cTrinn = e.startTrinn + (vStartAar - e.startAar);
@@ -909,7 +905,8 @@ async function kjorFullSkoleEksport() {
                 }).sort();
 
                 if (elever.length > 0) {
-                    let headers = ["Elevnavn", ...oppsett.oppgaver.map(o => o.navn), "Sum"];
+                    // Bruker trinnOppsett her også
+                    let headers = ["Elevnavn", ...trinnOppsett.oppgaver.map(o => o.navn), "Sum"];
                     
                     elever.forEach(navn => {
                         const d = klasseData[navn] || {};
@@ -917,19 +914,18 @@ async function kjorFullSkoleEksport() {
 
                         let rad = [navn];
                         if (d.ikkeGjennomfort) {
-                            oppsett.oppgaver.forEach(() => rad.push("Ikke gjennomført"));
+                            trinnOppsett.oppgaver.forEach(() => rad.push("Ikke gjennomført"));
                             rad.push(0);
                         } else if (d.oppgaver) {
-                            oppsett.oppgaver.forEach((_, i) => rad.push(d.oppgaver[i] || 0));
+                            trinnOppsett.oppgaver.forEach((_, i) => rad.push(d.oppgaver[i] || 0));
                             rad.push(d.sum || 0);
                         } else {
-                            oppsett.oppgaver.forEach(() => rad.push("-"));
+                            trinnOppsett.oppgaver.forEach(() => rad.push("-"));
                             rad.push("-");
                         }
                         rader.push(rad);
                     });
 
-                    // 4. Lag fane (f.eks. "2B")
                     const ws = XLSX.utils.aoa_to_sheet([headers, ...rader]);
                     XLSX.utils.book_append_sheet(wb, ws, `${trinn}${kl}`);
                     harDataOverhode = true;
@@ -941,7 +937,6 @@ async function kjorFullSkoleEksport() {
             return alert("Fant ingen elever eller data for valgt år/periode.");
         }
 
-        // 5. Lagre den ferdige boken med alle fanene
         XLSX.writeFile(wb, `FULL_BACKUP_${vFag}_${vPeriode}_${vAar}.xlsx`);
         document.getElementById('modalTotalEksport').style.display = 'none';
 
@@ -950,6 +945,7 @@ async function kjorFullSkoleEksport() {
         alert("Noe gikk galt under henting av data.");
     }
 }
+
 
 function fullforImport() {
     const oppsett = hentOppsett();
