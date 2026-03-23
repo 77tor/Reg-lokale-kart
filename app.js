@@ -413,16 +413,16 @@ function lukkAdmin() {
 }
 
 
+// --- ÅRSRAPPORT I ADMIN-FUNKSJONER (Oppdatert med snitt og Ikke gjennomført) ---
 async function kjorAdminRapport(type) {
     const aar = document.getElementById('adminAar').value;
     const fag = document.getElementById('adminFag').value;
     const periode = document.getElementById('adminPeriode').value;
     
-    // 1. Lag et midlertidig element for utskrift (skjult for skjerm)
     const printDiv = document.createElement('div');
     printDiv.id = 'tempPrintArea';
     printDiv.style.position = 'absolute';
-    printDiv.style.left = '-9999px'; // Flytt det utenfor skjermen
+    printDiv.style.left = '-9999px'; 
     document.body.appendChild(printDiv);
 
     let samletInnhold = `<h1 style="text-align:center;">${type === 'kritisk' ? 'Kritisk-liste' : 'Årsrapport'} - ${fag} (${aar})</h1>`;
@@ -438,16 +438,21 @@ async function kjorAdminRapport(type) {
             const snapshot = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}`).once('value');
             const data = snapshot.val() || {};
 
-            let tabellHtml = `<div class="page-break" style="page-break-after: always;">
+            // --- VARIABLER FOR KLASSESNITT ---
+            let antallMedData = 0;
+            let kolonneSummer = new Array(oppsett.oppgaver.length).fill(0);
+            let totalSumKlasse = 0;
+
+            let tabellHtml = `<div class="page-break">
                 <h2 style="text-align:center;">${fag} - ${trinn}${klasse} - ${periode} ${aar}</h2>
                 <table border="1" style="width:100%; border-collapse:collapse; margin-bottom:20px;">
                     <thead>
-                        <tr><th align="left">Elevnavn</th>`;
+                        <tr style="background:#f2f2f2;"><th align="left">Elevnavn</th>`;
             
             oppsett.oppgaver.forEach(o => tabellHtml += `<th>${o.navn}</th>`);
             tabellHtml += `<th>Sum</th></tr></thead><tbody>`;
 
-            let antall = 0;
+            let antallEleverVist = 0;
             const vStartAar = parseInt(aar.split('-')[0]);
 
             Object.keys(elevRegister).sort().forEach(navn => {
@@ -455,19 +460,33 @@ async function kjorAdminRapport(type) {
                 const cTrinn = e.startTrinn + (vStartAar - e.startAar);
                 
                 if (cTrinn == trinn && e.startKlasse === klasse) {
-                    const d = data[navn];
-                    const erKritisk = d && d.sum <= oppsett.grenseTotal;
-                    if (type === 'kritisk' && (!d || !erKritisk)) return;
+                    const d = data[navn] || {};
+                    const erSlettet = d.slettet === true;
+                    const erIkkeGjennomfort = d.ikkeGjennomfort === true;
+                    
+                    if (erSlettet) return;
 
-                    antall++;
+                    const erKritisk = d && d.sum <= oppsett.grenseTotal;
+                    if (type === 'kritisk' && (!d.sum || !erKritisk || erIkkeGjennomfort)) return;
+
+                    antallEleverVist++;
                     tabellHtml += `<tr><td><b>${navn}</b></td>`;
-                    if (d && d.oppgaver) {
+
+                    if (erIkkeGjennomfort) {
+                        const colSpan = oppsett.oppgaver.length + 1;
+                        tabellHtml += `<td colspan="${colSpan}" align="center" style="color:red; font-style:italic;">Ikke gjennomført</td>`;
+                    } 
+                    else if (d.oppgaver) {
+                        // Tell med i snittet
+                        antallMedData++;
                         oppsett.oppgaver.forEach((o, i) => {
                             const poeng = d.oppgaver[i] || 0;
+                            kolonneSummer[i] += poeng;
                             const bakgrunn = (o.grense !== -1 && poeng <= o.grense) ? 'background-color:#ffcccc' : '';
                             tabellHtml += `<td align="center" style="${bakgrunn}">${poeng}</td>`;
                         });
-                        tabellHtml += `<td align="center" style="${erKritisk ? 'background-color:#ffcccc' : ''}">${d.sum}</td>`;
+                        totalSumKlasse += d.sum;
+                        tabellHtml += `<td align="center" style="${erKritisk ? 'background-color:#ffcccc; font-weight:bold;' : ''}">${d.sum}</td>`;
                     } else {
                         oppsett.oppgaver.forEach(() => tabellHtml += `<td align="center">-</td>`);
                         tabellHtml += `<td align="center">-</td>`;
@@ -476,49 +495,48 @@ async function kjorAdminRapport(type) {
                 }
             });
 
-            if (antall > 0) {
+            // --- LEGG TIL SNITTRAD I BUNNEN AV TABELLEN ---
+            if (antallMedData > 0 && type !== 'kritisk') {
+                tabellHtml += `<tr style="background:#eeeeee; font-weight:bold;"><td>Gjennomsnitt (${antallMedData} elev.)</td>`;
+                kolonneSummer.forEach(sum => {
+                    tabellHtml += `<td align="center">${(sum / antallMedData).toFixed(1)}</td>`;
+                });
+                tabellHtml += `<td align="center">${(totalSumKlasse / antallMedData).toFixed(1)}</td></tr>`;
+            }
+
+            if (antallEleverVist > 0) {
                 tabellHtml += `</tbody></table></div>`;
                 samletInnhold += tabellHtml;
             }
         }
     }
 
-    // 2. Legg innholdet i det midlertidige elementet
-    printDiv.innerHTML = samletInnhold;
-
-    // 3. Lagre originalt innhold, bytt ut med rapporten, print, og bytt tilbake
-    const originalInnhold = document.body.innerHTML;
-    
-    // Vi må midlertidig skjule alt annet enn printDiv
-    document.getElementById('modalRapport').style.display = 'none';
-    
-    // Åpne et nytt vindu for print er ofte det tryggeste for styling
+    // --- UTSKRIFT ---
     const printVindu = window.open('', '_blank');
     printVindu.document.write(`
         <html>
             <head>
-                <title>Utskrift</title>
+                <title>Årsrapport</title>
                 <style>
                     body { font-family: sans-serif; padding: 20px; }
-                    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-                    th, td { border: 1px solid black; padding: 5px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top:10px; }
+                    th, td { border: 1px solid black; padding: 4px; }
                     .page-break { page-break-after: always; }
+                    h1, h2 { margin-bottom: 5px; }
+                    @media print { .page-break { page-break-after: always; } }
                 </style>
             </head>
             <body>${samletInnhold}</body>
         </html>
     `);
     printVindu.document.close();
-    printVindu.focus();
     
-    // Vent litt så bildene/stiler laster hvis nødvendig
     setTimeout(() => {
         printVindu.print();
         printVindu.close();
-        document.body.removeChild(printDiv); // Rydd opp
-    }, 500);
+        if (printDiv.parentNode) document.body.removeChild(printDiv);
+    }, 750);
 }
-
 
 // --- SAMMENLIGNING I ADMIN-FUNKSJONER ---
 async function kjorSammenligning() {
