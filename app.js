@@ -1054,4 +1054,55 @@ document.addEventListener('keydown', function(e) {
     // Bonus: Lukk med Escape-tasten
     if (e.key === 'Escape') lukkModal();
 });
+
+
+function eksporter() {
+    const oppsett = hentOppsett();
+    if (!oppsett) return alert("Velg alle kriterier først!");
+
+    const vTrinn = document.getElementById('mTrinn').value;
+    const vKlasse = document.getElementById('mKlasse').value;
+    const vAar = document.getElementById('mAar').value;
+    const vFag = document.getElementById('mFag').value;
+    const vPeriode = document.getElementById('mPeriode').value;
+
+    // Definer overskrifter (Viktig for import-logikken din)
+    let headers = ["Elevnavn"];
+    oppsett.oppgaver.forEach(o => headers.push(o.navn));
+    headers.push("Sum");
+
+    let rader = [];
+    const vStartAar = parseInt(vAar.split('-')[0]);
+
+    Object.keys(elevRegister).sort().forEach(navn => {
+        const e = elevRegister[navn];
+        const cTrinn = e.startTrinn + (vStartAar - e.startAar);
+
+        if (cTrinn == vTrinn && e.startKlasse === vKlasse) {
+            const d = lagredeResultater[navn] || {};
+            if (d.slettet) return;
+
+            let rad = [navn];
+            if (d.ikkeGjennomfort) {
+                oppsett.oppgaver.forEach(() => rad.push("Ikke gjennomført"));
+                rad.push(0);
+            } else if (d.oppgaver) {
+                oppsett.oppgaver.forEach((o, i) => rad.push(d.oppgaver[i] || 0));
+                rad.push(d.sum || 0);
+            } else {
+                oppsett.oppgaver.forEach(() => rad.push("-"));
+                rad.push("-");
+            }
+            rader.push(rad);
+        }
+    });
+
+    if (rader.length === 0) return alert("Ingen elever å eksportere.");
+
+    // Lag filen ved hjelp av XLSX-biblioteket
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rader]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Resultater");
+    XLSX.writeFile(wb, `Resultat_${vFag}_${vTrinn}${vKlasse}_${vPeriode}.xlsx`);
+}
 function forberedPrint() { window.print(); }
