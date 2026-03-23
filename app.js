@@ -441,39 +441,31 @@ function lukkAdmin() {
 }
 
 
-// --- ÅRSRAPPORT I ADMIN-FUNKSJONER (Oppdatert med snitt og Ikke gjennomført) ---
-// --- ÅRSRAPPORT I ADMIN-FUNKSJONER (Oppdatert for fremtidige år) ---
+// --- ÅRSRAPPORT I ADMIN-FUNKSJONER (Fullstendig korrigert) ---
 async function kjorAdminRapport(type) {
     const aar = document.getElementById('adminAar').value;
     const fag = document.getElementById('adminFag').value;
     const periode = document.getElementById('adminPeriode').value;
     
-    const printDiv = document.createElement('div');
-    printDiv.id = 'tempPrintArea';
-    printDiv.style.position = 'absolute';
-    printDiv.style.left = '-9999px'; 
-    document.body.appendChild(printDiv);
+    // 1. FINN MAL-ÅRET (Hvis valgt år ikke finnes i oppsett.js, bruk 2025-2026)
+    const aarIMal = oppgaveStruktur[aar] ? aar : "2025-2026";
 
     let samletInnhold = `<h1 style="text-align:center;">${type === 'kritisk' ? 'Kritisk-liste' : 'Årsrapport'} - ${fag} (${aar})</h1>`;
     
     const klasser = ["A", "B", "C", "D"];
     const alleTrinn = ["1", "2", "3", "4", "5", "6", "7"];
 
-    // 1. FINN MAL-ÅRET (Hvis valgt år ikke finnes i oppsett.js, bruk 2025-2026)
-    const aarIMal = oppgaveStruktur[aar] ? aar : "2025-2026";
-
     for (let trinn of alleTrinn) {
         for (let klasse of klasser) {
-            // Bruker aarIMal for å hente oppgavestruktur
             const oppsett = (oppgaveStruktur[aarIMal] && 
                              oppgaveStruktur[aarIMal][fag] && 
                              oppgaveStruktur[aarIMal][fag][periode]) 
                              ? oppgaveStruktur[aarIMal][fag][periode][trinn] 
                              : null;
             
-            if (!oppsett) continue;
+            // Viktig sjekk: Har oppsettet oppgaver?
+            if (!oppsett || !oppsett.oppgaver) continue;
 
-            // Henter data fra Firebase basert på det FAKTISKE valgte året (aar)
             const snapshot = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}`).once('value');
             const data = snapshot.val() || {};
 
@@ -483,7 +475,7 @@ async function kjorAdminRapport(type) {
 
             let tabellHtml = `<div class="page-break">
                 <h2 style="text-align:center;">${fag} - ${trinn}${klasse} - ${periode} ${aar}</h2>
-                <table border="1" style="width:100%; border-collapse:collapse; margin-bottom:20px;">
+                <table border="1">
                     <thead>
                         <tr style="background:#f2f2f2;"><th align="left">Elevnavn</th>`;
             
@@ -495,24 +487,19 @@ async function kjorAdminRapport(type) {
 
             Object.keys(elevRegister).sort().forEach(navn => {
                 const e = elevRegister[navn];
-                // 2. BEREGN TRINN DYNAMISK (Viktig for 2026/27)
                 const cTrinn = parseInt(e.startTrinn) + (vStartAar - parseInt(e.startAar));
                 
-                // Sammenlign tall mot tall ved å bruke parseInt på 'trinn' fra loopen
                 if (cTrinn === parseInt(trinn) && e.startKlasse === klasse) {
                     const d = data[navn] || {};
-                    const erSlettet = d.slettet === true;
-                    const erIkkeGjennomfort = d.ikkeGjennomfort === true;
-                    
-                    if (erSlettet) return;
+                    if (d.slettet === true) return;
 
                     const erKritisk = d && d.sum <= oppsett.grenseTotal;
-                    if (type === 'kritisk' && (!d.sum || !erKritisk || erIkkeGjennomfort)) return;
+                    if (type === 'kritisk' && (!d.sum || !erKritisk || d.ikkeGjennomfort)) return;
 
                     antallEleverVist++;
                     tabellHtml += `<tr><td><b>${navn}</b></td>`;
 
-                    if (erIkkeGjennomfort) {
+                    if (d.ikkeGjennomfort === true) {
                         const colSpan = oppsett.oppgaver.length + 1;
                         tabellHtml += `<td colspan="${colSpan}" align="center" style="color:red; font-style:italic;">Ikke gjennomført</td>`;
                     } else if (d.oppgaver) {
@@ -534,7 +521,7 @@ async function kjorAdminRapport(type) {
             });
 
             if (antallMedData > 0 && type !== 'kritisk') {
-                tabellHtml += `<tr style="background:#eeeeee; font-weight:bold;"><td>Gjennomsnitt (${antallMedData} elev.)</td>`;
+                tabellHtml += `<tr style="background:#eeeeee; font-weight:bold;"><td>Snitt (${antallMedData} elev.)</td>`;
                 kolonneSummer.forEach(sum => {
                     tabellHtml += `<td align="center">${(sum / antallMedData).toFixed(1)}</td>`;
                 });
@@ -545,14 +532,8 @@ async function kjorAdminRapport(type) {
                 tabellHtml += `</tbody></table></div>`;
                 samletInnhold += tabellHtml;
             }
-        }
-    }
-    
-    // Husket å legge til utskrift-triggeren som manglet i snutten din
-    printDiv.innerHTML = samletInnhold;
-    window.print();
-    document.body.removeChild(printDiv);
-}
+        } // Slutt på klasse-loop
+    } // Slutt på trinn-loop
 
     // --- UTSKRIFT ---
     const printVindu = window.open('', '_blank');
@@ -565,7 +546,6 @@ async function kjorAdminRapport(type) {
                     table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top:10px; }
                     th, td { border: 1px solid black; padding: 4px; }
                     .page-break { page-break-after: always; }
-                    h1, h2 { margin-bottom: 5px; }
                     @media print { .page-break { page-break-after: always; } }
                 </style>
             </head>
@@ -577,9 +557,9 @@ async function kjorAdminRapport(type) {
     setTimeout(() => {
         printVindu.print();
         printVindu.close();
-        if (printDiv.parentNode) document.body.removeChild(printDiv);
     }, 750);
 }
+
 
 // --- SAMMENLIGNING I ADMIN-FUNKSJONER ---
 async function kjorSammenligning() {
