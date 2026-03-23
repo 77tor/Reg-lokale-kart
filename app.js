@@ -744,11 +744,13 @@ function visMappingVindu(ukjente, systemElever) {
     
     ukjente.forEach(ukjentNavn => {
         let html = `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
-                <span style="font-weight:bold; width: 45%;">${ukjentNavn}</span>
-                <span style="width: 10%;">➡</span>
-                <select class="mapping-select" data-original="${ukjentNavn}" style="width: 45%; padding: 5px;">
-                    <option value="">-- Velg elev fra liste --</option>
+            <div class="mapping-rad" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
+                <span style="font-weight:bold; width: 40%;">${ukjentNavn}</span>
+                <span style="width: 5%;">➡</span>
+                <select class="mapping-select" data-original="${ukjentNavn}" 
+                        style="width: 50%; padding: 5px;" 
+                        onchange="oppdaterMappingValg()">
+                    <option value="">-- Velg elev --</option>
                     <option value="SKIP">Hopp over denne</option>
                     ${systemElever.map(s => `<option value="${s}">${s}</option>`).join('')}
                 </select>
@@ -757,6 +759,35 @@ function visMappingVindu(ukjente, systemElever) {
     });
     
     document.getElementById('modalMapping').style.display = 'block';
+}
+
+function oppdaterMappingValg() {
+    const alleSelects = document.querySelectorAll('.mapping-select');
+    
+    // 1. Finn ut hvilke navn som er valgt akkurat nå
+    const valgteNavn = Array.from(alleSelects)
+        .map(sel => sel.value)
+        .filter(val => val !== "" && val !== "SKIP");
+
+    // 2. Gå gjennom hver meny og skjul/vis alternativer
+    alleSelects.forEach(currentSelect => {
+        const options = currentSelect.querySelectorAll('option');
+        
+        options.forEach(opt => {
+            // Vi skal aldri skjule "Velg elev", "Hopp over" eller det navnet som er valgt i AKKURAT denne menyen
+            if (opt.value === "" || opt.value === "SKIP" || opt.value === currentSelect.value) {
+                opt.style.display = "block";
+                return;
+            }
+
+            // Hvis navnet er valgt i en ANNEN meny, skjul det
+            if (valgteNavn.includes(opt.value)) {
+                opt.style.display = "none";
+            } else {
+                opt.style.display = "block";
+            }
+        });
+    });
 }
 
 function fullforImport() {
