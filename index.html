@@ -280,9 +280,13 @@ tr:hover { background-color: #f1f1f1; }
         <hr>
         <label>Skoleår:</label>
         <select id="teAar">
+            <option value=""selected>-- Velg år --</option>            
             <option value="2024-2025">2024-2025</option>
-            <option value="2025-2026" selected>2025-2026</option>
+            <option value="2025-2026">2025-2026</option>
             <option value="2026-2027">2026-2027</option>
+            <option value="2027-2028">2027-2028</option>
+            <option value="2028-2029">2028-2029</option>
+            <option value="2029-2030">2028-2030</option>
         </select>
 
         <label>Fag:</label>
@@ -309,10 +313,13 @@ tr:hover { background-color: #f1f1f1; }
         <div>
             <label>Skoleår:</label>
             <select id="mAar" onchange="hentData()">
-                <option value="">-- Velg år --</option>
-                <option value="2024-2025">2024-2025</option>
-                <option value="2025-2026">2025-2026</option>
-                <option value="2026-2027">2026-2027</option>
+            <option value=""selected>-- Velg år --</option>            
+            <option value="2024-2025">2024-2025</option>
+            <option value="2025-2026">2025-2026</option>
+            <option value="2026-2027">2026-2027</option>
+            <option value="2027-2028">2027-2028</option>
+            <option value="2028-2029">2028-2029</option>
+            <option value="2029-2030">2028-2030</option>
             </select>
         </div>
         <div>
@@ -420,9 +427,28 @@ tr:hover { background-color: #f1f1f1; }
     </div>
 </div>
 
-<div id="modalRapport" class="modal"><div class="modal-content"><h3>Generer Årsrapport</h3><label>Skoleår:</label><select id="adminAar"><option value="2024-2025">2024-2025</option><option value="2025-2026" selected>2025-2026</option></select><label>Fag:</label><select id="adminFag"><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select><label>Periode:</label><select id="adminPeriode"><option value="Høst">Høst</option><option value="Vår">Vår</option></select><div style="margin-top:20px;display:flex;gap:10px;"><button class="btn btn-reg" style="flex:2" onclick="kjorAdminRapport('alle')">Vis Rapport</button><button class="btn btn-slett" style="flex:2" onclick="kjorAdminRapport('kritisk')">Kun Kritisk</button><button class="btn btn-fjern" style="flex:1" onclick="document.getElementById('modalRapport').style.display='none'">Avbryt</button></div></div></div>
+<div id="modalRapport" class="modal"><div class="modal-content"><h3>Generer Årsrapport</h3><label>Skoleår:</label>
+<select id="adminAar">
+            <option value=""selected>-- Velg år --</option>            
+            <option value="2024-2025">2024-2025</option>
+            <option value="2025-2026">2025-2026</option>
+            <option value="2026-2027">2026-2027</option>
+            <option value="2027-2028">2027-2028</option>
+            <option value="2028-2029">2028-2029</option>
+            <option value="2029-2030">2028-2030</option>
+</select>
+<label>Fag:</label><select id="adminFag"><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select><label>Periode:</label><select id="adminPeriode"><option value="Høst">Høst</option><option value="Vår">Vår</option></select><div style="margin-top:20px;display:flex;gap:10px;"><button class="btn btn-reg" style="flex:2" onclick="kjorAdminRapport('alle')">Vis Rapport</button><button class="btn btn-slett" style="flex:2" onclick="kjorAdminRapport('kritisk')">Kun Kritisk</button><button class="btn btn-fjern" style="flex:1" onclick="document.getElementById('modalRapport').style.display='none'">Avbryt</button></div></div></div>
 
-<div id="modalSammenlign" class="modal"><div class="modal-content"><h3>Sammenlign klasser</h3><label>Skoleår:</label><select id="compAar"><option value="2024-2025">2024-2025</option><option value="2025-2026" selected>2025-2026</option></select><label>Fag:</label><select id="compFag"><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select><label>Periode:</label><select id="compPeriode"><option value="Høst">Høst</option><option value="Vår">Vår</option></select><label>Trinn:</label><select id="compTrinn"><option value="1">1. Trinn</option><option value="2">2. Trinn</option><option value="3">3. Trinn</option><option value="4">4. Trinn</option><option value="5">5. Trinn</option><option value="6">6. Trinn</option><option value="7">7. Trinn</option></select><div style="margin-top:20px;display:flex;gap:10px;"><button class="btn btn-hent" style="flex:2" onclick="kjorSammenligning()">Lag Diagram</button><button class="btn btn-fjern" style="flex:1" onclick="document.getElementById('modalSammenlign').style.display='none'">Avbryt</button></div></div></div>
+<div id="modalSammenlign" class="modal"><div class="modal-content"><h3>Sammenlign klasser</h3><label>Skoleår:
+</label><select id="compAar">
+            <option value=""selected>-- Velg år --</option>            
+            <option value="2024-2025">2024-2025</option>
+            <option value="2025-2026">2025-2026</option>
+            <option value="2026-2027">2026-2027</option>
+            <option value="2027-2028">2027-2028</option>
+            <option value="2028-2029">2028-2029</option>
+            <option value="2029-2030">2028-2030</option>
+</select><label>Fag:</label><select id="compFag"><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select><label>Periode:</label><select id="compPeriode"><option value="Høst">Høst</option><option value="Vår">Vår</option></select><label>Trinn:</label><select id="compTrinn"><option value="1">1. Trinn</option><option value="2">2. Trinn</option><option value="3">3. Trinn</option><option value="4">4. Trinn</option><option value="5">5. Trinn</option><option value="6">6. Trinn</option><option value="7">7. Trinn</option></select><div style="margin-top:20px;display:flex;gap:10px;"><button class="btn btn-hent" style="flex:2" onclick="kjorSammenligning()">Lag Diagram</button><button class="btn btn-fjern" style="flex:1" onclick="document.getElementById('modalSammenlign').style.display='none'">Avbryt</button></div></div></div>
 
 <div id="modalElevrapport" class="modal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5);">
     <div class="modal-content" style="background:white; margin:10% auto; padding:20px; width:400px; border-radius:8px;">
