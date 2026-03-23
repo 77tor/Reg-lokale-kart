@@ -157,15 +157,19 @@ function tegnTabell() {
         return;
     }
 
-    // Finn oppsett i den dype strukturen (År -> Fag -> Periode -> Trinn)
-    const oppsett = (oppgaveStruktur[vAar] && 
-                     oppgaveStruktur[vAar][vFag] && 
-                     oppgaveStruktur[vAar][vFag][vPeriode]) 
-                     ? oppgaveStruktur[vAar][vFag][vPeriode][vTrinn] 
+// --- LOGIKK FOR Å HENTE OPPSETT ---
+    // Vi sjekker om det valgte året finnes i oppsett.js. 
+    // Hvis ikke, bruker vi "2024-2025" som standard mal.
+    const aarIMal = oppgaveStruktur[vAar] ? vAar : "2024-2025";
+    
+    const oppsett = (oppgaveStruktur[aarIMal] && 
+                     oppgaveStruktur[aarIMal][vFag] && 
+                     oppgaveStruktur[aarIMal][vFag][vPeriode]) 
+                     ? oppgaveStruktur[aarIMal][vFag][vPeriode][vTrinn] 
                      : null;
 
     if (!oppsett) {
-        tBody.innerHTML = `<tr><td colspan='100%'>Fant ikke oppsett for ${vFag} på ${vTrinn}. trinn (${vAar}).</td></tr>`;
+        tBody.innerHTML = `<tr><td colspan='100%'>Fant ikke mal for ${vFag} i ${aarIMal}.</td></tr>`;
         return;
     }
 
