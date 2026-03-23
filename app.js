@@ -560,19 +560,26 @@ async function kjorAdminRapport(type) {
     }, 750);
 }
 
-
-// --- SAMMENLIGNING I ADMIN-FUNKSJONER ---
+// --- SAMMENLIGNING I ADMIN-FUNKSJONER (Oppdatert for 2026+) ---
 async function kjorSammenligning() {
     const aar = document.getElementById('compAar').value;
     const fag = document.getElementById('compFag').value;
     const periode = document.getElementById('compPeriode').value;
     const trinn = document.getElementById('compTrinn').value;
 
-// ENDRET: Henter oppsettet fra riktig år
-    const oppsett = (oppgaveStruktur[aar] && oppgaveStruktur[aar][fag] && oppgaveStruktur[aar][fag][periode]) 
-                    ? oppgaveStruktur[aar][fag][periode][trinn] 
-                    : null;
-    if(!oppsett) return;
+    // 1. FINN MAL-ÅRET (Fallback til 2025-2026 hvis valgt år mangler)
+    const aarIMal = oppgaveStruktur[aar] ? aar : "2025-2026";
+
+    const oppsett = (oppgaveStruktur[aarIMal] && 
+                     oppgaveStruktur[aarIMal][fag] && 
+                     oppgaveStruktur[aarIMal][fag][periode]) 
+                     ? oppgaveStruktur[aarIMal][fag][periode][trinn] 
+                     : null;
+
+    if (!oppsett) {
+        alert("Fant ikke oppsett for valgt kombinasjon i mal-året " + aarIMal);
+        return;
+    }
 
     // Registrer pluginen (viktig!)
     Chart.register(ChartDataLabels);
@@ -589,15 +596,19 @@ async function kjorSammenligning() {
 
     // START FOR-LOOP
     for (let i = 0; i < klasser.length; i++) {
+        // Henter data fra det FAKTISKE valgte året i Firebase
         const snap = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasser[i]}`).once('value');
         const data = snap.val() || {};
         let antall = 0, summer = new Array(oppsett.oppgaver.length + 1).fill(0);
 
         Object.keys(data).forEach(n => {
-            if (data[n].oppgaver && data[n].slettet !== true) {
+            const d = data[n];
+            if (d.oppgaver && d.slettet !== true && d.ikkeGjennomfort !== true) {
                 antall++;
-                data[n].oppgaver.forEach((p, idx) => summer[idx] += p);
-                summer[oppsett.oppgaver.length] += data[n].sum;
+                d.oppgaver.forEach((p, idx) => {
+                    if (idx < oppsett.oppgaver.length) summer[idx] += (p || 0);
+                });
+                summer[oppsett.oppgaver.length] += (d.sum || 0);
             }
         });
 
@@ -612,18 +623,18 @@ async function kjorSammenligning() {
                     anchor: 'end',
                     offset: -50, 
                     color: 'white',
-                    font: { weight: 'bold', size: 12 },
-                    padding: 4, // Gir litt luft rundt teksten
+                    font: { weight: 'bold', size: 10 },
+                    padding: 4,
                     formatter: function(value, context) {
                         const idx = context.dataIndex;
                         const maks = maksVerdier[idx];
-                        const prosent = ((value / maks) * 100).toFixed(1);
-                        return value + " / " + maks + "\n" + prosent + "%";
+                        const prosent = ((value / maks) * 100).toFixed(0);
+                        return value + "/" + maks + "\n" + prosent + "%";
                     }
                 }
             });
         }
-    } // HER skal for-loopen lukkes (Flyttet opp fra bunnen)
+    } 
 
     // --- Rød linje for kritisk grense ---
     const grenseData = [...oppsett.oppgaver.map(o => o.grense), oppsett.grenseTotal];
@@ -650,11 +661,11 @@ async function kjorSammenligning() {
         },
         options: {
             responsive: true,
-            layout: { padding: { top: 20 } },
+            layout: { padding: { top: 30 } },
             scales: {
                 y: { 
                     beginAtZero: true,
-                    max: Math.max(...maksVerdier) * 1.2 // Økt til 1.2 for å gi plass til tekst
+                    max: Math.max(...maksVerdier) * 1.3 // Litt mer plass til tekst på toppen
                 }
             },
             plugins: {
@@ -669,6 +680,7 @@ async function kjorSammenligning() {
         }
     });
 }
+
 
 // --- ELEVRAPPORT I ADMIN-FUNKSJONER ---
 function filtrerElevListe() {
