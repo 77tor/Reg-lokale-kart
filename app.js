@@ -185,13 +185,15 @@ function tegnTabell() {
     let slettedeRader = "";
 
     // 2. Gå gjennom alle elever i registeret
-    Object.keys(elevRegister).sort().forEach(navn => {
+        Object.keys(elevRegister).sort().forEach(navn => {
         const e = elevRegister[navn];
-        // Dynamisk trinn-beregning
+        // Beregn trinn: Starttrinn + (Valgt år - Startår)
         const cTrinn = parseInt(e.startTrinn) + (vStartAarValgt - parseInt(e.startAar));
 
-        if (cTrinn === vTrinn && e.startKlasse === vKlasse) {
+        // VIKTIG: Bruk parseInt(vTrinn) for å sammenligne tall mot tall
+        if (cTrinn === parseInt(vTrinn) && e.startKlasse === vKlasse) {
             const d = lagredeResultater[navn] || {};
+            // ... resten av koden din for å tegne raden er lik
             const erSlettet = d.slettet === true;
             const erIkkeGjennomfort = d.ikkeGjennomfort === true;
 
