@@ -47,17 +47,28 @@ auth.onAuthStateChanged(user => {
 });
 
 // --- 3. HJELPEFUNKSJONER ---
-function hentOppsettSpesifikk(aar, fag, periode, trinn) {
-    try { return oppgaveStruktur[aar][fag][periode][trinn]; } 
-    catch (e) { return null; }
-}
-
 function hentOppsett() {
-    const aar = document.getElementById('mAar').value;
+    const aarValgt = document.getElementById('mAar').value;
     const fag = document.getElementById('mFag').value;
     const periode = document.getElementById('mPeriode').value;
     const trinn = document.getElementById('mTrinn').value;
-    return hentOppsettSpesifikk(aar, fag, periode, trinn);
+
+    // 1. Sjekk om året finnes. Hvis ikke, bruk 2025-2026 som "master-mal"
+    const malAar = oppgaveStruktur[aarValgt] ? aarValgt : "2025-2026";
+
+    // 2. Send det trygge årstallet videre til den spesifikke henteren
+    return hentOppsettSpesifikk(malAar, fag, periode, trinn);
+}
+
+function hentOppsettSpesifikk(aar, fag, periode, trinn) {
+    try { 
+        // Her bruker vi 'aar' som nå er garantert å finnes (enten 2026-2027 eller 2025-2026)
+        return oppgaveStruktur[aar][fag][periode][trinn]; 
+    } 
+    catch (e) { 
+        console.warn("Fant ikke oppsett for:", aar, fag, periode, trinn);
+        return null; 
+    }
 }
 
 function oppdaterOverskrifter(tekst) {
