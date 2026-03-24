@@ -19,6 +19,11 @@ let lagredeResultater = {};
 let valgtElevId = "";
 let myChart = null; 
 
+// SIKKERHET: Hvis elever.js ikke er lastet ennå, lager vi et tomt register så koden ikke stopper.
+if (typeof elevRegister === 'undefined') {
+    window.elevRegister = {}; 
+}
+
 // --- 2. AUTENTISERING ---
 function login() { 
     auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
@@ -376,7 +381,6 @@ function lagreData() {
     // Lagre til Firebase og oppdater tabellen
     db.ref(hentSti(valgtElevId)).set(dataSomSkalLagres).then(() => {
         lukkModal();
-        if (typeof tegnTabell === "function") tegnTabell();
     }).catch(error => {
         console.error("Feil ved lagring:", error);
     });
