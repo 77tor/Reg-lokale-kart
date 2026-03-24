@@ -61,6 +61,26 @@ tr:hover { background-color: #f1f1f1; }
 .btn-fjern { background: #95a5a6; color: white; }
 .btn-logout { background: #e74c3c; color: white; } /* Logg ut rød */
 .btn-admin { background: #2980b9; color: white; } /* Admin blå */
+.btn-lock { background-color: #d35400; color: white; }
+
+/* Stil for teksten som vises når tabellen er låst */
+.ferdigstilt-merkelapp {
+    color: #7f8c8d;
+    font-style: italic;
+    font-weight: bold;
+    display: none; /* Skjult som standard */
+}
+
+/* Når tabellen er i "låst modus", viser vi merkelappen */
+.is-locked .ferdigstilt-merkelapp {
+    display: inline;
+}
+
+/* Når tabellen er i "låst modus", skjuler vi alle knapper inni tabell-cellene */
+.is-locked td .btn {
+    display: none;
+}
+
 
 /* --- ACTION-BAR KNAPPER (De store med ikoner) --- */
 .action-bar { 
@@ -383,6 +403,9 @@ tr:hover { background-color: #f1f1f1; }
     </div>
 
 <div class="action-bar no-print">
+    <button id="btnFerdigstill" class="btn btn-lock" onclick="toggleFerdigstill()">
+        <span class="btn-icon">🔒</span> <span id="lockText">Ferdigstille prøven</span>
+    </button>
     <button class="btn btn-print" onclick="forberedPrint()">
         <span class="btn-icon">🖨️</span> Skriv ut
     </button>

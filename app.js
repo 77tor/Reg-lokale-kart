@@ -309,6 +309,42 @@ function nullstillElev(navn) {
 }
 
 
+function toggleFerdigstill() {
+    const tabell = document.getElementById('hovedTabell');
+    const knapp = document.getElementById('btnFerdigstill');
+    const tekstElement = document.getElementById('lockText');
+    const ikonElement = knapp.querySelector('.btn-icon');
+
+    // Sjekk om vi skal låse eller åpne
+    const erLaast = tabell.classList.toggle('is-locked');
+
+    if (erLaast) {
+        // Endre knappen til "Gjenåpne"
+        tekstElement.innerText = "Gjenåpne prøven";
+        ikonElement.innerText = "🔓";
+        knapp.style.backgroundColor = "#27ae60"; // Skifter til grønn for å vise "åpne"-mulighet
+    } else {
+        // Endre knappen tilbake til "Ferdigstille"
+        tekstElement.innerText = "Ferdigstille prøven";
+        ikonElement.innerText = "🔒";
+        knapp.style.backgroundColor = "#d35400"; // Tilbake til oransje
+    }
+    
+    // Sørg for at "Ferdigstilt"-tekst finnes i alle handlings-celler hvis den ikke er der
+    if (erLaast) {
+        document.querySelectorAll('#tBody tr').forEach(rad => {
+            const sisteCelle = rad.lastElementChild;
+            if (!sisteCelle.querySelector('.ferdigstilt-merkelapp')) {
+                const span = document.createElement('span');
+                span.className = 'ferdigstilt-merkelapp';
+                span.innerText = 'Ferdigstilt';
+                sisteCelle.appendChild(span);
+            }
+        });
+    }
+}
+
+
 // --- 5. MODAL OG LAGRING ---
 function visModal(navn) {
     const oppsett = hentOppsett();
