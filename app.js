@@ -500,6 +500,9 @@ async function kjorAdminRapport(type) {
                 const e = elevRegister[navn];
                 const cTrinn = parseInt(e.startTrinn) + (vStartAar - parseInt(e.startAar));
                 
+// --- LEGG TIL DENNE LINJEN FOR Å SE FEILEN I KONSOLLEN (F12) ---
+    console.log(`Sjekker ${navn}: Elevens trinn er ${cTrinn}, du ser på trinn ${vTrinn}. Klasse: ${e.startKlasse} vs ${vKlasse}`);
+
                 if (cTrinn === parseInt(trinn) && e.startKlasse === klasse) {
                     const d = data[navn] || {};
                     if (d.slettet === true) return;
