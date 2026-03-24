@@ -458,7 +458,8 @@ async function genererKlasseAnalyse() {
     
     // --- SØYLEDIAGRAM ---
     html += `<h3>Gjennomsnittlig skår per oppgave (%)</h3><div class="chart-container">`;
-    
+    html += `<div style="width: 150px;"></div>`;
+
     oppsett.oppgaver.forEach((o, i) => {
         const snitt = oppgaveSummer[i] / antall;
         const prosent = (snitt / o.maks) * 100;
@@ -527,19 +528,43 @@ async function genererKlasseAnalyse() {
     win.document.write(`
         <html><head><title>Analyse ${trinn}${klasse}</title>
         <style>
-            body { font-family: sans-serif; padding: 30px; }
-            h1, h3 { text-align: center; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
-            th, td { border: 1px solid #333; padding: 8px; text-align: center; }
-            .chart-container { display: flex; height: 250px; align-items: flex-end; justify-content: space-around; border-bottom: 2px solid #333; padding-top: 30px; margin-bottom: 50px; }
-            .bar-wrapper { display: flex; flex-direction: column; align-items: center; width: 60px; height: 100%; position: relative; }
-            .bar-track { background: #eee; width: 35px; height: 100%; position: relative; display: flex; flex-direction: column-reverse; border: 1px solid #ccc; }
-            .bar-fill { background: #3498db; width: 100%; }
-            .total-fill { background: #2ecc71; }
-            .target-line { position: absolute; left: -8px; right: -8px; border-top: 2px dashed red; z-index: 10; }
-            .bar-label { font-size: 10px; transform: rotate(-45deg); margin-top: 15px; white-space: nowrap; height: 40px; }
-            .bar-value { font-size: 11px; font-weight: bold; margin-bottom: 5px; }
-            @media print { .no-print { display: none; } }
+body { font-family: sans-serif; padding: 30px; }
+    h1, h3 { text-align: center; }
+    
+    /* Tabellen: Lås første kolonne til 150px */
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
+    th, td { border: 1px solid #333; padding: 8px; text-align: center; overflow: hidden; }
+    th:first-child, td:first-child { width: 150px; text-align: left; }
+
+    /* Diagrammet: Matcher tabellens layout */
+    .chart-container { 
+        display: flex; 
+        height: 250px; 
+        align-items: flex-end; 
+        justify-content: flex-start; /* Endret fra space-around */
+        border-bottom: 2px solid #333; 
+        padding-top: 30px; 
+        margin-bottom: 50px; 
+    }
+    
+    /* Hver søyle-wrapper må ha nøyaktig samme bredde som tabell-kolonnene */
+    .bar-wrapper { 
+        flex: 1; /* Dette gjør at de fordeler seg likt som kolonnene */
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        height: 100%; 
+        position: relative; 
+    }
+    
+    .bar-track { background: #eee; width: 35px; height: 100%; position: relative; display: flex; flex-direction: column-reverse; border: 1px solid #ccc; }
+    .bar-fill { background: #3498db; width: 100%; }
+    .total-fill { background: #2ecc71; }
+    .target-line { position: absolute; left: -10px; right: -10px; border-top: 2px dashed red; z-index: 10; }
+    .bar-label { font-size: 10px; transform: rotate(-45deg); margin-top: 15px; white-space: nowrap; height: 40px; }
+    .bar-value { font-size: 11px; font-weight: bold; margin-bottom: 5px; }
+    
+    @media print { .no-print { display: none; } }
         </style></head>
         <body>
             <div class="no-print" style="margin-bottom: 20px; text-align:center;">
