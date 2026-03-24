@@ -15,6 +15,7 @@ const auth = firebase.auth();
 const db = firebase.database();
 
 let lagredeResultater = {};
+let elevRegister = {}; // <--- LEGG TIL DENNE
 let valgtElevId = "";
 let myChart = null; 
 
@@ -31,7 +32,9 @@ auth.onAuthStateChanged(user => {
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
         document.getElementById('userInfo').innerText = user.displayName;
-        hentData(); 
+
+        hentRegister(); // <--- LEGG TIL DENNE (Henter elevnavn)
+        hentData();     // <--- Denne har du fra før (Henter poeng
     } else {
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('mainContent').style.display = 'none';
@@ -137,6 +140,18 @@ function hentData() {
     db.ref(sti).on('value', snapshot => {
         lagredeResultater = snapshot.val() || {};
         tegnTabell();
+    });
+}
+
+// --- NY FUNKSJON: Henter selve elevlista fra Firebase ---
+function hentRegister() {
+    db.ref('elevRegister').on('value', snapshot => {
+        elevRegister = snapshot.val() || {};
+        console.log("Elevregister lastet inn:", Object.keys(elevRegister).length, "elever.");
+        
+        // Vi oppdaterer tabellen og dropdown-lista når registeret er mottatt
+        tegnTabell();
+        oppdaterElevListe();
     });
 }
 
