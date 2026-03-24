@@ -1293,6 +1293,25 @@ function leggTilNyElev() {
 }
 
 
+// Denne funksjonen må kjøre når siden starter
+function startLyttere() {
+    // 1. Lytt på elevregisteret (Skolekatalogen)
+    db.ref('elevRegister').on('value', snapshot => {
+        const data = snapshot.val();
+        if (data) {
+            elevRegister = data; 
+            console.log("Elevregister oppdatert fra Firebase");
+            tegnTabell(); // Tegner tabellen på nytt med de faktiske dataene
+        }
+    });
+
+    // 2. Lytt på lagrede resultater (Poengene)
+    // Sørg for at du har en lignende lytter for 'kartlegging' her hvis du ikke har det fra før
+}
+
+// KJØR DENNE MED EN GANG
+startLyttere();
+
 
 function slettElev(navn) {
     if (confirm(`Vil du slette ${navn} fra denne prøven?`)) {
