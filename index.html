@@ -402,16 +402,16 @@ tr:hover { background-color: #f1f1f1; }
 
 <div class="action-bar no-print">
     <button class="btn btn-print" onclick="forberedPrint()">
-        <span class="btn-icon">🖨️</span> Skriv ut / PDF
+        <span class="btn-icon">🖨️</span> Skriv ut
     </button>
     <button class="btn btn-analyse" onclick="genererKlasseAnalyse()">
         <span class="btn-icon">📊</span> Analyse
     </button>
     <button class="btn btn-excel" onclick="eksporter()">
-        <span class="btn-icon">📤</span> Eksport til Excel
+        <span class="btn-icon">📤</span> Eksport
     </button>
     <button class="btn btn-hent" onclick="document.getElementById('excelInput').click()">
-        <span class="btn-icon">📥</span> Import fra Excel
+        <span class="btn-icon">📥</span> Import
     </button>
     
     <input type="file" id="excelInput" style="display:none" accept=".xlsx, .xls, .csv" onchange="handterExcelFil(this)">
