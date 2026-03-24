@@ -1260,7 +1260,13 @@ function leggTilNyElev() {
 
         // Lagre til både elevRegister (lokalt) og Firebase
         db.ref(`elevRegister/${fulltNavn}`).set(registerData).then(() => {
-            
+
+            // --- NY: Oppdater den lokale variabelen manuelt her ---
+            // Dette sikrer at tegnTabell() "ser" eleven med en gang
+            if (typeof elevRegister !== 'undefined') {
+                elevRegister[fulltNavn] = registerData;
+            }
+
             // 2. LAGRE TOMT RESULTAT-OBJEKT (Selve kartleggings-dataen)
             const sti = `kartlegging/${vAar}/${document.getElementById('mFag').value}/${document.getElementById('mPeriode').value}/${vTrinn}/${vKlasse}/${fulltNavn}`;
             
