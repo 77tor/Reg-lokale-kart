@@ -485,9 +485,12 @@ async function kjorAdminRapport(type) {
     const fag = document.getElementById('adminFag').value;
     const periode = document.getElementById('adminPeriode').value;
     
-    // 1. FINN MAL-ÅRET (Hvis valgt år ikke finnes i oppsett.js, bruk 2025-2026)
-    const aarIMal = oppgaveStruktur[aar] ? aar : "2025-2026";
+    if (!aar || !fag || !periode) {
+        alert("Vennligst velg år, fag og periode i menyen.");
+        return;
+    }
 
+    const aarIMal = oppgaveStruktur[aar] ? aar : "2025-2026";
     let samletInnhold = `<h1 style="text-align:center;">${type === 'kritisk' ? 'Kritisk-liste' : 'Årsrapport'} - ${fag} (${aar})</h1>`;
     
     const klasser = ["A", "B", "C", "D"];
@@ -501,7 +504,6 @@ async function kjorAdminRapport(type) {
                              ? oppgaveStruktur[aarIMal][fag][periode][trinn] 
                              : null;
             
-            // Viktig sjekk: Har oppsettet oppgaver?
             if (!oppsett || !oppsett.oppgaver) continue;
 
             const snapshot = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}`).once('value');
@@ -527,22 +529,21 @@ async function kjorAdminRapport(type) {
                 const e = elevRegister[navn];
                 const cTrinn = parseInt(e.startTrinn) + (vStartAar - parseInt(e.startAar));
                 
-// --- LEGG TIL DENNE LINJEN FOR Å SE FEILEN I KONSOLLEN (F12) ---
-    console.log(`Sjekker ${navn}: Elevens trinn er ${cTrinn}, du ser på trinn ${vTrinn}. Klasse: ${e.startKlasse} vs ${vKlasse}`);
-
                 if (cTrinn === parseInt(trinn) && e.startKlasse === klasse) {
                     const d = data[navn] || {};
                     if (d.slettet === true) return;
 
-                    const erKritisk = d && d.sum <= oppsett.grenseTotal;
+                    const sumVerdi = d.sum || 0;
+                    const erKritisk = sumVerdi <= oppsett.grenseTotal;
+                    
                     if (type === 'kritisk' && (!d.sum || !erKritisk || d.ikkeGjennomfort)) return;
 
                     antallEleverVist++;
                     tabellHtml += `<tr><td><b>${navn}</b></td>`;
 
                     if (d.ikkeGjennomfort === true) {
-                        const colSpan = oppsett.oppgaver.length + 1;
-                        tabellHtml += `<td colspan="${colSpan}" align="center" style="color:red; font-style:italic;">Ikke gjennomført</td>`;
+                        const colSpanTotal = oppsett.oppgaver.length + 1;
+                        tabellHtml += `<td colspan="${colSpanTotal}" align="center" style="color:red; font-style:italic;">Ikke gjennomført</td>`;
                     } else if (d.oppgaver) {
                         antallMedData++;
                         oppsett.oppgaver.forEach((o, i) => {
@@ -551,8 +552,8 @@ async function kjorAdminRapport(type) {
                             const bakgrunn = (o.grense !== -1 && poeng <= o.grense) ? 'background-color:#ffcccc' : '';
                             tabellHtml += `<td align="center" style="${bakgrunn}">${poeng}</td>`;
                         });
-                        totalSumKlasse += d.sum;
-                        tabellHtml += `<td align="center" style="${erKritisk ? 'background-color:#ffcccc; font-weight:bold;' : ''}">${d.sum}</td>`;
+                        totalSumKlasse += sumVerdi;
+                        tabellHtml += `<td align="center" style="${erKritisk ? 'background-color:#ffcccc; font-weight:bold;' : ''}">${sumVerdi}</td>`;
                     } else {
                         oppsett.oppgaver.forEach(() => tabellHtml += `<td align="center">-</td>`);
                         tabellHtml += `<td align="center">-</td>`;
@@ -573,11 +574,15 @@ async function kjorAdminRapport(type) {
                 tabellHtml += `</tbody></table></div>`;
                 samletInnhold += tabellHtml;
             }
-        } // Slutt på klasse-loop
-    } // Slutt på trinn-loop
+        }
+    }
 
-    // --- UTSKRIFT ---
     const printVindu = window.open('', '_blank');
+    if (!printVindu) {
+        alert("Pop-up blokkert! Vennligst tillat pop-ups for å se rapporten.");
+        return;
+    }
+
     printVindu.document.write(`
         <html>
             <head>
@@ -587,7 +592,6 @@ async function kjorAdminRapport(type) {
                     table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top:10px; }
                     th, td { border: 1px solid black; padding: 4px; }
                     .page-break { page-break-after: always; }
-                    @media print { .page-break { page-break-after: always; } }
                 </style>
             </head>
             <body>${samletInnhold}</body>
@@ -597,8 +601,7 @@ async function kjorAdminRapport(type) {
     
     setTimeout(() => {
         printVindu.print();
-        printVindu.close();
-    }, 750);
+    }, 1000);
 }
 
 // --- SAMMENLIGNING I ADMIN-FUNKSJONER (Oppdatert for 2026+) ---
