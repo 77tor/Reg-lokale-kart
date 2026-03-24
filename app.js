@@ -146,10 +146,15 @@ function hentData() {
 // --- NY FUNKSJON: Henter selve elevlista fra Firebase ---
 function hentRegister() {
     db.ref('elevRegister').on('value', snapshot => {
-        elevRegister = snapshot.val() || {};
-        console.log("Elevregister lastet inn:", Object.keys(elevRegister).length, "elever.");
+        const firebaseData = snapshot.val() || {};
         
-        // Vi oppdaterer tabellen og dropdown-lista når registeret er mottatt
+        // --- SMART MERGING ---
+        // Vi beholder det som er i fila (elever.js), 
+        // og legger til/overskriver med det som er i Firebase.
+        elevRegister = Object.assign({}, elevRegister, firebaseData);
+        
+        console.log("Register oppdatert. Totalt antall elever:", Object.keys(elevRegister).length);
+        
         tegnTabell();
         oppdaterElevListe();
     });
