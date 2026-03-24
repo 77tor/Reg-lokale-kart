@@ -1223,38 +1223,69 @@ async function genererFullElevrapport(navn) {
     }
 } 
 
+
 function leggTilNyElev() {
     const etternavn = document.getElementById('nyttEtternavn').value.trim();
     const fornavn = document.getElementById('nyttFornavn').value.trim();
 
-    if (!etternavn || !fornavn) {
-        alert("Vennligst skriv inn både fornavn og etternavn.");
+    // Henter de gjeldende valgene fra nedtrekksmenyene
+    const vAar = document.getElementById('mAar').value; // f.eks "2026-2027"
+    const vTrinn = document.getElementById('mTrinn').value; // f.eks "3"
+    const vKlasse = document.getElementById('mKlasse').value; // f.eks "A"
+
+    if (!etternavn || !fornavn || !vAar || !vTrinn || !vKlasse) {
+        alert("Vennligst fyll ut navn og sørg for at År, Trinn og Klasse er valgt i menyen.");
         return;
     }
 
-    // Formaterer navnet slik: "NORDMANN Ola"
     const fulltNavn = `${etternavn.toUpperCase()} ${fornavn.charAt(0).toUpperCase() + fornavn.slice(1)}`;
+    const valgtStartAar = parseInt(vAar.split('-')[0]);
 
-    // Lager et tomt objekt for eleven i Firebase (slik at de dukker opp i listen)
-    // Vi setter "oppgaver" til en tom liste for å starte
-    const sti = hentSti(fulltNavn);
-    
-    if (confirm(`Vil du legge til ${fulltNavn} i denne klassen?`)) {
-        db.ref(sti).set({
-            oppgaver: [],
-            sum: 0,
-            dato: new Date().toISOString()
+    if (confirm(`Vil du legge til ${fulltNavn} i ${vTrinn}${vKlasse} for skoleåret ${vAar}?`)) {
+        
+        // 1. OPPDATER ELEVREGISTERET (Slik at de dukker opp i listen)
+        // Vi beregner hva elevens "Start-trinn" må være for at de skal havne på valgt trinn i valgt år.
+        // Hvis vi legger til en elev i 3. trinn i 2026, lagrer vi dem som om de startet i 1. trinn i 2024.
+        const startTrinnForRegister = parseInt(vTrinn); 
+        const startAarForRegister = valgtStartAar;
+
+        const registerData = {
+            startAar: startAarForRegister,
+            startTrinn: startTrinnForRegister,
+            startKlasse: vKlasse
+        };
+
+        // Lagre til både elevRegister (lokalt) og Firebase
+        db.ref(`elevRegister/${fulltNavn}`).set(registerData).then(() => {
+            
+            // 2. LAGRE TOMT RESULTAT-OBJEKT (Selve kartleggings-dataen)
+            const sti = `kartlegging/${vAar}/${document.getElementById('mFag').value}/${document.getElementById('mPeriode').value}/${vTrinn}/${vKlasse}/${fulltNavn}`;
+            
+            return db.ref(sti).set({
+                oppgaver: [],
+                sum: 0,
+                dato: new Date().toISOString()
+            });
+
         }).then(() => {
-            // Tømmer feltene etter lagring
+            alert(`${fulltNavn} er lagt til i registeret og klasselisten.`);
             document.getElementById('nyttEtternavn').value = "";
             document.getElementById('nyttFornavn').value = "";
-            alert(`${fulltNavn} er lagt til.`);
+            
+            // Tving en oppdatering av tabellen
+            if (typeof hentElevRegister === "function") {
+                hentElevRegister(); // Hent registeret på nytt fra Firebase
+            } else {
+                tegnTabell(); 
+            }
         }).catch(error => {
             console.error("Feil ved lagring:", error);
-            alert("Kunne ikke legge til elev. Sjekk konsollen for feil.");
+            alert("Noe gikk galt. Se konsollen.");
         });
     }
 }
+
+
 
 function slettElev(navn) {
     if (confirm(`Vil du slette ${navn} fra denne prøven?`)) {
