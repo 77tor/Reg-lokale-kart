@@ -105,8 +105,16 @@ tr:hover { background-color: #f1f1f1; }
     color: white;
 }
 
+/* GJØR IKONENE STØRRE */
+.btn-icon {
+    font-size: 1.5em; /* Dette gjør emojien 50% større enn teksten */
+    line-height: 1;   /* Hindrer at ikonet dytter på knappens høyde */
+}
+
+/* Hover-effekt for litt liv */
 .action-bar .btn:hover {
-    opacity: 0.8; /* Gir en liten effekt når man holder over */
+    filter: brightness(1.1);
+    transform: translateY(-1px);
 }
 
 /* FARGER FOR HVER ENKELT KNAPP */
@@ -392,17 +400,24 @@ tr:hover { background-color: #f1f1f1; }
     </div>
     </div>
 
-
 <div class="action-bar no-print">
-    <button class="btn btn-print" onclick="forberedPrint()">🖨️ Skriv ut / PDF</button>
-    <button class="btn btn-analyse" onclick="genererKlasseAnalyse()">📊 Analyse</button>
-    <button class="btn btn-excel" onclick="eksporter()">📤 Eksport til Excel</button>
-    <button class="btn btn-hent" onclick="document.getElementById('excelInput').click()">📥 Import fra Excel</button>
+    <button class="btn btn-print" onclick="forberedPrint()">
+        <span class="btn-icon">🖨️</span> Skriv ut / PDF
+    </button>
+    <button class="btn btn-analyse" onclick="genererKlasseAnalyse()">
+        <span class="btn-icon">📊</span> Analyse
+    </button>
+    <button class="btn btn-excel" onclick="eksporter()">
+        <span class="btn-icon">📤</span> Eksport til Excel
+    </button>
+    <button class="btn btn-hent" onclick="document.getElementById('excelInput').click()">
+        <span class="btn-icon">📥</span> Import fra Excel
+    </button>
     
     <input type="file" id="excelInput" style="display:none" accept=".xlsx, .xls, .csv" onchange="handterExcelFil(this)">
-
     <span id="dynamiskOverskrift"></span>
 </div>
+
 
 <div id="modalMapping" class="modal" style="display:none; z-index:2000;">
     <div class="modal-content" style="width: 600px; max-width: 95%;">
