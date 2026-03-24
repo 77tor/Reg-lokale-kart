@@ -65,15 +65,21 @@ tr:hover { background-color: #f1f1f1; }
 
 /* Stil for teksten som vises når tabellen er låst */
 .ferdigstilt-merkelapp {
-    color: #7f8c8d;
-    font-style: italic;
+    display: none;
+    color: #2c3e50;
     font-weight: bold;
-    display: none; /* Skjult som standard */
+    background: #ecf0f1;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid #bdc3c7;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
 }
 
 /* Når tabellen er i "låst modus", viser vi merkelappen */
 .is-locked .ferdigstilt-merkelapp {
-    display: inline;
+    display: inline-block; /* Endret fra inline til inline-block */
+    margin: 2px;
 }
 
 /* Når tabellen er i "låst modus", skjuler vi alle knapper inni tabell-cellene */
