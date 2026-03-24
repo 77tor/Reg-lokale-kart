@@ -1315,12 +1315,16 @@ startLyttere();
 
 function slettElev(navn) {
     if (confirm(`Vil du slette ${navn} fra denne prøven?`)) {
-        db.ref(hentSti(navn)).update({ slettet: true });
+        db.ref(hentSti(navn)).update({ slettet: true }).then(() => {
+            tegnTabell(); // Tvinger tabellen til å tegne på nytt
+        });
     }
 }
 
 function gjenopprettElev(navn) {
-    db.ref(hentSti(navn)).update({ slettet: false });
+    db.ref(hentSti(navn)).update({ slettet: false }).then(() => {
+        tegnTabell(); // Tvinger tabellen til å tegne på nytt
+    });
 }
 
 // NYTT: Global lytter for Enter-tasten inni modalen
