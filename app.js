@@ -168,6 +168,12 @@ function hentRegister() {
 
 // --- TEGN TABELL (Inkludert gjennomsnitt og håndtering av ikke gjennomført) ---
 function tegnTabell() {
+// VAKT: Hvis admin-panelet er åpent, skal vi IKKE røre hovedsiden!
+    const adminPanel = document.getElementById('adminPanel');
+    if (adminPanel && adminPanel.style.display === 'block') {
+        console.log("Blokkerte tegnTabell fordi Admin er åpent.");
+        return; // Avbryter hele funksjonen her
+    }
     const vAar = document.getElementById('mAar').value;
     const vFag = document.getElementById('mFag').value;
     const vPeriode = document.getElementById('mPeriode').value;
