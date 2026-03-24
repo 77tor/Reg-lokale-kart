@@ -1319,22 +1319,25 @@ function leggTilNyElev() {
 
 // Denne funksjonen må kjøre når siden starter
 function startLyttere() {
-    // 1. Lytt på elevregisteret (Skolekatalogen)
+    // 1. Lagre en kopi av de faste elevene fra elever.js med en gang
+    // Vi antar at variabelen fra elever.js heter 'fasteElever' eller lignende.
+    // Hvis den heter 'elevRegister' i fila, gir vi den et midlertidig navn:
+    const initialeElever = typeof elevRegister !== 'undefined' ? {...elevRegister} : {};
+
     db.ref('elevRegister').on('value', snapshot => {
-        const data = snapshot.val();
-        if (data) {
-            elevRegister = data; 
-            console.log("Elevregister oppdatert fra Firebase");
-            tegnTabell(); // Tegner tabellen på nytt med de faktiske dataene
-        }
+        const data = snapshot.val() || {};
+        
+        // 2. SLÅ SAMMEN: Start med fila, legg til Firebase-data
+        // Dette gjør at Firebase-elever vinner hvis navnene er like
+        elevRegister = { ...initialeElever, ...data };
+        
+        console.log("Systemet er klart!");
+        console.log("Elever fra fil + Firebase totalt:", Object.keys(elevRegister).length);
+        
+        // 3. Oppdater tabellen
+        tegnTabell(); 
     });
-
-    // 2. Lytt på lagrede resultater (Poengene)
-    // Sørg for at du har en lignende lytter for 'kartlegging' her hvis du ikke har det fra før
 }
-
-// KJØR DENNE MED EN GANG
-startLyttere();
 
 
 function slettElev(navn) {
