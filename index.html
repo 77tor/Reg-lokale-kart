@@ -90,11 +90,31 @@ tr:hover { background-color: #f1f1f1; }
     min-width: 110px; 
 }
 
-/* ANDRE KNAPPER */
-.btn-excel { background: #1f7244; color: white; }
-.btn-print { background: #26A8FF; color: white; }
-.btn-logout { background: #e74c3c; color: white; margin-left: 10px; }
-.btn-fjern { background: #95a5a6; color: white; }
+/* FELLES STIL FOR ALLE KNAPPER I ACTION-BAR */
+.action-bar .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 42px; /* Låser høyden så alle er helt like */
+    transition: opacity 0.2s;
+    color: white;
+}
+
+.action-bar .btn:hover {
+    opacity: 0.8; /* Gir en liten effekt når man holder over */
+}
+
+/* FARGER FOR HVER ENKELT KNAPP */
+.btn-print { background-color: #26A8FF; }
+.btn-analyse { background-color: #8e44ad; } /* Den lilla fargen du ønsket */
+.btn-excel { background-color: #1f7244; }
+.btn-hent { background-color: #4a5568; }
+.btn-logout { background-color: #e74c3c; margin-left: auto; }
 
 /* MODAL */
 .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); }
@@ -373,15 +393,15 @@ tr:hover { background-color: #f1f1f1; }
     </div>
 
 
-<div class="action-bar no-print" style="display: flex; gap: 10px; align-items: center;">
+<div class="action-bar no-print">
     <button class="btn btn-print" onclick="forberedPrint()">🖨️ Skriv ut / PDF</button>
     <button class="btn btn-analyse" onclick="genererKlasseAnalyse()">📊 Analyse</button>
     <button class="btn btn-excel" onclick="eksporter()">📤 Eksport til Excel</button>
-    <button class="btn btn-hent" onclick="document.getElementById('excelInput').click()" style="background-color: #4a5568;">📥 Import fra Excel</button>
+    <button class="btn btn-hent" onclick="document.getElementById('excelInput').click()">📥 Import fra Excel</button>
     
     <input type="file" id="excelInput" style="display:none" accept=".xlsx, .xls, .csv" onchange="handterExcelFil(this)">
 
-    <span id="dynamiskOverskrift" style="margin-left: 20px; font-weight: bold; font-size: 1.1em; align-self: center; color: #2c3e50;"></span>
+    <span id="dynamiskOverskrift"></span>
 </div>
 
 <div id="modalMapping" class="modal" style="display:none; z-index:2000;">
