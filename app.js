@@ -16,7 +16,6 @@ const db = firebase.database();
 
 // --- GLOBALE VARIABLER ---
 let lagredeResultater = {};
-let elevRegister = {}; // <--- LEGG TIL DENNE
 let valgtElevId = "";
 let myChart = null; 
 

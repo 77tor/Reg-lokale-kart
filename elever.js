@@ -1,4 +1,4 @@
-const elevRegister = {
+let elevRegister = {
     // 1. TRINN (Startet 2025)
     "Albert, William Denstad": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
     "Barria, Cristiano": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
