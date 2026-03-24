@@ -435,42 +435,41 @@ function sjekkAdminKode() {
 
 
 function lukkAdmin() {
-    // 1. Skjul selve admin-panelene og grafen
+    // 1. Skjul admin-panelene og grafen
     document.getElementById('adminPanel').style.display = 'none';
     if (document.getElementById('chartContainer')) {
         document.getElementById('chartContainer').style.display = 'none';
     }
     
-    // 2. Vis det vanlige innholdet (containeren), men tøm tabellen
+    // 2. Sørg for at registreringsskjemaet er synlig, men i "start-modus"
     document.getElementById('skjemaInnhold').style.display = 'block';
     
-    // 3. SKJUL elementer (Siden alt er nullstilt, skal disse være borte)
-    if (document.getElementById('nyElevSeksjon')) {
-        document.getElementById('nyElevSeksjon').style.display = 'none'; // Endret til none
-    }
-    const actionBar = document.querySelector('.action-bar');
-    if (actionBar) {
-        actionBar.style.display = 'none'; // Skjules til valg er tatt
-    }
-
-    // 4. NULLSTILLING: Tøm tabell og sett tekst
+    // 3. Nullstill tabellen og menyer (slik du hadde det)
     document.getElementById('tHead').innerHTML = "";
-    document.getElementById('tBody').innerHTML = "<tr><td>Velg alle kriterier...</td></tr>";
+    document.getElementById('tBody').innerHTML = "<tr><td colspan='100%'>Velg alle kriterier...</td></tr>";
 
-    // 5. NULLSTILLING: Sett alle menyer tilbake til start
     const filtere = ['mAar', 'mFag', 'mPeriode', 'mTrinn', 'mKlasse'];
     filtere.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.selectedIndex = 0; 
     });
 
-    // Sett overskriften tilbake til standard instruksjon
-    oppdaterOverskrifter("Velg kriterier for å vise kartlegging");
+    if (document.getElementById('nyElevSeksjon')) {
+        document.getElementById('nyElevSeksjon').style.display = 'none';
+    }
     
-    // Koble fra Firebase-lytting
+    const actionBar = document.querySelector('.action-bar');
+    if (actionBar) {
+        actionBar.style.display = 'none';
+    }
+
+    // 4. VIKTIG ENDRING: 
+    // I stedet for å bare skru AV alt med .off(), 
+    // bør vi heller starte lytteren på nytt så appen er klar for bruk!
     db.ref().off(); 
+    startLyttere(); // Denne sørger for at elevRegisteret bygges opp på nytt med en gang
     
-    console.log("Admin lukket. Systemet er nullstilt og klart for nye valg.");
+    console.log("Admin lukket og systemet er klart for nye valg.");
 }
 
 
@@ -1432,31 +1431,29 @@ function filtrerSletteliste() {
 
 // Selve slettehandlingen
 async function bekreftTotalSletting(navn) {
-    const bekreft = confirm(`ER DU HELT SIKKER? \n\nDette sletter ${navn} permanent fra elevregisteret i databasen. Dette kan ikke angres.`);
+    const bekreft = confirm(`Vil du slette ${navn} permanent fra databasen?`);
     
     if (bekreft) {
         try {
-            // 1. Fjern fra Firebase (Registeret)
+            // 1. Fjern fra Firebase
             await db.ref(`elevRegister/${navn}`).remove();
             
-            // 2. Oppdater lokal variabel (hvis den finnes der)
-            if (typeof elevRegister !== 'undefined') {
+            // 2. Fjern fra lokal kopi (så den ikke dukker opp igjen før Refresh)
+            if (typeof elevRegister !== 'undefined' && elevRegister[navn]) {
                 delete elevRegister[navn];
             }
             
-            alert(`${navn} er slettet fra registeret.`);
+            alert(`${navn} er slettet.`);
             
-            // 3. Oppdater visningen
-            aapneSlettElevModal(); // Tegner slettelista på nytt
-            tegnTabell();          // Oppdaterer hovedoversikten
+            // 3. Oppdater KUN slettelista (ikke hovedtabellen ennå)
+            aapneSlettElevModal(); 
             
         } catch (error) {
             console.error("Sletting feilet:", error);
-            alert("Kunne ikke slette eleven. Sjekk konsollen.");
+            alert("Kunne ikke slette.");
         }
     }
 }
-
 
 function eksporter() {
     const oppsett = hentOppsett();
