@@ -614,14 +614,17 @@ win.document.write(`
         <div class="no-print" style="margin-bottom: 20px; text-align:center; background:#eee; padding:15px; border-radius:8px;">
             <button onclick="window.print()" style="padding: 12px 25px; background: #2980b9; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:14px;">Skriv ut / Lagre PDF</button>
             <button onclick="window.close()" style="padding: 12px 25px; background: #95a5a6; color:white; border:none; border-radius:4px; cursor:pointer; margin-left: 15px; font-weight:bold; font-size:14px;">Avbryt</button>
-        </div>
-
-        ${html}
-
-    </body>
-    </html>
-`);
-win.document.close();
+</div>
+                ${html}
+            </body>
+            </html>
+        `);
+        win.document.close();
+    } catch (error) {
+        console.error("Feil i analysegenerering:", error);
+        alert("Det oppstod en teknisk feil: " + error.message);
+    }
+}
 
 
 // --- 6. ADMIN-FUNKSJONER ---
