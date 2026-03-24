@@ -1379,30 +1379,41 @@ document.addEventListener('keydown', function(e) {
 });
 
 
-// Åpner vinduet og bygger listen
+// SLETTE ELEVER I ADMIN
 function aapneSlettElevModal() {
     const container = document.getElementById('sletteListeContainer');
-    container.innerHTML = "";
+    container.innerHTML = '<p style="padding:10px; color:#666;">Henter elever fra database...</p>';
     document.getElementById('slettElevSok').value = "";
     
-    // Henter alle unike navn fra det sammenslåtte registeret
-    Object.keys(elevRegister).sort().forEach(navn => {
-        const div = document.createElement('div');
-        div.className = "slette-valg-rad";
-        div.style.display = "flex";
-        div.style.justifyContent = "space-between";
-        div.style.alignItems = "center";
-        div.style.padding = "10px";
-        div.style.borderBottom = "1px solid #eee";
+    // Vi henter data DIREKTE fra Firebase-referansen, 
+    // ikke fra den sammenslåtte 'elevRegister'-variabelen.
+    db.ref('elevRegister').once('value', snapshot => {
+        const firebaseData = snapshot.val();
+        container.innerHTML = ""; // Tømmer "Henter..." teksten
         
-        div.innerHTML = `
-            <span>${navn}</span>
-            <button onclick="bekreftTotalSletting('${navn}')" 
-                    style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">
-                Slett elev
-            </button>
-        `;
-        container.appendChild(div);
+        if (!firebaseData) {
+            container.innerHTML = '<p style="padding:10px;">Ingen manuelt lagt til elever i databasen.</p>';
+            return;
+        }
+
+        Object.keys(firebaseData).sort().forEach(navn => {
+            const div = document.createElement('div');
+            div.className = "slette-valg-rad";
+            div.style.display = "flex";
+            div.style.justifyContent = "space-between";
+            div.style.alignItems = "center";
+            div.style.padding = "10px";
+            div.style.borderBottom = "1px solid #eee";
+            
+            div.innerHTML = `
+                <span>${navn} <small style="color:blue;">(Firebase)</small></span>
+                <button onclick="bekreftTotalSletting('${navn}')" 
+                        style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">
+                    Slett permanent
+                </button>
+            `;
+            container.appendChild(div);
+        });
     });
     
     document.getElementById('modalSlettElev').style.display = 'block';
