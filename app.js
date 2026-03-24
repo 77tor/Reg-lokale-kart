@@ -14,6 +14,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
+// --- GLOBALE VARIABLER ---
 let lagredeResultater = {};
 let elevRegister = {}; // <--- LEGG TIL DENNE
 let valgtElevId = "";
