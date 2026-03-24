@@ -224,20 +224,18 @@ function tegnTabell() {
                 rad += `<td class="not-registered">-</td>`;
             }
 
-           // --- HANDLING-KNAPPER (no-print) ---
+// --- HANDLING-KNAPPER (no-print) ---
             rad += `<td class="no-print">`;
             
             if (erSlettet) {
-                // Hvis eleven er slettet, vis bare "Hent tilbake"-knappen
+                // Her legger vi til den nye "Fjern helt"-knappen ved siden av "Hent"
                 rad += `<button class="btn btn-hent" onclick="gjenopprettElev('${navn}')">Hent</button>`;
+                rad += `<button class="btn btn-slett" style="margin-left:5px; background-color:#e53e3e;" onclick="fjernDataPermanent('${navn}')">Fjern helt</button>`;
             } else {
-                // Sjekk om eleven har registrert data (poeng eller 'ikke gjennomført')
                 if (d.oppgaver || erIkkeGjennomfort) {
-                    // Hvis registrert: Vis "Endre" og "Nullstill"
                     rad += `<button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button> `;
                     rad += `<button class="btn btn-nullstill" style="margin-left:5px;" onclick="nullstillElev('${navn}')">Nullstill</button>`;
                 } else {
-                    // Hvis IKKE registrert: Vis "Registrer" og "Slett"
                     rad += `<button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button> `;
                     rad += `<button class="btn btn-slett" style="margin-left:5px;" onclick="slettElev('${navn}')">Slett</button>`;
                 }
@@ -275,6 +273,39 @@ function nullstillElev(navn) {
         })
         .catch(error => {
             console.error("Feil ved nullstilling:", error);
+        });
+    }
+}
+
+
+function fjernDataPermanent(navn) {
+    const vAar = document.getElementById('mAar').value;
+    const vFag = document.getElementById('mFag').value;
+    const vPeriode = document.getElementById('mPeriode').value;
+    const vTrinn = document.getElementById('mTrinn').value;
+    const vKlasse = document.getElementById('mKlasse').value;
+
+    const bekreft = confirm(`Dette vil fjerne alle lagrede poeng for ${navn} fra akkurat denne prøven (${vFag} ${vPeriode}).\n\nEleven vil fortsatt stå i klasselisten med "-", men all data for denne spesifikke prøven blir slettet permanent. Er du sikker?`);
+
+    if (bekreft) {
+        // Vi bygger stien nøyaktig til der elevens data for denne prøven ligger
+        const sti = `kartlegging/${vAar}/${vFag}/${vPeriode}/${vTrinn}/${vKlasse}/${navn}`;
+        
+        db.ref(sti).remove()
+        .then(() => {
+            console.log("Data fjernet permanent for denne prøven");
+            
+            // Vi må også fjerne den fra den lokale "lagredeResultater" så den ikke tegnes på nytt med en gang
+            if (lagredeResultater[navn]) {
+                delete lagredeResultater[navn];
+            }
+            
+            // Oppdaterer tabellen slik at eleven vises som vanlig uregistrert elev (med -)
+            tegnTabell(); 
+        })
+        .catch(error => {
+            console.error("Feil ved fjerning:", error);
+            alert("Noe gikk galt under fjerning.");
         });
     }
 }
