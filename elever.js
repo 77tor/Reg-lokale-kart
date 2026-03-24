@@ -1,5 +1,11 @@
 let elevRegister = {
-    // 1. TRINN (Startet 2025)
+   
+ // 1. TRINN (Startet 2026)
+"Tester, Testesen": { startTrinn: 1, startKlasse: 'A', startAar: 2026 },
+
+
+
+ // 1. TRINN (Startet 2025)
     "Albert, William Denstad": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
     "Barria, Cristiano": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
     "Fossheim, Ellie Synnøve Helland": { startTrinn: 1, startKlasse: 'A', startAar: 2025 },
