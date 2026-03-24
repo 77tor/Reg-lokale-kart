@@ -503,79 +503,125 @@ async function genererKlasseAnalyse() {
         html += `<td><b>${totalKlasseSnittProsent.toFixed(0)}%</b></td></tr>
     </tbody></table>`;
 
-    // --- ELEVER UNDER KRITISK GRENSE ---
-    html += `<h3 style="color:red; margin-top:30px;">Elever under kritisk grense (Sum ≤ ${oppsett.grenseTotal})</h3>`;
+
+// --- ELEVER UNDER KRITISK GRENSE (Nå med sideskift) ---
+    html += `<div class="page-break-before">`; // Start på ny side
+    html += `<h3 style="color:red; margin-top:30px; text-align:center;">Elever under kritisk grense (Sum ≤ ${oppsett.grenseTotal})</h3>`;
+    
     if (kritiskeElever.length > 0) {
-        html += `<table><thead><tr><th>Navn</th>`;
+        html += `<table>
+                    <thead>
+                        <tr>
+                            <th align="left">Navn</th>`;
+        
+        // Overskrifter for oppgavene
         oppsett.oppgaver.forEach(o => html += `<th>${o.navn}</th>`);
-        html += `<th>Sum</th></tr></thead><tbody>`;
+        html += `           <th>Sum</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+        
+        // Sorterer slik at de med lavest poengsum kommer øverst
         kritiskeElever.sort((a,b) => a.sum - b.sum).forEach(e => {
-            html += `<tr><td>${e.navn}</td>`;
+            html += `<tr><td align="left"><b>${e.navn}</b></td>`;
+            
             e.oppgaver.forEach((p, i) => {
                 const o = oppsett.oppgaver[i];
+                // Markerer enkeltoppgaver i rødt hvis de er under grensen for den spesifikke oppgaven
                 const stil = (o.grense !== -1 && p <= o.grense) ? 'style="background:#ffcccc"' : '';
                 html += `<td align="center" ${stil}>${p}</td>`;
             });
+            
+            // Totalsummen er alltid rød i denne tabellen (siden de er i denne listen)
             html += `<td align="center" style="background:#ffcccc; font-weight:bold;">${e.sum}</td></tr>`;
         });
+        
         html += `</tbody></table>`;
     } else {
-        html += `<p>Ingen elever ligger under den kritiske totalgrensen.</p>`;
+        html += `<p style="text-align:center;">Ingen elever ligger under den kritiske totalgrensen.</p>`;
     }
+    
+    html += `</div>`; // Slutt på page-break-seksjonen
 
-    // --- ÅPNE VINDU OG SKRIV UT ---
-    const win = window.open('', '_blank');
-    win.document.write(`
-        <html><head><title>Analyse ${trinn}${klasse}</title>
+// --- ÅPNE VINDU OG SKRIV UT ---
+const win = window.open('', '_blank');
+win.document.write(`
+    <html>
+    <head>
+        <title>Analyse ${trinn}${klasse}</title>
         <style>
-body { font-family: sans-serif; padding: 30px; }
-    h1, h3 { text-align: center; }
-    
-    /* Tabellen: Lås første kolonne til 150px */
-    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; }
-    th, td { border: 1px solid #333; padding: 8px; text-align: center; overflow: hidden; }
-    th:first-child, td:first-child { width: 150px; text-align: left; }
+            /* Generell layout */
+            body { font-family: sans-serif; padding: 30px; color: #333; }
+            h1, h3 { text-align: center; margin-top: 0; }
+            
+            /* Tabell-oppsett: Låser første kolonne for å matche diagrammet */
+            table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin-bottom: 30px; 
+                table-layout: fixed; 
+                page-break-inside: avoid; /* Unngår at tabellen deles midt i en rad */
+            }
+            th, td { border: 1px solid #333; padding: 8px; text-align: center; overflow: hidden; font-size: 11px; }
+            th { background-color: #f2f2f2; }
+            
+            /* Første kolonne (Navn/Oppgave) matches med diagrammets spacer */
+            th:first-child, td:first-child { width: 150px; text-align: left; font-weight: bold; }
 
-    /* Diagrammet: Matcher tabellens layout */
-    .chart-container { 
-        display: flex; 
-        height: 250px; 
-        align-items: flex-end; 
-        justify-content: flex-start; /* Endret fra space-around */
-        border-bottom: 2px solid #333; 
-        padding-top: 30px; 
-        margin-bottom: 50px; 
-    }
-    
-    /* Hver søyle-wrapper må ha nøyaktig samme bredde som tabell-kolonnene */
-    .bar-wrapper { 
-        flex: 1; /* Dette gjør at de fordeler seg likt som kolonnene */
-        display: flex; 
-        flex-direction: column; 
-        align-items: center; 
-        height: 100%; 
-        position: relative; 
-    }
-    
-    .bar-track { background: #eee; width: 35px; height: 100%; position: relative; display: flex; flex-direction: column-reverse; border: 1px solid #ccc; }
-    .bar-fill { background: #3498db; width: 100%; }
-    .total-fill { background: #2ecc71; }
-    .target-line { position: absolute; left: -10px; right: -10px; border-top: 2px dashed red; z-index: 10; }
-    .bar-label { font-size: 10px; transform: rotate(-45deg); margin-top: 15px; white-space: nowrap; height: 40px; }
-    .bar-value { font-size: 11px; font-weight: bold; margin-bottom: 5px; }
-    
-    @media print { .no-print { display: none; } }
-        </style></head>
-        <body>
-            <div class="no-print" style="margin-bottom: 20px; text-align:center;">
-                <button onclick="window.print()" style="padding: 10px 20px; background: #2980b9; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Skriv ut / Lagre PDF</button>
-                <button onclick="window.close()" style="padding: 10px 20px; background: #95a5a6; color:white; border:none; border-radius:4px; cursor:pointer; margin-left: 10px;">Avbryt</button>
-            </div>
-            ${html}
-        </body></html>
-    `);
-    win.document.close();
-}
+            /* Diagram-oppsett */
+            .chart-container { 
+                display: flex; 
+                height: 250px; 
+                align-items: flex-end; 
+                justify-content: flex-start; 
+                border-bottom: 2px solid #333; 
+                padding-top: 30px; 
+                margin-bottom: 60px; /* God plass til de roterte merkelappene */
+            }
+            
+            /* Søylene fordeles likt som tabellkolonnene */
+            .bar-wrapper { 
+                flex: 1; 
+                display: flex; 
+                flex-direction: column; 
+                align-items: center; 
+                height: 100%; 
+                position: relative; 
+            }
+            
+            .bar-track { background: #eee; width: 35px; height: 100%; position: relative; display: flex; flex-direction: column-reverse; border: 1px solid #ccc; }
+            .bar-fill { background: #3498db; width: 100%; }
+            .total-fill { background: #2ecc71; }
+            .target-line { position: absolute; left: -10px; right: -10px; border-top: 2px dashed red; z-index: 10; }
+            .bar-label { font-size: 10px; transform: rotate(-45deg); margin-top: 15px; white-space: nowrap; height: 40px; }
+            .bar-value { font-size: 11px; font-weight: bold; margin-bottom: 5px; }
+
+            /* Sideskift-logikk */
+            .page-break-before { 
+                page-break-before: always; 
+                margin-top: 50px; 
+            }
+
+            /* Spesifikt for utskrift */
+            @media print { 
+                .no-print { display: none; }
+                body { padding: 0; }
+                .page-break-before { margin-top: 0; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="no-print" style="margin-bottom: 20px; text-align:center; background:#eee; padding:15px; border-radius:8px;">
+            <button onclick="window.print()" style="padding: 12px 25px; background: #2980b9; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:14px;">Skriv ut / Lagre PDF</button>
+            <button onclick="window.close()" style="padding: 12px 25px; background: #95a5a6; color:white; border:none; border-radius:4px; cursor:pointer; margin-left: 15px; font-weight:bold; font-size:14px;">Avbryt</button>
+        </div>
+
+        ${html}
+
+    </body>
+    </html>
+`);
+win.document.close();
 
 
 // --- 6. ADMIN-FUNKSJONER ---
