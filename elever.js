@@ -1,7 +1,7 @@
 let elevRegister = {
    
  // 1. TRINN (Startet 2026)
-"Tester, Testesen": { startTrinn: 1, startKlasse: 'A', startAar: 2026 },
+"Testesen, Tester": { startTrinn: 1, startKlasse: 'A', startAar: 2026 },
 
 
 
