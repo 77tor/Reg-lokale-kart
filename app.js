@@ -1379,6 +1379,74 @@ document.addEventListener('keydown', function(e) {
 });
 
 
+// Åpner vinduet og bygger listen
+function aapneSlettElevModal() {
+    const container = document.getElementById('sletteListeContainer');
+    container.innerHTML = "";
+    document.getElementById('slettElevSok').value = "";
+    
+    // Henter alle unike navn fra det sammenslåtte registeret
+    Object.keys(elevRegister).sort().forEach(navn => {
+        const div = document.createElement('div');
+        div.className = "slette-valg-rad";
+        div.style.display = "flex";
+        div.style.justifyContent = "space-between";
+        div.style.alignItems = "center";
+        div.style.padding = "10px";
+        div.style.borderBottom = "1px solid #eee";
+        
+        div.innerHTML = `
+            <span>${navn}</span>
+            <button onclick="bekreftTotalSletting('${navn}')" 
+                    style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">
+                Slett elev
+            </button>
+        `;
+        container.appendChild(div);
+    });
+    
+    document.getElementById('modalSlettElev').style.display = 'block';
+}
+
+// Søkefunksjon i slettelista
+function filtrerSletteliste() {
+    const sok = document.getElementById('slettElevSok').value.toLowerCase();
+    const rader = document.querySelectorAll('.slette-valg-rad');
+    
+    rader.forEach(rad => {
+        const navn = rad.querySelector('span').innerText.toLowerCase();
+        rad.style.display = navn.includes(sok) ? "flex" : "none";
+    });
+}
+
+// Selve slettehandlingen
+async function bekreftTotalSletting(navn) {
+    const bekreft = confirm(`ER DU HELT SIKKER? \n\nDette sletter ${navn} permanent fra elevregisteret i databasen. Dette kan ikke angres.`);
+    
+    if (bekreft) {
+        try {
+            // 1. Fjern fra Firebase (Registeret)
+            await db.ref(`elevRegister/${navn}`).remove();
+            
+            // 2. Oppdater lokal variabel (hvis den finnes der)
+            if (typeof elevRegister !== 'undefined') {
+                delete elevRegister[navn];
+            }
+            
+            alert(`${navn} er slettet fra registeret.`);
+            
+            // 3. Oppdater visningen
+            aapneSlettElevModal(); // Tegner slettelista på nytt
+            tegnTabell();          // Oppdaterer hovedoversikten
+            
+        } catch (error) {
+            console.error("Sletting feilet:", error);
+            alert("Kunne ikke slette eleven. Sjekk konsollen.");
+        }
+    }
+}
+
+
 function eksporter() {
     const oppsett = hentOppsett();
     if (!oppsett) return alert("Velg alle kriterier først!");
