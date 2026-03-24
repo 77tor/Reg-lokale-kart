@@ -409,7 +409,7 @@ document.addEventListener('change', function(e) {
     }
 });
 
-// --- ANALYSE_DEL ---
+// --- ANALYSE_DEL (Ferdig korrigert med dynamisk maks-beregning) ---
 async function genererKlasseAnalyse() {
     // 1. Hent kriterier fra menyene
     const aar = document.getElementById('mAar').value;
@@ -418,12 +418,12 @@ async function genererKlasseAnalyse() {
     const trinn = document.getElementById('mTrinn').value;
     const klasse = document.getElementById('mKlasse').value;
 
-    // 2. Hent oppsettet (for å vite maks-poeng og kritiske grenser)
+    // 2. Hent oppsettet
     const aarIMal = oppgaveStruktur[aar] ? aar : "2025-2026";
     const oppsett = oppgaveStruktur[aarIMal][fag][periode][trinn];
     if (!oppsett) return alert("Fant ikke oppsett for denne analysen.");
 
-    // 3. Samle data fra Firebase (eller fra den globale variabelen hvis den er oppdatert)
+    // 3. Samle data fra Firebase
     const snapshot = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}`).once('value');
     const data = snapshot.val() || {};
     
@@ -436,20 +436,27 @@ async function genererKlasseAnalyse() {
     let totalSumKlasse = 0;
     let kritiskeElever = [];
 
+    // BEREGNER total makssum ved å legge sammen alle enkeltoppgaver
+    const totalMaksMulig = oppsett.oppgaver.reduce((sum, o) => sum + o.maks, 0);
+
     elever.forEach(navn => {
         const d = data[navn];
-        d.oppgaver.forEach((p, i) => oppgaveSummer[i] += p);
-        totalSumKlasse += d.sum;
+        d.oppgaver.forEach((p, i) => {
+            oppgaveSummer[i] += (p || 0);
+        });
+        totalSumKlasse += (d.sum || 0);
 
         if (d.sum <= oppsett.grenseTotal) {
             kritiskeElever.push({navn: navn, oppgaver: d.oppgaver, sum: d.sum});
         }
     });
 
-    // 5. Bygg innholdet til det nye vinduet
+    const totalKlasseSnittProsent = ((totalSumKlasse / antall) / totalMaksMulig) * 100;
+
+    // 5. Bygg innholdet
     let html = `<h1>Analyse: ${fag} - ${trinn}${klasse} (${periode} ${aar})</h1>`;
     
-    // --- SØYLEDIAGRAM (CSS-basert) ---
+    // --- SØYLEDIAGRAM ---
     html += `<h3>Gjennomsnittlig skår per oppgave (%)</h3><div class="chart-container">`;
     
     oppsett.oppgaver.forEach((o, i) => {
@@ -468,27 +475,32 @@ async function genererKlasseAnalyse() {
             </div>`;
     });
 
-    // Legg til total-sum søyle
-    const totalProsent = ( (totalSumKlasse/antall) / oppsett.maksTotal ) * 100;
-    const totalGrenseProsent = (oppsett.grenseTotal / oppsett.maksTotal) * 100;
+    // TOTAL-SØYLE (Bruker dynamisk beregnede verdier)
+    const totalGrenseProsent = (oppsett.grenseTotal / totalMaksMulig) * 100;
     html += `
         <div class="bar-wrapper total">
-            <div class="bar-value">${totalProsent.toFixed(0)}%</div>
+            <div class="bar-value">${totalKlasseSnittProsent.toFixed(0)}%</div>
             <div class="bar-track">
-                <div class="bar-fill total-fill" style="height: ${totalProsent}%"></div>
+                <div class="bar-fill total-fill" style="height: ${totalKlasseSnittProsent}%"></div>
                 <div class="target-line" style="bottom: ${totalGrenseProsent}%"></div>
             </div>
-            <div class="bar-label">TOTAL</div>
+            <div class="bar-label"><b>TOTAL</b></div>
         </div></div>`;
 
     // --- TABELL OVER PROSENTVIS SKÅR ---
     html += `<h3>Klassens resultater vs Maks-skår</h3><table><thead><tr><th>Oppgave</th>`;
     oppsett.oppgaver.forEach(o => html += `<th>${o.navn}</th>`);
-    html += `<th>TOTAL</th></tr></thead><tbody><tr><td><b>Snitt (poeng)</b></td>`;
-    oppgaveSummer.forEach(s => html += `<td>${(s/antall).toFixed(1)}</td>`);
-    html += `<td><b>${(totalSumKlasse/antall).toFixed(1)}</b></td></tr><tr><td><b>I % av maks</b></td>`;
-    oppgaveSummer.forEach((s, i) => html += `<td>${((s/antall)/oppsett.oppgaver[i].maks*100).toFixed(0)}%</td>`);
-    html += `<td><b>${totalProsent.toFixed(0)}%</b></td></tr></tbody></table>`;
+    html += `<th>TOTAL</th></tr></thead><tbody>
+        <tr><td><b>Maks poeng</b></td>`;
+        oppsett.oppgaver.forEach(o => html += `<td>${o.maks}</td>`);
+        html += `<td><b>${totalMaksMulig}</b></td></tr>
+        <tr><td><b>Snitt (poeng)</b></td>`;
+        oppgaveSummer.forEach(s => html += `<td>${(s/antall).toFixed(1)}</td>`);
+        html += `<td><b>${(totalSumKlasse/antall).toFixed(1)}</b></td></tr>
+        <tr><td><b>I % av maks</b></td>`;
+        oppgaveSummer.forEach((s, i) => html += `<td>${((s/antall)/oppsett.oppgaver[i].maks*100).toFixed(0)}%</td>`);
+        html += `<td><b>${totalKlasseSnittProsent.toFixed(0)}%</b></td></tr>
+    </tbody></table>`;
 
     // --- ELEVER UNDER KRITISK GRENSE ---
     html += `<h3 style="color:red; margin-top:30px;">Elever under kritisk grense (Sum ≤ ${oppsett.grenseTotal})</h3>`;
@@ -520,18 +532,18 @@ async function genererKlasseAnalyse() {
             table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
             th, td { border: 1px solid #333; padding: 8px; text-align: center; }
             .chart-container { display: flex; height: 250px; align-items: flex-end; justify-content: space-around; border-bottom: 2px solid #333; padding-top: 30px; margin-bottom: 50px; }
-            .bar-wrapper { display: flex; flex-direction: column; align-items: center; width: 50px; height: 100%; position: relative; }
-            .bar-track { background: #eee; width: 30px; height: 100%; position: relative; display: flex; flex-direction: column-reverse; }
+            .bar-wrapper { display: flex; flex-direction: column; align-items: center; width: 60px; height: 100%; position: relative; }
+            .bar-track { background: #eee; width: 35px; height: 100%; position: relative; display: flex; flex-direction: column-reverse; border: 1px solid #ccc; }
             .bar-fill { background: #3498db; width: 100%; }
             .total-fill { background: #2ecc71; }
-            .target-line { position: absolute; left: -5px; right: -5px; border-top: 2px dashed red; z-index: 10; }
-            .bar-label { font-size: 10px; transform: rotate(-45deg); margin-top: 10px; white-space: nowrap; }
+            .target-line { position: absolute; left: -8px; right: -8px; border-top: 2px dashed red; z-index: 10; }
+            .bar-label { font-size: 10px; transform: rotate(-45deg); margin-top: 15px; white-space: nowrap; height: 40px; }
             .bar-value { font-size: 11px; font-weight: bold; margin-bottom: 5px; }
             @media print { .no-print { display: none; } }
         </style></head>
         <body>
-            <div class="no-print" style="margin-bottom: 20px;">
-                <button onclick="window.print()" style="padding: 10px 20px; background: #2980b9; color:white; border:none; border-radius:4px; cursor:pointer;">Skriv ut / Lagre PDF</button>
+            <div class="no-print" style="margin-bottom: 20px; text-align:center;">
+                <button onclick="window.print()" style="padding: 10px 20px; background: #2980b9; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Skriv ut / Lagre PDF</button>
                 <button onclick="window.close()" style="padding: 10px 20px; background: #95a5a6; color:white; border:none; border-radius:4px; cursor:pointer; margin-left: 10px;">Avbryt</button>
             </div>
             ${html}
