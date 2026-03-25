@@ -319,76 +319,81 @@ function nullstillElev(navn) {
     }
 }
 
-
 async function toggleFerdigstill() {
+    const tabell = document.getElementById('hovedTabell');
+    const aar = document.getElementById('mAar').value;
+    const fag = document.getElementById('mFag').value;
+    const periode = document.getElementById('mPeriode').value;
+    const trinn = document.getElementById('mTrinn').value;
+    const klasse = document.getElementById('mKlasse').value;
+
+    // Lager en unik sti for denne spesifikke prøven i databasen
+    const statusSti = `status/${aar}/${fag}/${periode}/${trinn}/${klasse}`;
+    
+    // Sjekk om vi skal låse opp eller låse
+    const erLaastNaa = tabell.classList.contains('is-locked');
+    const skalLaase = !erLaastNaa;
+
+    if (skalLaase) {
+        // --- LOGIKK FOR Å LÅSE ---
+        const manglerResultat = Array.from(document.querySelectorAll('#tBody tr')).filter(rad => 
+            rad.querySelector('.not-registered')
+        );
+
+        if (manglerResultat.length > 0) {
+            const valg = confirm(`Det er ${manglerResultat.length} elever uten registrerte resultater.\n\nØnsker du å sette disse som 'Ikke gjennomført' og ferdigstille prøven?`);
+            if (!valg) return;
+
+            for (let rad of manglerResultat) {
+                const elevNavn = rad.cells[0].innerText.trim();
+                await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}/${elevNavn}`).update({
+                    ikkeGjennomfort: true,
+                    sum: 0,
+                    oppgaver: new Array(15).fill(0) // Juster tallet her hvis du har flere oppgaver
+                });
+            }
+            await hentData(); // Oppdater tabellvisningen
+        }
+    }
+
+    // LAGRE STATUS I FIREBASE
+    await db.ref(statusSti).set({ laast: skalLaase });
+    
+    // Oppdater det visuelle (knapper og tekst)
+    oppdaterLaaseVisning(skalLaase);
+}
+
+function oppdaterLaaseVisning(erLaast) {
     const tabell = document.getElementById('hovedTabell');
     const knapp = document.getElementById('btnFerdigstill');
     const tekstElement = document.getElementById('lockText');
     const ikonElement = knapp.querySelector('.btn-icon');
 
-    // Hvis vi skal ÅPNE en låst prøve, gjør vi det bare direkte
-    if (tabell.classList.contains('is-locked')) {
+    if (erLaast) {
+        tabell.classList.add('is-locked');
+        if (tekstElement) tekstElement.innerText = "Gjenåpne prøven";
+        if (ikonElement) ikonElement.innerText = "🔓";
+        knapp.style.backgroundColor = "#27ae60"; // Grønn for gjenåpne
+        
+        // Legg til "Ferdigstilt"-tekst i radene hvis den mangler
+        document.querySelectorAll('#tBody tr').forEach(rad => {
+            const sisteCelle = rad.lastElementChild;
+            if (sisteCelle && !sisteCelle.querySelector('.ferdigstilt-merkelapp')) {
+                const span = document.createElement('span');
+                span.className = 'ferdigstilt-merkelapp';
+                span.innerText = 'Ferdigstilt';
+                sisteCelle.appendChild(span);
+            }
+        });
+    } else {
         tabell.classList.remove('is-locked');
-        tekstElement.innerText = "Ferdigstille prøven";
-        ikonElement.innerText = "🔒";
-        knapp.style.backgroundColor = "#d35400";
-        return;
+        if (tekstElement) tekstElement.innerText = "Ferdigstille prøven";
+        if (ikonElement) ikonElement.innerText = "🔒";
+        knapp.style.backgroundColor = "#d35400"; // Oransje for ferdigstille
     }
-
-    // --- LOGIKK FOR Å LÅSE ---
-    
-    // 1. Finn alle elever som ikke har registrert resultat (ser etter klassen 'not-registered')
-    const manglerResultat = Array.from(document.querySelectorAll('#tBody tr')).filter(rad => 
-        rad.querySelector('.not-registered')
-    );
-
-    if (manglerResultat.length > 0) {
-        const melding = `Det er ${manglerResultat.length} elever uten registrerte resultater.\n\n` +
-                        `Ønsker du å ferdigstille prøven selv om ikke alle resultat er registrert inn?`;
-        
-        // Vi bruker en standard confirm først, men siden du vil ha to spesifikke valg:
-        const valg = confirm(melding + "\n\nTrykk OK for å sette alle manglende som 'Ikke gjennomført' og ferdigstille.\nTrykk Avbryt for å gå tilbake.");
-
-        if (!valg) return; // Bruker valgte "Avbryt ferdigstille"
-
-        // Bruker valgte alternativ 2: Sett som ikke gjennomført i Firebase
-        const aar = document.getElementById('mAar').value;
-        const fag = document.getElementById('mFag').value;
-        const periode = document.getElementById('mPeriode').value;
-        const trinn = document.getElementById('mTrinn').value;
-        const klasse = document.getElementById('mKlasse').value;
-
-        for (let rad of manglerResultat) {
-            const elevNavn = rad.cells[0].innerText.trim();
-            // Oppdater Firebase: Sett ikkeGjennomfort = true
-            await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}/${elevNavn}`).update({
-                ikkeGjennomfort: true,
-                sum: 0,
-                oppgaver: new Array(10).fill(0) // Fyller med 0 for å unngå krasj i analyse
-            });
-        }
-        
-        // Oppdater tabellen visuelt før vi låser
-        await hentData(); 
-    }
-
-    // 2. Lås tabellen visuelt
-    tabell.classList.add('is-locked');
-    tekstElement.innerText = "Gjenåpne prøven";
-    ikonElement.innerText = "🔓";
-    knapp.style.backgroundColor = "#27ae60";
-
-    // Legg til "Ferdigstilt"-merkelapp i alle rader
-    document.querySelectorAll('#tBody tr').forEach(rad => {
-        const sisteCelle = rad.lastElementChild;
-        if (!sisteCelle.querySelector('.ferdigstilt-merkelapp')) {
-            const span = document.createElement('span');
-            span.className = 'ferdigstilt-merkelapp';
-            span.innerText = 'Ferdigstilt';
-            sisteCelle.appendChild(span);
-        }
-    });
 }
+
+
 
 
 // --- 5. MODAL OG LAGRING ---
