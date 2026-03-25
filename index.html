@@ -32,14 +32,6 @@ th, td { border: 1px solid #dee2e6; padding: 8px; text-align: center; }
 th { background: #f8f9fa; position: sticky; top: 0; z-index: 10; }
 tr:hover { background-color: #f1f1f1; }
 
-/* Eksempel på stil for sum-felter på skjerm */
-.sum-cell {
-    font-size: 1.2rem; /* Øker størrelsen (f.eks. fra 1rem til 1.2rem) */
-    font-weight: bold; /* Gjør tallene tydeligere */
-    line-height: 1;    /* Holder vertikal høyde stabil */
-    padding-top: 2px;  /* Justerer slik at teksten ikke kutter i toppen */
-    padding-bottom: 2px;
-}
 
 
 /* --- GRUNNLEGGENDE KNAPPE-STIL (For tabeller, admin og små knapper) --- */
@@ -152,6 +144,21 @@ tr:hover { background-color: #f1f1f1; }
 .not-registered { color: #aaa; font-style: italic; }
 .alert-low { background: #ffcccc !important; font-weight: bold; color: #c0392b; }
 
+
+/* Felles stil for sum-celler (Skjerm og Utskrift) */
+.sum-cell {
+    font-size: 1.3rem !important; /* Gjør den betydelig større */
+    font-weight: 900 !important;  /* Ekstra fet skrift */
+    color: #000 !important;       /* Helt sort for maksimal kontrast */
+}
+
+/* Spesifikk justering for utskrift */
+@media print {
+    .sum-cell {
+        font-size: 14pt !important; /* Tvinger stor skrift på papir */
+    }
+}
+
 /* --- UTTSKRIFT-LOGIKK (ALT I LIGGENDE - OPTIMALISERT) --- */
 @media print {
     /* 1. Tving liggende format og fjern unødvendig marg-støy */
@@ -252,11 +259,6 @@ tr:hover { background-color: #f1f1f1; }
     .alert-low { background-color: #ffcccc !important; }
 }
 
-.sum-cell {
-        font-size: 14pt; /* Fast punktstørrelse for utskrift */
-        height: auto;    /* Sikrer at vi ikke tvinger frem ny høyde */
-        overflow: hidden; /* En sikkerhet for at tekst ikke flyter over */
-    }
 
 /* Skjul utskriftsområdet helt på vanlig skjerm */
 #utskriftRapportArea { display: none; }
