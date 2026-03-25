@@ -143,12 +143,19 @@ function hentData() {
         return;
     }
 
+    // --- NY DEL: Sjekk låse-status for denne spesifikke prøven ---
+    const statusSti = `status/${a}/${f}/${p}/${t}/${k}`;
+    db.ref(statusSti).on('value', snapshot => {
+        const statusData = snapshot.val();
+        const erLaast = statusData && statusData.laast === true;
+        oppdaterLaaseVisning(erLaast); // Denne funksjonen styrer det visuelle
+    });
+    // -----------------------------------------------------------
+
     if (nyElevSeksjon) nyElevSeksjon.style.display = 'block';
     if (actionBar) actionBar.style.display = 'flex';
 
     oppdaterOverskrifter(`Kartlegging i ${f} - ${t}${k} - ${p} ${a}`);
-    
-    // VIKTIG: Vi kjører denne her for å sikre at lista i registrerings-boksen også blir rett
     oppdaterElevListe();
 
     const sti = `kartlegging/${a}/${f}/${p}/${t}/${k}`;
