@@ -1132,7 +1132,7 @@ function analyserImportData(data) {
         const e = elevRegister[navn];
         const cTrinn = e.startTrinn + (vStartAar - e.startAar);
         return cTrinn === vTrinn && e.startKlasse === vKlasse;
-    });
+    }).sort((a, b) => a.localeCompare(b, 'nb'));
 
     midlertidigImportData = [];
     let uidentifiserteNavn = [];
