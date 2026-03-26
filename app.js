@@ -1120,35 +1120,99 @@ function tegnKlasseChart(dataPoints) {
 
 // FUNKSJON FOR UTSKRIFT (En side pr. prøve)
 function printAlleKlasseResultater() {
-    if (lagretKullData.length === 0) return alert("Ingen data å skrive ut. Generer rapport først.");
+    if (!lagretKullData || lagretKullData.length === 0) {
+        return alert("Ingen data å skrive ut. Vennligst velg kull, fag og klasse, og trykk 'Vis utvikling' først.");
+    }
+
+    // Sorter prøvene kronologisk før utskrift (hvis de ikke allerede er det)
+    // Dette sikrer at 1. trinn kommer før 2. trinn osv.
+    const sorterteProever = [...lagretKullData]; 
 
     const printVindu = window.open('', '_blank');
-    let html = `<html><head><title>Klasserapport</title><style>
-        body { font-family: sans-serif; }
-        .page-break { page-break-after: always; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background: #f2f2f2; }
-        h1 { color: #2980b9; }
-    </style></head><body>`;
+    
+    let html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Klasserapport - Fullstendig oversikt</title>
+        <style>
+            @media print {
+                .page-break { page-break-after: always; }
+                body { margin: 0; padding: 0; }
+            }
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; line-height: 1.4; padding: 40px; }
+            h1 { color: #2980b9; border-bottom: 2px solid #2980b9; padding-bottom: 10px; margin-top: 0; }
+            h2 { font-size: 1.2em; color: #7f8c8d; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            th, td { border: 1px solid #bdc3c7; padding: 10px; text-align: left; }
+            th { background-color: #f8f9fa; font-weight: bold; }
+            tr:nth-child(even) { background-color: #fcfcfc; }
+            .lav-score { color: #e74c3c; font-weight: bold; }
+            .info-boks { background: #fdf9e7; padding: 10px; border-left: 5px solid #f1c40f; margin-bottom: 20px; font-style: italic; }
+            .footer { font-size: 0.8em; color: #95a5a6; text-align: right; margin-top: 10px; }
+        </style>
+    </head>
+    <body>`;
 
-    lagretKullData.forEach(proeve => {
-        html += `<div class="page-break">
+    sorterteProever.forEach((proeve, index) => {
+        // Beregn snitt for denne spesifikke prøven
+        const snitt = Math.round(proeve.elever.reduce((a, b) => a + b.prosent, 0) / proeve.elever.length);
+
+        html += `
+        <div class="page-break">
             <h1>${proeve.tittel}</h1>
+            <h2>Gjennomsnitt for klassen: ${snitt}%</h2>
+            
+            <div class="info-boks">
+                Oversikten viser resultater for alle elever som har gjennomført prøven i denne perioden.
+            </div>
+
             <table>
-                <thead><tr><th>Elevnavn</th><th>Poeng</th><th>Maks</th><th>Prosent</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th style="width: 50%;">Elevnavn</th>
+                        <th style="width: 15%;">Poeng</th>
+                        <th style="width: 15%;">Maks</th>
+                        <th style="width: 20%;">Prosent</th>
+                    </tr>
+                </thead>
                 <tbody>`;
+
         proeve.elever.forEach(e => {
-            html += `<tr><td>${e.navn}</td><td>${e.sum}</td><td>${e.maks}</td><td>${e.prosent}%</td></tr>`;
+            // Marker elever med under 50% som "lav-score"
+            const scoreKlasse = e.prosent < 50 ? 'class="lav-score"' : '';
+            
+            html += `
+                <tr>
+                    <td>${e.navn}</td>
+                    <td>${e.sum}</td>
+                    <td>${e.maks}</td>
+                    <td ${scoreKlasse}>${e.prosent}%</td>
+                </tr>`;
         });
-        html += `</tbody></table></div>`;
+
+        html += `
+                </tbody>
+            </table>
+            <div class="footer">Utskriftsdato: ${new Date().toLocaleDateString('no-NO')} | Side ${index + 1} av ${sorterteProever.length}</div>
+        </div>`;
     });
 
-    html += `<script>window.onload = function() { window.print(); window.close(); };</script></body></html>`;
+    html += `
+        <script>
+            window.onload = function() {
+                setTimeout(function() {
+                    window.print();
+                    // window.close(); // Valgfritt: lukker fanen etter utskrift
+                }, 500);
+            };
+        </script>
+    </body>
+    </html>`;
+
     printVindu.document.write(html);
     printVindu.document.close();
 }
-
 
 
 // --- ELEVRAPPORT I ADMIN-FUNKSJONER ---
