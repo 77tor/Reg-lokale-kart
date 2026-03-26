@@ -298,9 +298,10 @@ tr:hover { background-color: #f1f1f1; }
         </div>
 
         <div style="border-right:1px solid #dee2e6; padding-right:10px;">
-            <h4>Enkeltelver</h4>
+            <h4>Klasse og enkeltelver</h4>
+            <button class="btn" style="width:100%; background-color: #2980b9; color: white;" onclick="aapneKlasserapportModal()">Klasserapport</button>
             <button class="btn btn-print" style="width:100%;" onclick="aapneElevrapportValg()">Elevrapport</button>
-            <p style="font-size:0.8em;color:#0094FF;">Samler alle historiske prøver for valgt elev på ett ark.</p>
+            <p style="font-size:0.8em;color:#0094FF;">Rapporter for enkeltelever eller hele klasser over tid.</p>
         </div>
 
         <div style="border-right: 1px solid #dee2e6; padding-right: 10px;">
@@ -551,6 +552,48 @@ tr:hover { background-color: #f1f1f1; }
             <option value="2028-2029">2028-2029</option>
             <option value="2029-2030">2028-2030</option>
 </select><label>Fag:</label><select id="compFag"><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select><label>Periode:</label><select id="compPeriode"><option value="Høst">Høst</option><option value="Vår">Vår</option></select><label>Trinn:</label><select id="compTrinn"><option value="1">1. Trinn</option><option value="2">2. Trinn</option><option value="3">3. Trinn</option><option value="4">4. Trinn</option><option value="5">5. Trinn</option><option value="6">6. Trinn</option><option value="7">7. Trinn</option></select><div style="margin-top:20px;display:flex;gap:10px;"><button class="btn btn-hent" style="flex:2" onclick="kjorSammenligning()">Lag Diagram</button><button class="btn btn-fjern" style="flex:1" onclick="document.getElementById('modalSammenlign').style.display='none'">Avbryt</button></div></div></div>
+
+
+<div id="modalKlasserapport" class="modal" style="display:none; z-index:2100;">
+    <div class="modal-content" style="width: 95%; max-width: 1100px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2980b9; padding-bottom: 10px;">
+            <h2 style="color: #2980b9;">📊 Klasserapport (Kull-utvikling)</h2>
+            <button class="btn-fjern" onclick="document.getElementById('modalKlasserapport').style.display='none'">Lukk</button>
+        </div>
+
+        <div class="no-print" style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <div>
+                <label>Fødselsår (Kull):</label>
+                <select id="selectKullAar" class="form-control"></select>
+            </div>
+            <div>
+                <label>Fag:</label>
+                <select id="selectKullFag" class="form-control">
+                    <option value="Lesing">Lesing</option>
+                    <option value="Regning">Regning</option>
+                </select>
+            </div>
+            <div>
+                <label>Klasse (Bokstav):</label>
+                <select id="selectKullKlasse" class="form-control">
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                    <option value="D">D</option>
+                </select>
+            </div>
+            <div style="display: flex; align-items: flex-end; gap: 10px;">
+                <button class="btn btn-hent" onclick="genererKlasserapport()">Vis utvikling</button>
+                <button class="btn btn-excel" style="background:#27ae60;" onclick="printAlleKlasseResultater()">Print alle resultater</button>
+            </div>
+        </div>
+
+        <div id="klasserapportVisning">
+            <div style="height: 400px;"><canvas id="chartKlasseUtvikling"></canvas></div>
+            <div id="klasseTabellPrint" style="margin-top: 20px;"></div>
+        </div>
+    </div>
+</div>
 
 
 <div id="modalSlettElev" class="modal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5);">

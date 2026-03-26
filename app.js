@@ -1010,6 +1010,143 @@ async function kjorSammenligning() {
 }
 
 
+
+// --- KLASSERAPPORT --
+let klasseChart = null;
+let lagretKullData = []; // Brukes for utskrift av alle sider
+
+async function aapneKlasserapportModal() {
+    const kullSelect = document.getElementById('selectKullAar');
+    kullSelect.innerHTML = '';
+    
+    // Generer fødselsår (f.eks. siste 10 år)
+    const currentYear = new Date().getFullYear();
+    for(let i = currentYear - 13; i <= currentYear - 5; i++) {
+        let opt = document.createElement('option');
+        opt.value = i; opt.text = `Født i ${i}`;
+        kullSelect.appendChild(opt);
+    }
+    document.getElementById('modalKlasserapport').style.display = 'block';
+}
+
+async function genererKlasserapport() {
+    const fodaar = parseInt(document.getElementById('selectKullAar').value);
+    const fag = document.getElementById('selectKullFag').value;
+    const klasseBokstav = document.getElementById('selectKullKlasse').value;
+
+    const snapshot = await db.ref('kartlegging').once('value');
+    const allData = snapshot.val();
+    
+    let tidslinjeData = [];
+    lagretKullData = []; // Reset utskriftsdata
+
+    // Loop gjennom alle skoleår i databasen
+    for (let skoleaar in allData) {
+        // Beregn hvilket trinn dette kullet var på i dette skoleåret
+        // Eksempel: Skoleår 2025-2026, Født 2018 -> Trinn = 2025 - 2018 - 5 = 2. trinn
+        const startAarSkole = parseInt(skoleaar.split('-')[0]);
+        const trinn = startAarSkole - fodaar - 5;
+
+        if (trinn >= 1 && trinn <= 7) {
+            const fagData = allData[skoleaar]?.[fag];
+            if (!fagData) continue;
+
+            for (let periode in fagData) {
+                const trinnData = fagData[periode][trinn];
+                if (trinnData && trinnData[klasseBokstav]) {
+                    const elever = trinnData[klasseBokstav];
+                    const oppsett = oppgaveStruktur[skoleaar]?.[fag]?.[periode]?.[trinn];
+                    if (!oppsett) continue;
+                    
+                    const maksPoeng = oppsett.oppgaver.reduce((s, o) => s + o.maks, 0);
+                    let summer = [];
+                    let elevResultater = [];
+
+                    for (let id in elever) {
+                        const e = elever[id];
+                        if (!e.slettet && !e.ikkeGjennomfort && e.sum !== undefined) {
+                            summer.push((e.sum / maksPoeng) * 100);
+                            elevResultater.push({navn: e.navn, sum: e.sum, maks: maksPoeng, prosent: Math.round((e.sum/maksPoeng)*100)});
+                        }
+                    }
+
+                    if (summer.length > 0) {
+                        const snitt = summer.reduce((a,b) => a+b, 0) / summer.length;
+                        const label = `${periode} ${skoleaar.slice(-2)} (${trinn}.tr)`;
+                        tidslinjeData.push({ label, snitt: Math.round(snitt) });
+                        
+                        // Lagre for full utskrift
+                        lagretKullData.push({
+                            tittel: `Resultater ${fag} - ${label} - Klasse ${trinn}${klasseBokstav}`,
+                            elever: elevResultater.sort((a,b) => a.navn.localeCompare(b.navn))
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    tegnKlasseChart(tidslinjeData);
+}
+
+function tegnKlasseChart(dataPoints) {
+    const ctx = document.getElementById('chartKlasseUtvikling').getContext('2d');
+    if (klasseChart) klasseChart.destroy();
+
+    klasseChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: dataPoints.map(d => d.label),
+            datasets: [{
+                label: 'Gjennomsnitt (%)',
+                data: dataPoints.map(d => d.snitt),
+                backgroundColor: '#2980b9',
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { min: 0, max: 100 } },
+            plugins: { datalabels: { anchor: 'end', align: 'top', formatter: v => v + "%" } }
+        },
+        plugins: [ChartDataLabels]
+    });
+}
+
+// FUNKSJON FOR UTSKRIFT (En side pr. prøve)
+function printAlleKlasseResultater() {
+    if (lagretKullData.length === 0) return alert("Ingen data å skrive ut. Generer rapport først.");
+
+    const printVindu = window.open('', '_blank');
+    let html = `<html><head><title>Klasserapport</title><style>
+        body { font-family: sans-serif; }
+        .page-break { page-break-after: always; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f2f2f2; }
+        h1 { color: #2980b9; }
+    </style></head><body>`;
+
+    lagretKullData.forEach(proeve => {
+        html += `<div class="page-break">
+            <h1>${proeve.tittel}</h1>
+            <table>
+                <thead><tr><th>Elevnavn</th><th>Poeng</th><th>Maks</th><th>Prosent</th></tr></thead>
+                <tbody>`;
+        proeve.elever.forEach(e => {
+            html += `<tr><td>${e.navn}</td><td>${e.sum}</td><td>${e.maks}</td><td>${e.prosent}%</td></tr>`;
+        });
+        html += `</tbody></table></div>`;
+    });
+
+    html += `<script>window.onload = function() { window.print(); window.close(); };</script></body></html>`;
+    printVindu.document.write(html);
+    printVindu.document.close();
+}
+
+
+
 // --- ELEVRAPPORT I ADMIN-FUNKSJONER ---
 function filtrerElevListe() {
     const sok = document.getElementById('elevSokInput').value.toLowerCase();
