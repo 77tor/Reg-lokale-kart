@@ -373,6 +373,7 @@ async function toggleFerdigstill() {
 function oppdaterLaaseVisning(erLaast) {
     const tabell = document.getElementById('hovedTabell');
     const knapp = document.getElementById('btnFerdigstill');
+    const importKnapp = document.getElementById('btnImport'); // Henter import-knappen
     const tekstElement = document.getElementById('lockText');
     const ikonElement = knapp.querySelector('.btn-icon');
 
@@ -382,6 +383,14 @@ function oppdaterLaaseVisning(erLaast) {
         if (ikonElement) ikonElement.innerText = "🔓";
         knapp.style.backgroundColor = "#27ae60"; // Grønn for gjenåpne
         
+// GJØR IMPORT-KNAPPEN INAKTIV
+        if (importKnapp) {
+            importKnapp.disabled = true;
+            importKnapp.style.opacity = "0.5";
+            importKnapp.style.cursor = "not-allowed";
+        }
+
+
         // Legg til "Ferdigstilt"-tekst i radene hvis den mangler
         document.querySelectorAll('#tBody tr').forEach(rad => {
             const sisteCelle = rad.lastElementChild;
@@ -397,6 +406,15 @@ function oppdaterLaaseVisning(erLaast) {
         if (tekstElement) tekstElement.innerText = "Ferdigstille prøven";
         if (ikonElement) ikonElement.innerText = "🔒";
         knapp.style.backgroundColor = "#d35400"; // Oransje for ferdigstille
+
+// GJØR IMPORT-KNAPPEN AKTIV IGJEN
+        if (importKnapp) {
+            importKnapp.disabled = false;
+            importKnapp.style.opacity = "1";
+            importKnapp.style.cursor = "pointer";
+        }
+
+        document.querySelectorAll('.ferdigstilt-merkelapp').forEach(el => el.remove());
     }
 }
 
