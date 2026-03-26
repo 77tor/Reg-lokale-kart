@@ -1796,6 +1796,8 @@ function forberedPrint() { window.print(); }
 // -- SAMMENLIGNE PRØVER/ÅR ---
 let devChartLesing = null;
 let devChartRegning = null;
+let globalUtviklingData = null;
+let globalUtviklingPerioder = [];
 
 async function aapneUtviklingsModal() {
     document.getElementById('modalUtvikling').style.display = 'block';
@@ -1807,7 +1809,7 @@ async function aapneUtviklingsModal() {
 
     const fagene = ["Lesing", "Regning"];
     const resultater = { "Lesing": {}, "Regning": {} };
-    const allePerioder = new Set();
+    const allePerioderSet = new Set();
 
     // Loop gjennom År -> Fag -> Periode -> Trinn -> Klasse -> Elev
     for (let aar in allData) {
@@ -1815,15 +1817,14 @@ async function aapneUtviklingsModal() {
             if (!fagene.includes(fag)) continue;
 
             for (let periode in allData[aar][fag]) {
-                const pKey = `${periode} ${aar.split('-')[0].slice(-2)}`; // Eks: "Høst 24"
-                allePerioder.add(pKey);
+                const pKey = `${periode} ${aar.split('-')[0].slice(-2)}`;
+                allePerioderSet.add(pKey);
 
                 if (!resultater[fag][pKey]) resultater[fag][pKey] = {};
 
                 for (let trinn in allData[aar][fag][periode]) {
                     if (!resultater[fag][pKey][trinn]) resultater[fag][pKey][trinn] = [];
 
-                    // Hent maks poeng for dette spesifikke trinnet/perioden fra oppsett.js
                     const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
                     if (!oppsett) continue;
                     const maksPoeng = oppsett.oppgaver.reduce((s, o) => s + o.maks, 0);
@@ -1843,30 +1844,40 @@ async function aapneUtviklingsModal() {
         }
     }
 
-    const sortertePerioder = Array.from(allePerioder).sort((a, b) => {
+    // Lagre data globalt så vi kan filtrere uten å spørre databasen på nytt
+    globalUtviklingPerioder = Array.from(allePerioderSet).sort((a, b) => {
         const aarA = a.split(' ')[1];
         const aarB = b.split(' ')[1];
         if (aarA !== aarB) return aarA - aarB;
-        return a.includes("Høst") ? -1 : 1; // Høst før Vår
+        return a.includes("Høst") ? -1 : 1;
     });
+    globalUtviklingData = resultater;
 
-    tegnUtviklingsGraf("chartUtviklingLesing", "Lesing", sortertePerioder, resultater["Lesing"]);
-    tegnUtviklingsGraf("chartUtviklingRegning", "Regning", sortertePerioder, resultater["Regning"]);
+    // Start med å vise alle trinn
+    oppdaterUtviklingFilter('alle');
 }
 
-function tegnUtviklingsGraf(canvasId, fag, perioder, data) {
+// NY FUNKSJON: Håndterer knappetrykkene fra filteret
+function oppdaterUtviklingFilter(valg) {
+    tegnUtviklingsGraf("chartUtviklingLesing", "Lesing", globalUtviklingPerioder, globalUtviklingData["Lesing"], valg);
+    tegnUtviklingsGraf("chartUtviklingRegning", "Regning", globalUtviklingPerioder, globalUtviklingData["Regning"], valg);
+}
+
+function tegnUtviklingsGraf(canvasId, fag, perioder, data, filterValg = 'alle') {
     const ctx = document.getElementById(canvasId).getContext('2d');
     
-    // Rydd opp i gamle grafer
     if (fag === "Lesing" && devChartLesing) devChartLesing.destroy();
     if (fag === "Regning" && devChartRegning) devChartRegning.destroy();
 
     const trinnFarger = { "1":"#3498db", "2":"#e74c3c", "3":"#2ecc71", "4":"#f1c40f", "5":"#9b59b6", "6":"#e67e22", "7":"#1abc9c" };
-    
     const datasets = [];
 
-    // 1. Legg til trinnene som søyler (identisk med din fungerende kode)
+    // 1. Legg til trinnene som søyler (Filtrert)
     for (let t = 1; t <= 7; t++) {
+        // Sjekk om dette trinnet skal vises basert på knappen som ble trykket
+        if (filterValg !== 'alle' && filterValg !== 'total' && filterValg !== t.toString()) continue;
+        if (filterValg === 'total') continue; // Vis ingen søyler hvis "Kun total" er valgt
+
         const trinnData = perioder.map(p => {
             const verdier = data[p]?.[t] || [];
             if (verdier.length === 0) return null;
@@ -1875,17 +1886,18 @@ function tegnUtviklingsGraf(canvasId, fag, perioder, data) {
 
         if (trinnData.some(v => v !== null)) {
             datasets.push({
-                type: 'bar', // Vi spesifiserer type her
+                type: 'bar',
                 label: `${t}. trinn`,
                 data: trinnData,
                 backgroundColor: trinnFarger[t],
                 borderColor: trinnFarger[t],
-                borderWidth: 1
+                borderWidth: 1,
+                order: 2
             });
         }
     }
 
-    // 2. Beregn og legg til "Skolen totalt" som en linje
+    // 2. Beregn og legg alltid til "Skolen totalt" som en linje
     const totalData = perioder.map(p => {
         let alleProsenter = [];
         for (let t = 1; t <= 7; t++) {
@@ -1896,45 +1908,50 @@ function tegnUtviklingsGraf(canvasId, fag, perioder, data) {
         return Math.round(alleProsenter.reduce((a, b) => a + b, 0) / alleProsenter.length);
     });
 
-    // Legger til linjen i datasets-listen
     datasets.push({
-        type: 'line', // Denne gjør det til en linje i søylediagrammet
+        type: 'line',
         label: 'Skolen totalt',
         data: totalData,
         borderColor: '#2c3e50',
-        borderWidth: 3,
+        borderWidth: 4,
+        pointRadius: 6,
         pointBackgroundColor: '#2c3e50',
         fill: false,
         tension: 0.1,
-        // Vi legger til en egen stil for datalabels på linjen så den skiller seg ut
+        order: 1,
         datalabels: {
             align: 'top',
             backgroundColor: '#2c3e50',
             color: '#fff',
             borderRadius: 3,
-            padding: 4
+            padding: 4,
+            font: { weight: 'bold' }
         }
     });
 
     const chart = new Chart(ctx, {
-        type: 'bar', // Hovedtypen må være 'bar' for at søylene skal vises riktig
+        type: 'bar',
         data: { labels: perioder, datasets: datasets },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                title: { display: true, text: `Gjennomsnittlig måloppnåelse: ${fag}`, font: { size: 16 } },
+                title: { 
+                    display: true, 
+                    text: `Utvikling: ${fag} (%) ${filterValg !== 'alle' ? '- Filter: ' + filterValg : ''}`, 
+                    font: { size: 16 } 
+                },
                 legend: { position: 'bottom' },
                 datalabels: { 
                     anchor: 'end', 
                     align: 'top', 
-                    formatter: (v) => v ? v + "%" : "" 
+                    formatter: (v) => v !== null ? v + "%" : "" 
                 }
             },
             scales: { 
                 y: { 
                     min: 0, 
-                    max: 110, // Økt til 110 så vi får plass til merkelappene på toppen
+                    max: 115, 
                     title: { display: true, text: 'Prosent riktig' } 
                 } 
             }

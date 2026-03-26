@@ -507,17 +507,34 @@ tr:hover { background-color: #f1f1f1; }
 
 <div id="modalUtvikling" class="modal" style="display:none; z-index:2000;">
     <div class="modal-content" style="width: 95%; max-width: 1200px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h2>Skolens utvikling over tid</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #8e44ad; padding-bottom: 10px;">
+            <h2 style="color: #8e44ad; margin: 0;">📈 Skolens utvikling over tid</h2>
+            <div class="no-print">
                 <button class="btn btn-print" onclick="printUtvikling()" style="margin-right: 10px;">Skriv ut / Lagre PDF</button>
                 <button class="btn-fjern" onclick="document.getElementById('modalUtvikling').style.display='none'">Lukk</button>
+            </div>
         </div>
-        <p>Diagrammene viser gjennomsnittlig prosentvis måloppnåelse per trinn for alle registrerte perioder.</p>
+
+        <div id="utviklingFilter" class="no-print" style="margin: 20px 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; background: #f0f2f5; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+            <button class="btn" style="background:#2c3e50; color:white; min-width: 100px;" onclick="oppdaterUtviklingFilter('alle')">Alle valg</button>
+            <button class="btn" style="background:#2c3e50; color:white; min-width: 120px;" onclick="oppdaterUtviklingFilter('total')">Kun Skolen totalt</button>
+            <div style="width: 2px; background: #ccc; margin: 0 10px;"></div> 
+            <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('1')">1. trinn</button>
+            <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('2')">2. trinn</button>
+            <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('3')">3. trinn</button>
+            <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('4')">4. trinn</button>
+            <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('5')">5. trinn</button>
+            <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('6')">6. trinn</button>
+            <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('7')">7. trinn</button>
+        </div>
+
+        <p class="no-print" style="text-align: center; color: #666;">Klikk på knappene over for å filtrere visningen. Skolen totalt (linje) vises alltid som referanse.</p>
         
-        <div class="chart-container" style="position: relative; height:400px; margin-bottom: 40px;">
+        <div class="chart-container" style="position: relative; height:450px; margin-bottom: 40px;">
             <canvas id="chartUtviklingLesing"></canvas>
         </div>
-        <div class="chart-container" style="position: relative; height:400px;">
+        <hr style="border: 0; border-top: 1px dashed #ccc; margin: 40px 0;">
+        <div class="chart-container" style="position: relative; height:450px;">
             <canvas id="chartUtviklingRegning"></canvas>
         </div>
     </div>
