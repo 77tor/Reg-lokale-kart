@@ -1029,6 +1029,7 @@ async function aapneKlasserapportModal() {
     document.getElementById('modalKlasserapport').style.display = 'block';
 }
 
+
 async function genererKlasserapport() {
     const fodaar = parseInt(document.getElementById('selectKullAar').value);
     const fag = document.getElementById('selectKullFag').value;
@@ -1036,61 +1037,84 @@ async function genererKlasserapport() {
 
     const snapshot = await db.ref('kartlegging').once('value');
     const allData = snapshot.val();
+    if (!allData) return;
     
     let tidslinjeData = [];
-    lagretKullData = []; // Reset utskriftsdata
+    lagretKullData = []; // Her tømmes listen før ny generering
 
-    // Loop gjennom alle skoleår i databasen
-    for (let skoleaar in allData) {
-        // Beregn hvilket trinn dette kullet var på i dette skoleåret
-        // Eksempel: Skoleår 2025-2026, Født 2018 -> Trinn = 2025 - 2018 - 5 = 2. trinn
+    // 1. Sorter årstallene slik at vi går kronologisk frem (2023, 2024, 2025...)
+    const sorterteAar = Object.keys(allData).sort();
+
+    for (let skoleaar of sorterteAar) {
+        // Beregn trinn: (Startår for skoleåret) - Fødselsår - 5
         const startAarSkole = parseInt(skoleaar.split('-')[0]);
         const trinn = startAarSkole - fodaar - 5;
 
+        // Vi er kun interessert i grunnskole-årene 1-7
         if (trinn >= 1 && trinn <= 7) {
             const fagData = allData[skoleaar]?.[fag];
             if (!fagData) continue;
 
+            // Gå gjennom Høst og Vår
             for (let periode in fagData) {
                 const trinnData = fagData[periode][trinn];
                 if (trinnData && trinnData[klasseBokstav]) {
-                    const elever = trinnData[klasseBokstav];
+                    
                     const oppsett = oppgaveStruktur[skoleaar]?.[fag]?.[periode]?.[trinn];
                     if (!oppsett) continue;
                     
                     const maksPoeng = oppsett.oppgaver.reduce((s, o) => s + o.maks, 0);
-                    let summer = [];
-                    let elevResultater = [];
+                    const eleverIKlasse = trinnData[klasseBokstav];
+                    
+                    let summerTilSnitt = [];
+                    let elevListeTilPrint = []; // VIKTIG: Denne må fylles for hver prøve
 
-                    for (let id in elever) {
-                        const e = elever[id];
+                    for (let id in eleverIKlasse) {
+                        const e = eleverIKlasse[id];
+                        // Sjekk at eleven har gyldige data
                         if (!e.slettet && !e.ikkeGjennomfort && e.sum !== undefined) {
-                            summer.push((e.sum / maksPoeng) * 100);
-                            elevResultater.push({navn: e.navn, sum: e.sum, maks: maksPoeng, prosent: Math.round((e.sum/maksPoeng)*100)});
+                            const prosent = Math.round((e.sum / maksPoeng) * 100);
+                            
+                            summerTilSnitt.push(prosent);
+                            
+                            // Legg til i listen som skal skrives ut
+                            elevListeTilPrint.push({
+                                navn: e.navn || "Ukjent navn",
+                                sum: e.sum,
+                                maks: maksPoeng,
+                                prosent: prosent
+                            });
                         }
                     }
 
-if (summer.length > 0) {
-    const snitt = summer.reduce((a, b) => a + b, 0) / summer.length;
-    const label = `${periode} ${skoleaar.slice(-2)} (${trinn}.tr)`;
-    tidslinjeData.push({ label, snitt: Math.round(snitt) });
-    
-    // Filtrer ut eventuelle elever som mangler navn før sortering
-    const gyldigeElever = elevResultater.filter(e => e.navn && typeof e.navn === 'string');
-
-    // Lagre for full utskrift
-    lagretKullData.push({
-        tittel: `Resultater ${fag} - ${label} - Klasse ${trinn}${klasseBokstav}`,
-        // Sortering med sjekk for å unngå krasj
-        elever: gyldigeElever.sort((a, b) => a.navn.localeCompare(b.navn))
-    });
+                    if (summerTilSnitt.length > 0) {
+                        const snitt = Math.round(summerTilSnitt.reduce((a, b) => a + b, 0) / summerTilSnitt.length);
+                        const label = `${periode} ${skoleaar.slice(-2)} (${trinn}.tr)`;
+                        
+                        // Data til grafen på skjermen
+                        tidslinjeData.push({ label, snitt });
+                        
+                        // Data til den store utskriften (sortert på navn)
+                        lagretKullData.push({
+                            tittel: `Resultatliste: ${fag} - ${label} - Klasse ${trinn}${klasseBokstav}`,
+                            elever: elevListeTilPrint.sort((a, b) => a.navn.localeCompare(b.navn))
+                        });
                     }
                 }
             }
         }
     }
 
+    if (tidslinjeData.length === 0) {
+        alert("Fant ingen data for dette kullet i valgt klasse/fag.");
+        return;
+    }
+
     tegnKlasseChart(tidslinjeData);
+    
+    // Valgfritt: Vis en liten tekst på skjermen om at data er klare for print
+    document.getElementById('klasseTabellPrint').innerHTML = 
+        `<p style="color:green; font-weight:bold;">✅ Fant data for ${lagretKullData.length} prøveperioder. Klar for utskrift!</p>`;
 }
 
 function tegnKlasseChart(dataPoints) {
