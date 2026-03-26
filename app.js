@@ -1040,22 +1040,18 @@ async function genererKlasserapport() {
     if (!allData) return;
     
     let tidslinjeData = [];
-    lagretKullData = []; // Her tømmes listen før ny generering
+    lagretKullData = []; 
 
-    // 1. Sorter årstallene slik at vi går kronologisk frem (2023, 2024, 2025...)
     const sorterteAar = Object.keys(allData).sort();
 
     for (let skoleaar of sorterteAar) {
-        // Beregn trinn: (Startår for skoleåret) - Fødselsår - 5
         const startAarSkole = parseInt(skoleaar.split('-')[0]);
         const trinn = startAarSkole - fodaar - 5;
 
-        // Vi er kun interessert i grunnskole-årene 1-7
         if (trinn >= 1 && trinn <= 7) {
             const fagData = allData[skoleaar]?.[fag];
             if (!fagData) continue;
 
-            // Gå gjennom Høst og Vår
             for (let periode in fagData) {
                 const trinnData = fagData[periode][trinn];
                 if (trinnData && trinnData[klasseBokstav]) {
@@ -1067,52 +1063,47 @@ async function genererKlasserapport() {
                     const eleverIKlasse = trinnData[klasseBokstav];
                     
                     let summerTilSnitt = [];
-                    let elevListeTilPrint = []; // VIKTIG: Denne må fylles for hver prøve
+                    let elevListeTilPrint = []; 
 
-for (let id in eleverIKlasse) {
-    const e = eleverIKlasse[id];
-    
-    if (!e.slettet && !e.ikkeGjennomfort && e.sum !== undefined) {
-        const prosent = Math.round((e.sum / maksPoeng) * 100);
-        
-        // --- NAVNE-SJEKK ---
-        // Vi prøver å finne navnet i denne rekkefølgen:
-        // 1. e.navn
-        // 2. e.elevNavn (vanlig i mange systemer)
-        // 3. id (hvis selve ID-en i Firebase er navnet på eleven)
-        let visningsNavn = "Ukjent";
-        
-        if (e.navn) {
-            visningsNavn = e.navn;
-        } else if (e.elevNavn) {
-            visningsNavn = e.elevNavn;
-        } else if (id && id.length > 2) { 
-            // Hvis ID-en er lengre enn 2 tegn, er det sannsynligvis et navn og ikke en numerisk ID
-            visningsNavn = id; 
-        }
+                    for (let id in eleverIKlasse) {
+                        const e = eleverIKlasse[id];
+                        
+                        if (!e.slettet && !e.ikkeGjennomfort && e.sum !== undefined) {
+                            const prosent = Math.round((e.sum / maksPoeng) * 100);
+                            
+                            let visningsNavn = "Ukjent";
+                            if (e.navn) {
+                                visningsNavn = e.navn;
+                            } else if (e.elevNavn) {
+                                visningsNavn = e.elevNavn;
+                            } else if (id && id.length > 2) { 
+                                visningsNavn = id; 
+                            }
 
-        summerTilSnitt.push(prosent);
-        
-        elevListeTilPrint.push({
-            navn: visningsNavn,
-            sum: e.sum,
-            maks: maksPoeng,
-            prosent: prosent
-        });
-    }
-}
+                            summerTilSnitt.push(prosent);
+                            
+                            // ENDRING: Vi legger til e.oppgaver i objektet
+                            elevListeTilPrint.push({
+                                navn: visningsNavn,
+                                sum: e.sum,
+                                maks: maksPoeng,
+                                prosent: prosent,
+                                oppgaver: e.oppgaver || [] // Her hentes poengene per oppgave
+                            });
+                        }
+                    }
 
                     if (summerTilSnitt.length > 0) {
                         const snitt = Math.round(summerTilSnitt.reduce((a, b) => a + b, 0) / summerTilSnitt.length);
                         const label = `${periode} ${skoleaar.slice(-2)} (${trinn}.tr)`;
                         
-                        // Data til grafen på skjermen
                         tidslinjeData.push({ label, snitt });
                         
-                        // Data til den store utskriften (sortert på navn)
+                        // ENDRING: Vi sender med oppsettet (navn/maks per oppgave) til utskriften
                         lagretKullData.push({
-                            tittel: `Resultatliste: ${fag} - ${label} - Klasse ${trinn}${klasseBokstav}`,
-                            elever: elevListeTilPrint.sort((a, b) => a.navn.localeCompare(b.navn))
+                            tittel: `Klasserapport: ${fag} - ${label} - Klasse ${trinn}${klasseBokstav}`,
+                            elever: elevListeTilPrint.sort((a, b) => a.navn.localeCompare(b.navn)),
+                            oppgaveOppsett: oppsett.oppgaver // Denne trengs for å lage kolonnene
                         });
                     }
                 }
@@ -1126,11 +1117,11 @@ for (let id in eleverIKlasse) {
     }
 
     tegnKlasseChart(tidslinjeData);
-    
-    // Valgfritt: Vis en liten tekst på skjermen om at data er klare for print
     document.getElementById('klasseTabellPrint').innerHTML = 
         `<p style="color:green; font-weight:bold;">✅ Fant data for ${lagretKullData.length} prøveperioder. Klar for utskrift!</p>`;
 }
+
+
 
 function tegnKlasseChart(dataPoints) {
     const ctx = document.getElementById('chartKlasseUtvikling').getContext('2d');
@@ -1164,35 +1155,31 @@ function printAlleKlasseResultater() {
 
     const printVindu = window.open('', '_blank');
     
-    // Vi henter fargekodene/grensene dine hvis de finnes globalt, 
-    // hvis ikke bruker vi standard (Under 50% = rød, 50-80% = gul, over 80% = grønn)
-    
     let html = `
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Klasserapport - Detaljert oversikt</title>
+        <title>Detaljert Klasserapport</title>
         <style>
             @media print { 
                 .page-break { page-break-after: always; }
                 body { -webkit-print-color-adjust: exact; }
             }
-            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #333; }
-            .header-info { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #2980b9; margin-bottom: 20px; padding-bottom: 10px; }
-            h1 { margin: 0; color: #2980b9; font-size: 24px; }
-            .snitt-boks { background: #2980b9; color: white; padding: 10px 20px; border-radius: 5px; font-weight: bold; }
+            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; color: #333; font-size: 12px; }
+            .header-info { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #2980b9; margin-bottom: 15px; padding-bottom: 5px; }
+            h1 { margin: 0; color: #2980b9; font-size: 20px; }
+            .snitt-boks { background: #2980b9; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold; }
             
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th { background: #f2f2f2; padding: 12px; text-align: left; border-bottom: 2px solid #ddd; }
-            td { padding: 10px; border-bottom: 1px solid #eee; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: auto; }
+            th, td { border: 1px solid #999; padding: 6px 4px; text-align: center; }
+            th { background: #f2f2f2; font-weight: bold; }
+            .navn-kol { text-align: left; padding-left: 10px; min-width: 180px; }
             
-            /* Fargekoding for mestringsnivåer */
-            .nivaa-rod { background-color: #ffcccc !important; color: #a94442; font-weight: bold; text-align: center; border-radius: 4px; }
-            .nivaa-gul { background-color: #fff4cc !important; color: #8a6d3b; font-weight: bold; text-align: center; border-radius: 4px; }
-            .nivaa-gronn { background-color: #dff0d8 !important; color: #3c763d; font-weight: bold; text-align: center; border-radius: 4px; }
+            /* Kritisk grense markering */
+            .kritisk { background-color: #ffcccc !important; color: #a94442; font-weight: bold; }
             
-            .footer { margin-top: 30px; font-size: 0.8em; color: #7f8c8d; border-top: 1px solid #eee; padding-top: 10px; }
-            .student-row:nth-child(even) { background-color: #fafafa; }
+            .footer { margin-top: 20px; font-size: 0.8em; color: #7f8c8d; border-top: 1px solid #eee; padding-top: 5px; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
         </style>
     </head>
     <body>`;
@@ -1205,7 +1192,6 @@ function printAlleKlasseResultater() {
             <div class="header-info">
                 <div>
                     <h1>${proeve.tittel}</h1>
-                    <p>Rapport generert for hele klassen</p>
                 </div>
                 <div class="snitt-boks">Klassesnitt: ${totalSnitt}%</div>
             </div>
@@ -1213,36 +1199,34 @@ function printAlleKlasseResultater() {
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 40%;">Elevnavn</th>
-                        <th style="width: 15%; text-align: center;">Poeng</th>
-                        <th style="width: 15%; text-align: center;">Maks</th>
-                        <th style="width: 30%; text-align: center;">Mestringsnivå / Prosent</th>
+                        <th class="navn-kol">Elevnavn</th>
+                        ${proeve.oppgaveOppsett.map((o, i) => `<th>O${i+1}<br><small>max ${o.maks}</small></th>`).join('')}
+                        <th style="background:#eee">Sum</th>
+                        <th style="background:#eee">%</th>
                     </tr>
                 </thead>
                 <tbody>`;
 
         proeve.elever.forEach(e => {
-            // Definer fargeklasse basert på prosent
-            let fargeKlasse = 'nivaa-gronn';
-            let nivaaTekst = 'Høy';
+            // Sjekk om totalsum er under 50%
+            const totalKritiskKlasse = e.prosent < 50 ? 'kritisk' : '';
+
+            html += `<tr>
+                <td class="navn-kol">${e.navn}</td>`;
             
-            if (e.prosent < 50) {
-                fargeKlasse = 'nivaa-rod';
-                nivaaTekst = 'Lav';
-            } else if (e.prosent < 80) {
-                fargeKlasse = 'nivaa-gul';
-                nivaaTekst = 'Middels';
-            }
+            // Loop gjennom hver oppgave for eleven
+            proeve.oppgaveOppsett.forEach((info, i) => {
+                const poeng = (e.oppgaver && e.oppgaver[i] !== undefined) ? e.oppgaver[i] : 0;
+                // Rød celle hvis enkeltoppgave er under 50%
+                const oppgaveKritiskKlasse = (poeng / info.maks) < 0.5 ? 'kritisk' : '';
+                
+                html += `<td class="${oppgaveKritiskKlasse}">${poeng}</td>`;
+            });
 
             html += `
-                <tr class="student-row">
-                    <td>${e.navn}</td>
-                    <td style="text-align: center;">${e.sum}</td>
-                    <td style="text-align: center;">${e.maks}</td>
-                    <td>
-                        <div class="${fargeKlasse}">${nivaaTekst} (${e.prosent}%)</div>
-                    </td>
-                </tr>`;
+                <td class="${totalKritiskKlasse}">${e.sum}</td>
+                <td class="${totalKritiskKlasse}">${e.prosent}%</td>
+            </tr>`;
         });
 
         html += `
@@ -1258,7 +1242,10 @@ function printAlleKlasseResultater() {
     html += `
         <script>
             window.onload = function() {
-                setTimeout(() => { window.print(); }, 500);
+                setTimeout(() => { 
+                    window.print(); 
+                    // window.close(); // Kan aktiveres hvis fanen skal lukkes automatisk
+                }, 500);
             };
         </script>
     </body>
