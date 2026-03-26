@@ -1791,3 +1791,109 @@ function eksporter() {
     XLSX.writeFile(wb, `Resultat_${vFag}_${vTrinn}${vKlasse}_${vPeriode}.xlsx`);
 }
 function forberedPrint() { window.print(); }
+
+
+// -- SAMMENLIGNE PRØVER/ÅR ---
+let devChartLesing = null;
+let devChartRegning = null;
+
+async function aapneUtviklingsModal() {
+    document.getElementById('modalUtvikling').style.display = 'block';
+    
+    // Henter all data én gang for hele skolen
+    const snapshot = await db.ref('kartlegging').once('value');
+    const allData = snapshot.val();
+    if (!allData) return;
+
+    const fagene = ["Lesing", "Regning"];
+    const resultater = { "Lesing": {}, "Regning": {} };
+    const allePerioder = new Set();
+
+    // Loop gjennom År -> Fag -> Periode -> Trinn -> Klasse -> Elev
+    for (let aar in allData) {
+        for (let fag in allData[aar]) {
+            if (!fagene.includes(fag)) continue;
+
+            for (let periode in allData[aar][fag]) {
+                const pKey = `${periode} ${aar.split('-')[0].slice(-2)}`; // Eks: "Høst 24"
+                allePerioder.add(pKey);
+
+                if (!resultater[fag][pKey]) resultater[fag][pKey] = {};
+
+                for (let trinn in allData[aar][fag][periode]) {
+                    if (!resultater[fag][pKey][trinn]) resultater[fag][pKey][trinn] = [];
+
+                    // Hent maks poeng for dette spesifikke trinnet/perioden fra oppsett.js
+                    const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
+                    if (!oppsett) continue;
+                    const maksPoeng = oppsett.oppgaver.reduce((s, o) => s + o.maks, 0);
+
+                    const klasser = allData[aar][fag][periode][trinn];
+                    for (let klasse in klasser) {
+                        for (let elev in klasser[klasse]) {
+                            const d = klasser[klasse][elev];
+                            if (d.slettet || d.ikkeGjennomfort || d.sum === undefined) continue;
+                            
+                            const prosent = (d.sum / maksPoeng) * 100;
+                            resultater[fag][pKey][trinn].push(prosent);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    const sortertePerioder = Array.from(allePerioder).sort((a, b) => {
+        const aarA = a.split(' ')[1];
+        const aarB = b.split(' ')[1];
+        if (aarA !== aarB) return aarA - aarB;
+        return a.includes("Høst") ? -1 : 1; // Høst før Vår
+    });
+
+    tegnUtviklingsGraf("chartUtviklingLesing", "Lesing", sortertePerioder, resultater["Lesing"]);
+    tegnUtviklingsGraf("chartUtviklingRegning", "Regning", sortertePerioder, resultater["Regning"]);
+}
+
+function tegnUtviklingsGraf(canvasId, fag, perioder, data) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    if (fag === "Lesing" && devChartLesing) devChartLesing.destroy();
+    if (fag === "Regning" && devChartRegning) devChartRegning.destroy();
+
+    const trinnFarger = { "1":"#3498db", "2":"#e74c3c", "3":"#2ecc71", "4":"#f1c40f", "5":"#9b59b6", "6":"#e67e22", "7":"#1abc9c" };
+    
+    const datasets = [];
+    for (let t = 1; t <= 7; t++) {
+        const trinnData = perioder.map(p => {
+            const verdier = data[p]?.[t] || [];
+            if (verdier.length === 0) return null;
+            return Math.round(verdier.reduce((a, b) => a + b, 0) / verdier.length);
+        });
+
+        if (trinnData.some(v => v !== null)) {
+            datasets.push({
+                label: `${t}. trinn`,
+                data: trinnData,
+                backgroundColor: trinnFarger[t],
+                borderColor: trinnFarger[t],
+                borderWidth: 1
+            });
+        }
+    }
+
+    const chart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: perioder, datasets: datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: { display: true, text: `Gjennomsnittlig måloppnåelse: ${fag}`, font: { size: 16 } },
+                datalabels: { anchor: 'end', align: 'top', formatter: (v) => v ? v + "%" : "" }
+            },
+            scales: { y: { min: 0, max: 100, title: { display: true, text: 'Prosent riktig' } } }
+        },
+        plugins: [ChartDataLabels]
+    });
+
+    if (fag === "Lesing") devChartLesing = chart; else devChartRegning = chart;
+}
