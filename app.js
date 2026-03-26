@@ -1068,42 +1068,52 @@ async function genererKlasserapport() {
                     for (let id in eleverIKlasse) {
                         const e = eleverIKlasse[id];
                         
-                        if (!e.slettet && !e.ikkeGjennomfort && e.sum !== undefined) {
-                            const prosent = Math.round((e.sum / maksPoeng) * 100);
-                            
-                            let visningsNavn = "Ukjent";
-                            if (e.navn) {
-                                visningsNavn = e.navn;
-                            } else if (e.elevNavn) {
-                                visningsNavn = e.elevNavn;
-                            } else if (id && id.length > 2) { 
-                                visningsNavn = id; 
-                            }
+                        // Vi hopper over slettede elever, men inkluderer alle andre
+                        if (e.slettet) continue;
 
-                            summerTilSnitt.push(prosent);
-                            
-                            // ENDRING: Vi legger til e.oppgaver i objektet
+                        let visningsNavn = e.navn || e.elevNavn || id;
+                        
+                        // Sjekk om eleven faktisk har gjennomført og har poeng
+                        if (!e.ikkeGjennomfort && e.sum !== undefined) {
+                            const prosent = Math.round((e.sum / maksPoeng) * 100);
+                            summerTilSnitt.push(prosent); // Tas med i snitt-beregning
+
                             elevListeTilPrint.push({
                                 navn: visningsNavn,
                                 sum: e.sum,
                                 maks: maksPoeng,
                                 prosent: prosent,
-                                oppgaver: e.oppgaver || [] // Her hentes poengene per oppgave
+                                oppgaver: e.oppgaver || [],
+                                status: "ok"
+                            });
+                        } else {
+                            // Eleven er merket "Ikke gjennomført" eller mangler data
+                            elevListeTilPrint.push({
+                                navn: visningsNavn,
+                                sum: "-",
+                                maks: maksPoeng,
+                                prosent: "-",
+                                oppgaver: [],
+                                status: "ikke_gjennomfort" // Markør for utskriftsfunksjonen
                             });
                         }
                     }
 
-                    if (summerTilSnitt.length > 0) {
-                        const snitt = Math.round(summerTilSnitt.reduce((a, b) => a + b, 0) / summerTilSnitt.length);
+                    if (elevListeTilPrint.length > 0) {
+                        // Beregn snitt kun for de som har prosent-tall
+                        let snitt = 0;
+                        if (summerTilSnitt.length > 0) {
+                            snitt = Math.round(summerTilSnitt.reduce((a, b) => a + b, 0) / summerTilSnitt.length);
+                        }
+
                         const label = `${periode} ${skoleaar.slice(-2)} (${trinn}.tr)`;
                         
                         tidslinjeData.push({ label, snitt });
                         
-                        // ENDRING: Vi sender med oppsettet (navn/maks per oppgave) til utskriften
                         lagretKullData.push({
                             tittel: `Klasserapport: ${fag} - ${label} - Klasse ${trinn}${klasseBokstav}`,
                             elever: elevListeTilPrint.sort((a, b) => a.navn.localeCompare(b.navn)),
-                            oppgaveOppsett: oppsett.oppgaver // Denne trengs for å lage kolonnene
+                            oppgaveOppsett: oppsett.oppgaver
                         });
                     }
                 }
@@ -1155,8 +1165,6 @@ function printAlleKlasseResultater() {
 
     // --- 1. SORTERING AV PRØVENE KRONOLOGISK ---
     const sorterteProever = [...lagretKullData].sort((a, b) => {
-        // Ekstraherer årstall og periode fra tittel (f.eks "Høst 24")
-        // Vi antar tittel-formatet fra genererKlasserapport: "... - Høst 24 (1.tr) - ..."
         const regex = /(Høst|Vår)\s(\d{2})/;
         const matchA = a.tittel.match(regex);
         const matchB = b.tittel.match(regex);
@@ -1164,9 +1172,7 @@ function printAlleKlasseResultater() {
         if (matchA && matchB) {
             const aarA = parseInt(matchA[2]);
             const aarB = parseInt(matchB[2]);
-            
             if (aarA !== aarB) return aarA - aarB;
-            // Hvis samme år: Høst (-1) skal før Vår (1)
             return matchA[1] === "Høst" ? -1 : 1;
         }
         return 0;
@@ -1185,28 +1191,27 @@ function printAlleKlasseResultater() {
                 body { -webkit-print-color-adjust: exact; margin: 0; padding: 10mm; }
             }
             body { font-family: 'Segoe UI', Arial, sans-serif; color: #333; font-size: 11px; line-height: 1.2; }
-            
             .header-info { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2980b9; margin-bottom: 10px; padding-bottom: 5px; }
             h1 { margin: 0; color: #2980b9; font-size: 16px; }
             .snitt-boks { background: #2980b9; color: white; padding: 4px 10px; border-radius: 4px; font-weight: bold; font-size: 12px; }
-            
             table { width: 100%; border-collapse: collapse; margin-top: 5px; }
             th, td { border: 1px solid #777; padding: 3px 2px; text-align: center; }
             th { background: #f2f2f2; font-weight: bold; font-size: 10px; }
             .navn-kol { text-align: left; padding-left: 5px; width: 160px; white-space: nowrap; overflow: hidden; }
-            
-            /* Kompakt visning: fjerner unødvendig luft */
             tr { height: 18px; } 
-            
             .kritisk { background-color: #ffcccc !important; color: #a94442; font-weight: bold; }
-            
+            .ikke-gjennomfort-rad { background-color: #f9f9f9 !important; color: #999; font-style: italic; }
             .footer { margin-top: 10px; font-size: 9px; color: #7f8c8d; text-align: right; }
         </style>
     </head>
     <body>`;
 
     sorterteProever.forEach((proeve, index) => {
-        const totalSnitt = Math.round(proeve.elever.reduce((a, b) => a + b.prosent, 0) / proeve.elever.length);
+        // Beregn snitt kun for de som har gjennomført (status "ok")
+        const eleverMedResultat = proeve.elever.filter(e => e.status === "ok");
+        const totalSnitt = eleverMedResultat.length > 0 
+            ? Math.round(eleverMedResultat.reduce((a, b) => a + b.prosent, 0) / eleverMedResultat.length)
+            : 0;
 
         html += `
         <div class="page-break">
@@ -1227,21 +1232,29 @@ function printAlleKlasseResultater() {
                 <tbody>`;
 
         proeve.elever.forEach(e => {
-            const totalKritisk = e.prosent < 50 ? 'kritisk' : '';
+            if (e.status === "ikke_gjennomfort") {
+                // Rad for de som ikke har tatt prøven
+                html += `<tr class="ikke-gjennomfort-rad">
+                    <td class="navn-kol">${e.navn}</td>
+                    <td colspan="${proeve.oppgaveOppsett.length + 2}">Ikke gjennomført</td>
+                </tr>`;
+            } else {
+                // Vanlig rad
+                const totalKritisk = e.prosent < 50 ? 'kritisk' : '';
+                html += `<tr>
+                    <td class="navn-kol">${e.navn}</td>`;
+                
+                proeve.oppgaveOppsett.forEach((info, i) => {
+                    const poeng = (e.oppgaver && e.oppgaver[i] !== undefined) ? e.oppgaver[i] : 0;
+                    const oppgaveKritisk = (poeng / info.maks) < 0.5 ? 'kritisk' : '';
+                    html += `<td class="${oppgaveKritisk}">${poeng}</td>`;
+                });
 
-            html += `<tr>
-                <td class="navn-kol">${e.navn}</td>`;
-            
-            proeve.oppgaveOppsett.forEach((info, i) => {
-                const poeng = (e.oppgaver && e.oppgaver[i] !== undefined) ? e.oppgaver[i] : 0;
-                const oppgaveKritisk = (poeng / info.maks) < 0.5 ? 'kritisk' : '';
-                html += `<td class="${oppgaveKritisk}">${poeng}</td>`;
-            });
-
-            html += `
-                <td class="${totalKritisk}">${e.sum}</td>
-                <td class="${totalKritisk}">${e.prosent}%</td>
-            </tr>`;
+                html += `
+                    <td class="${totalKritisk}">${e.sum}</td>
+                    <td class="${totalKritisk}">${e.prosent}%</td>
+                </tr>`;
+            }
         });
 
         html += `
