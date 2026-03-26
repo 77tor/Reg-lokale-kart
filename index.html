@@ -509,7 +509,8 @@ tr:hover { background-color: #f1f1f1; }
     <div class="modal-content" style="width: 95%; max-width: 1200px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h2>Skolens utvikling over tid</h2>
-            <button class="btn-fjern" onclick="document.getElementById('modalUtvikling').style.display='none'">Lukk</button>
+                <button class="btn btn-print" onclick="printUtvikling()" style="margin-right: 10px;">Skriv ut / Lagre PDF</button>
+                <button class="btn-fjern" onclick="document.getElementById('modalUtvikling').style.display='none'">Lukk</button>
         </div>
         <p>Diagrammene viser gjennomsnittlig prosentvis måloppnåelse per trinn for alle registrerte perioder.</p>
         

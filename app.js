@@ -1944,3 +1944,46 @@ function tegnUtviklingsGraf(canvasId, fag, perioder, data) {
 
     if (fag === "Lesing") devChartLesing = chart; else devChartRegning = chart;
 }
+
+function printUtvikling() {
+    const canvasLesing = document.getElementById('chartUtviklingLesing');
+    const canvasRegning = document.getElementById('chartUtviklingRegning');
+
+    // Gjør om canvas til bilder (viktig fordi canvas ofte forsvinner i print-vinduer)
+    const bildeLesing = canvasLesing.toDataURL("image/png");
+    const bildeRegning = canvasRegning.toDataURL("image/png");
+
+    const printVindu = window.open('', '_blank');
+    printVindu.document.write(`
+        <html>
+            <head>
+                <title>Skolens utvikling over tid</title>
+                <style>
+                    body { font-family: sans-serif; text-align: center; padding: 20px; }
+                    img { max-width: 100%; height: auto; margin-bottom: 40px; border: 1px solid #eee; }
+                    h1 { color: #8e44ad; }
+                    .dato { font-size: 0.9em; color: #666; margin-bottom: 30px; }
+                </style>
+            </head>
+            <body>
+                <h1>Skolens utvikling over tid</h1>
+                <div class="dato">Utskrift generert: ${new Date().toLocaleDateString('no-NO')}</div>
+                
+                <h3>Lesing</h3>
+                <img src="${bildeLesing}">
+                
+                <h3>Regning</h3>
+                <img src="${bildeRegning}">
+                
+                <script>
+                    // Vent til bildene er lastet, så åpne print-dialogen
+                    window.onload = function() {
+                        window.print();
+                        window.onafterprint = function() { window.close(); };
+                    };
+                </script>
+            </body>
+        </html>
+    `);
+    printVindu.document.close();
+}
