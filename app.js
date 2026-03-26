@@ -1069,23 +1069,38 @@ async function genererKlasserapport() {
                     let summerTilSnitt = [];
                     let elevListeTilPrint = []; // VIKTIG: Denne må fylles for hver prøve
 
-                    for (let id in eleverIKlasse) {
-                        const e = eleverIKlasse[id];
-                        // Sjekk at eleven har gyldige data
-                        if (!e.slettet && !e.ikkeGjennomfort && e.sum !== undefined) {
-                            const prosent = Math.round((e.sum / maksPoeng) * 100);
-                            
-                            summerTilSnitt.push(prosent);
-                            
-                            // Legg til i listen som skal skrives ut
-                            elevListeTilPrint.push({
-                                navn: e.navn || "Ukjent navn",
-                                sum: e.sum,
-                                maks: maksPoeng,
-                                prosent: prosent
-                            });
-                        }
-                    }
+for (let id in eleverIKlasse) {
+    const e = eleverIKlasse[id];
+    
+    if (!e.slettet && !e.ikkeGjennomfort && e.sum !== undefined) {
+        const prosent = Math.round((e.sum / maksPoeng) * 100);
+        
+        // --- NAVNE-SJEKK ---
+        // Vi prøver å finne navnet i denne rekkefølgen:
+        // 1. e.navn
+        // 2. e.elevNavn (vanlig i mange systemer)
+        // 3. id (hvis selve ID-en i Firebase er navnet på eleven)
+        let visningsNavn = "Ukjent";
+        
+        if (e.navn) {
+            visningsNavn = e.navn;
+        } else if (e.elevNavn) {
+            visningsNavn = e.elevNavn;
+        } else if (id && id.length > 2) { 
+            // Hvis ID-en er lengre enn 2 tegn, er det sannsynligvis et navn og ikke en numerisk ID
+            visningsNavn = id; 
+        }
+
+        summerTilSnitt.push(prosent);
+        
+        elevListeTilPrint.push({
+            navn: visningsNavn,
+            sum: e.sum,
+            maks: maksPoeng,
+            prosent: prosent
+        });
+    }
+}
 
                     if (summerTilSnitt.length > 0) {
                         const snitt = Math.round(summerTilSnitt.reduce((a, b) => a + b, 0) / summerTilSnitt.length);
