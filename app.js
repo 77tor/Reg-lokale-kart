@@ -1153,6 +1153,25 @@ function printAlleKlasseResultater() {
         return alert("Ingen data å skrive ut. Vennligst generer rapport først.");
     }
 
+    // --- 1. SORTERING AV PRØVENE KRONOLOGISK ---
+    const sorterteProever = [...lagretKullData].sort((a, b) => {
+        // Ekstraherer årstall og periode fra tittel (f.eks "Høst 24")
+        // Vi antar tittel-formatet fra genererKlasserapport: "... - Høst 24 (1.tr) - ..."
+        const regex = /(Høst|Vår)\s(\d{2})/;
+        const matchA = a.tittel.match(regex);
+        const matchB = b.tittel.match(regex);
+
+        if (matchA && matchB) {
+            const aarA = parseInt(matchA[2]);
+            const aarB = parseInt(matchB[2]);
+            
+            if (aarA !== aarB) return aarA - aarB;
+            // Hvis samme år: Høst (-1) skal før Vår (1)
+            return matchA[1] === "Høst" ? -1 : 1;
+        }
+        return 0;
+    });
+
     const printVindu = window.open('', '_blank');
     
     let html = `
@@ -1163,44 +1182,44 @@ function printAlleKlasseResultater() {
         <style>
             @media print { 
                 .page-break { page-break-after: always; }
-                body { -webkit-print-color-adjust: exact; }
+                body { -webkit-print-color-adjust: exact; margin: 0; padding: 10mm; }
             }
-            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; color: #333; font-size: 12px; }
-            .header-info { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #2980b9; margin-bottom: 15px; padding-bottom: 5px; }
-            h1 { margin: 0; color: #2980b9; font-size: 20px; }
-            .snitt-boks { background: #2980b9; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold; }
+            body { font-family: 'Segoe UI', Arial, sans-serif; color: #333; font-size: 11px; line-height: 1.2; }
             
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: auto; }
-            th, td { border: 1px solid #999; padding: 6px 4px; text-align: center; }
-            th { background: #f2f2f2; font-weight: bold; }
-            .navn-kol { text-align: left; padding-left: 10px; min-width: 180px; }
+            .header-info { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2980b9; margin-bottom: 10px; padding-bottom: 5px; }
+            h1 { margin: 0; color: #2980b9; font-size: 16px; }
+            .snitt-boks { background: #2980b9; color: white; padding: 4px 10px; border-radius: 4px; font-weight: bold; font-size: 12px; }
             
-            /* Kritisk grense markering */
+            table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+            th, td { border: 1px solid #777; padding: 3px 2px; text-align: center; }
+            th { background: #f2f2f2; font-weight: bold; font-size: 10px; }
+            .navn-kol { text-align: left; padding-left: 5px; width: 160px; white-space: nowrap; overflow: hidden; }
+            
+            /* Kompakt visning: fjerner unødvendig luft */
+            tr { height: 18px; } 
+            
             .kritisk { background-color: #ffcccc !important; color: #a94442; font-weight: bold; }
             
-            .footer { margin-top: 20px; font-size: 0.8em; color: #7f8c8d; border-top: 1px solid #eee; padding-top: 5px; }
-            tr:nth-child(even) { background-color: #f9f9f9; }
+            .footer { margin-top: 10px; font-size: 9px; color: #7f8c8d; text-align: right; }
         </style>
     </head>
     <body>`;
 
-    lagretKullData.forEach((proeve, index) => {
+    sorterteProever.forEach((proeve, index) => {
         const totalSnitt = Math.round(proeve.elever.reduce((a, b) => a + b.prosent, 0) / proeve.elever.length);
 
         html += `
         <div class="page-break">
             <div class="header-info">
-                <div>
-                    <h1>${proeve.tittel}</h1>
-                </div>
-                <div class="snitt-boks">Klassesnitt: ${totalSnitt}%</div>
+                <h1>${proeve.tittel}</h1>
+                <div class="snitt-boks">Snitt: ${totalSnitt}%</div>
             </div>
 
             <table>
                 <thead>
                     <tr>
                         <th class="navn-kol">Elevnavn</th>
-                        ${proeve.oppgaveOppsett.map((o, i) => `<th>O${i+1}<br><small>max ${o.maks}</small></th>`).join('')}
+                        ${proeve.oppgaveOppsett.map((o, i) => `<th>O${i+1}<br>(${o.maks})</th>`).join('')}
                         <th style="background:#eee">Sum</th>
                         <th style="background:#eee">%</th>
                     </tr>
@@ -1208,44 +1227,34 @@ function printAlleKlasseResultater() {
                 <tbody>`;
 
         proeve.elever.forEach(e => {
-            // Sjekk om totalsum er under 50%
-            const totalKritiskKlasse = e.prosent < 50 ? 'kritisk' : '';
+            const totalKritisk = e.prosent < 50 ? 'kritisk' : '';
 
             html += `<tr>
                 <td class="navn-kol">${e.navn}</td>`;
             
-            // Loop gjennom hver oppgave for eleven
             proeve.oppgaveOppsett.forEach((info, i) => {
                 const poeng = (e.oppgaver && e.oppgaver[i] !== undefined) ? e.oppgaver[i] : 0;
-                // Rød celle hvis enkeltoppgave er under 50%
-                const oppgaveKritiskKlasse = (poeng / info.maks) < 0.5 ? 'kritisk' : '';
-                
-                html += `<td class="${oppgaveKritiskKlasse}">${poeng}</td>`;
+                const oppgaveKritisk = (poeng / info.maks) < 0.5 ? 'kritisk' : '';
+                html += `<td class="${oppgaveKritisk}">${poeng}</td>`;
             });
 
             html += `
-                <td class="${totalKritiskKlasse}">${e.sum}</td>
-                <td class="${totalKritiskKlasse}">${e.prosent}%</td>
+                <td class="${totalKritisk}">${e.sum}</td>
+                <td class="${totalKritisk}">${e.prosent}%</td>
             </tr>`;
         });
 
         html += `
                 </tbody>
             </table>
-            
-            <div class="footer">
-                Utskrift fra Kartleggingsverktøyet | Dato: ${new Date().toLocaleDateString('no-NO')} | Side ${index + 1} av ${lagretKullData.length}
-            </div>
+            <div class="footer">Side ${index + 1} av ${sorterteProever.length} | Utarbeidet: ${new Date().toLocaleDateString('no-NO')}</div>
         </div>`;
     });
 
     html += `
         <script>
             window.onload = function() {
-                setTimeout(() => { 
-                    window.print(); 
-                    // window.close(); // Kan aktiveres hvis fanen skal lukkes automatisk
-                }, 500);
+                setTimeout(() => { window.print(); }, 500);
             };
         </script>
     </body>
