@@ -341,7 +341,15 @@ async function toggleFerdigstill() {
     const erLaastNaa = tabell.classList.contains('is-locked');
     const skalLaase = !erLaastNaa;
 
-    if (skalLaase) {
+// --- NY BEKREFTELSE VED GJENÅPNING ---
+    if (!skalLaase) {
+        const bekreftGjenaapne = confirm("Du er i ferd med å åpne registrerings-modus. Da kan det gjøres endringer på data som er lagt inn. Ønsker du dette?");
+        if (!bekreftGjenaapne) return; // Avbryter hvis brukeren trykker "Avbryt"
+    }
+    // -------------------------------------
+   
+
+ if (skalLaase) {
         // --- LOGIKK FOR Å LÅSE ---
         const manglerResultat = Array.from(document.querySelectorAll('#tBody tr')).filter(rad => 
             rad.querySelector('.not-registered')
