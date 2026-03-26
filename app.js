@@ -373,6 +373,7 @@ async function toggleFerdigstill() {
 function oppdaterLaaseVisning(erLaast) {
     const tabell = document.getElementById('hovedTabell');
     const knapp = document.getElementById('btnFerdigstill');
+    const importKnapp = document.getElementById('btnImport'); // Hent import-knappen
     const tekstElement = document.getElementById('lockText');
     const ikonElement = knapp.querySelector('.btn-icon');
 
@@ -381,6 +382,9 @@ function oppdaterLaaseVisning(erLaast) {
         if (tekstElement) tekstElement.innerText = "Gjenåpne prøven";
         if (ikonElement) ikonElement.innerText = "🔓";
         knapp.style.backgroundColor = "#27ae60"; // Grønn for gjenåpne
+
+// SKJUL import-knappen når prøven er låst
+        if (importKnapp) importKnapp.style.display = 'none';
         
         // Legg til "Ferdigstilt"-tekst i radene hvis den mangler
         document.querySelectorAll('#tBody tr').forEach(rad => {
@@ -397,6 +401,13 @@ function oppdaterLaaseVisning(erLaast) {
         if (tekstElement) tekstElement.innerText = "Ferdigstille prøven";
         if (ikonElement) ikonElement.innerText = "🔒";
         knapp.style.backgroundColor = "#d35400"; // Oransje for ferdigstille
+
+// VIS import-knappen igjen når prøven åpnes
+        if (importKnapp) importKnapp.style.display = 'inline-block';
+
+// Fjern ev. ferdigstilt-merkelapper
+        document.querySelectorAll('.ferdigstilt-merkelapp').forEach(el => el.remove());
+
     }
 }
 
