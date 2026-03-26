@@ -136,6 +136,7 @@ function hentData() {
     const nyElevSeksjon = document.getElementById('nyElevSeksjon');
     const actionBar = document.querySelector('.action-bar');
 
+    // Hvis ikke alle valg er tatt, skjul seksjoner og stopp
     if (!a || !f || !p || !t || !k) {
         if (nyElevSeksjon) nyElevSeksjon.style.display = 'none';
         if (actionBar) actionBar.style.display = 'none';
@@ -143,48 +144,31 @@ function hentData() {
         return;
     }
 
-    // --- NY DEL: Sjekk låse-status for denne spesifikke prøven ---
+    // Vis seksjoner hvis valg er OK
+    if (nyElevSeksjon) nyElevSeksjon.style.display = 'block';
+    if (actionBar) actionBar.style.display = 'flex';
+
+    // --- SJEKK LÅSE-STATUS (KUN ÉN GANG) ---
     const statusSti = `status/${a}/${f}/${p}/${t}/${k}`;
+    db.ref(statusSti).off(); // Fjerner gamle lyttere for å unngå krasj/duplikater
     db.ref(statusSti).on('value', snapshot => {
         const statusData = snapshot.val();
         const erLaast = statusData && statusData.laast === true;
-        oppdaterLaaseVisning(erLaast); // Denne funksjonen styrer det visuelle
+        oppdaterLaaseVisning(erLaast); // Styrer knapper og tabell-lås
     });
-    // -----------------------------------------------------------
-
-    if (nyElevSeksjon) nyElevSeksjon.style.display = 'block';
-    if (actionBar) actionBar.style.display = 'flex';
+    // ----------------------------------------
 
     oppdaterOverskrifter(`Kartlegging i ${f} - ${t}${k} - ${p} ${a}`);
     oppdaterElevListe();
 
-// --- NY DEL: Sjekk låse-status ---
-    const statusSti = `status/${a}/${f}/${p}/${t}/${k}`;
-    db.ref(statusSti).off(); // Legg til denne for å fjerne gamle lyttere
-    db.ref(statusSti).on('value', snapshot => {
-        const statusData = snapshot.val();
-        const erLaast = statusData && statusData.laast === true;
-        oppdaterLaaseVisning(erLaast); 
-    });
-}
-
-// --- NY FUNKSJON: Henter selve elevlista fra Firebase ---
-function hentRegister() {
-    db.ref('elevRegister').on('value', snapshot => {
-        const firebaseData = snapshot.val() || {};
-        
-        // --- SMART MERGING ---
-        // Vi beholder det som er i fila (elever.js), 
-        // og legger til/overskriver med det som er i Firebase.
-        elevRegister = Object.assign({}, elevRegister, firebaseData);
-        
-        console.log("Register oppdatert. Totalt antall elever:", Object.keys(elevRegister).length);
-        
+    // Hent selve resultatene
+    const sti = `kartlegging/${a}/${f}/${p}/${t}/${k}`;
+    db.ref(sti).off(); 
+    db.ref(sti).on('value', snapshot => {
+        lagredeResultater = snapshot.val() || {};
         tegnTabell();
-        oppdaterElevListe();
     });
 }
-
 
 // --- TEGN TABELL (Inkludert gjennomsnitt og håndtering av ikke gjennomført) ---
 function tegnTabell() {
