@@ -136,7 +136,6 @@ function hentData() {
     const nyElevSeksjon = document.getElementById('nyElevSeksjon');
     const actionBar = document.querySelector('.action-bar');
 
-    // Hvis ikke alle valg er tatt, skjul seksjoner og stopp
     if (!a || !f || !p || !t || !k) {
         if (nyElevSeksjon) nyElevSeksjon.style.display = 'none';
         if (actionBar) actionBar.style.display = 'none';
@@ -144,24 +143,21 @@ function hentData() {
         return;
     }
 
-    // Vis seksjoner hvis valg er OK
-    if (nyElevSeksjon) nyElevSeksjon.style.display = 'block';
-    if (actionBar) actionBar.style.display = 'flex';
-
-    // --- SJEKK LÅSE-STATUS (KUN ÉN GANG) ---
+    // --- NY DEL: Sjekk låse-status for denne spesifikke prøven ---
     const statusSti = `status/${a}/${f}/${p}/${t}/${k}`;
-    db.ref(statusSti).off(); // Fjerner gamle lyttere for å unngå krasj/duplikater
     db.ref(statusSti).on('value', snapshot => {
         const statusData = snapshot.val();
         const erLaast = statusData && statusData.laast === true;
-        oppdaterLaaseVisning(erLaast); // Styrer knapper og tabell-lås
+        oppdaterLaaseVisning(erLaast); // Denne funksjonen styrer det visuelle
     });
-    // ----------------------------------------
+    // -----------------------------------------------------------
+
+    if (nyElevSeksjon) nyElevSeksjon.style.display = 'block';
+    if (actionBar) actionBar.style.display = 'flex';
 
     oppdaterOverskrifter(`Kartlegging i ${f} - ${t}${k} - ${p} ${a}`);
     oppdaterElevListe();
 
-    // Hent selve resultatene
     const sti = `kartlegging/${a}/${f}/${p}/${t}/${k}`;
     db.ref(sti).off(); 
     db.ref(sti).on('value', snapshot => {
@@ -169,6 +165,24 @@ function hentData() {
         tegnTabell();
     });
 }
+
+// --- NY FUNKSJON: Henter selve elevlista fra Firebase ---
+function hentRegister() {
+    db.ref('elevRegister').on('value', snapshot => {
+        const firebaseData = snapshot.val() || {};
+        
+        // --- SMART MERGING ---
+        // Vi beholder det som er i fila (elever.js), 
+        // og legger til/overskriver med det som er i Firebase.
+        elevRegister = Object.assign({}, elevRegister, firebaseData);
+        
+        console.log("Register oppdatert. Totalt antall elever:", Object.keys(elevRegister).length);
+        
+        tegnTabell();
+        oppdaterElevListe();
+    });
+}
+
 
 // --- TEGN TABELL (Inkludert gjennomsnitt og håndtering av ikke gjennomført) ---
 function tegnTabell() {
@@ -359,7 +373,6 @@ async function toggleFerdigstill() {
 function oppdaterLaaseVisning(erLaast) {
     const tabell = document.getElementById('hovedTabell');
     const knapp = document.getElementById('btnFerdigstill');
-    const importKnapp = document.getElementById('btnImport'); // Hent import-knappen
     const tekstElement = document.getElementById('lockText');
     const ikonElement = knapp.querySelector('.btn-icon');
 
@@ -368,9 +381,6 @@ function oppdaterLaaseVisning(erLaast) {
         if (tekstElement) tekstElement.innerText = "Gjenåpne prøven";
         if (ikonElement) ikonElement.innerText = "🔓";
         knapp.style.backgroundColor = "#27ae60"; // Grønn for gjenåpne
-
-// SKJUL import-knappen når prøven er låst
-        if (importKnapp) importKnapp.style.display = 'none';
         
         // Legg til "Ferdigstilt"-tekst i radene hvis den mangler
         document.querySelectorAll('#tBody tr').forEach(rad => {
@@ -387,13 +397,6 @@ function oppdaterLaaseVisning(erLaast) {
         if (tekstElement) tekstElement.innerText = "Ferdigstille prøven";
         if (ikonElement) ikonElement.innerText = "🔒";
         knapp.style.backgroundColor = "#d35400"; // Oransje for ferdigstille
-
-// VIS import-knappen igjen når prøven åpnes
-        if (importKnapp) importKnapp.style.display = 'inline-block';
-
-// Fjern ev. ferdigstilt-merkelapper
-        document.querySelectorAll('.ferdigstilt-merkelapp').forEach(el => el.remove());
-
     }
 }
 
