@@ -1070,16 +1070,20 @@ async function genererKlasserapport() {
                         }
                     }
 
-                    if (summer.length > 0) {
-                        const snitt = summer.reduce((a,b) => a+b, 0) / summer.length;
-                        const label = `${periode} ${skoleaar.slice(-2)} (${trinn}.tr)`;
-                        tidslinjeData.push({ label, snitt: Math.round(snitt) });
-                        
-                        // Lagre for full utskrift
-                        lagretKullData.push({
-                            tittel: `Resultater ${fag} - ${label} - Klasse ${trinn}${klasseBokstav}`,
-                            elever: elevResultater.sort((a,b) => a.navn.localeCompare(b.navn))
-                        });
+if (summer.length > 0) {
+    const snitt = summer.reduce((a, b) => a + b, 0) / summer.length;
+    const label = `${periode} ${skoleaar.slice(-2)} (${trinn}.tr)`;
+    tidslinjeData.push({ label, snitt: Math.round(snitt) });
+    
+    // Filtrer ut eventuelle elever som mangler navn før sortering
+    const gyldigeElever = elevResultater.filter(e => e.navn && typeof e.navn === 'string');
+
+    // Lagre for full utskrift
+    lagretKullData.push({
+        tittel: `Resultater ${fag} - ${label} - Klasse ${trinn}${klasseBokstav}`,
+        // Sortering med sjekk for å unngå krasj
+        elever: gyldigeElever.sort((a, b) => a.navn.localeCompare(b.navn))
+    });
                     }
                 }
             }
