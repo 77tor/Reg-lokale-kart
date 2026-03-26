@@ -1796,11 +1796,10 @@ function forberedPrint() { window.print(); }
 // -- SAMMENLIGNE PRØVER/ÅR ---
 let devChartLesing = null;
 let devChartRegning = null;
-
 function tegnUtviklingsGraf(canvasId, fag, perioder, data) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     
-    // Rydd opp i gamle grafer for å unngå "overlapping"
+    // Rydd opp i gamle grafer
     if (fag === "Lesing" && devChartLesing) devChartLesing.destroy();
     if (fag === "Regning" && devChartRegning) devChartRegning.destroy();
 
@@ -1821,42 +1820,42 @@ function tegnUtviklingsGraf(canvasId, fag, perioder, data) {
 
         if (trinnData.some(v => v !== null)) {
             datasets.push({
-                type: 'bar',
+                type: 'bar', // Eksplisitt type per datasett
                 label: `${t}. trinn`,
                 data: trinnData,
                 backgroundColor: trinnFarger[t],
                 borderColor: trinnFarger[t],
                 borderWidth: 1,
-                order: 2 // Legger søylene bak linjen
+                order: 2,
+                categoryPercentage: 0.8,
+                barPercentage: 0.9
             });
         }
     }
 
-    // 2. Beregn totalsnitt for hele skolen per periode
+    // 2. Beregn totalsnitt for hele skolen
     const skolenTotaltData = perioder.map(p => {
-        let alleElevProsenterIPeriode = [];
+        let alleElevProsenter = [];
         for (let t = 1; t <= 7; t++) {
             const verdier = data[p]?.[t] || [];
-            alleElevProsenterIPeriode = alleElevProsenterIPeriode.concat(verdier);
+            alleElevProsenter = alleElevProsenter.concat(verdier);
         }
-        
-        if (alleElevProsenterIPeriode.length === 0) return null;
-        const snitt = alleElevProsenterIPeriode.reduce((a, b) => a + b, 0) / alleElevProsenterIPeriode.length;
-        return Math.round(snitt);
+        if (alleElevProsenter.length === 0) return null;
+        return Math.round(alleElevProsenter.reduce((a, b) => a + b, 0) / alleElevProsenter.length);
     });
 
     // 3. Legg til linjen for Skolen Totalt
     datasets.push({
-        type: 'line',
+        type: 'line', // Eksplisitt type for linjen
         label: 'Skolen totalt',
         data: skolenTotaltData,
-        borderColor: '#2c3e50', // Mørk grå/blå kontrastfarge
+        borderColor: '#2c3e50',
         borderWidth: 4,
         pointRadius: 6,
         pointBackgroundColor: '#2c3e50',
         fill: false,
-        tension: 0.1, // Litt avrunding på linjen
-        order: 1, // Legger linjen foran søylene
+        tension: 0.2,
+        order: 1, // Tvinger linjen fremst
         datalabels: {
             align: 'top',
             backgroundColor: '#2c3e50',
@@ -1867,8 +1866,13 @@ function tegnUtviklingsGraf(canvasId, fag, perioder, data) {
         }
     });
 
+    // VIKTIG: Sett type til 'bar' som grunnlag for hele chartet
     const chart = new Chart(ctx, {
-        data: { labels: perioder, datasets: datasets },
+        type: 'bar', 
+        data: { 
+            labels: perioder, 
+            datasets: datasets 
+        },
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -1878,23 +1882,25 @@ function tegnUtviklingsGraf(canvasId, fag, perioder, data) {
                     text: `Utvikling over tid: ${fag} (%)`, 
                     font: { size: 18, weight: 'bold' } 
                 },
-                legend: {
-                    position: 'bottom'
-                },
+                legend: { position: 'bottom' },
                 datalabels: {
                     display: function(context) {
-                        // Vis alltid label for linjen, og for søyler hvis verdi > 0
-                        return context.dataset.type === 'line' || context.dataset.data[context.dataIndex] > 0;
+                        // Vis tall hvis det er linje, eller hvis søylen har verdi
+                        return context.dataset.type === 'line' || (context.dataset.data[context.dataIndex] !== null);
                     },
-                    formatter: (v) => v ? v + "%" : ""
+                    formatter: (v) => v !== null ? v + "%" : ""
                 }
             },
             scales: { 
                 y: { 
+                    beginAtZero: true,
                     min: 0, 
-                    max: 105, // Litt ekstra plass til tallene på toppen
+                    max: 110, // Litt ekstra plass til labels
                     title: { display: true, text: 'Prosent riktig' } 
-                } 
+                },
+                x: {
+                    stacked: false // Sørger for at søylene står ved siden av hverandre
+                }
             }
         },
         plugins: [ChartDataLabels]
