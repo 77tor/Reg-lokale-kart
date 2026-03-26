@@ -1856,12 +1856,16 @@ async function aapneUtviklingsModal() {
 
 function tegnUtviklingsGraf(canvasId, fag, perioder, data) {
     const ctx = document.getElementById(canvasId).getContext('2d');
+    
+    // Rydd opp i gamle grafer
     if (fag === "Lesing" && devChartLesing) devChartLesing.destroy();
     if (fag === "Regning" && devChartRegning) devChartRegning.destroy();
 
     const trinnFarger = { "1":"#3498db", "2":"#e74c3c", "3":"#2ecc71", "4":"#f1c40f", "5":"#9b59b6", "6":"#e67e22", "7":"#1abc9c" };
     
     const datasets = [];
+
+    // 1. Legg til trinnene som søyler (identisk med din fungerende kode)
     for (let t = 1; t <= 7; t++) {
         const trinnData = perioder.map(p => {
             const verdier = data[p]?.[t] || [];
@@ -1871,6 +1875,7 @@ function tegnUtviklingsGraf(canvasId, fag, perioder, data) {
 
         if (trinnData.some(v => v !== null)) {
             datasets.push({
+                type: 'bar', // Vi spesifiserer type her
                 label: `${t}. trinn`,
                 data: trinnData,
                 backgroundColor: trinnFarger[t],
@@ -1880,17 +1885,59 @@ function tegnUtviklingsGraf(canvasId, fag, perioder, data) {
         }
     }
 
+    // 2. Beregn og legg til "Skolen totalt" som en linje
+    const totalData = perioder.map(p => {
+        let alleProsenter = [];
+        for (let t = 1; t <= 7; t++) {
+            const verdier = data[p]?.[t] || [];
+            alleProsenter = alleProsenter.concat(verdier);
+        }
+        if (alleProsenter.length === 0) return null;
+        return Math.round(alleProsenter.reduce((a, b) => a + b, 0) / alleProsenter.length);
+    });
+
+    // Legger til linjen i datasets-listen
+    datasets.push({
+        type: 'line', // Denne gjør det til en linje i søylediagrammet
+        label: 'Skolen totalt',
+        data: totalData,
+        borderColor: '#2c3e50',
+        borderWidth: 3,
+        pointBackgroundColor: '#2c3e50',
+        fill: false,
+        tension: 0.1,
+        // Vi legger til en egen stil for datalabels på linjen så den skiller seg ut
+        datalabels: {
+            align: 'top',
+            backgroundColor: '#2c3e50',
+            color: '#fff',
+            borderRadius: 3,
+            padding: 4
+        }
+    });
+
     const chart = new Chart(ctx, {
-        type: 'bar',
+        type: 'bar', // Hovedtypen må være 'bar' for at søylene skal vises riktig
         data: { labels: perioder, datasets: datasets },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
                 title: { display: true, text: `Gjennomsnittlig måloppnåelse: ${fag}`, font: { size: 16 } },
-                datalabels: { anchor: 'end', align: 'top', formatter: (v) => v ? v + "%" : "" }
+                legend: { position: 'bottom' },
+                datalabels: { 
+                    anchor: 'end', 
+                    align: 'top', 
+                    formatter: (v) => v ? v + "%" : "" 
+                }
             },
-            scales: { y: { min: 0, max: 100, title: { display: true, text: 'Prosent riktig' } } }
+            scales: { 
+                y: { 
+                    min: 0, 
+                    max: 110, // Økt til 110 så vi får plass til merkelappene på toppen
+                    title: { display: true, text: 'Prosent riktig' } 
+                } 
+            }
         },
         plugins: [ChartDataLabels]
     });
