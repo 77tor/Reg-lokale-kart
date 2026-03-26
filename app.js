@@ -158,11 +158,13 @@ function hentData() {
     oppdaterOverskrifter(`Kartlegging i ${f} - ${t}${k} - ${p} ${a}`);
     oppdaterElevListe();
 
-    const sti = `kartlegging/${a}/${f}/${p}/${t}/${k}`;
-    db.ref(sti).off(); 
-    db.ref(sti).on('value', snapshot => {
-        lagredeResultater = snapshot.val() || {};
-        tegnTabell();
+// --- NY DEL: Sjekk låse-status ---
+    const statusSti = `status/${a}/${f}/${p}/${t}/${k}`;
+    db.ref(statusSti).off(); // Legg til denne for å fjerne gamle lyttere
+    db.ref(statusSti).on('value', snapshot => {
+        const statusData = snapshot.val();
+        const erLaast = statusData && statusData.laast === true;
+        oppdaterLaaseVisning(erLaast); 
     });
 }
 
