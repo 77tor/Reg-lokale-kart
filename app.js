@@ -1157,93 +1157,108 @@ function tegnKlasseChart(dataPoints) {
     });
 }
 
-// FUNKSJON FOR UTSKRIFT (En side pr. prøve)
 function printAlleKlasseResultater() {
     if (!lagretKullData || lagretKullData.length === 0) {
-        return alert("Ingen data å skrive ut. Vennligst velg kull, fag og klasse, og trykk 'Vis utvikling' først.");
+        return alert("Ingen data å skrive ut. Vennligst generer rapport først.");
     }
 
-    // Sorter prøvene kronologisk før utskrift (hvis de ikke allerede er det)
-    // Dette sikrer at 1. trinn kommer før 2. trinn osv.
-    const sorterteProever = [...lagretKullData]; 
-
     const printVindu = window.open('', '_blank');
+    
+    // Vi henter fargekodene/grensene dine hvis de finnes globalt, 
+    // hvis ikke bruker vi standard (Under 50% = rød, 50-80% = gul, over 80% = grønn)
     
     let html = `
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Klasserapport - Fullstendig oversikt</title>
+        <title>Klasserapport - Detaljert oversikt</title>
         <style>
-            @media print {
+            @media print { 
                 .page-break { page-break-after: always; }
-                body { margin: 0; padding: 0; }
+                body { -webkit-print-color-adjust: exact; }
             }
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; line-height: 1.4; padding: 40px; }
-            h1 { color: #2980b9; border-bottom: 2px solid #2980b9; padding-bottom: 10px; margin-top: 0; }
-            h2 { font-size: 1.2em; color: #7f8c8d; margin-bottom: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-            th, td { border: 1px solid #bdc3c7; padding: 10px; text-align: left; }
-            th { background-color: #f8f9fa; font-weight: bold; }
-            tr:nth-child(even) { background-color: #fcfcfc; }
-            .lav-score { color: #e74c3c; font-weight: bold; }
-            .info-boks { background: #fdf9e7; padding: 10px; border-left: 5px solid #f1c40f; margin-bottom: 20px; font-style: italic; }
-            .footer { font-size: 0.8em; color: #95a5a6; text-align: right; margin-top: 10px; }
+            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #333; }
+            .header-info { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #2980b9; margin-bottom: 20px; padding-bottom: 10px; }
+            h1 { margin: 0; color: #2980b9; font-size: 24px; }
+            .snitt-boks { background: #2980b9; color: white; padding: 10px 20px; border-radius: 5px; font-weight: bold; }
+            
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th { background: #f2f2f2; padding: 12px; text-align: left; border-bottom: 2px solid #ddd; }
+            td { padding: 10px; border-bottom: 1px solid #eee; }
+            
+            /* Fargekoding for mestringsnivåer */
+            .nivaa-rod { background-color: #ffcccc !important; color: #a94442; font-weight: bold; text-align: center; border-radius: 4px; }
+            .nivaa-gul { background-color: #fff4cc !important; color: #8a6d3b; font-weight: bold; text-align: center; border-radius: 4px; }
+            .nivaa-gronn { background-color: #dff0d8 !important; color: #3c763d; font-weight: bold; text-align: center; border-radius: 4px; }
+            
+            .footer { margin-top: 30px; font-size: 0.8em; color: #7f8c8d; border-top: 1px solid #eee; padding-top: 10px; }
+            .student-row:nth-child(even) { background-color: #fafafa; }
         </style>
     </head>
     <body>`;
 
-    sorterteProever.forEach((proeve, index) => {
-        // Beregn snitt for denne spesifikke prøven
-        const snitt = Math.round(proeve.elever.reduce((a, b) => a + b.prosent, 0) / proeve.elever.length);
+    lagretKullData.forEach((proeve, index) => {
+        const totalSnitt = Math.round(proeve.elever.reduce((a, b) => a + b.prosent, 0) / proeve.elever.length);
 
         html += `
         <div class="page-break">
-            <h1>${proeve.tittel}</h1>
-            <h2>Gjennomsnitt for klassen: ${snitt}%</h2>
-            
-            <div class="info-boks">
-                Oversikten viser resultater for alle elever som har gjennomført prøven i denne perioden.
+            <div class="header-info">
+                <div>
+                    <h1>${proeve.tittel}</h1>
+                    <p>Rapport generert for hele klassen</p>
+                </div>
+                <div class="snitt-boks">Klassesnitt: ${totalSnitt}%</div>
             </div>
 
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 50%;">Elevnavn</th>
-                        <th style="width: 15%;">Poeng</th>
-                        <th style="width: 15%;">Maks</th>
-                        <th style="width: 20%;">Prosent</th>
+                        <th style="width: 40%;">Elevnavn</th>
+                        <th style="width: 15%; text-align: center;">Poeng</th>
+                        <th style="width: 15%; text-align: center;">Maks</th>
+                        <th style="width: 30%; text-align: center;">Mestringsnivå / Prosent</th>
                     </tr>
                 </thead>
                 <tbody>`;
 
         proeve.elever.forEach(e => {
-            // Marker elever med under 50% som "lav-score"
-            const scoreKlasse = e.prosent < 50 ? 'class="lav-score"' : '';
+            // Definer fargeklasse basert på prosent
+            let fargeKlasse = 'nivaa-gronn';
+            let nivaaTekst = 'Høy';
             
+            if (e.prosent < 50) {
+                fargeKlasse = 'nivaa-rod';
+                nivaaTekst = 'Lav';
+            } else if (e.prosent < 80) {
+                fargeKlasse = 'nivaa-gul';
+                nivaaTekst = 'Middels';
+            }
+
             html += `
-                <tr>
+                <tr class="student-row">
                     <td>${e.navn}</td>
-                    <td>${e.sum}</td>
-                    <td>${e.maks}</td>
-                    <td ${scoreKlasse}>${e.prosent}%</td>
+                    <td style="text-align: center;">${e.sum}</td>
+                    <td style="text-align: center;">${e.maks}</td>
+                    <td>
+                        <div class="${fargeKlasse}">${nivaaTekst} (${e.prosent}%)</div>
+                    </td>
                 </tr>`;
         });
 
         html += `
                 </tbody>
             </table>
-            <div class="footer">Utskriftsdato: ${new Date().toLocaleDateString('no-NO')} | Side ${index + 1} av ${sorterteProever.length}</div>
+            
+            <div class="footer">
+                Utskrift fra Kartleggingsverktøyet | Dato: ${new Date().toLocaleDateString('no-NO')} | Side ${index + 1} av ${lagretKullData.length}
+            </div>
         </div>`;
     });
 
     html += `
         <script>
             window.onload = function() {
-                setTimeout(function() {
-                    window.print();
-                    // window.close(); // Valgfritt: lukker fanen etter utskrift
-                }, 500);
+                setTimeout(() => { window.print(); }, 500);
             };
         </script>
     </body>
@@ -1252,7 +1267,6 @@ function printAlleKlasseResultater() {
     printVindu.document.write(html);
     printVindu.document.close();
 }
-
 
 // --- ELEVRAPPORT I ADMIN-FUNKSJONER ---
 function filtrerElevListe() {
