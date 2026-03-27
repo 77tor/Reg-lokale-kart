@@ -555,6 +555,6 @@ let elevRegister = {
 "Tvedt, Liam": { startTrinn: 7, startKlasse: 'D', startAar: 2024 },
 "Vu, Alexander Theodor Hoang": { startTrinn: 7, startKlasse: 'D', startAar: 2024 },
 "Øhman, Fabian Putra": { startTrinn: 7, startKlasse: 'D', startAar: 2024 },
-"Aagren, Andrea Krossen": { startTrinn: 7, startKlasse: 'D', startAar: 2024 },
+"Aagren, Andrea Krossen": { startTrinn: 7, startKlasse: 'D', startAar: 2024 }
 
 };
