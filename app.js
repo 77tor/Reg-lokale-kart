@@ -1829,11 +1829,19 @@ function fullforImport() {
 // Henter ALT fra Firebase og bygger utskriftssiden
 async function genererFullElevrapport(navn) {
     const utskriftArea = document.getElementById('utskriftRapportArea');
-    // Legg til class='no-print' på denne vente-teksten
-utskriftArea.innerHTML = "<h2 class='no-print' style='text-align:center; padding:50px;'>Genererer rapport for " + navn + "...</h2>";
-    document.getElementById('modalElevrapport').style.display = 'none';
+    
+    // 1. Skjul modalen og admin-panelet ØYEBLIKKELIG
+    const modal = document.getElementById('modalElevrapport');
+    const admin = document.getElementById('adminPanel');
+    if (modal) modal.style.display = 'none';
+    if (admin) admin.style.display = 'none';
+
+    // 2. Vis ventemelding som IKKE skal printes
+    utskriftArea.innerHTML = "<h2 class='no-print' style='text-align:center; padding:50px;'>Genererer rapport for " + navn + "...</h2>";
+    utskriftArea.style.display = "block";
 
     try {
+
         const snap = await db.ref(`kartlegging`).once('value');
         const alleData = snap.val() || {};
         
