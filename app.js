@@ -1161,7 +1161,7 @@ function aapneSammenligningsModal() {
     fyllDropdown('compAar', alleAar);
     fyllDropdown('compFag', ["Lesing", "Regning"]); 
     fyllDropdown('compPeriode', ["Høst", "Vår"]);
-    fyllDropdown('compTrinn', ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]);
+    fyllDropdown('compTrinn', ["1", "2", "3", "4", "5", "6", "7"]);
 }
 
 // Hjelpefunksjon for å fylle dropdown-menyer
