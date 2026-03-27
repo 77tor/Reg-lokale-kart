@@ -133,9 +133,6 @@ tr:hover { background-color: #f1f1f1; }
 }
 
 
-
-
-/* MODAL */
 /* MODAL */
 .modal { 
     display: none; 
@@ -168,6 +165,21 @@ tr:hover { background-color: #f1f1f1; }
     overflow-y: auto; 
     box-shadow: 0 5px 30px rgba(0,0,0,0.3); 
     position: relative;
+}
+
+/* Reduserer luft over og under overskrifter inne i modal-vinduene */
+.modal-content h2, 
+.modal-content h3, 
+.modal-content h4 {
+    margin-top: 5px;    /* Minimalt med luft over */
+    margin-bottom: 10px; /* Litt luft under til innholdet */
+    line-height: 1.2;    /* Gjør selve tekstlinjen tettere */
+}
+
+/* Hvis du har en beskrivende tekst (p) rett under overskriften */
+.modal-content p {
+    margin-top: 0;
+    margin-bottom: 15px;
 }
 
 .oppgave-rad { 
