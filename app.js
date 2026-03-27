@@ -1128,7 +1128,7 @@ async function kjorSammenligning() {
     });
 }
 
-/ Denne åpner selve vinduet fra adminpanelet
+// Denne åpner selve vinduet fra adminpanelet
 function aapneSammenligningsModal() {
     document.getElementById('modalSammenlign').style.display = 'block';
     document.getElementById('modalChartArea').style.display = 'none'; // Skjul gammel graf
