@@ -213,62 +213,40 @@ tr:hover { background-color: #f1f1f1; }
 }
 
 
-/* --- UTTSKRIFT-LOGIKK (ALT I LIGGENDE - OPTIMALISERT) --- */
+
+/* --- UTTSKRIFT-LOGIKK (DENNE ER TRYGG FOR BEGGE TYPER) --- */
 @media print {
-    /* 1. Tving liggende format og fjern unødvendig marg-støy */
-    @page { 
-        size: landscape; 
-        margin: 0.5cm; 
-    }
+    @page { size: landscape; margin: 0.5cm; }
+    body { background: white; margin: 0; padding: 0; width: 100%; }
 
-    body { 
-        background: white; 
-        margin: 0; 
-        padding: 0; 
-        width: 100%;
-    }
-
-/* 2. Skjul alt som ikke skal på papiret - UTVIDET */
+    /* 2. Skjul alt unødvendig */
     .no-print, .btn, .modal, .modal-content, #loginScreen, .header-grid, 
     .action-bar, .ny-elev-boks, #adminPanel, .chart-container, 
-    #chartContainer, .print-header img, 
-    #modalElevrapport h2, #modalElevrapport p { /* Skjuler spesifikt teksten i modalen */
+    #chartContainer, .print-header img,
+    #modalElevrapport h2, #modalElevrapport h3, #modalElevrapport p { 
         display: none !important;
-        opacity: 0 !important;
         height: 0 !important;
         margin: 0 !important;
     }
 
-    /* Sørg for at farger blir med */
-    * { 
-        -webkit-print-color-adjust: exact !important; 
-        print-color-adjust: exact !important; 
-    }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
-    /* 3. Vis Elevrapport HVIS den har innhold */
+    /* 3. LOGIKK FOR ELEVRAPPORT */
     #utskriftRapportArea:not(:empty) {
         display: block !important;
         visibility: visible !important;
-        width: 100% !important;
     }
+    #utskriftRapportArea:not(:empty) ~ .container { display: none !important; }
 
-    /* Skjul hovedcontaineren HVIS elevrapporten er aktiv */
-    #utskriftRapportArea:not(:empty) ~ .container {
-        display: none !important;
-    }
-
-    /* 4. Vis Klasseliste HVIS elevrapporten er tom */
+    /* 4. LOGIKK FOR KLASSELISTE (vises kun når rapportområdet er tomt) */
     #utskriftRapportArea:empty ~ .container {
         display: block !important;
-        visibility: visible !important;
         width: 100% !important;
         max-width: none !important; 
         margin: 0 !important;
-        padding: 0 !important;
     }
 
-
-/* 5. Tabell og overskrifts-innstillinger */
+    /* 5. TABELL-STIL (Gjelder begge) */
     table { 
         width: 100% !important; 
         border-collapse: collapse !important; 
@@ -276,69 +254,30 @@ tr:hover { background-color: #f1f1f1; }
         transform: scale(0.96); 
         transform-origin: top center;
     }
+    th, td { border: 1px solid black !important; padding: 5px 4px !important; text-align: center; }
+    thead { display: table-header-group !important; }
+    tr { page-break-inside: avoid !important; }
+    
+    /* Beholder snitt-rad fargen din */
+    tr.snitt-rad { background-color: #f1f5f9 !important; border-top: 2px solid black !important; }
 
-    /* ENDRET HER: Vi tillater bare h1 (hovedtittel) og overskrifter INNI rapportområdet */
-    h1#printTittel { 
-        display: block !important;
-        color: black !important;
-        text-align: center;
-        font-size: 14pt !important;
-        margin-bottom: 10px !important;
-    }
+    /* 6. OVERSKRIFTS-KONTROLL (Her lå feilen din) */
+    /* Vi skjuler ALLE h1, h2, h3 først... */
+    h1, h2, h3, h4 { display: none !important; }
 
-    /* Skjul alle andre h2 og h3 som ikke ligger inni selve rapporten */
-    h2:not(#utskriftRapportArea h2), 
-    h3:not(#utskriftRapportArea h3),
-    h4:not(#utskriftRapportArea h4) {
-        display: none !important;
-    }
-
-    /* Sørg for at overskrifter inne i selve rapporten faktisk vises */
+    /* ...men vi TVINGER frem de som er i rapporten ELLER hovedtittelen */
+    #printTittel, 
     #utskriftRapportArea h1, 
     #utskriftRapportArea h2, 
     #utskriftRapportArea h3 {
         display: block !important;
-        visibility: visible !important;
         color: black !important;
-        margin: 5px 0 !important;
-    }
-
-    thead {
-        display: table-header-group !important;
-    }
-
-    tr { 
-        page-break-inside: avoid !important; 
-        page-break-after: auto; 
-    }
-
-    /* NYTT: Spesifikk beskyttelse for snitt-raden */
-    tr.snitt-rad {
-        page-break-before: avoid !important;
-        break-before: avoid !important;
-        background-color: #f1f5f9 !important;
-        padding: 8px 4px !important; 
-        border-top: 2px solid black !important;
-    }
-
-    th, td { 
-        border: 1px solid black !important; 
-        padding: 5px 4px !important; 
         text-align: center;
-        word-wrap: break-word; 
-        line-height: 1.2 !important;
+        margin: 5px 0 !important;
+        font-size: 14pt !important;
     }
 
-    h1, h2, h3 { 
-        color: black !important; 
-        text-align: center; 
-        margin: 5px 0 !important; /* Redusert margin fra 10px til 5px */
-        padding: 0 !important;
-        font-size: 14pt !important; /* Tvinger overskriften til å ikke være for dominerende */
-    }
-    
     .page-break { page-break-before: always; }
-    .alert-low { background-color: #ffcccc !important; }
 }
 
 
