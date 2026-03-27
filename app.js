@@ -1834,6 +1834,7 @@ utskriftArea.innerHTML = "<h2 class='no-print' style='text-align:center; padding
     document.getElementById('modalElevrapport').style.display = 'none';
 
     try {
+
         const snap = await db.ref(`kartlegging`).once('value');
         const alleData = snap.val() || {};
         
@@ -1870,7 +1871,7 @@ utskriftArea.innerHTML = "<h2 class='no-print' style='text-align:center; padding
 
         let html = `
             <div style="padding: 20px; font-family: Arial, sans-serif;">
-                <h1 style="text-align:center; color:#2c3e50; margin-bottom:5px;">ELEVSRAPPORT</h1>
+                <h1 style="text-align:center; color:#2c3e50; margin-bottom:5px;">ELEVRAPPORT</h1>
                 <h2 style="text-align:center; margin-top:0;">${navn}</h2>
                 <p style="text-align:center; color:#666;">Utskriftsdato: ${new Date().toLocaleDateString('nb-NO')}</p>
                 <hr style="border:1px solid #2980b9; margin: 20px 0;">
