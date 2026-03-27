@@ -1439,10 +1439,16 @@ function aapneElevrapportValg() {
         div.innerText = navn;
 
         // --- ENDRING HER: Skjuler modalen FØR rapporten genereres ---
-        div.onclick = () => {
-            document.getElementById('modalElevrapport').style.display = 'none';
-            genererFullElevrapport(navn);
-        };
+div.onclick = () => {
+    // 1. Skjul modalen umiddelbart
+    document.getElementById('modalElevrapport').style.display = 'none';
+    
+    // 2. Vent 200 millisekunder (0.2 sek) før vi lager rapporten
+    // Dette gir nettleseren tid til å tegne skjermen på nytt UTEN modalen
+    setTimeout(() => {
+        genererFullElevrapport(navn);
+    }, 200);
+};
         
         container.appendChild(div);
     });
@@ -1823,7 +1829,8 @@ function fullforImport() {
 // Henter ALT fra Firebase og bygger utskriftssiden
 async function genererFullElevrapport(navn) {
     const utskriftArea = document.getElementById('utskriftRapportArea');
-    utskriftArea.innerHTML = "<h2 style='text-align:center; padding:50px;'>Genererer rapport for " + navn + "...</h2>";
+    // Legg til class='no-print' på denne vente-teksten
+utskriftArea.innerHTML = "<h2 class='no-print' style='text-align:center; padding:50px;'>Genererer rapport for " + navn + "...</h2>";
     document.getElementById('modalElevrapport').style.display = 'none';
 
     try {
