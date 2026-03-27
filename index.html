@@ -225,8 +225,10 @@ tr:hover { background-color: #f1f1f1; }
     #chartContainer, .print-header img,
     #modalElevrapport h2, #modalElevrapport h3, #modalElevrapport p { 
         display: none !important;
-        height: 0 !important;
-        margin: 0 !important;
+        visibility: hidden !important;
+        position: absolute !important;
+        top: -9999px !important; /* Dette tvinger teksten bort fra toppen av PDF-en */
+        left: -9999px !important;
     }
 
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
