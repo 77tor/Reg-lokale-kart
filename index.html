@@ -346,51 +346,53 @@ tr:hover { background-color: #f1f1f1; }
         </div>
     </div>
 
-
 <div id="adminPanel" class="no-print" style="display: none; background: #f8f9fa; border: 2px solid #2980b9; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-    <h3 style="margin-top:0;color:#2980b9;border-bottom:1px solid #2980b9;padding-bottom:10px;">Administrativt panel</h3>
+    <h3 class="no-print" style="margin-top:0;color:#2980b9;border-bottom:1px solid #2980b9;padding-bottom:10px;">Administrativt panel</h3>
+    
     <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr; gap:20px;">
         
         <div style="border-right:1px solid #dee2e6; padding-right:10px;">
-            <h4>Årsrapport og eksport</h4>
+            <h4 class="no-print">Årsrapport og eksport</h4>
             <div style="display: flex; flex-direction: column; gap: 8px;">
-            <button class="btn btn-edit" style="width:100%; background-color: #006B39;" onclick="document.getElementById('modalRapport').style.display='block'">Generer Årsrapport</button>
-            <button class="btn btn-excel" style="width:100%; background-color: #00A321;" onclick="document.getElementById('modalTotalEksport').style.display='block'">Eksporter alt (Faner)</button>
-        </div>
+                <button class="btn btn-edit" style="width:100%; background-color: #006B39;" onclick="document.getElementById('modalRapport').style.display='block'">Generer Årsrapport</button>
+                <button class="btn btn-excel" style="width:100%; background-color: #00A321;" onclick="document.getElementById('modalTotalEksport').style.display='block'">Eksporter alt (Faner)</button>
+            </div>
             <p style="font-size:0.8em;color:#666;">Lager rapport/eksporterer til Excel alle klasser i gitt år/periode/fag.</p>
         </div>
 
         <div style="border-right:1px solid #dee2e6; padding-right:10px;">
-            <h4>Utvikling og sammenligning</h4>
+            <h4 class="no-print">Utvikling og sammenligning</h4>
             <div style="display: flex; flex-direction: column; gap: 8px;">
-            <button class="btn btn-analyse" style="width:100%; background-color: #A300FF; color: white;" onclick="aapneUtviklingsModal()">Skolens utvikling over tid</button>
-            <button class="btn btn-hent" style="width:100%; background-color: #FF00DC; color: white;" onclick="document.getElementById('modalSammenlign').style.display='block'">Lag trinn-sammenligning</button>
-        </div>            
+                <button class="btn btn-analyse" style="width:100%; background-color: #A300FF; color: white;" onclick="aapneUtviklingsModal()">Skolens utvikling over tid</button>
+                <button class="btn btn-hent" style="width:100%; background-color: #FF00DC; color: white;" onclick="document.getElementById('modalSammenlign').style.display='block'">Lag trinn-sammenligning</button>
+            </div>            
             <p style="font-size:0.8em;color:#666;">Viser skolens resultater over alle år og perioder.</p>
         </div>
 
-<div style="border-right: 1px solid #dee2e6; padding-right: 10px;">
-    <h4>Klasse og enkeltelver</h4>
-    <div style="display: flex; flex-direction: column; gap: 8px;">
-        <button class="btn" style="width:100%; background-color: #2980b9; color: white;" onclick="aapneKlasserapportModal()">Klasserapport</button>
-        <button class="btn btn-print" style="width:100%;" onclick="aapneElevrapportValg()">Elevrapport</button>
-    </div>
-    <p style="font-size:0.8em;color:#666; margin-top: 10px;">Rapporter for enkeltelever eller hele klasser over tid.</p>
-</div>
+        <div style="border-right: 1px solid #dee2e6; padding-right: 10px;">
+            <h4 class="no-print">Klasse og enkeltelver</h4>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button class="btn" style="width:100%; background-color: #2980b9; color: white;" onclick="aapneKlasserapportModal()">Klasserapport</button>
+                <button class="btn btn-print" style="width:100%;" onclick="aapneElevrapportValg()">Elevrapport</button>
+            </div>
+            <p style="font-size:0.8em;color:#666; margin-top: 10px;">Rapporter for enkeltelever eller hele klasser over tid.</p>
+        </div>
 
         <div style="border-right: 1px solid #dee2e6; padding-right: 10px;">
-            <h4>Systemlogg</h4>
+            <h4 class="no-print">Systemlogg</h4>
             <button class="btn btn-admin" style="width:100%; background-color: #34495e;" onclick="aapneLoggModal()">Vis innlogginger</button>
             <p style="font-size:0.8em; color: black; margin-top: 10px;">Se hvem som har brukt systemet og når.</p>
         </div>
 
         <div>
-            <h4 style="color: #e74c3c;">Slett elever</h4>
+            <h4 class="no-print" style="color: #e74c3c;">Slett elever</h4>
             <button class="btn btn-danger" style="width:100%; background-color: #e74c3c; color: white;" onclick="aapneSlettElevModal()">Slett elever</button>
             <p style="font-size:0.8em;color:#666;">Søk og fjern elever permanent fra elevregisteret i databasen.</p>
         </div>
 
     </div>
+</div>
+
 
 <div id="chartContainer" style="display:none; margin-top:20px; background:white; padding:15px; border-radius:8px; border:1px solid #ddd;">
     
