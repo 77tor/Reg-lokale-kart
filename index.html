@@ -196,6 +196,22 @@ tr:hover { background-color: #f1f1f1; }
 .not-registered { color: #aaa; font-style: italic; }
 .alert-low { background: #ffcccc !important; font-weight: bold; color: #c0392b; }
 
+/* Ekstra stil for systemlogg */
+#systemLoggTabell { margin-top: 0; }
+#systemLoggTabell td { padding: 10px 5px; border-bottom: 1px solid #eee; }
+.badge {
+    background: #e9ecef;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.9em;
+    color: #495057;
+}
+#loggSok:focus {
+    border-color: #2980b9;
+    outline: none;
+    box-shadow: 0 0 5px rgba(41,128,185,0.3);
+}
+
 
 /* --- UTTSKRIFT-LOGIKK (ALT I LIGGENDE - OPTIMALISERT) --- */
 @media print {
@@ -212,11 +228,12 @@ tr:hover { background-color: #f1f1f1; }
         width: 100%;
     }
 
-    /* 2. Skjul alt som ikke skal på papiret */
-    .no-print, .btn, .modal, #loginScreen, .header-grid, 
-    .action-bar, .ny-elev-boks, #adminPanel, .chart-container, #chartContainer { 
-        display: none !important; 
-    }
+/* 2. Skjul alt som ikke skal på papiret */
+.no-print, .btn, .modal, #loginScreen, .header-grid, 
+.action-bar, .ny-elev-boks, #adminPanel, .chart-container, 
+#chartContainer, .print-header img { /* La til logo her */
+    display: none !important; 
+}
 
     /* Sørg for at farger blir med */
     * { 
@@ -313,7 +330,7 @@ tr:hover { background-color: #f1f1f1; }
 
 <div class="container" id="mainContent" style="display: none;">
     <div class="print-header" style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
-        <img src="kart_02.png" alt="Logo" style="height: 60px; width: auto;">
+        <img src="kart_02.png" alt="Logo" class="no-print" style="height: 60px; width: auto;">
         <h1 id="printTittel" style="margin: 0;"></h1>
     </div>
 
