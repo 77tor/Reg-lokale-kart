@@ -463,7 +463,7 @@ let elevRegister = {
     "Seilen, Lasse Emrik": { startTrinn: 7, startKlasse: 'C', startAar: 2025 },
     "Selmer, Joel": { startTrinn: 7, startKlasse: 'C', startAar: 2025 },
     "Strand, Lykke": { startTrinn: 7, startKlasse: 'C', startAar: 2025 },
-    "Wennberg-Brown, Kaiden Gabriel": { startTrinn: 7, startKlasse: 'C', startAar: 2025 }
+    "Wennberg-Brown, Kaiden Gabriel": { startTrinn: 7, startKlasse: 'C', startAar: 2025 },
 
 
 // 7. TRINN (Startet 2024)
