@@ -490,33 +490,79 @@ function registrerInnlogging(user) {
 // Funksjon for å vise loggen i admin-panelet
 async function aapneLoggModal() {
     document.getElementById('modalLogg').style.display = 'block';
-    const snapshot = await db.ref('systemLogg').limitToLast(50).once('value');
-    const loggData = snapshot.val();
+    const snapshot = await db.ref('systemLogg').once('value');
+    const loggData = snapshot.val() || {};
     
-    let html = `<table>
-        <thead>
-            <tr><th>Bruker</th><th>Innlogget</th><th>Varighet</th></tr>
-        </thead>
-        <tbody>`;
+    const loggArray = Object.values(loggData).reverse();
+    
+    // --- 1. BEREGN STATISTIKK ---
+    const totalt = loggArray.length;
+    const sjuDagerSiden = new Date().getTime() - (7 * 24 * 60 * 60 * 1000);
+    const sisteUke = loggArray.filter(l => l.innLogget > sjuDagerSiden).length;
+    const unikeBrukere = [...new Set(loggArray.map(l => l.epost))].length;
 
-    if (loggData) {
-        // Sorter slik at de nyeste er øverst
-        Object.values(loggData).reverse().forEach(log => {
+    // --- 2. GENERER HTML FOR TOPPPARTIER (Søk og Stats) ---
+    let html = `
+        <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center;">
+            <div><small>Totalt antall besøk</small><br><strong>${totalt}</strong></div>
+            <div><small>Siste 7 dager</small><br><strong>${sisteUke}</strong></div>
+            <div><small>Unike brukere</small><br><strong>${unikeBrukere}</strong></div>
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <input type="text" id="loggSok" placeholder="Søk på navn eller e-post..." 
+                style="flex-grow: 1; margin-bottom: 0;" onkeyup="filtrerLogg()">
+            <button class="btn btn-danger" onclick="slettHeleLoggen()" style="background: #c0392b; font-size: 0.8em;">Tøm logg</button>
+        </div>
+
+        <div id="loggTabellContainer">
+            <table id="systemLoggTabell">
+                <thead>
+                    <tr><th>Bruker</th><th>Innlogget</th><th>Varighet</th></tr>
+                </thead>
+                <tbody>`;
+
+    if (totalt > 0) {
+        loggArray.forEach(log => {
             const dato = new Date(log.innLogget).toLocaleString('no-NO');
             html += `<tr>
-                <td style="text-align:left;">${log.navn}</td>
+                <td style="text-align:left;">${log.navn}<br><small style="color: #666;">${log.epost}</small></td>
                 <td>${dato}</td>
-                <td>${log.varighet || '-'}</td>
+                <td><span class="badge">${log.varighet || 'Aktiv'}</span></td>
             </tr>`;
         });
     } else {
-        html += `<tr><td colspan="3">Ingen logg ført ennå.</td></tr>`;
+        html += `<tr><td colspan="3">Ingen loggføringer funnet.</td></tr>`;
     }
 
-    html += `</tbody></table>`;
+    html += `</tbody></table></div>`;
     document.getElementById('loggListe').innerHTML = html;
 }
 
+// --- 3. FUNKSJON FOR SØKING I TABELLEN ---
+function filtrerLogg() {
+    const input = document.getElementById("loggSok");
+    const filter = input.value.toUpperCase();
+    const table = document.getElementById("systemLoggTabell");
+    const tr = table.getElementsByTagName("tr");
+
+    for (let i = 1; i < tr.length; i++) {
+        let td = tr[i].getElementsByTagName("td")[0];
+        if (td) {
+            let txtValue = td.textContent || td.innerText;
+            tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+        }
+    }
+}
+
+// --- 4. FUNKSJON FOR Å SLETTE LOGGEN ---
+async function slettHeleLoggen() {
+    if (confirm("Er du helt sikker på at du vil slette ALL innloggingshistorikk? Dette kan ikke angres.")) {
+        await db.ref('systemLogg').remove();
+        alert("Loggen er slettet.");
+        aapneLoggModal(); // Oppdaterer visningen
+    }
+}
 
 // --- 5. MODAL OG LAGRING ---
 function visModal(navn) {
