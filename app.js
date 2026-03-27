@@ -1829,19 +1829,11 @@ function fullforImport() {
 // Henter ALT fra Firebase og bygger utskriftssiden
 async function genererFullElevrapport(navn) {
     const utskriftArea = document.getElementById('utskriftRapportArea');
-    
-    // 1. Skjul modalen og admin-panelet ØYEBLIKKELIG
-    const modal = document.getElementById('modalElevrapport');
-    const admin = document.getElementById('adminPanel');
-    if (modal) modal.style.display = 'none';
-    if (admin) admin.style.display = 'none';
-
-    // 2. Vis ventemelding som IKKE skal printes
-    utskriftArea.innerHTML = "<h2 class='no-print' style='text-align:center; padding:50px;'>Genererer rapport for " + navn + "...</h2>";
-    utskriftArea.style.display = "block";
+    // Legg til class='no-print' på denne vente-teksten
+utskriftArea.innerHTML = "<h2 class='no-print' style='text-align:center; padding:50px;'>Genererer rapport for " + navn + "...</h2>";
+    document.getElementById('modalElevrapport').style.display = 'none';
 
     try {
-
         const snap = await db.ref(`kartlegging`).once('value');
         const alleData = snap.val() || {};
         
@@ -1878,7 +1870,7 @@ async function genererFullElevrapport(navn) {
 
         let html = `
             <div style="padding: 20px; font-family: Arial, sans-serif;">
-                <h1 style="text-align:center; color:#2c3e50; margin-bottom:5px;">ELEVRAPPORT</h1>
+                <h1 style="text-align:center; color:#2c3e50; margin-bottom:5px;">ELEVSRAPPORT</h1>
                 <h2 style="text-align:center; margin-top:0;">${navn}</h2>
                 <p style="text-align:center; color:#666;">Utskriftsdato: ${new Date().toLocaleDateString('nb-NO')}</p>
                 <hr style="border:1px solid #2980b9; margin: 20px 0;">
