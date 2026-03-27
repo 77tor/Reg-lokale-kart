@@ -428,6 +428,54 @@ function oppdaterLaaseVisning(erLaast) {
 
 
 
+// Denne kalles inne i onAuthStateChanged når brukeren er logget inn
+function registrerInnlogging(user) {
+    const loggRef = db.ref('systemLogg').push();
+    const innTid = new Date().getTime();
+    
+    // Lagre start-tidspunkt
+    loggRef.set({
+        navn: user.displayName || user.email,
+        epost: user.email,
+        innLogget: innTid,
+        utLogget: null,
+        varighet: "Aktiv nå"
+    });
+
+    // Lagre ID-en i session slik at vi kan oppdatere når de logger ut
+    sessionStorage.setItem('currentLogId', loggRef.key);
+}
+
+// Funksjon for å vise loggen i admin-panelet
+async function aapneLoggModal() {
+    document.getElementById('modalLogg').style.display = 'block';
+    const snapshot = await db.ref('systemLogg').limitToLast(50).once('value');
+    const loggData = snapshot.val();
+    
+    let html = `<table>
+        <thead>
+            <tr><th>Bruker</th><th>Innlogget</th><th>Varighet</th></tr>
+        </thead>
+        <tbody>`;
+
+    if (loggData) {
+        // Sorter slik at de nyeste er øverst
+        Object.values(loggData).reverse().forEach(log => {
+            const dato = new Date(log.innLogget).toLocaleString('no-NO');
+            html += `<tr>
+                <td style="text-align:left;">${log.navn}</td>
+                <td>${dato}</td>
+                <td>${log.varighet || '-'}</td>
+            </tr>`;
+        });
+    } else {
+        html += `<tr><td colspan="3">Ingen logg ført ennå.</td></tr>`;
+    }
+
+    html += `</tbody></table>`;
+    document.getElementById('loggListe').innerHTML = html;
+}
+
 
 // --- 5. MODAL OG LAGRING ---
 function visModal(navn) {
