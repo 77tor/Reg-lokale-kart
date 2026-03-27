@@ -335,9 +335,12 @@ tr:hover { background-color: #f1f1f1; }
     <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr; gap:20px;">
         
         <div style="border-right:1px solid #dee2e6; padding-right:10px;">
-            <h4>Årsrapport</h4>
-            <button class="btn btn-edit" style="width:100%;" onclick="document.getElementById('modalRapport').style.display='block'">Generer Årsrapport</button>
-            <p style="font-size:0.8em;color:#666;">Lager rapport over alle klasser i gitt år/periode/fag.</p>
+            <h4>Årsrapport og eksport</h4>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button class="btn btn-edit" style="width:100%; background-color: #1f7244;" onclick="document.getElementById('modalRapport').style.display='block'">Generer Årsrapport</button>
+            <button class="btn btn-excel" style="width:100%; " onclick="document.getElementById('modalTotalEksport').style.display='block'">Alle klasser (Faner)</button>
+        </div>
+            <p style="font-size:0.8em;color:#666;">Lager rapport/eksporterer til Excel alle klasser i gitt år/periode/fag.</p>
         </div>
 
         <div style="border-right:1px solid #dee2e6; padding-right:10px;">
