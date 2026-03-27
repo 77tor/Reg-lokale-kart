@@ -1131,26 +1131,33 @@ async function kjorSammenligning() {
 // Denne åpner selve vinduet fra adminpanelet
 function aapneSammenligningsModal() {
     document.getElementById('modalSammenlign').style.display = 'block';
-    document.getElementById('modalChartArea').style.display = 'none'; // Skjul gammel graf
+    document.getElementById('modalChartArea').style.display = 'none';
 
-    // Fyll dropdown-menyene automatisk når den åpnes
-    fyllDropdown('compAar', Object.keys(oppgaveStruktur).sort().reverse());
+    // 1. Finn nåværende skoleår basert på dato
+    const na = new Date();
+    const aarNaa = na.getFullYear();
+    const maanedNaa = na.getMonth(); // 0 = Januar, 7 = August
+
+    // Hvis vi er etter august, er vi i starten av f.eks 2025-2026
+    // Hvis vi er før august, er vi i slutten av 2024-2025
+    let startAar = (maanedNaa >= 7) ? aarNaa : aarNaa - 1;
+
+    // 2. Lag en liste som inneholder årene fra oppsett.js PLUSS de neste årene
+    let alleAar = Object.keys(oppgaveStruktur); 
+    
+    // Legg til i år og neste år i tilfelle de mangler i oppsett.js
+    const iAar = `${startAar}-${startAar + 1}`;
+    const nesteAar = `${startAar + 1}-${startAar + 2}`;
+    
+    if (!alleAar.includes(iAar)) alleAar.push(iAar);
+    if (!alleAar.includes(nesteAar)) alleAar.push(nesteAar);
+
+    // 3. Sorter og fyll dropdown
+    fyllDropdown('compAar', alleAar.sort().reverse());
+    
     fyllDropdown('compFag', ["Lesing", "Regning"]); 
     fyllDropdown('compPeriode', ["Høst", "Vår"]);
     fyllDropdown('compTrinn', ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]);
-}
-
-// Hjelpefunksjon for å fylle dropdown-menyer
-function fyllDropdown(id, liste) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.innerHTML = "";
-    liste.forEach(item => {
-        const opt = document.createElement('option');
-        opt.value = item;
-        opt.text = item;
-        el.appendChild(opt);
-    });
 }
 
 
