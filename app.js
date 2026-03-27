@@ -1135,7 +1135,7 @@ function aapneSammenligningsModal() {
 
     // Fyll dropdown-menyene automatisk når den åpnes
     fyllDropdown('compAar', Object.keys(oppgaveStruktur).sort().reverse());
-    fyllDropdown('compFag', ["Lesing", "Regning", "Engelsk"]); 
+    fyllDropdown('compFag', ["Lesing", "Regning"]); 
     fyllDropdown('compPeriode', ["Høst", "Vår"]);
     fyllDropdown('compTrinn', ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]);
 }
