@@ -1423,7 +1423,6 @@ function filtrerElevListe() {
     });
 }
 
-
 // Åpner modalen og fyller den med klikkbare navn fra registeret
 function aapneElevrapportValg() {
     const container = document.getElementById('elevListeContainer');
@@ -1438,12 +1437,19 @@ function aapneElevrapportValg() {
         div.style.cursor = "pointer";
         div.style.borderBottom = "1px solid #eee";
         div.innerText = navn;
-        div.onclick = () => genererFullElevrapport(navn);
+
+        // --- ENDRING HER: Skjuler modalen FØR rapporten genereres ---
+        div.onclick = () => {
+            document.getElementById('modalElevrapport').style.display = 'none';
+            genererFullElevrapport(navn);
+        };
+        
         container.appendChild(div);
     });
     
     document.getElementById('modalElevrapport').style.display = 'block';
 }
+
 
 // EKSPORT - ALLE KLASSER
 async function eksporterAlleKlasser() {
