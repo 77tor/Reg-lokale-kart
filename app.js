@@ -1128,6 +1128,30 @@ async function kjorSammenligning() {
     });
 }
 
+/ Denne åpner selve vinduet fra adminpanelet
+function aapneSammenligningsModal() {
+    document.getElementById('modalSammenlign').style.display = 'block';
+    document.getElementById('modalChartArea').style.display = 'none'; // Skjul gammel graf
+
+    // Fyll dropdown-menyene automatisk når den åpnes
+    fyllDropdown('compAar', Object.keys(oppgaveStruktur).sort().reverse());
+    fyllDropdown('compFag', ["Lesing", "Regning", "Engelsk"]); 
+    fyllDropdown('compPeriode', ["Høst", "Vår"]);
+    fyllDropdown('compTrinn', ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]);
+}
+
+// Hjelpefunksjon for å fylle dropdown-menyer
+function fyllDropdown(id, liste) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = "";
+    liste.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item;
+        opt.text = item;
+        el.appendChild(opt);
+    });
+}
 
 
 // --- KLASSERAPPORT --
