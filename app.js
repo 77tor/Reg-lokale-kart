@@ -24,13 +24,32 @@ if (typeof elevRegister === 'undefined') {
     window.elevRegister = {}; 
 }
 
+
 // --- 2. AUTENTISERING ---
 function login() { 
     auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
         .catch(err => console.error("Innloggingsfeil:", err)); 
 }
 
-function logout() { auth.signOut(); }
+async function logout() { 
+    // Før vi logger ut, prøver vi å oppdatere loggen med varighet
+    const logId = sessionStorage.getItem('currentLogId');
+    if (logId) {
+        try {
+            const utTid = new Date().getTime();
+            const snapshot = await db.ref('systemLogg/' + logId).once('value');
+            const data = snapshot.val();
+            if (data && data.innLogget) {
+                const minutter = Math.round((utTid - data.innLogget) / 60000);
+                await db.ref('systemLogg/' + logId).update({
+                    utLogget: utTid,
+                    varighet: minutter + " min"
+                });
+            }
+        } catch (e) { console.log("Kunne ikke oppdatere utlogget-tid"); }
+    }
+    auth.signOut(); 
+}
 
 auth.onAuthStateChanged(user => {
     if (user) {
@@ -38,13 +57,35 @@ auth.onAuthStateChanged(user => {
         document.getElementById('mainContent').style.display = 'block';
         document.getElementById('userInfo').innerText = user.displayName;
 
-        hentRegister(); // <--- LEGG TIL DENNE (Henter elevnavn)
-        hentData();     // <--- Denne har du fra før (Henter poeng
+        // --- NYTT: Registrer denne innloggingen i databasen ---
+        registrerInnlogging(user); 
+
+        hentRegister(); 
+        hentData();     
     } else {
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('mainContent').style.display = 'none';
+        // Tøm session storage ved utlogging
+        sessionStorage.removeItem('currentLogId');
     }
 });
+
+// Hjelpefunksjon for å skrive til loggen (hvis du ikke har lagt den til et annet sted ennå)
+function registrerInnlogging(user) {
+    const loggRef = db.ref('systemLogg').push();
+    const innTid = new Date().getTime();
+    
+    loggRef.set({
+        navn: user.displayName || user.email,
+        epost: user.email,
+        innLogget: innTid,
+        utLogget: null,
+        varighet: "Aktiv nå"
+    });
+
+    // Lagre ID-en lokalt i fanen slik at logout() vet hvilken linje som skal oppdateres
+    sessionStorage.setItem('currentLogId', loggRef.key);
+}
 
 // --- 3. HJELPEFUNKSJONER ---
 function hentOppsett() {
