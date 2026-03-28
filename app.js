@@ -780,34 +780,31 @@ async function genererKlasseAnalyse() {
         }
         html += `</div>`;
 
-
 // --- NY DEL: GENERER DETALJANALYSE-TEKST ---
 let detaljHtml = "";
-try {
-    // Vi bruker nå det nye navnet "analyseMaler"
-    // Vi sjekker stegvis for å unngå "undefined" feil hvis et fag eller trinn mangler
-    const gjeldendeMal = analyseMaler[fag] && 
-                         analyseMaler[fag][trinn] && 
-                         analyseMaler[fag][trinn][periode];
 
-    if (gjeldendeMal) {
-        const oppgaveDataMaler = gjeldendeMal.oppgaver;
-        
+try {
+    // 1. Vi starter ALLTID med å åpne hoved-beholderen slik at knappen alltid har et mål (ID)
+    detaljHtml = `<div id="detaljanalyse-seksjon" class="page-break-before" style="display:none; padding-top: 20px;">`;
+
+    const mal = analyseMaler[fag] && 
+                analyseMaler[fag][trinn] && 
+                analyseMaler[fag][trinn][periode];
+
+    if (mal) {
         detaljHtml += `
-            <div id="detaljanalyse-seksjon" class="page-break-before" style="display:none; padding-top: 20px;">
-                <h2 style="text-align:center; color:#2c3e50;">Pedagogisk Detaljanalyse</h2>
-                <p style="text-align:center; margin-bottom:30px; font-style: italic;">
-                    Analyse for ${fag}, ${trinn}. trinn (${periode})<br>
-                    Vises for områder med under 65% mestring:
-                </p>`;
+            <h2 style="text-align:center; color:#2c3e50;">Pedagogisk Detaljanalyse</h2>
+            <p style="text-align:center; margin-bottom:30px; font-style: italic;">
+                Analyse for ${fag}, ${trinn}. trinn (${periode})<br>
+                Vises for områder med under 65% mestring:
+            </p>`;
         
         let harSvakheter = false;
+        const oppgaveDataMaler = mal.oppgaver;
 
         oppsett.oppgaver.forEach((o, i) => {
             const snitt = oppgaveSummer[i] / antall;
             const prosent = (snitt / o.maks) * 100;
-
-            // Henter data fra analyseMaler basert på oppgavenummer (1, 2, 3...)
             const malInfo = oppgaveDataMaler[i + 1]; 
 
             if (prosent < 65 && malInfo) {
@@ -830,13 +827,21 @@ try {
                     </p>
                 </div>`;
         }
-        detaljHtml += `</div>`;
     } else {
-        console.warn("Fant ingen mal i analyseMaler for:", fag, trinn, periode);
+        detaljHtml += `<p style="text-align:center; color: orange;">Fant ingen pedagogisk mal i analyseMaler.js for ${fag} trinn ${trinn}.</p>`;
+        console.warn("Manglende mal:", fag, trinn, periode);
     }
+
+    // 2. Vi lukker diven her – uansett om det er feil eller suksess
+    detaljHtml += `</div>`;
+
 } catch (e) {
     console.error("Feil ved generering av detaljanalyse:", e);
+    detaljHtml = `<div id="detaljanalyse-seksjon" style="display:none;"><p>En teknisk feil oppstod under generering av analysen.</p></div>`;
 }
+
+// --- ÅPNE VINDU OG SKRIV UT (Resten av koden din er korrekt) ---
+
 
 
         // --- ÅPNE VINDU OG SKRIV UT ---
@@ -871,16 +876,21 @@ try {
                         #detaljanalyse-seksjon { display: block !important; } /* Vis alltid i print hvis ønskelig */
                     }
                 </style>
-                <script>
-                    function toggleDetalj() {
-                        var x = document.getElementById("detaljanalyse-seksjon");
-                        if (x.style.display === "none") {
-                            x.style.display = "block";
-                        } else {
-                            x.style.display = "none";
-                        }
-                    }
-                </script>
+<script>
+    function toggleDetalj() {
+        var x = document.getElementById("detaljanalyse-seksjon");
+        if (x) {
+            // Sjekker nåværende visning, håndterer også tom streng ved oppstart
+            if (x.style.display === "none" || x.style.display === "") {
+                x.style.display = "block";
+            } else {
+                x.style.display = "none";
+            }
+        } else {
+            console.error("Fant ikke elementet #detaljanalyse-seksjon i dette vinduet.");
+        }
+    }
+</script>
             </head>
             <body>
                 <div class="no-print" style="margin-bottom: 20px; text-align:center; background:#eee; padding:15px; border-radius:8px; position: sticky; top: 0; z-index: 1000;">
