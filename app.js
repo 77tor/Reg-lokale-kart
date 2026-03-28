@@ -2484,7 +2484,101 @@ function eksporter() {
     XLSX.utils.book_append_sheet(wb, ws, "Resultater");
     XLSX.writeFile(wb, `Resultat_${vFag}_${vTrinn}${vKlasse}_${vPeriode}.xlsx`);
 }
-function forberedPrint() { window.print(); }
+// function forberedPrint() { window.print(); }
+
+function forberedPrint() {
+    try {
+        // 1. Hent kriterier fra nedtrekksmenyene (pass på at ID-ene mTrinn, mFag osv. stemmer med din HTML)
+        const vTrinn = document.getElementById('mTrinn').value;
+        const vKlasse = document.getElementById('mKlasse').value;
+        const vFag = document.getElementById('mFag').value;
+        const vPeriode = document.getElementById('mPeriode').value;
+        const vAar = document.getElementById('mAar').value;
+
+        const oppsett = hentOppsett();
+        if (!oppsett) return alert("Velg alle kriterier først!");
+
+        // 2. Start bygging av HTML for utskrift
+        let printHtml = `
+            <html>
+            <head>
+                <title>Utskrift - ${vFag} ${vTrinn}${vKlasse}</title>
+                <style>
+                    body { font-family: sans-serif; padding: 20px; }
+                    h1 { text-align: center; margin-bottom: 5px; font-size: 18px; }
+                    p { text-align: center; margin-bottom: 20px; font-size: 12px; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th, td { border: 1px solid #000; padding: 6px; text-align: center; font-size: 10px; }
+                    th { background-color: #f2f2f2; }
+                    .navn { text-align: left; font-weight: bold; width: 150px; }
+                    @media print { .no-print { display: none; } }
+                </style>
+            </head>
+            <body>
+                <h1>Registreringsskjema: ${vFag}</h1>
+                <p>Trinn: ${vTrinn} | Klasse: ${vKlasse} | Periode: ${vPeriode} | Skoleår: ${vAar}</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="navn">Elevnavn</th>
+                            ${oppsett.oppgaver.map(o => `<th>${o.navn}<br>(Maks: ${o.maks})</th>`).join('')}
+                            <th>SUM</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+        // 3. Hent elevene og deres verdier (bruker samme logikk som din eksport)
+        const vStartAar = parseInt(vAar.split('-')[0]);
+        let harElever = false;
+
+        Object.keys(elevRegister).sort().forEach(navn => {
+            const e = elevRegister[navn];
+            const cTrinn = e.startTrinn + (vStartAar - e.startAar);
+
+            if (cTrinn == vTrinn && e.startKlasse === vKlasse) {
+                harElever = true;
+                const d = lagredeResultater[navn] || {};
+                
+                printHtml += `<tr><td class="navn">${navn}</td>`;
+                
+                if (d.ikkeGjennomfort) {
+                    oppsett.oppgaver.forEach(() => printHtml += `<td>-</td>`);
+                    printHtml += `<td>Ikke gj.f</td>`;
+                } else {
+                    oppsett.oppgaver.forEach((o, i) => {
+                        // Vi prøver å hente verdien fra input-feltet på skjermen først (hvis læreren skriver akkurat nå)
+                        // Hvis ikke, henter vi fra lagrede data
+                        const inputId = `score-${navn}-${i}`;
+                        const felt = document.getElementById(inputId);
+                        const verdi = felt ? felt.value : (d.oppgaver ? d.oppgaver[i] : "");
+                        printHtml += `<td>${verdi}</td>`;
+                    });
+                    printHtml += `<td style="font-weight:bold;">${d.sum || ""}</td>`;
+                }
+                printHtml += `</tr>`;
+            }
+        });
+
+        if (!harElever) return alert("Ingen elever funnet for valgte kriterier.");
+
+        printHtml += `
+                    </tbody>
+                </table>
+                <p style="margin-top: 20px; font-size: 9px; text-align: right;">Utskriftsdato: ${new Date().toLocaleDateString()}</p>
+                <script>window.onload = function() { window.print(); }</script>
+            </body>
+            </html>`;
+
+        // 4. Åpne det nye vinduet
+        const win = window.open('', '_blank');
+        win.document.write(printHtml);
+        win.document.close();
+
+    } catch (error) {
+        console.error("Feil ved utskrift:", error);
+        alert("Kunne ikke forberede utskrift.");
+    }
+}
 
 
 // -- SAMMENLIGNE PRØVER/ÅR ---
