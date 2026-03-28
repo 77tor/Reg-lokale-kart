@@ -784,34 +784,43 @@ async function genererKlasseAnalyse() {
 let detaljHtml = "";
 
 try {
-    // 1. Vi starter ALLTID med å åpne hoved-beholderen slik at knappen alltid har et mål (ID)
-    detaljHtml = `<div id="detaljanalyse-seksjon" class="page-break-before" style="display:none; padding-top: 20px;">`;
+    // 1. Vi lager beholderen først. 
+    // Vi setter ID slik at knappen alltid har et mål.
+    detaljHtml = `<div id="detaljanalyse-seksjon" class="page-break-before" style="display:none; padding-top: 20px; border-top: 2px solid #eee;">`;
 
-    const mal = analyseMaler[fag] && 
-                analyseMaler[fag][trinn] && 
-                analyseMaler[fag][trinn][periode];
+    // Sjekk om analyseMaler i det hele tatt eksisterer
+    if (typeof analyseMaler === 'undefined') {
+        throw new Error("Variabelen 'analyseMaler' er ikke lastet inn. Sjekk at analyseMaler.js er inkludert i HTML-fila.");
+    }
 
-    if (mal) {
+    // Finn malen steg for steg for å unngå krasj
+    const malForFag = analyseMaler[fag];
+    const malForTrinn = malForFag ? malForFag[trinn] : null;
+    const gjeldendeMal = malForTrinn ? malForTrinn[periode] : null;
+
+    if (gjeldendeMal && gjeldendeMal.oppgaver) {
         detaljHtml += `
             <h2 style="text-align:center; color:#2c3e50;">Pedagogisk Detaljanalyse</h2>
             <p style="text-align:center; margin-bottom:30px; font-style: italic;">
                 Analyse for ${fag}, ${trinn}. trinn (${periode})<br>
-                Vises for områder med under 65% mestring:
+                Viser forklaring for områder med under 65% mestring i klassen.
             </p>`;
         
         let harSvakheter = false;
-        const oppgaveDataMaler = mal.oppgaver;
+        const oppgaveDataMaler = gjeldendeMal.oppgaver;
 
         oppsett.oppgaver.forEach((o, i) => {
             const snitt = oppgaveSummer[i] / antall;
             const prosent = (snitt / o.maks) * 100;
+            
+            // Vi henter info fra malen basert på nr (1, 2, 3...)
             const malInfo = oppgaveDataMaler[i + 1]; 
 
             if (prosent < 65 && malInfo) {
                 harSvakheter = true;
                 detaljHtml += `
-                    <div style="margin-bottom: 20px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 0 8px 8px 0; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);">
-                        <h4 style="margin:0; color:#c0392b;">Oppgave ${i + 1}: ${malInfo.navn} (${prosent.toFixed(0)}%)</h4>
+                    <div style="margin-bottom: 20px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 0 8px 8px 0;">
+                        <h4 style="margin:0; color:#c0392b;">${malInfo.navn} (${prosent.toFixed(0)}%)</h4>
                         <p style="margin: 8px 0 0 0; font-size: 14px; line-height: 1.6; color: #333;">
                             <strong>Pedagogisk fokus:</strong> ${malInfo.forklaring}
                         </p>
@@ -822,27 +831,26 @@ try {
         if (!harSvakheter) {
             detaljHtml += `
                 <div style="text-align:center; padding: 30px; background: #f2f9f2; border: 1px solid #c2e0c2; border-radius: 8px;">
-                    <p style="color: #27ae60; font-weight: bold; font-size: 16px;">
-                        Resultatene viser et stabilt høyt nivå på alle områder i denne kartleggingen.
-                    </p>
+                    <p style="color: #27ae60; font-weight: bold;">Resultatene viser et stabilt høyt nivå på alle områder.</p>
                 </div>`;
         }
     } else {
-        detaljHtml += `<p style="text-align:center; color: orange;">Fant ingen pedagogisk mal i analyseMaler.js for ${fag} trinn ${trinn}.</p>`;
-        console.warn("Manglende mal:", fag, trinn, periode);
+        // Hvis vi ikke finner malen, gir vi en vennlig beskjed i stedet for teknisk feil
+        detaljHtml += `
+            <div style="text-align:center; padding: 20px; color: #666;">
+                <p>Pedagogisk analyse er ikke tilgjengelig for ${fag} ${trinn}. trinn (${periode}) ennå.</p>
+            </div>`;
     }
 
-    // 2. Vi lukker diven her – uansett om det er feil eller suksess
-    detaljHtml += `</div>`;
-
 } catch (e) {
-    console.error("Feil ved generering av detaljanalyse:", e);
-    detaljHtml = `<div id="detaljanalyse-seksjon" style="display:none;"><p>En teknisk feil oppstod under generering av analysen.</p></div>`;
+    // Dette skriver den faktiske feilen til konsollen (F12) så du kan fikse den
+    console.error("DETALJANALYSE FEIL:", e.message);
+    detaljHtml = `<div id="detaljanalyse-seksjon" style="display:none; padding: 20px; border: 1px dashed red;">
+                    <p style="color:red; font-weight:bold;">Kunne ikke generere analyse: ${e.message}</p>
+                  </div>`;
 }
 
-// --- ÅPNE VINDU OG SKRIV UT (Resten av koden din er korrekt) ---
-
-
+detaljHtml += `</div>`; // Lukker hoved-diven
 
         // --- ÅPNE VINDU OG SKRIV UT ---
         const win = window.open('', '_blank');
