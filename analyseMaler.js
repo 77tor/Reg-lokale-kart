@@ -444,4 +444,5 @@ const analyseMaler = {
         }
       }
     }
-  }
+  } // Denne lukker "Lesing"
+}; // Denne lukker hele analyseMaler-objektet
