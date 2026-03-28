@@ -396,8 +396,9 @@ tr:hover { background-color: #f1f1f1; }
         </div>
 
         <button class="btn btn-analyse" style="width:100%; margin-bottom:20px;" onclick="kjorSammenligning()">Generer diagram</button>
-
-        <div id="modalChartArea" style="display:none; background:white; padding:15px; border:1px solid #ddd; border-radius:4px;">
+        <button class="btn btn-print" style="flex: 1; background-color: #2980b9;" onclick="printSammenligningsDiagram()">Skriv ut diagram</button>
+        
+         <div id="modalChartArea" style="display:none; background:white; padding:15px; border:1px solid #ddd; border-radius:4px;">
             <h2 id="modalChartOverskrift" style="text-align:center; font-size: 1.2em; color:#2c3e50;"></h2>
             <canvas id="modalSammenligningsChart"></canvas>
         </div>
