@@ -780,6 +780,41 @@ async function genererKlasseAnalyse() {
         }
         html += `</div>`;
 
+    // --- NY DEL: GENERER DETALJANALYSE-TEKST ---
+        let detaljHtml = "";
+        try {
+            // Finn beskrivelsene for gjeldende fag, trinn og periode (Høst/Vår)
+            const beskrivelser = analyseMaler[fag][trinn][periode].beskrivelser;
+            
+            detaljHtml += `<div id="detaljanalyse-seksjon" class="page-break-before" style="display:none;">
+                            <h2 style="text-align:center; color:#2c3e50;">Pedagogisk Detaljanalyse</h2>
+                            <p style="text-align:center; margin-bottom:30px;">Beskrivelse av områder der klassen skårer under 65% i snitt:</p>`;
+            
+            let harSvakheter = false;
+
+            oppsett.oppgaver.forEach((o, i) => {
+                const snitt = oppgaveSummer[i] / antall;
+                const prosent = (snitt / o.maks) * 100;
+
+                // Vi viser beskrivelsen hvis snittet er under 65%
+                if (prosent < 65 && beskrivelser[o.navn]) {
+                    harSvakheter = true;
+                    detaljHtml += `
+                        <div style="margin-bottom: 20px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2;">
+                            <h4 style="margin:0; color:#c0392b;">${o.navn} (${prosent.toFixed(0)}%)</h4>
+                            <p style="margin: 5px 0 0 0; font-size: 13px; line-height: 1.5;">${beskrivelser[o.navn]}</p>
+                        </div>`;
+                }
+            });
+
+            if (!harSvakheter) {
+                detaljHtml += `<p style="text-align:center;">Klassen har et stabilt høyt nivå på alle områder.</p>`;
+            }
+            detaljHtml += `</div>`;
+        } catch (e) {
+            console.warn("Kunne ikke hente pedagogiske beskrivelser:", e);
+        }
+
         // --- ÅPNE VINDU OG SKRIV UT ---
         const win = window.open('', '_blank');
         win.document.write(`
@@ -788,7 +823,7 @@ async function genererKlasseAnalyse() {
                 <title>Analyse ${trinn}${klasse}</title>
                 <style>
                     body { font-family: sans-serif; padding: 30px; color: #333; }
-                    h1, h3 { text-align: center; margin-top: 0; }
+                    h1, h2, h3 { text-align: center; margin-top: 0; }
                     table { width: 100%; border-collapse: collapse; margin-bottom: 30px; table-layout: fixed; page-break-inside: avoid; }
                     th, td { border: 1px solid #333; padding: 8px; text-align: center; overflow: hidden; font-size: 11px; }
                     th { background-color: #f2f2f2; }
@@ -802,15 +837,38 @@ async function genererKlasseAnalyse() {
                     .bar-label { font-size: 10px; transform: rotate(-45deg); margin-top: 15px; white-space: nowrap; height: 40px; }
                     .bar-value { font-size: 11px; font-weight: bold; margin-bottom: 5px; }
                     .page-break-before { page-break-before: always; margin-top: 50px; }
-                    @media print { .no-print { display: none; } body { padding: 0; } .page-break-before { margin-top: 0; } }
+                    
+                    /* Styling for Detaljanalyse-knappen */
+                    .btn-detalj { background: #8e44ad !important; }
+                    
+                    @media print { 
+                        .no-print { display: none; } 
+                        body { padding: 0; } 
+                        #detaljanalyse-seksjon { display: block !important; } /* Vis alltid i print hvis ønskelig */
+                    }
                 </style>
+                <script>
+                    function toggleDetalj() {
+                        var x = document.getElementById("detaljanalyse-seksjon");
+                        if (x.style.display === "none") {
+                            x.style.display = "block";
+                        } else {
+                            x.style.display = "none";
+                        }
+                    }
+                </script>
             </head>
             <body>
-                <div class="no-print" style="margin-bottom: 20px; text-align:center; background:#eee; padding:15px; border-radius:8px;">
-                    <button onclick="window.print()" style="padding: 12px 25px; background: #2980b9; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:14px;">Skriv ut / Lagre PDF</button>
-                    <button onclick="window.close()" style="padding: 12px 25px; background: #95a5a6; color:white; border:none; border-radius:4px; cursor:pointer; margin-left: 15px; font-weight:bold; font-size:14px;">Avbryt</button>
+                <div class="no-print" style="margin-bottom: 20px; text-align:center; background:#eee; padding:15px; border-radius:8px; position: sticky; top: 0; z-index: 1000;">
+                    <button onclick="window.print()" style="padding: 12px 20px; background: #2980b9; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Skriv ut / Lagre PDF</button>
+                    
+                    <button onclick="toggleDetalj()" class="btn-detalj" style="padding: 12px 20px; background: #8e44ad; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; margin-left:10px;">Vis Detaljanalyse</button>
+                    
+                    <button onclick="window.close()" style="padding: 12px 20px; background: #95a5a6; color:white; border:none; border-radius:4px; cursor:pointer; margin-left: 10px; font-weight:bold;">Lukk</button>
                 </div>
+                
                 ${html}
+                ${detaljHtml}
             </body>
             </html>
         `);
