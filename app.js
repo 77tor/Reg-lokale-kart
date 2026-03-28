@@ -841,7 +841,7 @@ function sjekkAdminKode() {
         // 4. NULLSTILLING AV REGISTRERINGSSKJERMAET (Dette er det nye):
         // Tømmer tabellen slik at ingenting henger igjen fra forrige klasse
         document.getElementById('tHead').innerHTML = "";
-        document.getElementById('tBody').innerHTML = "<tr><td>Velg alle kriterier...</td></tr>";
+        document.getElementById('tBody').innerHTML = "";
         
         // Nullstiller overskriften
         oppdaterOverskrifter("Administrasjon og rapporter");
