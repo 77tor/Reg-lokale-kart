@@ -1325,6 +1325,53 @@ function tegnKlasseChart(dataPoints) {
     });
 }
 
+
+function printKlasseDiagram() {
+    const canvas = document.getElementById('chartKlasseUtvikling');
+    if (!canvas) return;
+
+    // Hent info for overskrift
+    const kull = document.getElementById('selectKullAar').value;
+    const fag = document.getElementById('selectKullFag').value;
+    const klasse = document.getElementById('selectKullKlasse').value;
+
+    const bildeData = canvas.toDataURL('image/png');
+    const printVindu = window.open('', '_blank');
+
+    printVindu.document.write(`
+        <html>
+        <head>
+            <title>Klasserapport - Diagram</title>
+            <style>
+                body { font-family: sans-serif; text-align: center; padding: 20px; }
+                img { max-width: 100%; height: auto; border: 1px solid #ddd; margin-top: 20px; }
+                h1 { color: #2c3e50; border-bottom: 2px solid #2980b9; padding-bottom: 10px; }
+                .info { margin-bottom: 20px; font-size: 1.1em; }
+            </style>
+        </head>
+        <body>
+            <h1>📊 Klasserapport: Utvikling over tid</h1>
+            <div class="info">
+                <strong>Kull:</strong> ${kull} | 
+                <strong>Fag:</strong> ${fag} | 
+                <strong>Klasse:</strong> ${klasse}
+            </div>
+            <img src="${bildeData}" />
+            <p style="margin-top: 50px; font-size: 0.8em; color: #888;">Utskrift fra Kartleggingsverktøy Pro - ${new Date().toLocaleDateString()}</p>
+            <script>
+                window.onload = function() { 
+                    window.print(); 
+                    setTimeout(function() { window.close(); }, 500); 
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    printVindu.document.close();
+}
+
+
+
 function printAlleKlasseResultater() {
     if (!lagretKullData || lagretKullData.length === 0) {
         return alert("Ingen data å skrive ut. Vennligst generer rapport først.");
