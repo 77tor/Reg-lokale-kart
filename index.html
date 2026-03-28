@@ -632,17 +632,58 @@ tr:hover { background-color: #f1f1f1; }
 </div>
 
 
-<div id="modalSammenlign" class="modal"><div class="modal-content"><h3>Sammenlign klasser</h3><label>Skoleår:
-</label><select id="compAar">
-            <option value=""selected>-- Velg år --</option>            
-            <option value="2024-2025">2024-2025</option>
-            <option value="2025-2026">2025-2026</option>
-            <option value="2026-2027">2026-2027</option>
-            <option value="2027-2028">2027-2028</option>
-            <option value="2028-2029">2028-2029</option>
-            <option value="2029-2030">2028-2030</option>
-</select><label>Fag:</label><select id="compFag"><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select><label>Periode:</label><select id="compPeriode"><option value="Høst">Høst</option><option value="Vår">Vår</option></select><label>Trinn:</label><select id="compTrinn"><option value="1">1. Trinn</option><option value="2">2. Trinn</option><option value="3">3. Trinn</option><option value="4">4. Trinn</option><option value="5">5. Trinn</option><option value="6">6. Trinn</option><option value="7">7. Trinn</option></select><div style="margin-top:20px;display:flex;gap:10px;"><button class="btn btn-hent" style="flex:2" onclick="kjorSammenligning()">Lag Diagram</button><button class="btn btn-fjern" style="flex:1" onclick="document.getElementById('modalSammenlign').style.display='none'">Avbryt</button></div></div></div>
+<div id="modalSammenlign" class="modal no-print">
+    <div class="modal-content" style="background:white; margin:5% auto; padding:20px; width:80%; max-width:900px; border-radius:8px;">
+        <h3 style="color:#2980b9; border-bottom:1px solid #2980b9; padding-bottom:10px;">Sammenlign klasser (Trinn-oversikt)</h3>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 4px;">
+            <div>
+                <label>Skoleår:</label>
+                <select id="compAar" class="form-control" style="width:100%"></select>
+            </div>
+            <div>
+                <label>Fag:</label>
+                <select id="compFag" class="form-control" style="width:100%">
+                    <option value="Lesing">Lesing</option>
+                    <option value="Regning">Regning</option>
+                </select>
+            </div>
+            <div>
+                <label>Periode:</label>
+                <select id="compPeriode" class="form-control" style="width:100%">
+                    <option value="Høst">Høst</option>
+                    <option value="Vår">Vår</option>
+                </select>
+            </div>
+            <div>
+                <label>Trinn:</label>
+                <select id="compTrinn" class="form-control" style="width:100%">
+                    <option value="1">1. Trinn</option>
+                    <option value="2">2. Trinn</option>
+                    <option value="3">3. Trinn</option>
+                    <option value="4">4. Trinn</option>
+                    <option value="5">5. Trinn</option>
+                    <option value="6">6. Trinn</option>
+                    <option value="7">7. Trinn</option>
+                </select>
+            </div>
+        </div>
 
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button class="btn btn-analyse" style="flex: 2;" onclick="kjorSammenligning()">Lag Diagram</button>
+            <button class="btn btn-print" style="flex: 1; background-color: #2980b9;" onclick="printSammenligningsDiagram()">Skriv ut diagram</button>
+        </div>
+
+        <div id="modalChartArea" style="display:none; background:white; padding:15px; border:1px solid #ddd; border-radius:4px;">
+            <h2 id="modalChartOverskrift" style="text-align:center; font-size: 1.1em; color:#2c3e50; margin-bottom: 15px;"></h2>
+            <canvas id="modalSammenligningsChart"></canvas>
+        </div>
+
+        <div style="margin-top:20px; text-align:right;">
+            <button class="btn btn-fjern" onclick="document.getElementById('modalSammenlign').style.display='none'">Lukk</button>
+        </div>
+    </div>
+</div>
 
 <div id="modalKlasserapport" class="modal" style="display:none; z-index:2100;">
     <div class="modal-content" style="width: 95%; max-width: 1100px;">
