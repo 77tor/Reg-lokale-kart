@@ -780,40 +780,64 @@ async function genererKlasseAnalyse() {
         }
         html += `</div>`;
 
-    // --- NY DEL: GENERER DETALJANALYSE-TEKST ---
-        let detaljHtml = "";
-        try {
-            // Finn beskrivelsene for gjeldende fag, trinn og periode (Høst/Vår)
-            const beskrivelser = analyseMaler[fag][trinn][periode].beskrivelser;
-            
-            detaljHtml += `<div id="detaljanalyse-seksjon" class="page-break-before" style="display:none;">
-                            <h2 style="text-align:center; color:#2c3e50;">Pedagogisk Detaljanalyse</h2>
-                            <p style="text-align:center; margin-bottom:30px;">Beskrivelse av områder der klassen skårer under 65% i snitt:</p>`;
-            
-            let harSvakheter = false;
 
-            oppsett.oppgaver.forEach((o, i) => {
-                const snitt = oppgaveSummer[i] / antall;
-                const prosent = (snitt / o.maks) * 100;
+// --- NY DEL: GENERER DETALJANALYSE-TEKST ---
+let detaljHtml = "";
+try {
+    // Vi bruker nå det nye navnet "analyseMaler"
+    // Vi sjekker stegvis for å unngå "undefined" feil hvis et fag eller trinn mangler
+    const gjeldendeMal = analyseMaler[fag] && 
+                         analyseMaler[fag][trinn] && 
+                         analyseMaler[fag][trinn][periode];
 
-                // Vi viser beskrivelsen hvis snittet er under 65%
-                if (prosent < 65 && beskrivelser[o.navn]) {
-                    harSvakheter = true;
-                    detaljHtml += `
-                        <div style="margin-bottom: 20px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2;">
-                            <h4 style="margin:0; color:#c0392b;">${o.navn} (${prosent.toFixed(0)}%)</h4>
-                            <p style="margin: 5px 0 0 0; font-size: 13px; line-height: 1.5;">${beskrivelser[o.navn]}</p>
-                        </div>`;
-                }
-            });
+    if (gjeldendeMal) {
+        const oppgaveDataMaler = gjeldendeMal.oppgaver;
+        
+        detaljHtml += `
+            <div id="detaljanalyse-seksjon" class="page-break-before" style="display:none; padding-top: 20px;">
+                <h2 style="text-align:center; color:#2c3e50;">Pedagogisk Detaljanalyse</h2>
+                <p style="text-align:center; margin-bottom:30px; font-style: italic;">
+                    Analyse for ${fag}, ${trinn}. trinn (${periode})<br>
+                    Vises for områder med under 65% mestring:
+                </p>`;
+        
+        let harSvakheter = false;
 
-            if (!harSvakheter) {
-                detaljHtml += `<p style="text-align:center;">Klassen har et stabilt høyt nivå på alle områder.</p>`;
+        oppsett.oppgaver.forEach((o, i) => {
+            const snitt = oppgaveSummer[i] / antall;
+            const prosent = (snitt / o.maks) * 100;
+
+            // Henter data fra analyseMaler basert på oppgavenummer (1, 2, 3...)
+            const malInfo = oppgaveDataMaler[i + 1]; 
+
+            if (prosent < 65 && malInfo) {
+                harSvakheter = true;
+                detaljHtml += `
+                    <div style="margin-bottom: 20px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 0 8px 8px 0; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);">
+                        <h4 style="margin:0; color:#c0392b;">Oppgave ${i + 1}: ${malInfo.navn} (${prosent.toFixed(0)}%)</h4>
+                        <p style="margin: 8px 0 0 0; font-size: 14px; line-height: 1.6; color: #333;">
+                            <strong>Pedagogisk fokus:</strong> ${malInfo.forklaring}
+                        </p>
+                    </div>`;
             }
-            detaljHtml += `</div>`;
-        } catch (e) {
-            console.warn("Kunne ikke hente pedagogiske beskrivelser:", e);
+        });
+
+        if (!harSvakheter) {
+            detaljHtml += `
+                <div style="text-align:center; padding: 30px; background: #f2f9f2; border: 1px solid #c2e0c2; border-radius: 8px;">
+                    <p style="color: #27ae60; font-weight: bold; font-size: 16px;">
+                        Resultatene viser et stabilt høyt nivå på alle områder i denne kartleggingen.
+                    </p>
+                </div>`;
         }
+        detaljHtml += `</div>`;
+    } else {
+        console.warn("Fant ingen mal i analyseMaler for:", fag, trinn, periode);
+    }
+} catch (e) {
+    console.error("Feil ved generering av detaljanalyse:", e);
+}
+
 
         // --- ÅPNE VINDU OG SKRIV UT ---
         const win = window.open('', '_blank');
