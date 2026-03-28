@@ -1421,7 +1421,6 @@ function printAlleKlasseResultater() {
     <body>`;
 
     sorterteProever.forEach((proeve, index) => {
-        // Beregn snitt kun for de som har gjennomført (status "ok")
         const eleverMedResultat = proeve.elever.filter(e => e.status === "ok");
         const totalSnitt = eleverMedResultat.length > 0 
             ? Math.round(eleverMedResultat.reduce((a, b) => a + b.prosent, 0) / eleverMedResultat.length)
@@ -1447,13 +1446,11 @@ function printAlleKlasseResultater() {
 
         proeve.elever.forEach(e => {
             if (e.status === "ikke_gjennomfort") {
-                // Rad for de som ikke har tatt prøven
                 html += `<tr class="ikke-gjennomfort-rad">
                     <td class="navn-kol">${e.navn}</td>
                     <td colspan="${proeve.oppgaveOppsett.length + 2}">Ikke gjennomført</td>
                 </tr>`;
             } else {
-                // Vanlig rad
                 const totalKritisk = e.prosent < 50 ? 'kritisk' : '';
                 html += `<tr>
                     <td class="navn-kol">${e.navn}</td>`;
@@ -1478,10 +1475,16 @@ function printAlleKlasseResultater() {
         </div>`;
     });
 
+    // Legger til lukk-scriptet helt til slutt i HTML-strengen
     html += `
         <script>
             window.onload = function() {
-                setTimeout(() => { window.print(); }, 500);
+                setTimeout(() => { 
+                    window.print(); 
+                    window.onafterprint = function() { window.close(); };
+                    // Backup hvis onafterprint ikke støttes:
+                    setTimeout(() => { window.close(); }, 2000);
+                }, 500);
             };
         </script>
     </body>
