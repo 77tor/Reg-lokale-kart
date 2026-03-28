@@ -1182,48 +1182,100 @@ function printSammenligningsDiagram() {
     const canvas = document.getElementById('modalSammenligningsChart');
     if (!canvas) return;
 
-    // Hent info fra dropdown-menyene for en god overskrift
-    const aar = document.getElementById('compAar').value;
-    const fag = document.getElementById('compFag').value;
-    const periode = document.getElementById('compPeriode').value;
-    const trinn = document.getElementById('compTrinn').value;
+    // Hent info fra menyene
+    const aar = document.getElementById('compAar').value || "Ikke valgt";
+    const fag = document.getElementById('compFag').value || "";
+    const periode = document.getElementById('compPeriode').value || "";
+    const trinn = document.getElementById('compTrinn').value || "";
 
+    // Konverter diagram til bilde
     const bildeData = canvas.toDataURL('image/png');
     const printVindu = window.open('', '_blank');
 
     printVindu.document.write(`
+        <!DOCTYPE html>
         <html>
         <head>
-            <title>Trinnoversikt - ${trinn}. trinn</title>
+            <title>Utskrift - ${trinn}. trinn</title>
             <style>
-                body { font-family: 'Segoe UI', Arial, sans-serif; text-align: center; padding: 30px; color: #2c3e50; }
-                .header { border-bottom: 2px solid #2980b9; padding-bottom: 15px; margin-bottom: 20px; }
-                h1 { margin: 0; font-size: 22px; color: #2980b9; }
-                .info { font-size: 14px; color: #555; margin-top: 5px; }
-                img { max-width: 100%; height: auto; border: 1px solid #eee; margin-top: 30px; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
-                .footer { margin-top: 50px; font-size: 10px; color: #95a5a6; border-top: 1px solid #eee; padding-top: 10px; }
+                /* CSS for å tvinge innholdet til én side */
+                @page {
+                    size: A4 portrait;
+                    margin: 15mm;
+                }
+                body { 
+                    font-family: 'Segoe UI', Arial, sans-serif; 
+                    margin: 0; 
+                    padding: 0;
+                    color: #2c3e50;
+                    display: flex;
+                    flex-direction: column;
+                    height: 100vh; /* Bruker hele høyden på arket */
+                }
+                .container {
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: flex-start;
+                }
+                .header { 
+                    border-bottom: 2px solid #2980b9; 
+                    padding-bottom: 10px; 
+                    margin-bottom: 20px;
+                    text-align: center;
+                }
+                h1 { margin: 0; font-size: 20px; color: #2980b9; }
+                .info { font-size: 14px; margin-top: 5px; font-weight: bold; }
+                
+                /* Selve diagram-innpakningen */
+                .chart-wrapper {
+                    text-align: center;
+                    width: 100%;
+                    max-height: 70vh; /* Sikrer at det er plass til header og footer */
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                }
+                img { 
+                    max-width: 100%; 
+                    max-height: 100%; 
+                    object-fit: contain; /* Bevarer proporsjoner uten å strekke */
+                    border: 1px solid #eee;
+                }
+                .footer { 
+                    margin-top: auto; 
+                    padding-top: 10px;
+                    font-size: 10px; 
+                    color: #95a5a6; 
+                    border-top: 1px solid #eee;
+                    text-align: right;
+                }
             </style>
         </head>
         <body>
-            <div class="header">
-                <h1>📊 Sammenligning: ${trinn}. trinn</h1>
-                <div class="info">${fag} | ${periode} | Skoleår: ${aar}</div>
-            </div>
-            
-            <img src="${bildeData}" />
+            <div class="container">
+                <div class="header">
+                    <h1>📊 Sammenligning: ${trinn}. trinn</h1>
+                    <div class="info">${fag} | ${periode} | Skoleår: ${aar}</div>
+                </div>
+                
+                <div class="chart-wrapper">
+                    <img src="${bildeData}" />
+                </div>
 
-            <div class="footer">
-                Generert fra Kartleggingsverktøy Pro - ${new Date().toLocaleDateString('no-NO')}
+                <div class="footer">
+                    Kartleggingsverktøy Pro | Dato: ${new Date().toLocaleDateString('no-NO')}
+                </div>
             </div>
 
             <script>
                 window.onload = function() {
+                    // Gir nettleseren et øyeblikk til å tegne bildet før print
                     setTimeout(() => {
                         window.print();
                         window.onafterprint = function() { window.close(); };
-                        // Backup-lukk hvis onafterprint ikke trigger (f.eks. i enkelte versjoner av Safari)
                         setTimeout(() => { window.close(); }, 2000);
-                    }, 500);
+                    }, 300);
                 };
             <\/script>
         </body>
