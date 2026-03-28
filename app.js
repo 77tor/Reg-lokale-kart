@@ -1178,6 +1178,61 @@ function fyllDropdown(id, liste) {
 }
 
 
+function printSammenligningsDiagram() {
+    const canvas = document.getElementById('modalSammenligningsChart');
+    if (!canvas) return;
+
+    // Hent info fra dropdown-menyene for en god overskrift
+    const aar = document.getElementById('compAar').value;
+    const fag = document.getElementById('compFag').value;
+    const periode = document.getElementById('compPeriode').value;
+    const trinn = document.getElementById('compTrinn').value;
+
+    const bildeData = canvas.toDataURL('image/png');
+    const printVindu = window.open('', '_blank');
+
+    printVindu.document.write(`
+        <html>
+        <head>
+            <title>Trinnoversikt - ${trinn}. trinn</title>
+            <style>
+                body { font-family: 'Segoe UI', Arial, sans-serif; text-align: center; padding: 30px; color: #2c3e50; }
+                .header { border-bottom: 2px solid #2980b9; padding-bottom: 15px; margin-bottom: 20px; }
+                h1 { margin: 0; font-size: 22px; color: #2980b9; }
+                .info { font-size: 14px; color: #555; margin-top: 5px; }
+                img { max-width: 100%; height: auto; border: 1px solid #eee; margin-top: 30px; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
+                .footer { margin-top: 50px; font-size: 10px; color: #95a5a6; border-top: 1px solid #eee; padding-top: 10px; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>📊 Sammenligning: ${trinn}. trinn</h1>
+                <div class="info">${fag} | ${periode} | Skoleår: ${aar}</div>
+            </div>
+            
+            <img src="${bildeData}" />
+
+            <div class="footer">
+                Generert fra Kartleggingsverktøy Pro - ${new Date().toLocaleDateString('no-NO')}
+            </div>
+
+            <script>
+                window.onload = function() {
+                    setTimeout(() => {
+                        window.print();
+                        window.onafterprint = function() { window.close(); };
+                        // Backup-lukk hvis onafterprint ikke trigger (f.eks. i enkelte versjoner av Safari)
+                        setTimeout(() => { window.close(); }, 2000);
+                    }, 500);
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    printVindu.document.close();
+}
+
+
 // --- KLASSERAPPORT --
 let klasseChart = null;
 let lagretKullData = []; // Brukes for utskrift av alle sider
