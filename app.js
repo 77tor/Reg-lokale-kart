@@ -2486,23 +2486,28 @@ function eksporter() {
 }
 // function forberedPrint() { window.print(); }
 
-function forberedPrint() {
+async function forberedPrint() {
+    const utskriftArea = document.getElementById('utskriftRapportArea');
+    const vTrinn = document.getElementById('mTrinn').value;
+    const vKlasse = document.getElementById('mKlasse').value;
+    const vFag = document.getElementById('mFag').value;
+    const vPeriode = document.getElementById('mPeriode').value;
+    const vAar = document.getElementById('mAar').value;
+
+    const oppsett = hentOppsett();
+    if (!oppsett) return alert("Vennligst velg alle kriterier først!");
+
+    // Vis ventemelding
+    utskriftArea.innerHTML = `<h2 class="no-print" style="text-align:center; padding:50px;">Klargjør utskrift for ${vTrinn}${vKlasse}...</h2>`;
+
     try {
-        const vTrinn = document.getElementById('mTrinn').value;
-        const vKlasse = document.getElementById('mKlasse').value;
-        const vFag = document.getElementById('mFag').value;
-        const vPeriode = document.getElementById('mPeriode').value;
-        const vAar = document.getElementById('mAar').value;
-
-        const oppsett = hentOppsett();
-        if (!oppsett) return alert("Velg alle kriterier først!");
-
         const vStartAar = parseInt(vAar.split('-')[0]);
         let raderHtml = "";
         let antallGjennomfort = 0;
         let kolonneSummer = new Array(oppsett.oppgaver.length).fill(0);
         let totalSumKlasse = 0;
 
+        // Finn og sorter elever som skal være med i denne klassen
         const sorterteNavn = Object.keys(elevRegister).sort();
         
         sorterteNavn.forEach(navn => {
@@ -2513,11 +2518,11 @@ function forberedPrint() {
                 const d = lagredeResultater[navn] || {};
                 if (d.slettet) return;
 
-                raderHtml += `<tr><td class="elevnavn">${navn}</td>`;
+                raderHtml += `<tr><td style="text-align:left; padding:5px; border:1px solid #000; font-weight:bold;">${navn}</td>`;
 
                 if (d.ikkeGjennomfort) {
-                    oppsett.oppgaver.forEach(() => raderHtml += `<td style="color:#ccc">-</td>`);
-                    raderHtml += `<td style="font-style:italic; font-size:9px">Ikke gjennomført</td>`;
+                    oppsett.oppgaver.forEach(() => raderHtml += `<td style="border:1px solid #000; color:#ccc;">-</td>`);
+                    raderHtml += `<td colspan="1" style="border:1px solid #000; font-style:italic; font-size:0.8em; color:#7f8c8d;">Ikke gjennomført</td>`;
                 } else {
                     antallGjennomfort++;
                     let elevSum = 0;
@@ -2528,70 +2533,81 @@ function forberedPrint() {
                         elevSum += verdi;
                         kolonneSummer[i] += verdi;
 
-                        // KRITISK GRENSE-SJEKK
-                        let kritiskKlasse = "";
-                        if (o.kritisk !== undefined && verdi <= o.kritisk) {
-                            kritiskKlasse = ' class="kritisk"';
-                        }
-                        raderHtml += `<td${kritiskKlasse}>${verdi}</td>`;
+                        // RØD CELLE LOGIKK (Bruker o.grense eller o.kritisk avhengig av ditt oppsett)
+                        const grense = o.grense !== undefined ? o.grense : o.kritisk;
+                        const erKritisk = (grense !== undefined && verdi <= grense);
+                        const bakgrunn = erKritisk ? 'background-color: #ffcccc !important; color: #b71c1c;' : '';
+
+                        raderHtml += `<td style="border:1px solid #000; padding:5px; ${bakgrunn}">${verdi}</td>`;
                     });
 
-                    // Sjekk om hele summen er kritisk
-                    let sumKlasse = d.kritisk ? ' class="kritisk"' : '';
-                    raderHtml += `<td${sumKlasse} style="font-weight:bold">${d.sum || elevSum}</td>`;
-                    totalSumKlasse += (d.sum || elevSum);
+                    // TOTALSUM FOR ELEVEN
+                    const totalGrense = oppsett.grenseTotal || oppsett.totalKritisk;
+                    const totalErKritisk = (totalGrense !== undefined && elevSum <= totalGrense);
+                    const totalBakgrunn = totalErKritisk ? 'background-color: #ffcccc !important; color: #b71c1c;' : 'background-color: #f2f2f2;';
+                    
+                    raderHtml += `<td style="border:1px solid #000; padding:5px; font-weight:bold; ${totalBakgrunn}">${elevSum}</td>`;
+                    totalSumKlasse += elevSum;
                 }
                 raderHtml += `</tr>`;
             }
         });
 
-        // SNITT-RAD
-        let snittHtml = `<tr class="snitt-rad"><td>Snitt (N=${antallGjennomfort})</td>`;
+        // BEREGN GJENNOMSNITT
+        let snittHtml = `<tr style="background-color: #2c3e50 !important; color: white !important; font-weight: bold;">
+                            <td style="border:1px solid #000; padding:8px; text-align:left;">Gjennomsnitt (N=${antallGjennomfort})</td>`;
         if (antallGjennomfort > 0) {
-            kolonneSummer.forEach(s => snittHtml += `<td>${(s / antallGjennomfort).toFixed(1)}</td>`);
-            snittHtml += `<td>${(totalSumKlasse / antallGjennomfort).toFixed(1)}</td>`;
+            kolonneSummer.forEach(s => {
+                snittHtml += `<td style="border:1px solid #000; padding:5px;">${(s / antallGjennomfort).toFixed(1)}</td>`;
+            });
+            snittHtml += `<td style="border:1px solid #000; padding:5px;">${(totalSumKlasse / antallGjennomfort).toFixed(1)}</td>`;
         } else {
-            oppsett.oppgaver.forEach(() => snittHtml += `<td>-</td>`);
-            snittHtml += `<td>-</td>`;
+            oppsett.oppgaver.forEach(() => snittHtml += `<td style="border:1px solid #000;">-</td>`);
+            snittHtml += `<td style="border:1px solid #000;">-</td>`;
         }
         snittHtml += `</tr>`;
 
-        // Åpne nytt vindu for ren utskrift
-        const win = window.open('', '_blank');
-        win.document.write(`
-            <html>
-            <head>
-                <style>
-                    /* Vi kopierer de kritiske stilene inn i det nye vinduet */
-                    @page { size: landscape; margin: 0.8cm; }
-                    body { font-family: sans-serif; font-size: 9pt; }
-                    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-                    th, td { border: 1px solid black; padding: 4px; text-align: center; }
-                    th { background: #eee; font-size: 8pt; height: 35px; }
-                    .elevnavn { text-align: left; width: 180px; font-weight: bold; }
-                    .kritisk { background-color: #ffcccc !important; -webkit-print-color-adjust: exact; }
-                    .snitt-rad { background-color: #2c3e50 !important; color: white !important; -webkit-print-color-adjust: exact; }
-                    .snitt-rad td { color: white !important; }
-                </style>
-            </head>
-            <body>
-                <h2 style="text-align:center">${vFag} - ${vTrinn}${vKlasse} (${vPeriode})</h2>
-                <table>
+        // BYGG DEN ENDELIGE HTML-EN
+        let html = `
+            <div style="padding: 10px; font-family: Arial, sans-serif;">
+                <h2 style="text-align:center; margin-bottom:5px;">KLASSERESULTATER</h2>
+                <h3 style="text-align:center; margin-top:0;">${vFag} - ${vTrinn}${vKlasse} (${vPeriode} ${vAar})</h3>
+                
+                <table style="width:100%; border-collapse: collapse; text-align:center; font-size: 11px;">
                     <thead>
-                        <tr>
-                            <th>Elevnavn</th>
-                            ${oppsett.oppgaver.map(o => `<th>${o.navn}</th>`).join('')}
-                            <th>SUM</th>
+                        <tr style="background-color: #ecf0f1;">
+                            <th style="border:1px solid #000; padding:8px; width:200px;">Elevnavn</th>
+                            ${oppsett.oppgaver.map(o => `<th style="border:1px solid #000; padding:5px;">${o.navn}<br><small>(${o.maks})</small></th>`).join('')}
+                            <th style="border:1px solid #000; padding:5px; width:60px;">SUM</th>
                         </tr>
                     </thead>
-                    <tbody>${raderHtml}${snittHtml}</tbody>
+                    <tbody>
+                        ${raderHtml}
+                        ${snittHtml}
+                    </tbody>
                 </table>
-                <script>window.onload = function() { window.print(); }</script>
-            </body>
-            </html>
-        `);
-        win.document.close();
-    } catch (e) { console.error(e); }
+                <p style="font-size:10px; color:#666; margin-top:10px;">Generert: ${new Date().toLocaleString('nb-NO')}</p>
+            </div>
+        `;
+
+        // Sett inn i dokumentet
+        utskriftArea.innerHTML = html;
+
+        // Print
+        setTimeout(() => {
+            window.print();
+        }, 500);
+
+        // Tøm etterpå (viktig for at CSS-logikken i HTML-fila di skal fungere)
+        window.onafterprint = function() {
+            utskriftArea.innerHTML = "";
+        };
+
+    } catch (error) {
+        console.error("Utskriftsfeil:", error);
+        alert("Feil ved generering av utskrift.");
+        utskriftArea.innerHTML = "";
+    }
 }
 
 // -- SAMMENLIGNE PRØVER/ÅR ---
