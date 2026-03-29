@@ -232,6 +232,29 @@ tr:hover { background-color: #f1f1f1; }
     border-color: #1a252f !important;
 }
 
+/* Denne må ligge i HTML-fila di for at JS-funksjonen skal finne fargen */
+.kritisk { 
+    background-color: #ffcccc !important; 
+    color: #b71c1c !important; 
+    font-weight: bold !important; 
+    -webkit-print-color-adjust: exact; /* Tvinger farge i Chrome/Edge */
+    print-color-adjust: exact;
+}
+
+.total-sum { 
+    background-color: #f8f9fa !important; 
+    font-weight: bold !important; 
+}
+
+.snitt-rad { 
+    background-color: #2c3e50 !important; 
+    color: white !important; 
+}
+
+.snitt-rad td { 
+    color: white !important; 
+}
+
 /* --- UTTSKRIFT-LOGIKK (DENNE ER TRYGG FOR BEGGE TYPER) --- */
 @media print {
     @page { size: landscape; margin: 0.5cm; }
