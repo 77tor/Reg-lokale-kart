@@ -72,7 +72,7 @@ const analyseMaler = {
         "1": { "navn": "Hvor mye? (Penger)", "forklaring": "Vurderer evnen til å telle opp og summere pengeverdier med mynter og sedler (opp til 636 kr)." },
         "2": { "navn": "Hvor mange? (Mengde)", "forklaring": "Tester telling av objekter (bunter og pinner) og kobling til tallverdi på en tallinje." },
         "3": { "navn": "Tegn strek på tallinja", "forklaring": "Måler tallforståelse ved plassering av tall på tallinjer med ulik skala (30-70 og 100-300)." },
-        "4": { "navn": "Klokka?", "forklaring": "Tester avlesing av analoge klokkeslett (hel/halv time) og kobling til tekst eller digital tid." },
+        "4": { "navn": "Klokka", "forklaring": "Tester avlesing av analoge klokkeslett (hel/halv time) og kobling til tekst eller digital tid." },
         "5": { "navn": "Nærmeste tall", "forklaring": "Vurderer forståelse for tallstørrelser ved å identifisere hvilket tall som ligger nærmest et måltall." },
         "6": { "navn": "Utvidet form (Posisjonssystemet)", "forklaring": "Sjekker dekomponering av tall i enere, tiere og hundrere (f.eks. 30 + 8 = 38)." },
         "7": { "navn": "Halvparten", "forklaring": "Måler begrepsforståelse for halvering av både pengebeløp og mengder." },
