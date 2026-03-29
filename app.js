@@ -2504,31 +2504,32 @@ async function forberedPrint() {
         let antallGjennomfort = 0;
         let kolonneSummer = new Array(oppsett.oppgaver.length).fill(0);
         let totalSumKlasse = 0;
-        let totalAntallEleverIKlasse = 0;
 
         const sorterteNavn = Object.keys(elevRegister).sort();
         
-        // Først beregner vi antall elever for å justere fontstørrelse
         const aktuelleElever = sorterteNavn.filter(navn => {
             const e = elevRegister[navn];
             const cTrinn = e.startTrinn + (vStartAar - e.startAar);
             return (cTrinn == vTrinn && e.startKlasse === vKlasse);
         });
         
-        totalAntallEleverIKlasse = aktuelleElever.length;
-        // Hvis mer enn 22 elever, krymper vi padding og font litt ekstra
-        const kompaktStil = totalAntallEleverIKlasse > 22 ? "padding: 2px 2px; font-size: 0.95em;" : "padding: 4px 2px;";
+        const totalAntall = aktuelleElever.length;
+        
+        // JUSTERT: Litt mer padding (3.5px) for bedre lesbarhet, men fortsatt kompakt
+        const cellePadding = "padding: 3.5px 2px;"; 
 
-        aktuelleElever.forEach(navn => {
+        aktuelleElever.forEach((navn, index) => {
             const d = lagredeResultater[navn] || {};
             if (d.slettet) return;
 
+            // Zebra-striper: Annenhver rad får en syltynn gråfarge for å lede øyet
+            const zebraStyle = index % 2 === 0 ? "background-color: #ffffff;" : "background-color: #fcfcfc;";
+
             if (d.ikkeGjennomfort) {
-                // RAD FOR IKKE GJENNOMFØRT (Lysegrå hele veien)
                 raderHtml += `
                     <tr style="background-color: #f2f2f2 !important; color: #7f8c8d;">
-                        <td style="border:1px solid #000; text-align:left; padding:2px 5px; font-weight:bold;">${navn}</td>
-                        <td colspan="${oppsett.oppgaver.length + 1}" style="border:1px solid #000; padding:2px; font-style:italic; text-align:center; letter-spacing: 1px;">
+                        <td style="border:1px solid #000; text-align:left; padding:3.5px 5px; font-weight:bold;">${navn}</td>
+                        <td colspan="${oppsett.oppgaver.length + 1}" style="border:1px solid #000; padding:3.5px; font-style:italic; text-align:center; font-size: 0.9em;">
                             IKKE GJENNOMFØRT
                         </td>
                     </tr>`;
@@ -2537,7 +2538,7 @@ async function forberedPrint() {
                 let elevSum = 0;
                 const oppgaveData = d.oppgaver || [];
 
-                raderHtml += `<tr><td style="border:1px solid #000; text-align:left; padding:2px 5px; font-weight:bold;">${navn}</td>`;
+                raderHtml += `<tr style="${zebraStyle}"><td style="border:1px solid #000; text-align:left; padding:3.5px 5px; font-weight:bold;">${navn}</td>`;
 
                 oppsett.oppgaver.forEach((o, i) => {
                     const verdi = parseFloat(oppgaveData[i]) || 0;
@@ -2546,46 +2547,43 @@ async function forberedPrint() {
 
                     const grense = o.grense !== undefined ? o.grense : o.kritisk;
                     const erKritisk = (grense !== undefined && verdi <= grense);
-                    const bakgrunn = erKritisk ? 'background-color: #ffcccc !important; color: #b71c1c; font-weight:bold;' : '';
+                    const kritiskStil = erKritisk ? 'background-color: #ffcccc !important; color: #b71c1c; font-weight:bold;' : '';
 
-                    raderHtml += `<td style="border:1px solid #000; ${kompaktStil} ${bakgrunn}">${verdi}</td>`;
+                    raderHtml += `<td style="border:1px solid #000; ${cellePadding} ${kritiskStil}">${verdi}</td>`;
                 });
 
                 const totalGrense = oppsett.grenseTotal || oppsett.totalKritisk;
                 const totalErKritisk = (totalGrense !== undefined && elevSum <= totalGrense);
-                const totalBakgrunn = totalErKritisk ? 'background-color: #ffcccc !important; color: #b71c1c;' : 'background-color: #f9f9f9;';
+                const totalBakgrunn = totalErKritisk ? 'background-color: #ffcccc !important; color: #b71c1c;' : 'background-color: #f4f4f4;';
                 
-                raderHtml += `<td style="border:1px solid #000; ${kompaktStil} font-weight:bold; ${totalBakgrunn}">${elevSum}</td>`;
+                raderHtml += `<td style="border:1px solid #000; ${cellePadding} font-weight:bold; ${totalBakgrunn}">${elevSum}</td>`;
                 totalSumKlasse += elevSum;
                 raderHtml += `</tr>`;
             }
         });
 
         let snittHtml = `<tr style="background-color: #2c3e50 !important; color: white !important; font-weight: bold;">
-                            <td style="border:1px solid #000; padding:5px; text-align:left;">Gjennomsnitt (N=${antallGjennomfort})</td>`;
+                            <td style="border:1px solid #000; padding:6px 5px; text-align:left;">Gjennomsnitt (N=${antallGjennomfort})</td>`;
         
         if (antallGjennomfort > 0) {
             kolonneSummer.forEach(s => {
-                snittHtml += `<td style="border:1px solid #000; padding:2px;">${(s / antallGjennomfort).toFixed(1)}</td>`;
+                snittHtml += `<td style="border:1px solid #000; padding:3px;">${(s / antallGjennomfort).toFixed(1)}</td>`;
             });
-            snittHtml += `<td style="border:1px solid #000; padding:2px;">${(totalSumKlasse / antallGjennomfort).toFixed(1)}</td>`;
-        } else {
-            oppsett.oppgaver.forEach(() => snittHtml += `<td style="border:1px solid #000;">-</td>`);
-            snittHtml += `<td style="border:1px solid #000;">-</td>`;
+            snittHtml += `<td style="border:1px solid #000; padding:3px;">${(totalSumKlasse / antallGjennomfort).toFixed(1)}</td>`;
         }
         snittHtml += `</tr>`;
 
         let html = `
             <div style="padding: 5px; font-family: Arial, sans-serif;">
-                <h2 style="text-align:center; margin: 0 0 5px 0; font-size: 16px;">KLASSERESULTATER</h2>
-                <h3 style="text-align:center; margin: 0 0 10px 0; font-size: 14px;">${vFag} - ${vTrinn}${vKlasse} (${vPeriode} ${vAar})</h3>
+                <h2 style="text-align:center; margin: 0 0 5px 0; font-size: 16px; letter-spacing:1px;">KLASSERESULTATER</h2>
+                <h3 style="text-align:center; margin: 0 0 12px 0; font-size: 13px; color: #444;">${vFag.toUpperCase()} &nbsp;|&nbsp; ${vTrinn}${vKlasse} &nbsp;|&nbsp; ${vPeriode} ${vAar}</h3>
                 
-                <table style="width:100%; border-collapse: collapse; text-align:center; font-size: 10px; line-height: 1.1;">
+                <table style="width:100%; border-collapse: collapse; text-align:center; font-size: 10.5px; line-height: 1.2;">
                     <thead>
-                        <tr style="background-color: #ecf0f1;">
-                            <th style="border:1px solid #000; padding:4px; width:180px;">Elevnavn</th>
-                            ${oppsett.oppgaver.map(o => `<th style="border:1px solid #000; padding:2px;">${o.navn}<br><small style="font-size:8px;">(maks ${o.maks})</small></th>`).join('')}
-                            <th style="border:1px solid #000; padding:2px; width:45px;">SUM</th>
+                        <tr style="background-color: #f1f1f1;">
+                            <th style="border:1px solid #000; padding:6px; width:190px;">Elevnavn</th>
+                            ${oppsett.oppgaver.map(o => `<th style="border:1px solid #000; padding:4px;">${o.navn}<br><small style="font-size:8px; font-weight:normal;">(maks ${o.maks})</small></th>`).join('')}
+                            <th style="border:1px solid #000; padding:4px; width:50px;">SUM</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -2593,17 +2591,15 @@ async function forberedPrint() {
                         ${snittHtml}
                     </tbody>
                 </table>
-                <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 9px; color: #666;">
-                    <span>Antall elever: ${totalAntallEleverIKlasse}</span>
-                    <span>Generert: ${new Date().toLocaleString('nb-NO')}</span>
+                <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 9px; color: #888; border-top: 1px solid #eee; padding-top: 4px;">
+                    <span>Antall elever i utvalget: ${totalAntall}</span>
+                    <span>Utskriftsdato: ${new Date().toLocaleString('nb-NO')}</span>
                 </div>
             </div>
         `;
 
         utskriftArea.innerHTML = html;
-
         setTimeout(() => { window.print(); }, 500);
-
         window.onafterprint = function() { utskriftArea.innerHTML = ""; };
 
     } catch (error) {
