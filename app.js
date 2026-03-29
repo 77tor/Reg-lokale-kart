@@ -2488,7 +2488,6 @@ function eksporter() {
 
 function forberedPrint() {
     try {
-        // 1. Hent kriterier fra nedtrekksmenyene (pass på at ID-ene mTrinn, mFag osv. stemmer med din HTML)
         const vTrinn = document.getElementById('mTrinn').value;
         const vKlasse = document.getElementById('mKlasse').value;
         const vFag = document.getElementById('mFag').value;
@@ -2498,85 +2497,118 @@ function forberedPrint() {
         const oppsett = hentOppsett();
         if (!oppsett) return alert("Velg alle kriterier først!");
 
-        // 2. Start bygging av HTML for utskrift
-        let printHtml = `
-            <html>
-            <head>
-                <title>Utskrift - ${vFag} ${vTrinn}${vKlasse}</title>
-                <style>
-                    body { font-family: sans-serif; padding: 20px; }
-                    h1 { text-align: center; margin-bottom: 5px; font-size: 18px; }
-                    p { text-align: center; margin-bottom: 20px; font-size: 12px; }
-                    table { width: 100%; border-collapse: collapse; }
-                    th, td { border: 1px solid #000; padding: 6px; text-align: center; font-size: 10px; }
-                    th { background-color: #f2f2f2; }
-                    .navn { text-align: left; font-weight: bold; width: 150px; }
-                    @media print { .no-print { display: none; } }
-                </style>
-            </head>
-            <body>
-                <h1>Registreringsskjema: ${vFag}</h1>
-                <p>Trinn: ${vTrinn} | Klasse: ${vKlasse} | Periode: ${vPeriode} | Skoleår: ${vAar}</p>
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="navn">Elevnavn</th>
-                            ${oppsett.oppgaver.map(o => `<th>${o.navn}<br>(Maks: ${o.maks})</th>`).join('')}
-                            <th>SUM</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-
-        // 3. Hent elevene og deres verdier (bruker samme logikk som din eksport)
         const vStartAar = parseInt(vAar.split('-')[0]);
-        let harElever = false;
+        let raderHtml = "";
+        let antallGjennomfort = 0;
+        let kolonneSummer = new Array(oppsett.oppgaver.length).fill(0);
+        let totalSumKlasse = 0;
 
-        Object.keys(elevRegister).sort().forEach(navn => {
+        // Finn aktuelle elever og bygg rader
+        const sorterteNavn = Object.keys(elevRegister).sort();
+        
+        sorterteNavn.forEach(navn => {
             const e = elevRegister[navn];
             const cTrinn = e.startTrinn + (vStartAar - e.startAar);
 
             if (cTrinn == vTrinn && e.startKlasse === vKlasse) {
-                harElever = true;
                 const d = lagredeResultater[navn] || {};
-                
-                printHtml += `<tr><td class="navn">${navn}</td>`;
-                
+                if (d.slettet) return;
+
+                raderHtml += `<tr><td style="text-align:left; font-weight:bold;">${navn}</td>`;
+
                 if (d.ikkeGjennomfort) {
-                    oppsett.oppgaver.forEach(() => printHtml += `<td>-</td>`);
-                    printHtml += `<td>Ikke gj.f</td>`;
+                    oppsett.oppgaver.forEach(() => raderHtml += `<td style="color: #999; font-style: italic;">-</td>`);
+                    raderHtml += `<td style="font-weight:bold; color: #666;">Ikke gj.f</td>`;
                 } else {
+                    antallGjennomfort++;
+                    let elevSum = 0;
+
                     oppsett.oppgaver.forEach((o, i) => {
-                        // Vi prøver å hente verdien fra input-feltet på skjermen først (hvis læreren skriver akkurat nå)
-                        // Hvis ikke, henter vi fra lagrede data
+                        // Henter verdi fra skjerm eller lager
                         const inputId = `score-${navn}-${i}`;
                         const felt = document.getElementById(inputId);
-                        const verdi = felt ? felt.value : (d.oppgaver ? d.oppgaver[i] : "");
-                        printHtml += `<td>${verdi}</td>`;
+                        const verdi = felt ? parseFloat(felt.value) : (d.oppgaver ? d.oppgaver[i] : 0);
+                        const nVerdi = isNaN(verdi) ? 0 : verdi;
+                        
+                        elevSum += nVerdi;
+                        kolonneSummer[i] += nVerdi;
+
+                        // Rød celle hvis under kritisk grense (typisk under 50% eller spesifisert grense)
+                        const erUnderGrense = o.kritisk !== undefined ? nVerdi <= o.kritisk : false;
+                        const bakgrunn = erUnderGrense ? 'background-color: #ffcccc;' : '';
+
+                        raderHtml += `<td style="${bakgrunn}">${nVerdi}</td>`;
                     });
-                    printHtml += `<td style="font-weight:bold;">${d.sum || ""}</td>`;
+
+                    // Sjekk om totalsummen er under kritisk grense
+                    const sumUnderGrense = d.kritisk ? 'background-color: #ffcccc;' : '';
+                    raderHtml += `<td style="font-weight:bold; ${sumUnderGrense}">${d.sum || elevSum}</td>`;
+                    totalSumKlasse += (d.sum || elevSum);
                 }
-                printHtml += `</tr>`;
+                raderHtml += `</tr>`;
             }
         });
 
-        if (!harElever) return alert("Ingen elever funnet for valgte kriterier.");
+        // Beregn gjennomsnitt (ekskluderer de som ikke har gjennomført)
+        let snittHtml = `<tr style="background-color: #f2f2f2; font-weight:bold;"><td>Snitt (N=${antallGjennomfort})</td>`;
+        if (antallGjennomfort > 0) {
+            kolonneSummer.forEach((s, i) => {
+                const snitt = (s / antallGjennomfort).toFixed(1);
+                snittHtml += `<td>${snitt}</td>`;
+            });
+            snittHtml += `<td>${(totalSumKlasse / antallGjennomfort).toFixed(1)}</td>`;
+        } else {
+            oppsett.oppgaver.forEach(() => snittHtml += `<td>-</td>`);
+            snittHtml += `<td>-</td>`;
+        }
+        snittHtml += `</tr>`;
 
-        printHtml += `
+        // Generer ferdig dokument
+        const win = window.open('', '_blank');
+        win.document.write(`
+            <html>
+            <head>
+                <title>Klasseliste - ${vFag}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; font-size: 10px; margin: 0; padding: 10px; }
+                    h2 { text-align: center; margin: 0 0 10px 0; font-size: 14px; }
+                    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+                    th, td { border: 1px solid #333; padding: 4px; text-align: center; word-wrap: break-word; }
+                    th { background-color: #eee; font-size: 9px; }
+                    .header-info { text-align: center; margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 5px; }
+                    @media print { 
+                        @page { size: portrait; margin: 1cm; }
+                        body { -webkit-print-color-adjust: exact; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header-info">
+                    <h2>${vFag} - ${vTrinn}${vKlasse} (${vPeriode})</h2>
+                    <span>Skoleår: ${vAar} | Dato: ${new Date().toLocaleDateString()}</span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 25%;">Elevnavn</th>
+                            ${oppsett.oppgaver.map(o => `<th>${o.navn}</th>`).join('')}
+                            <th style="width: 10%;">SUM</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${raderHtml}
+                        ${snittHtml}
                     </tbody>
                 </table>
-                <p style="margin-top: 20px; font-size: 9px; text-align: right;">Utskriftsdato: ${new Date().toLocaleDateString()}</p>
                 <script>window.onload = function() { window.print(); }</script>
             </body>
-            </html>`;
-
-        // 4. Åpne det nye vinduet
-        const win = window.open('', '_blank');
-        win.document.write(printHtml);
+            </html>
+        `);
         win.document.close();
 
-    } catch (error) {
-        console.error("Feil ved utskrift:", error);
-        alert("Kunne ikke forberede utskrift.");
+    } catch (e) {
+        console.error(e);
+        alert("Feil ved generering av utskrift: " + e.message);
     }
 }
 
