@@ -830,11 +830,21 @@ try {
             // Vi henter info fra malen basert på nr (1, 2, 3...)
             const malInfo = oppgaveDataMaler[i + 1]; 
 
-            if (prosent < 65 && malInfo) {
+            // NY LOGIKK: Sjekker både 65% og den spesifikke kritiske grensen fra oppsettet
+            const erUnderProsent = prosent < 65;
+            const erUnderKritiskGrense = o.grense !== -1 && snitt <= o.grense;
+
+            if ((erUnderProsent || erUnderKritiskGrense) && malInfo) {
                 harSvakheter = true;
+                
+                // Vi lager en liten tekst som forklarer HVORFOR den dukker opp
+                let årsakTekst = erUnderKritiskGrense ? 
+                    `Kritisk lavt nivå (Snitt: ${snitt.toFixed(1)} av ${o.maks})` : 
+                    `Lav mestring (${prosent.toFixed(0)}%)`;
+
                 detaljHtml += `
                     <div style="margin-bottom: 20px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 0 8px 8px 0;">
-                        <h4 style="margin:0; color:#c0392b;">${malInfo.navn} (${prosent.toFixed(0)}%)</h4>
+                        <h4 style="margin:0; color:#c0392b;">${malInfo.navn} — <span style="font-size: 0.9em; font-weight: normal; color: #555;">${årsakTekst}</span></h4>
                         <p style="margin: 8px 0 0 0; font-size: 14px; line-height: 1.6; color: #333;">
                             <strong>Pedagogisk fokus:</strong> ${malInfo.forklaring}
                         </p>
