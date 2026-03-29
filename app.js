@@ -742,20 +742,34 @@ async function genererKlasseAnalyse() {
                 <div class="bar-label"><b>TOTAL</b></div>
             </div></div>`;
 
-        // --- TABELL OVER SNITT ---
-        html += `<h3>Klassens resultater vs Maks-skår</h3><table><thead><tr><th>Oppgave</th>`;
-        oppsett.oppgaver.forEach(o => html += `<th>${o.navn}</th>`);
-        html += `<th>TOTAL</th></tr></thead><tbody>
-            <tr><td><b>Maks poeng</b></td>`;
-            oppsett.oppgaver.forEach(o => html += `<td>${o.maks}</td>`);
-            html += `<td><b>${totalMaksMulig}</b></td></tr>
-            <tr><td><b>Snitt (poeng)</b></td>`;
-            oppgaveSummer.forEach(s => html += `<td>${(s/antall).toFixed(1)}</td>`);
-            html += `<td><b>${(totalSumKlasse/antall).toFixed(1)}</b></td></tr>
-            <tr><td><b>I % av maks</b></td>`;
-            oppgaveSummer.forEach((s, i) => html += `<td>${((s/antall)/oppsett.oppgaver[i].maks*100).toFixed(0)}%</td>`);
-            html += `<td><b>${totalKlasseSnittProsent.toFixed(0)}%</b></td></tr>
-        </tbody></table>`;
+/ --- TABELL OVER SNITT ---
+// Hent mal-info for å finne lange navn (samme logikk som du bruker i detaljanalyse)
+const malForFag = analyseMaler[fag];
+const malForTrinn = malForFag ? malForFag[trinn] : null;
+const gjeldendeMalTabell = malForTrinn ? malForTrinn[periode] : null;
+
+html += `<h3>Klassens resultater vs Maks-skår</h3><table><thead><tr><th>Oppgave</th>`;
+
+oppsett.oppgaver.forEach((o, i) => {
+    // Sjekk om det finnes et navn i analyseMaler.js, ellers bruk o.navn
+    let visningsNavn = o.navn;
+    if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) {
+        visningsNavn = gjeldendeMalTabell.oppgaver[i + 1].navn;
+    }
+    html += `<th>${visningsNavn}</th>`;
+});
+
+html += `<th>TOTAL</th></tr></thead><tbody>
+    <tr><td><b>Maks poeng</b></td>`;
+    oppsett.oppgaver.forEach(o => html += `<td>${o.maks}</td>`);
+    html += `<td><b>${totalMaksMulig}</b></td></tr>
+    <tr><td><b>Snitt (poeng)</b></td>`;
+    oppgaveSummer.forEach(s => html += `<td>${(s/antall).toFixed(1)}</td>`);
+    html += `<td><b>${(totalSumKlasse/antall).toFixed(1)}</b></td></tr>
+    <tr><td><b>I % av maks</b></td>`;
+    oppgaveSummer.forEach((s, i) => html += `<td>${((s/antall)/oppsett.oppgaver[i].maks*100).toFixed(0)}%</td>`);
+    html += `<td><b>${totalKlasseSnittProsent.toFixed(0)}%</b></td></tr>
+</tbody></table>`;
 
         // --- ELEVER UNDER KRITISK GRENSE ---
         html += `<div class="page-break-before">
