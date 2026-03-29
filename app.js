@@ -742,7 +742,7 @@ async function genererKlasseAnalyse() {
                 <div class="bar-label"><b>TOTAL</b></div>
             </div></div>`;
 
-/ --- TABELL OVER SNITT ---
+// --- TABELL OVER SNITT ---
 // Hent mal-info for å finne lange navn (samme logikk som du bruker i detaljanalyse)
 const malForFag = analyseMaler[fag];
 const malForTrinn = malForFag ? malForFag[trinn] : null;
