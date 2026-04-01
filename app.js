@@ -769,18 +769,30 @@ async function genererKlasseAnalyse() {
             html += `<td><b>${totalKlasseSnittProsent.toFixed(0)}%</b></td></tr>
         </tbody></table>`;
 
-        // --- ELEVER UNDER KRITISK GRENSE ---
+// --- ELEVER UNDER KRITISK GRENSE ---
         html += `<div class="page-break-before">
                 <h3 style="color:red; margin-top:30px; text-align:center;">Elever under kritisk grense (Sum ≤ ${oppsett.grenseTotal})</h3>`;
         
         if (kritiskeElever.length > 0) {
             html += `<table><thead><tr><th align="left">Navn</th>`;
-            oppsett.oppgaver.forEach(o => html += `<th>${o.navn}</th>`);
+            
+            // --- OPPDATERT: Henter lange navn til tabellen over kritiske elever ---
+            oppsett.oppgaver.forEach((o, i) => {
+                let visningsNavn = o.navn;
+                // Sjekker om vi har et finere navn i analyseMaler
+                if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) {
+                    visningsNavn = gjeldendeMalTabell.oppgaver[i + 1].navn;
+                }
+                html += `<th>${visningsNavn}</th>`;
+            });
+            
             html += `<th>Sum</th></tr></thead><tbody>`;
+            
             kritiskeElever.sort((a,b) => a.sum - b.sum).forEach(e => {
                 html += `<tr><td align="left"><b>${e.navn}</b></td>`;
                 e.oppgaver.forEach((p, i) => {
                     const o = oppsett.oppgaver[i];
+                    // Markerer cellen rød hvis eleven er på eller under grensen for denne spesifikke oppgaven
                     const stil = (o.grense !== -1 && p <= o.grense) ? 'style="background:#ffcccc"' : '';
                     html += `<td align="center" ${stil}>${p}</td>`;
                 });
@@ -791,6 +803,7 @@ async function genererKlasseAnalyse() {
             html += `<p style="text-align:center;">Ingen elever ligger under den kritiske totalgrensen.</p>`;
         }
         html += `</div>`;
+
 
         // --- GENERER DETALJANALYSE-TEKST ---
         let detaljHtml = "";
