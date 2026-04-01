@@ -876,7 +876,7 @@ async function genererKlasseAnalyse() {
         }
         detaljHtml += `</div>`;
 
-// --- ÅPNE VINDU OG SKRIV UT ---
+        // --- ÅPNE VINDU OG SKRIV UT ---
         const win = window.open('', '_blank');
         win.document.write(`
             <html>
@@ -886,7 +886,7 @@ async function genererKlasseAnalyse() {
                     body { font-family: sans-serif; padding: 30px; color: #333; }
                     h1, h2, h3 { text-align: center; margin-top: 0; }
                     table { width: 100%; border-collapse: collapse; margin-bottom: 30px; table-layout: fixed; page-break-inside: avoid; }
-                    th, td { border: 1px solid #333; padding: 8px; text-align: center; overflow: hidden; font-size: 11px; transition: background 0.3s; }
+                    th, td { border: 1px solid #333; padding: 8px; text-align: center; overflow: hidden; font-size: 11px; }
                     th { background-color: #f2f2f2; }
                     th:first-child, td:first-child { width: 150px; text-align: left; font-weight: bold; }
                     .chart-container { display: flex; height: 250px; align-items: flex-end; justify-content: flex-start; border-bottom: 2px solid #333; padding-top: 30px; margin-bottom: 60px; }
@@ -894,22 +894,11 @@ async function genererKlasseAnalyse() {
                     .bar-track { background: #eee; width: 35px; height: 100%; position: relative; display: flex; flex-direction: column-reverse; border: 1px solid #ccc; }
                     .bar-fill { background: #3498db; width: 100%; }
                     .total-fill { background: #2ecc71; }
-                    .target-line { position: absolute; left: -10px; right: -10px; border-top: 2px dashed red; z-index: 10; transition: bottom 0.3s; }
+                    .target-line { position: absolute; left: -10px; right: -10px; border-top: 2px dashed red; z-index: 10; }
                     .bar-label { font-size: 10px; transform: rotate(-45deg); margin-top: 15px; white-space: nowrap; height: 40px; }
                     .bar-value { font-size: 11px; font-weight: bold; margin-bottom: 5px; }
                     .page-break-before { page-break-before: always; margin-top: 50px; }
                     
-                    /* Styling for interaktivitet */
-                    .highlight-red { background: #ffcccc !important; }
-                    .calc-box { 
-                        display: inline-block; 
-                        margin-left: 20px; 
-                        padding: 5px 15px; 
-                        border-left: 2px solid #ccc;
-                        text-align: left;
-                    }
-                    input[type=number] { width: 50px; padding: 5px; border-radius: 4px; border: 1px solid #999; }
-
                     @media print { 
                         .no-print { display: none; } 
                         body { padding: 0; } 
@@ -917,70 +906,13 @@ async function genererKlasseAnalyse() {
                 </style>
             </head>
             <body>
-                <div class="no-print" style="margin-bottom: 20px; text-align:center; background:#eee; padding:15px; border-radius:8px; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                <div class="no-print" style="margin-bottom: 20px; text-align:center; background:#eee; padding:15px; border-radius:8px; position: sticky; top: 0; z-index: 1000;">
                     <button onclick="window.print()" style="padding: 12px 20px; background: #2980b9; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Skriv ut / Lagre PDF</button>
-                    
-                    <div class="calc-box">
-                        <strong>"Hva hvis"-kalkulator:</strong><br>
-                        Endre totalgrense: 
-                        <input type="number" id="whatIfGrense" value="${oppsett.grenseTotal}" oninput="oppdaterKalkulator(this.value)">
-                        <span> (Nå under grense: <b id="antallUnder">${kritiskeElever.length}</b> elever)</span>
-                    </div>
-
-                    <button onclick="window.close()" style="padding: 12px 20px; background: #95a5a6; color:white; border:none; border-radius:4px; cursor:pointer; margin-left: 20px; font-weight:bold;">Lukk</button>
+                    <button onclick="window.close()" style="padding: 12px 20px; background: #95a5a6; color:white; border:none; border-radius:4px; cursor:pointer; margin-left: 10px; font-weight:bold;">Lukk</button>
                 </div>
                 
-                <div id="analyse-innhold">
-                    ${html}
-                    ${detaljHtml}
-                </div>
-
-                <script>
-                    function oppdaterKalkulator(nyGrense) {
-                        const grense = parseInt(nyGrense) || 0;
-                        let tellKritiske = 0;
-
-                        // 1. Oppdater rød linje i diagrammet (TOTAL-søylen)
-                        const totalMaks = ${totalMaksMulig};
-                        const linje = document.querySelector('.bar-wrapper.total .target-line');
-                        if (linje) {
-                            const nyProsent = (grense / totalMaks) * 100;
-                            linje.style.bottom = nyProsent + "%";
-                        }
-
-                        // 2. Oppdater tabellen over elever under grense
-                        // Vi antar at den kritiske tabellen er den siste tabellen i dokumentet eller har en spesifikk ID
-                        const rader = document.querySelectorAll('tbody tr');
-                        rader.forEach(rad => {
-                            // Finn cellen med total-sum (siste celle i hver rad)
-                            const celler = rad.querySelectorAll('td');
-                            if (celler.length > 1) {
-                                const sumCelle = celler[celler.length - 1];
-                                const sum = parseInt(sumCelle.innerText);
-                                
-                                if (!isNaN(sum)) {
-                                    if (sum <= grense) {
-                                        sumCelle.classList.add('highlight-red');
-                                        rad.style.display = ""; // Vis raden
-                                        tellKritiske++;
-                                    } else {
-                                        sumCelle.classList.remove('highlight-red');
-                                        rad.style.display = "none"; // Skjul rader som nå er over grensen
-                                    }
-                                }
-                            }
-                        });
-
-                        // 3. Oppdater telleren i menyen
-                        document.getElementById('antallUnder').innerText = tellKritiske;
-
-                        // 4. Oppdater overskriften i tabellen
-                        const overskrift = document.querySelector('h3[style*="color:red"]');
-                        if (overskrift) {
-                            overskrift.innerHTML = "Elever under kritisk grense (Sum ≤ " + grense + ")";
-                        }
-                    }
-                </script>
+                ${html}
+                ${detaljHtml}
             </body>
             </html>
         `);
