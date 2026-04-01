@@ -666,7 +666,7 @@ document.addEventListener('change', function(e) {
 
 // --- ANALYSE_DEL (Fullstendig og feilfri versjon) ---
 async function genererKlasseAnalyse() {
-    try { // Åpner try-blokken her for å fange opp alle feil
+    try { 
         // 1. Hent kriterier fra menyene
         const aar = document.getElementById('mAar').value;
         const fag = document.getElementById('mFag').value;
@@ -742,34 +742,32 @@ async function genererKlasseAnalyse() {
                 <div class="bar-label"><b>TOTAL</b></div>
             </div></div>`;
 
-// --- TABELL OVER SNITT ---
-// Hent mal-info for å finne lange navn (samme logikk som du bruker i detaljanalyse)
-const malForFag = analyseMaler[fag];
-const malForTrinn = malForFag ? malForFag[trinn] : null;
-const gjeldendeMalTabell = malForTrinn ? malForTrinn[periode] : null;
+        // --- TABELL OVER SNITT ---
+        const malForFag = analyseMaler[fag];
+        const malForTrinn = malForFag ? malForFag[trinn] : null;
+        const gjeldendeMalTabell = malForTrinn ? malForTrinn[periode] : null;
 
-html += `<h3>Klassens resultater vs Maks-skår</h3><table><thead><tr><th>Oppgave</th>`;
+        html += `<h3>Klassens resultater vs Maks-skår</h3><table><thead><tr><th>Oppgave</th>`;
 
-oppsett.oppgaver.forEach((o, i) => {
-    // Sjekk om det finnes et navn i analyseMaler.js, ellers bruk o.navn
-    let visningsNavn = o.navn;
-    if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) {
-        visningsNavn = gjeldendeMalTabell.oppgaver[i + 1].navn;
-    }
-    html += `<th>${visningsNavn}</th>`;
-});
+        oppsett.oppgaver.forEach((o, i) => {
+            let visningsNavn = o.navn;
+            if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) {
+                visningsNavn = gjeldendeMalTabell.oppgaver[i + 1].navn;
+            }
+            html += `<th>${visningsNavn}</th>`;
+        });
 
-html += `<th>TOTAL</th></tr></thead><tbody>
-    <tr><td><b>Maks poeng</b></td>`;
-    oppsett.oppgaver.forEach(o => html += `<td>${o.maks}</td>`);
-    html += `<td><b>${totalMaksMulig}</b></td></tr>
-    <tr><td><b>Snitt (poeng)</b></td>`;
-    oppgaveSummer.forEach(s => html += `<td>${(s/antall).toFixed(1)}</td>`);
-    html += `<td><b>${(totalSumKlasse/antall).toFixed(1)}</b></td></tr>
-    <tr><td><b>I % av maks</b></td>`;
-    oppgaveSummer.forEach((s, i) => html += `<td>${((s/antall)/oppsett.oppgaver[i].maks*100).toFixed(0)}%</td>`);
-    html += `<td><b>${totalKlasseSnittProsent.toFixed(0)}%</b></td></tr>
-</tbody></table>`;
+        html += `<th>TOTAL</th></tr></thead><tbody>
+            <tr><td><b>Maks poeng</b></td>`;
+            oppsett.oppgaver.forEach(o => html += `<td>${o.maks}</td>`);
+            html += `<td><b>${totalMaksMulig}</b></td></tr>
+            <tr><td><b>Snitt (poeng)</b></td>`;
+            oppgaveSummer.forEach(s => html += `<td>${(s/antall).toFixed(1)}</td>`);
+            html += `<td><b>${(totalSumKlasse/antall).toFixed(1)}</b></td></tr>
+            <tr><td><b>I % av maks</b></td>`;
+            oppgaveSummer.forEach((s, i) => html += `<td>${((s/antall)/oppsett.oppgaver[i].maks*100).toFixed(0)}%</td>`);
+            html += `<td><b>${totalKlasseSnittProsent.toFixed(0)}%</b></td></tr>
+        </tbody></table>`;
 
         // --- ELEVER UNDER KRITISK GRENSE ---
         html += `<div class="page-break-before">
@@ -794,87 +792,76 @@ html += `<th>TOTAL</th></tr></thead><tbody>
         }
         html += `</div>`;
 
-// --- NY DEL: GENERER DETALJANALYSE-TEKST ---
-let detaljHtml = "";
+        // --- GENERER DETALJANALYSE-TEKST ---
+        let detaljHtml = "";
 
-try {
-    // 1. Vi lager beholderen først. 
-    // Vi setter ID slik at knappen alltid har et mål.
-    detaljHtml = `<div id="detaljanalyse-seksjon" class="page-break-before" style="display:none; padding-top: 20px; border-top: 2px solid #eee;">`;
+        try {
+            // Seksjonen er nå synlig som standard (display:block)
+            detaljHtml = `<div id="detaljanalyse-seksjon" class="page-break-before" style="display:block; padding-top: 20px; border-top: 2px solid #eee;">`;
 
-    // Sjekk om analyseMaler i det hele tatt eksisterer
-    if (typeof analyseMaler === 'undefined') {
-        throw new Error("Variabelen 'analyseMaler' er ikke lastet inn. Sjekk at analyseMaler.js er inkludert i HTML-fila.");
-    }
+            if (typeof analyseMaler === 'undefined') {
+                throw new Error("Variabelen 'analyseMaler' er ikke lastet inn.");
+            }
 
-    // Finn malen steg for steg for å unngå krasj
-    const malForFag = analyseMaler[fag];
-    const malForTrinn = malForFag ? malForFag[trinn] : null;
-    const gjeldendeMal = malForTrinn ? malForTrinn[periode] : null;
+            const malForFag = analyseMaler[fag];
+            const malForTrinn = malForFag ? malForFag[trinn] : null;
+            const gjeldendeMal = malForTrinn ? malForTrinn[periode] : null;
 
-    if (gjeldendeMal && gjeldendeMal.oppgaver) {
-        detaljHtml += `
-            <h2 style="text-align:center; color:#2c3e50;">Pedagogisk Detaljanalyse</h2>
-            <p style="text-align:center; margin-bottom:30px; font-style: italic;">
-                Analyse for ${fag}, ${trinn}. trinn (${periode})<br>
-                Viser forklaring for områder med under 65% mestring i klassen.
-            </p>`;
-        
-        let harSvakheter = false;
-        const oppgaveDataMaler = gjeldendeMal.oppgaver;
-
-        oppsett.oppgaver.forEach((o, i) => {
-            const snitt = oppgaveSummer[i] / antall;
-            const prosent = (snitt / o.maks) * 100;
-            
-            // Vi henter info fra malen basert på nr (1, 2, 3...)
-            const malInfo = oppgaveDataMaler[i + 1]; 
-
-            // NY LOGIKK: Sjekker både 65% og den spesifikke kritiske grensen fra oppsettet
-            const erUnderProsent = prosent < 65;
-            const erUnderKritiskGrense = o.grense !== -1 && snitt <= o.grense;
-
-            if ((erUnderProsent || erUnderKritiskGrense) && malInfo) {
-                harSvakheter = true;
-                
-                // Vi lager en liten tekst som forklarer HVORFOR den dukker opp
-                let årsakTekst = erUnderKritiskGrense ? 
-                    `Kritisk lavt nivå (Snitt: ${snitt.toFixed(1)} av ${o.maks})` : 
-                    `Lav mestring (${prosent.toFixed(0)}%)`;
-
+            if (gjeldendeMal && gjeldendeMal.oppgaver) {
                 detaljHtml += `
-                    <div style="margin-bottom: 20px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 0 8px 8px 0;">
-                        <h4 style="margin:0; color:#c0392b;">${malInfo.navn} — <span style="font-size: 0.9em; font-weight: normal; color: #555;">${årsakTekst}</span></h4>
-                        <p style="margin: 8px 0 0 0; font-size: 14px; line-height: 1.6; color: #333;">
-                            <strong>Pedagogisk fokus:</strong> ${malInfo.forklaring}
-                        </p>
+                    <h2 style="text-align:center; color:#2c3e50;">Pedagogisk Detaljanalyse</h2>
+                    <p style="text-align:center; margin-bottom:30px; font-style: italic;">
+                        Analyse for ${fag}, ${trinn}. trinn (${periode})<br>
+                        Viser forklaring for områder med lav mestring (<65%) eller resultater under kritisk grense.
+                    </p>`;
+                
+                let harSvakheter = false;
+                const oppgaveDataMaler = gjeldendeMal.oppgaver;
+
+                oppsett.oppgaver.forEach((o, i) => {
+                    const snitt = oppgaveSummer[i] / antall;
+                    const prosent = (snitt / o.maks) * 100;
+                    const malInfo = oppgaveDataMaler[i + 1]; 
+
+                    const erUnderProsent = prosent < 65;
+                    const erUnderKritiskGrense = o.grense !== -1 && snitt <= o.grense;
+
+                    if ((erUnderProsent || erUnderKritiskGrense) && malInfo) {
+                        harSvakheter = true;
+                        let årsakTekst = erUnderKritiskGrense ? 
+                            `Kritisk lavt nivå (Snitt: ${snitt.toFixed(1)} av ${o.maks})` : 
+                            `Lav mestring (${prosent.toFixed(0)}%)`;
+
+                        detaljHtml += `
+                            <div style="margin-bottom: 20px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 0 8px 8px 0;">
+                                <h4 style="margin:0; color:#c0392b;">${malInfo.navn} — <span style="font-size: 0.9em; font-weight: normal; color: #555;">${årsakTekst}</span></h4>
+                                <p style="margin: 8px 0 0 0; font-size: 14px; line-height: 1.6; color: #333;">
+                                    <strong>Pedagogisk fokus:</strong> ${malInfo.forklaring}
+                                </p>
+                            </div>`;
+                    }
+                });
+
+                if (!harSvakheter) {
+                    detaljHtml += `
+                        <div style="text-align:center; padding: 30px; background: #f2f9f2; border: 1px solid #c2e0c2; border-radius: 8px;">
+                            <p style="color: #27ae60; font-weight: bold;">Resultatene viser et stabilt høyt nivå på alle områder.</p>
+                        </div>`;
+                }
+            } else {
+                detaljHtml += `
+                    <div style="text-align:center; padding: 20px; color: #666;">
+                        <p>Pedagogisk analyse er ikke tilgjengelig for ${fag} ${trinn}. trinn (${periode}) ennå.</p>
                     </div>`;
             }
-        });
 
-        if (!harSvakheter) {
-            detaljHtml += `
-                <div style="text-align:center; padding: 30px; background: #f2f9f2; border: 1px solid #c2e0c2; border-radius: 8px;">
-                    <p style="color: #27ae60; font-weight: bold;">Resultatene viser et stabilt høyt nivå på alle områder.</p>
-                </div>`;
+        } catch (e) {
+            console.error("DETALJANALYSE FEIL:", e.message);
+            detaljHtml = `<div id="detaljanalyse-seksjon" style="padding: 20px; border: 1px dashed red;">
+                            <p style="color:red; font-weight:bold;">Kunne ikke generere analyse: ${e.message}</p>
+                          </div>`;
         }
-    } else {
-        // Hvis vi ikke finner malen, gir vi en vennlig beskjed i stedet for teknisk feil
-        detaljHtml += `
-            <div style="text-align:center; padding: 20px; color: #666;">
-                <p>Pedagogisk analyse er ikke tilgjengelig for ${fag} ${trinn}. trinn (${periode}) ennå.</p>
-            </div>`;
-    }
-
-} catch (e) {
-    // Dette skriver den faktiske feilen til konsollen (F12) så du kan fikse den
-    console.error("DETALJANALYSE FEIL:", e.message);
-    detaljHtml = `<div id="detaljanalyse-seksjon" style="display:none; padding: 20px; border: 1px dashed red;">
-                    <p style="color:red; font-weight:bold;">Kunne ikke generere analyse: ${e.message}</p>
-                  </div>`;
-}
-
-detaljHtml += `</div>`; // Lukker hoved-diven
+        detaljHtml += `</div>`;
 
         // --- ÅPNE VINDU OG SKRIV UT ---
         const win = window.open('', '_blank');
@@ -899,37 +886,15 @@ detaljHtml += `</div>`; // Lukker hoved-diven
                     .bar-value { font-size: 11px; font-weight: bold; margin-bottom: 5px; }
                     .page-break-before { page-break-before: always; margin-top: 50px; }
                     
-                    /* Styling for Detaljanalyse-knappen */
-                    .btn-detalj { background: #8e44ad !important; }
-                    
                     @media print { 
                         .no-print { display: none; } 
                         body { padding: 0; } 
-                        #detaljanalyse-seksjon { display: block !important; } /* Vis alltid i print hvis ønskelig */
                     }
                 </style>
-<script>
-    function toggleDetalj() {
-        var x = document.getElementById("detaljanalyse-seksjon");
-        if (x) {
-            // Sjekker nåværende visning, håndterer også tom streng ved oppstart
-            if (x.style.display === "none" || x.style.display === "") {
-                x.style.display = "block";
-            } else {
-                x.style.display = "none";
-            }
-        } else {
-            console.error("Fant ikke elementet #detaljanalyse-seksjon i dette vinduet.");
-        }
-    }
-</script>
             </head>
             <body>
                 <div class="no-print" style="margin-bottom: 20px; text-align:center; background:#eee; padding:15px; border-radius:8px; position: sticky; top: 0; z-index: 1000;">
                     <button onclick="window.print()" style="padding: 12px 20px; background: #2980b9; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Skriv ut / Lagre PDF</button>
-                    
-                    <button onclick="toggleDetalj()" class="btn-detalj" style="padding: 12px 20px; background: #8e44ad; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; margin-left:10px;">Vis Detaljanalyse</button>
-                    
                     <button onclick="window.close()" style="padding: 12px 20px; background: #95a5a6; color:white; border:none; border-radius:4px; cursor:pointer; margin-left: 10px; font-weight:bold;">Lukk</button>
                 </div>
                 
@@ -945,6 +910,8 @@ detaljHtml += `</div>`; // Lukker hoved-diven
         alert("Det oppstod en teknisk feil: " + error.message);
     }
 }
+
+
 
 // --- 6. ADMIN-FUNKSJONER ---
 function sjekkAdminKode() {
