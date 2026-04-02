@@ -1003,6 +1003,7 @@ function lukkAdmin() {
 
 
 // --- ÅRSRAPPORT I ADMIN-FUNKSJONER (Fullstendig korrigert) ---
+// --- ÅRSRAPPORT I ADMIN-FUNKSJONER (Nå dynamisk koblet til Global_aar) ---
 async function kjorAdminRapport(type) {
     const aar = document.getElementById('adminAar').value;
     const fag = document.getElementById('adminFag').value;
@@ -1013,7 +1014,10 @@ async function kjorAdminRapport(type) {
         return;
     }
 
-    const aarIMal = oppgaveStruktur[aar] ? aar : "2025-2026";
+    // ENDRING: Bruker Global_aar som fallback istedenfor hardkodet "2025-2026"
+    const fallbackAar = typeof Global_aar !== 'undefined' ? Global_aar : Object.keys(oppgaveStruktur)[0];
+    const aarIMal = oppgaveStruktur[aar] ? aar : fallbackAar;
+
     let samletInnhold = `<h1 style="text-align:center;">${type === 'kritisk' ? 'Kritisk-liste' : 'Årsrapport'} - ${fag} (${aar})</h1>`;
     
     const klasser = ["A", "B", "C", "D"];
@@ -1021,6 +1025,7 @@ async function kjorAdminRapport(type) {
 
     for (let trinn of alleTrinn) {
         for (let klasse of klasser) {
+            // Henter oppsettet basert på valgt år eller fallback-året
             const oppsett = (oppgaveStruktur[aarIMal] && 
                              oppgaveStruktur[aarIMal][fag] && 
                              oppgaveStruktur[aarIMal][fag][periode]) 
@@ -1057,8 +1062,11 @@ async function kjorAdminRapport(type) {
                     if (d.slettet === true) return;
 
                     const sumVerdi = d.sum || 0;
-                    const erKritisk = sumVerdi <= oppsett.grenseTotal;
+                    // Sikrer at grenseTotal finnes, ellers sett til -1 (ingen blir kritiske)
+                    const gTotal = oppsett.grenseTotal !== undefined ? oppsett.grenseTotal : -1;
+                    const erKritisk = sumVerdi <= gTotal;
                     
+                    // Hvis vi kun skal vise kritiske, hopp over de som er OK
                     if (type === 'kritisk' && (!d.sum || !erKritisk || d.ikkeGjennomfort)) return;
 
                     antallEleverVist++;
@@ -1085,6 +1093,7 @@ async function kjorAdminRapport(type) {
                 }
             });
 
+            // Legg til snitt-rad hvis det er data (og ikke kritisk-liste)
             if (antallMedData > 0 && type !== 'kritisk') {
                 tabellHtml += `<tr style="background:#eeeeee; font-weight:bold;"><td>Snitt (${antallMedData} elev.)</td>`;
                 kolonneSummer.forEach(sum => {
@@ -1100,6 +1109,7 @@ async function kjorAdminRapport(type) {
         }
     }
 
+    // Åpne i nytt vindu for utskrift
     const printVindu = window.open('', '_blank');
     if (!printVindu) {
         alert("Pop-up blokkert! Vennligst tillat pop-ups for å se rapporten.");
@@ -1109,12 +1119,14 @@ async function kjorAdminRapport(type) {
     printVindu.document.write(`
         <html>
             <head>
-                <title>Årsrapport</title>
+                <title>Skolerapport - ${aar}</title>
                 <style>
                     body { font-family: sans-serif; padding: 20px; }
                     table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top:10px; }
                     th, td { border: 1px solid black; padding: 4px; }
                     .page-break { page-break-after: always; }
+                    h1, h2 { color: #2c3e50; }
+                    @media print { .page-break { page-break-after: always; } }
                 </style>
             </head>
             <body>${samletInnhold}</body>
@@ -1122,9 +1134,40 @@ async function kjorAdminRapport(type) {
     `);
     printVindu.document.close();
     
+    // Gi nettleseren litt tid til å tegne før print
     setTimeout(() => {
         printVindu.print();
     }, 1000);
+}
+
+// --- ALLE ÅR _ MENY FRA GLOBAL_AAR ---
+function oppdaterAlleAarsMenyer() {
+    // Liste over alle ID-er på select-bokser som skal inneholde årstall
+    const menyer = ['mAar', 'teAar', 'adminAar', 'compAar'];
+    
+    // Hent årstallene fra strukturen din, sorter dem med nyeste øverst
+    const tilgjengeligeAar = Object.keys(oppgaveStruktur).sort().reverse();
+
+    menyer.forEach(id => {
+        const meny = document.getElementById(id);
+        if (!meny) return;
+
+        // Tøm menyen og legg til standardvalg
+        meny.innerHTML = '<option value="">-- Velg år --</option>';
+
+        tilgjengeligeAar.forEach(aar => {
+            const opt = document.createElement('option');
+            opt.value = aar;
+            opt.textContent = aar;
+            
+            // Sett Global_aar som forhåndsvalgt hvis det matcher
+            if (typeof Global_aar !== 'undefined' && aar === Global_aar) {
+                opt.selected = true;
+            }
+            
+            meny.appendChild(opt);
+        });
+    });
 }
 
 // --- SAMMENLIGNING I ADMIN-FUNKSJONER (Oppdatert for 2026+) ---
