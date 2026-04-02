@@ -43,31 +43,48 @@ function oppdaterAlleAarsMenyer() {
     const alleAar = hentSkoleaarFraRegister();
     const menyer = ['mAar', 'teAar', 'adminAar', 'compAar'];
     
-    // Vi bruker Global_aar (som nå er satt til dagens skoleår)
-    const standardValg = Global_aar;
+    // Finn ut hva som er det faktiske skoleåret akkurat nå (f.eks. "2025-2026")
+    const aktueltNaa = finnNaavaerendeSkoleaar();
 
     menyer.forEach(id => {
         const meny = document.getElementById(id);
         if (!meny) return;
 
-        // Bruker din eksisterende fyllDropdown-funksjon
+        // 1. TA VARE PÅ EKSISTERENDE VALG
+        // Hvis brukeren har valgt noe i menyen allerede, vil vi beholde det
+        const brukerensValg = meny.value;
+
+        // 2. FYLL DROPDOWN
         fyllDropdown(id, alleAar);
         
-        // Sett menyen til dagens skoleår hvis det finnes i lista
-        if (alleAar.includes(standardValg)) {
-            meny.value = standardValg;
+        // 3. SETT VERDIEN (Prioritert rekkefølge)
+        if (brukerensValg && alleAar.includes(brukerensValg)) {
+            // Hvis menyen hadde et gyldig valg fra før, behold det
+            meny.value = brukerensValg;
+        } else if (alleAar.includes(aktueltNaa)) {
+            // Hvis ikke, bruk det beregnede skoleåret (2025-2026)
+            meny.value = aktueltNaa;
         } else {
-            meny.value = alleAar[0]; // Fallback til nyeste år
+            // Siste utvei: det øverste i lista
+            meny.value = alleAar[0];
         }
     });
 
-    // Lytt etter manuelle endringer i hovedmenyen
+    // --- 4. OPPDATER GLOBAL_AAR VARIABELEN ---
+    // Sørg for at den globale variabelen alltid matcher det som faktisk står i hovedmenyen
     const hovedMeny = document.getElementById('mAar');
-    if (hovedMeny) {
+    if (hovedMeny && hovedMeny.value) {
+        Global_aar = hovedMeny.value;
+    }
+
+    // --- 5. EVENT LISTENER (KUN ÉN GANG) ---
+    // Vi sjekker om vi allerede har satt opp lytteren for å unngå duplikater
+    if (hovedMeny && !hovedMeny.dataset.hasListener) {
         hovedMeny.addEventListener('change', (e) => {
             Global_aar = e.target.value;
-            console.log("Globalt år endret til:", Global_aar);
+            console.log("Globalt år manuelt endret til:", Global_aar);
         });
+        hovedMeny.dataset.hasListener = "true";
     }
 }
 
