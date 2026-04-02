@@ -2,10 +2,10 @@
 function hentSkoleaarFraRegister() {
     let aarSett = new Set();
     
-    // Legg alltid til basen din
+    // Vi inkluderer begge disse så de alltid er valgbare
     aarSett.add("2024-2025");
+    aarSett.add("2025-2026");
 
-    // Gå gjennom registeret (antar at elevRegister er tilgjengelig globalt)
     if (typeof elevRegister !== 'undefined') {
         Object.values(elevRegister).forEach(elev => {
             if (elev.startAar) {
@@ -14,8 +14,6 @@ function hentSkoleaarFraRegister() {
             }
         });
     }
-
-    // Returner ferdig sortert liste
     return Array.from(aarSett).sort().reverse();
 }
 
