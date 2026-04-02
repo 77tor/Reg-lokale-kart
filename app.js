@@ -1002,7 +1002,6 @@ function lukkAdmin() {
 }
 
 
-// --- ÅRSRAPPORT I ADMIN-FUNKSJONER (Fullstendig korrigert) ---
 // --- ÅRSRAPPORT I ADMIN-FUNKSJONER (Nå dynamisk koblet til Global_aar) ---
 async function kjorAdminRapport(type) {
     const aar = document.getElementById('adminAar').value;
@@ -1169,6 +1168,10 @@ function oppdaterAlleAarsMenyer() {
         });
     });
 }
+
+window.addEventListener('load', () => {
+    oppdaterAlleAarsMenyer();
+});
 
 // --- SAMMENLIGNING I ADMIN-FUNKSJONER (Oppdatert for 2026+) ---
 async function kjorSammenligning() {
