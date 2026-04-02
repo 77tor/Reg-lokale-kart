@@ -973,19 +973,31 @@ function lukkAdmin() {
         document.getElementById('chartContainer').style.display = 'none';
     }
     
-    // 2. Sørg for at registreringsskjemaet er synlig, men i "start-modus"
+    // 2. Sørg for at registreringsskjemaet er synlig
     document.getElementById('skjemaInnhold').style.display = 'block';
     
-    // 3. Nullstill tabellen og menyer (slik du hadde det)
+    // 3. Nullstill tabellen
     document.getElementById('tHead').innerHTML = "";
     document.getElementById('tBody').innerHTML = "<tr><td colspan='100%'>Velg alle kriterier...</td></tr>";
 
-    const filtere = ['mAar', 'mFag', 'mPeriode', 'mTrinn', 'mKlasse'];
+    // --- ENDRING HER: Nullstill filtere, men sett ÅR korrekt ---
+    const filtere = ['mFag', 'mPeriode', 'mTrinn', 'mKlasse'];
     filtere.forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.selectedIndex = 0; 
+        if (el) el.selectedIndex = 0; // Setter Fag, Periode osv. til "Velg..."
     });
 
+    // Spesialhåndtering for ÅR:
+    // I stedet for index 0, tvinger vi den til å bruke Global_aar (som er 2025-2026)
+    const aarMeny = document.getElementById('mAar');
+    if (aarMeny) {
+        // Vi kjører oppdateringen av menyer først for å være sikre på at alt er fylt
+        oppdaterAlleAarsMenyer(); 
+        // Deretter setter vi verdien til det globale året
+        aarMeny.value = Global_aar; 
+    }
+
+    // 4. Skjul seksjoner
     if (document.getElementById('nyElevSeksjon')) {
         document.getElementById('nyElevSeksjon').style.display = 'none';
     }
@@ -995,13 +1007,13 @@ function lukkAdmin() {
         actionBar.style.display = 'none';
     }
 
-    // 4. VIKTIG ENDRING: 
-    // I stedet for å bare skru AV alt med .off(), 
-    // bør vi heller starte lytteren på nytt så appen er klar for bruk!
+    // 5. Start lyttere på nytt
     db.ref().off(); 
-    startLyttere(); // Denne sørger for at elevRegisteret bygges opp på nytt med en gang
+    if (typeof startLyttere === "function") {
+        startLyttere();
+    }
     
-    console.log("Admin lukket og systemet er klart for nye valg.");
+    console.log("Admin lukket. År satt til:", Global_aar);
 }
 
 
