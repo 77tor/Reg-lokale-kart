@@ -57,16 +57,17 @@ auth.onAuthStateChanged(user => {
         document.getElementById('mainContent').style.display = 'block';
         document.getElementById('userInfo').innerText = user.displayName;
 
-        const alleAarInitial = hentSkoleaarFraRegister();
-        fyllDropdown('mAar', alleAarInitial);
-        registrerInnlogging(user); 
+        // 1. Denne ene linjen fikser NÅ alle menyer (mAar, teAar, adminAar, compAar)
+        // Den henter år, fyller boksene, og velger riktig skoleår automatisk.
+        oppdaterAlleAarsMenyer(); 
 
+        // 2. Loggføring og henting av data
+        registrerInnlogging(user); 
         hentRegister(); 
         hentData();     
     } else {
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('mainContent').style.display = 'none';
-        // Tøm session storage ved utlogging
         sessionStorage.removeItem('currentLogId');
     }
 });
@@ -214,15 +215,17 @@ function hentRegister() {
         const firebaseData = snapshot.val() || {};
         
         // --- SMART MERGING ---
+        // Beholder lokale data (fra elever.js) og legger til data fra Firebase
         elevRegister = Object.assign({}, elevRegister, firebaseData);
         
         console.log("Register oppdatert. Totalt antall elever:", Object.keys(elevRegister).length);
         
-        // --- NYTT: Oppdater årstallsmenyer når registeret endres ---
-        const alleAar = hentSkoleaarFraRegister();
-        fyllDropdown('mAar', alleAar); // Oppdaterer hovedmenyen
-        if (document.getElementById('compAar')) fyllDropdown('compAar', alleAar); // Oppdaterer admin-menyen hvis den finnes
+        // --- NYTT & FORENKLET: ---
+        // Denne ene linjen erstatter nå alle manuelle fyllDropdown-kall.
+        // Den oppdaterer både hovedmeny, admin-menyer og eksport-menyer.
+        oppdaterAlleAarsMenyer();
         
+        // Oppdaterer visningen på siden
         tegnTabell();
         oppdaterElevListe();
     });
