@@ -1288,16 +1288,20 @@ function aapneSammenligningsModal() {
     const chartArea = document.getElementById('modalChartArea');
     if (chartArea) chartArea.style.display = 'none';
 
-    // 1. BRUK GLOBAL FUNKSJON FOR Å HENTE ÅRSLISTE
-    // Denne henter nå automatisk fra elevRegister + 2024-2025
-    const alleAar = hentSkoleaarFraRegister();
+    // VIKTIG: Vi trenger IKKE fylle 'compAar' her lenger, 
+    // fordi Global_aar.js har allerede gjort det ved oppstart.
 
-    // 2. FYLL MENYENE
-    // Vi antar at fyllDropdown også ligger i Global_aar.js eller er tilgjengelig her
-    fyllDropdown('compAar', alleAar);
+    // Du kan imidlertid fylle de faste listene her hvis de ikke 
+    // er definert i HTML-en fra før:
     fyllDropdown('compFag', ["Lesing", "Regning"]); 
     fyllDropdown('compPeriode', ["Høst", "Vår"]);
     fyllDropdown('compTrinn', ["1", "2", "3", "4", "5", "6", "7"]);
+
+    // Valgfritt: Sørg for at modalen viser det året man jobber i akkurat nå
+    if (typeof Global_aar !== 'undefined') {
+        const compAar = document.getElementById('compAar');
+        if (compAar) compAar.value = Global_aar;
+    }
 }
 
 // Hjelpefunksjon for å fylle dropdown-menyer
