@@ -1,3 +1,6 @@
+// Sett den globale variabelen basert på dagens dato
+var Global_aar = finnNaavaerendeSkoleaar();
+
 // --- 1. DYNAMISK BEREGNING AV SKOLEÅR ---
 function finnNaavaerendeSkoleaar() {
     const idag = new Date();
@@ -12,8 +15,7 @@ function finnNaavaerendeSkoleaar() {
     }
 }
 
-// Sett den globale variabelen basert på dagens dato
-var Global_aar = finnNaavaerendeSkoleaar();
+
 
 // --- 2. GENERER LISTE OVER TILGJENGELIGE ÅR ---
 function hentSkoleaarFraRegister() {
