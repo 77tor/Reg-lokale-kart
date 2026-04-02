@@ -1141,29 +1141,33 @@ async function kjorAdminRapport(type) {
 
 // --- ALLE ÅR _ MENY FRA GLOBAL_AAR ---
 function oppdaterAlleAarsMenyer() {
-    // Liste over alle ID-er på select-bokser som skal inneholde årstall
     const menyer = ['mAar', 'teAar', 'adminAar', 'compAar'];
     
-    // Hent årstallene fra strukturen din, sorter dem med nyeste øverst
-    const tilgjengeligeAar = Object.keys(oppgaveStruktur).sort().reverse();
+    // 1. Hent år fra oppgaveStruktur
+    let alleAar = Object.keys(oppgaveStruktur);
+
+    // 2. Legg til år fra elevRegister (hvis de ikke allerede finnes)
+    Object.values(elevRegister).forEach(e => {
+        if (e.startAar && !alleAar.includes(e.startAar)) {
+            // Vi må også beregne skoleåret (f.eks. "2023-2024") basert på startAar
+            // Hvis startAar i elev.js allerede er formatert som "2023-2024":
+            alleAar.push(e.startAar);
+        }
+    });
+
+    // 3. Fjern duplikater og sorter nyeste øverst
+    const unikeAar = [...new Set(alleAar)].sort().reverse();
 
     menyer.forEach(id => {
         const meny = document.getElementById(id);
         if (!meny) return;
 
-        // Tøm menyen og legg til standardvalg
         meny.innerHTML = '<option value="">-- Velg år --</option>';
-
-        tilgjengeligeAar.forEach(aar => {
+        unikeAar.forEach(aar => {
             const opt = document.createElement('option');
             opt.value = aar;
             opt.textContent = aar;
-            
-            // Sett Global_aar som forhåndsvalgt hvis det matcher
-            if (typeof Global_aar !== 'undefined' && aar === Global_aar) {
-                opt.selected = true;
-            }
-            
+            if (typeof Global_aar !== 'undefined' && aar === Global_aar) opt.selected = true;
             meny.appendChild(opt);
         });
     });
