@@ -1240,25 +1240,12 @@ function aapneSammenligningsModal() {
     const chartArea = document.getElementById('modalChartArea');
     if (chartArea) chartArea.style.display = 'none';
 
-    // 1. HENT START-ÅR FRA elevRegister
-    let aarSett = new Set();
-    
-    // Vi legger alltid til 2024-2025 manuelt som ønsket
-    aarSett.add("2024-2025");
-
-    // Gå gjennom registeret og finn alle årstall hvor noen startet
-    Object.values(elevRegister).forEach(elev => {
-        if (elev.startAar) {
-            const sAar = parseInt(elev.startAar);
-            // Lager formatet "2026-2027" basert på startAar
-            aarSett.add(`${sAar}-${sAar + 1}`);
-        }
-    });
-
-    // Gjør om til liste, sorter slik at nyeste år (f.eks. 2028-2029) kommer øverst
-    let alleAar = Array.from(aarSett).sort().reverse();
+    // 1. BRUK GLOBAL FUNKSJON FOR Å HENTE ÅRSLISTE
+    // Denne henter nå automatisk fra elevRegister + 2024-2025
+    const alleAar = hentSkoleaarFraRegister();
 
     // 2. FYLL MENYENE
+    // Vi antar at fyllDropdown også ligger i Global_aar.js eller er tilgjengelig her
     fyllDropdown('compAar', alleAar);
     fyllDropdown('compFag', ["Lesing", "Regning"]); 
     fyllDropdown('compPeriode', ["Høst", "Vår"]);

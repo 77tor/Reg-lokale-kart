@@ -1,5 +1,8 @@
 let elevRegister = {
 
+ // 1. TRINN (Startet 2028)
+"Testesen_28, Tester_28": { startTrinn: 1, startKlasse: 'A', startAar: 2028 },
+
  // 1. TRINN (Startet 2027)
 "Testesen_27, Tester_27": { startTrinn: 1, startKlasse: 'A', startAar: 2027 },
    
