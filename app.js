@@ -1141,40 +1141,31 @@ async function kjorAdminRapport(type) {
 
 // --- ALLE ÅR _ MENY FRA GLOBAL_AAR ---
 function oppdaterAlleAarsMenyer() {
-    const menyer = ['mAar', 'teAar', 'adminAar', 'compAar'];
+    // 1. Hent den dynamiske listen fra din eksisterende funksjon i Global_aar.js
+    const alleAar = hentSkoleaarFraRegister(); 
     
-    // 1. Hent år fra oppgaveStruktur
-    let alleAar = Object.keys(oppgaveStruktur);
-
-    // 2. Legg til år fra elevRegister (hvis de ikke allerede finnes)
-    Object.values(elevRegister).forEach(e => {
-        if (e.startAar && !alleAar.includes(e.startAar)) {
-            // Vi må også beregne skoleåret (f.eks. "2023-2024") basert på startAar
-            // Hvis startAar i elev.js allerede er formatert som "2023-2024":
-            alleAar.push(e.startAar);
-        }
-    });
-
-    // 3. Fjern duplikater og sorter nyeste øverst
-    const unikeAar = [...new Set(alleAar)].sort().reverse();
+    // 2. Liste over alle ID-er som skal fylles med årstall
+    // 'adminAar' er menyen for Årsrapport
+    // 'teAar' er menyen for Total Eksport
+    // 'compAar' er menyen for Sammenligning
+    // 'mAar' er hovedmenyen din
+    const menyer = ['mAar', 'teAar', 'adminAar', 'compAar'];
 
     menyer.forEach(id => {
+        // Bruk din egen fyllDropdown-funksjon!
+        fyllDropdown(id, alleAar);
+        
+        // Sett Global_aar som forhåndsvalgt hvis den finnes
         const meny = document.getElementById(id);
-        if (!meny) return;
-
-        meny.innerHTML = '<option value="">-- Velg år --</option>';
-        unikeAar.forEach(aar => {
-            const opt = document.createElement('option');
-            opt.value = aar;
-            opt.textContent = aar;
-            if (typeof Global_aar !== 'undefined' && aar === Global_aar) opt.selected = true;
-            meny.appendChild(opt);
-        });
+        if (meny && typeof Global_aar !== 'undefined') {
+            meny.value = Global_aar;
+        }
     });
 }
 
 window.addEventListener('load', () => {
-    oppdaterAlleAarsMenyer();
+    // En bitteliten delay (100ms) kan av og til hjelpe på trege sider
+    setTimeout(oppdaterAlleAarsMenyer, 100);
 });
 
 // --- SAMMENLIGNING I ADMIN-FUNKSJONER (Oppdatert for 2026+) ---
