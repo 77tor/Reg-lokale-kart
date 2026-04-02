@@ -365,13 +365,14 @@ tr:hover { background-color: #f1f1f1; }
                 <select id="compAar" class="form-control" style="width:100%"></select>
             </div>
             <div>
-                <label>Fag:</label>
-                <select id="compFag" class="form-control" style="width:100%"></select>
-            </div>
-            <div>
                 <label>Periode:</label>
                 <select id="compPeriode" class="form-control" style="width:100%"></select>
             </div>
+            <div>
+                <label>Fag:</label>
+                <select id="compFag" class="form-control" style="width:100%"></select>
+            </div>
+
             <div>
                 <label>Trinn:</label>
                 <select id="compTrinn" class="form-control" style="width:100%"></select>
@@ -402,17 +403,16 @@ tr:hover { background-color: #f1f1f1; }
         <select id="teAar">
             <option value=""selected>-- Laster år... --</option>            
         </select>
+        <label>Periode:</label>
+        <select id="tePeriode">
+            <option value="Høst">Høst</option>
+            <option value="Vår">Vår</option>
+        </select>
 
         <label>Fag:</label>
         <select id="teFag">
             <option value="Lesing">Lesing</option>
             <option value="Regning">Regning</option>
-        </select>
-
-        <label>Periode:</label>
-        <select id="tePeriode">
-            <option value="Høst">Høst</option>
-            <option value="Vår">Vår</option>
         </select>
 
         <div style="margin-top:20px; display:flex; gap:10px;">
@@ -610,19 +610,20 @@ tr:hover { background-color: #f1f1f1; }
                 <select id="compAar" class="form-control" style="width:100%"></select>
             </div>
             <div>
-                <label>Fag:</label>
-                <select id="compFag" class="form-control" style="width:100%">
-                    <option value="Lesing">Lesing</option>
-                    <option value="Regning">Regning</option>
-                </select>
-            </div>
-            <div>
                 <label>Periode:</label>
                 <select id="compPeriode" class="form-control" style="width:100%">
                     <option value="Høst">Høst</option>
                     <option value="Vår">Vår</option>
                 </select>
             </div>
+            <div>
+                <label>Fag:</label>
+                <select id="compFag" class="form-control" style="width:100%">
+                    <option value="Lesing">Lesing</option>
+                    <option value="Regning">Regning</option>
+                </select>
+            </div>
+
             <div>
                 <label>Trinn:</label>
                 <select id="compTrinn" class="form-control" style="width:100%">
