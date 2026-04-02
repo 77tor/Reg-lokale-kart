@@ -1240,26 +1240,31 @@ function aapneSammenligningsModal() {
     const chartArea = document.getElementById('modalChartArea');
     if (chartArea) chartArea.style.display = 'none';
 
-    // 1. GENERER ÅRSLISTE AUTOMATISK
-    const na = new Date();
-    const aarNaa = na.getFullYear();
-    const maanedNaa = na.getMonth(); // 0 = Januar, 7 = August
+    // 1. HENT ÅRSTALL FRA elevRegister
+    let aarSett = new Set();
 
-    // Finn nåværende skoleår (hvis vi er i juni 2026, er skoleåret 2025-2026)
-    let startAar = (maanedNaa >= 7) ? aarNaa : aarNaa - 1;
+    // Gå gjennom alle elevene og beregn skoleårene de tilhører
+    Object.values(elevRegister).forEach(elev => {
+        if (elev.startAar) {
+            const start = parseInt(elev.startAar);
+            // Vi legger til skoleåret de startet, og de 7 påfølgende årene (et helt løp)
+            for (let i = 0; i < 7; i++) {
+                const sAar = start + i;
+                aarSett.add(`${sAar}-${sAar + 1}`);
+            }
+        }
+    });
 
-    // Hent årstall som allerede finnes i oppsett.js
-    let alleAar = Object.keys(oppgaveStruktur); 
-    
-    // Legg til inneværende og neste skoleår i lista i tilfelle de mangler i oppsettet
-    const iAar = `${startAar}-${startAar + 1}`;
-    const nesteAar = `${startAar + 1}-${startAar + 2}`;
-    
-    if (!alleAar.includes(iAar)) alleAar.push(iAar);
-    if (!alleAar.includes(nesteAar)) alleAar.push(nesteAar);
+    // Konverter Set til Array og sorter
+    let alleAar = Array.from(aarSett).sort().reverse();
 
-    // Sorter slik at nyeste år kommer øverst
-    alleAar.sort().reverse();
+    // Hvis registeret er tomt, faller vi tilbake på dagens år
+    if (alleAar.length === 0) {
+        const na = new Date();
+        const aarNaa = na.getFullYear();
+        const startAar = (na.getMonth() >= 7) ? aarNaa : aarNaa - 1;
+        alleAar = [`${startAar}-${startAar + 1}`];
+    }
 
     // 2. FYLL MENYENE
     fyllDropdown('compAar', alleAar);
