@@ -1240,31 +1240,23 @@ function aapneSammenligningsModal() {
     const chartArea = document.getElementById('modalChartArea');
     if (chartArea) chartArea.style.display = 'none';
 
-    // 1. HENT ÅRSTALL FRA elevRegister
+    // 1. HENT START-ÅR FRA elevRegister
     let aarSett = new Set();
+    
+    // Vi legger alltid til 2024-2025 manuelt som ønsket
+    aarSett.add("2024-2025");
 
-    // Gå gjennom alle elevene og beregn skoleårene de tilhører
+    // Gå gjennom registeret og finn alle årstall hvor noen startet
     Object.values(elevRegister).forEach(elev => {
         if (elev.startAar) {
-            const start = parseInt(elev.startAar);
-            // Vi legger til skoleåret de startet, og de 7 påfølgende årene (et helt løp)
-            for (let i = 0; i < 7; i++) {
-                const sAar = start + i;
-                aarSett.add(`${sAar}-${sAar + 1}`);
-            }
+            const sAar = parseInt(elev.startAar);
+            // Lager formatet "2026-2027" basert på startAar
+            aarSett.add(`${sAar}-${sAar + 1}`);
         }
     });
 
-    // Konverter Set til Array og sorter
+    // Gjør om til liste, sorter slik at nyeste år (f.eks. 2028-2029) kommer øverst
     let alleAar = Array.from(aarSett).sort().reverse();
-
-    // Hvis registeret er tomt, faller vi tilbake på dagens år
-    if (alleAar.length === 0) {
-        const na = new Date();
-        const aarNaa = na.getFullYear();
-        const startAar = (na.getMonth() >= 7) ? aarNaa : aarNaa - 1;
-        alleAar = [`${startAar}-${startAar + 1}`];
-    }
 
     // 2. FYLL MENYENE
     fyllDropdown('compAar', alleAar);
