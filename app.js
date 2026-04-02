@@ -57,7 +57,8 @@ auth.onAuthStateChanged(user => {
         document.getElementById('mainContent').style.display = 'block';
         document.getElementById('userInfo').innerText = user.displayName;
 
-        // --- NYTT: Registrer denne innloggingen i databasen ---
+        const alleAarInitial = hentSkoleaarFraRegister();
+        fyllDropdown('mAar', alleAarInitial);
         registrerInnlogging(user); 
 
         hentRegister(); 
@@ -213,11 +214,14 @@ function hentRegister() {
         const firebaseData = snapshot.val() || {};
         
         // --- SMART MERGING ---
-        // Vi beholder det som er i fila (elever.js), 
-        // og legger til/overskriver med det som er i Firebase.
         elevRegister = Object.assign({}, elevRegister, firebaseData);
         
         console.log("Register oppdatert. Totalt antall elever:", Object.keys(elevRegister).length);
+        
+        // --- NYTT: Oppdater årstallsmenyer når registeret endres ---
+        const alleAar = hentSkoleaarFraRegister();
+        fyllDropdown('mAar', alleAar); // Oppdaterer hovedmenyen
+        if (document.getElementById('compAar')) fyllDropdown('compAar', alleAar); // Oppdaterer admin-menyen hvis den finnes
         
         tegnTabell();
         oppdaterElevListe();
@@ -391,24 +395,27 @@ async function toggleFerdigstill() {
    
 
  if (skalLaase) {
-        // --- LOGIKK FOR Å LÅSE ---
         const manglerResultat = Array.from(document.querySelectorAll('#tBody tr')).filter(rad => 
             rad.querySelector('.not-registered')
         );
 
         if (manglerResultat.length > 0) {
-            const valg = confirm(`Det er ${manglerResultat.length} elever uten registrerte resultater.\n\nØnsker du å sette disse som 'Ikke gjennomført' og ferdigstille prøven?`);
+            const valg = confirm(`Det er ${manglerResultat.length} elever uten registrerte resultater...`);
             if (!valg) return;
+
+            // NYTT: Hent riktig oppsett for å vite antall oppgaver
+            const oppsett = hentOppsett(); 
+            const antallOppgaver = oppsett.oppgaver.length;
 
             for (let rad of manglerResultat) {
                 const elevNavn = rad.cells[0].innerText.trim();
                 await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}/${elevNavn}`).update({
                     ikkeGjennomfort: true,
                     sum: 0,
-                    oppgaver: new Array(15).fill(0) // Juster tallet her hvis du har flere oppgaver
+                    oppgaver: new Array(antallOppgaver).fill(0) // Nå dynamisk!
                 });
             }
-            await hentData(); // Oppdater tabellvisningen
+            await hentData(); 
         }
     }
 
@@ -1128,7 +1135,7 @@ async function kjorSammenligning() {
     const trinn = document.getElementById('compTrinn').value;
 
     // DEFINER MAL-ÅR (viktig for at 'oppsett' skal virke)
-    const aarIMal = oppgaveStruktur[aar] ? aar : "2024-2025";
+    const aarIMal = oppgaveStruktur[aar] ? aar : "2025-2026";
 
     const overskriftTekst = `Sammenligning: ${aar} - ${fag} - ${trinn}. trinn (${periode})`;
     const overskriftElement = document.getElementById('modalChartOverskrift');
@@ -1394,8 +1401,7 @@ async function genererKlasserapport() {
     lagretKullData = []; 
 
     const sorterteAar = Object.keys(allData).sort();
-
-    for (let skoleaar of sorterteAar) {
+for (let skoleaar of sorterteAar) {
         const startAarSkole = parseInt(skoleaar.split('-')[0]);
         const trinn = startAarSkole - fodaar - 5;
 
@@ -1407,9 +1413,20 @@ async function genererKlasserapport() {
                 const trinnData = fagData[periode][trinn];
                 if (trinnData && trinnData[klasseBokstav]) {
                     
-                    const oppsett = oppgaveStruktur[skoleaar]?.[fag]?.[periode]?.[trinn];
-                    if (!oppsett) continue;
+                    // --- ENDRING HER: Sikre at vi finner et oppsett (fallback til 2025) ---
+                    const aarIMal = oppgaveStruktur[skoleaar] ? skoleaar : "2025-2026";
                     
+                    // Sjekk steg for steg så vi ikke krasjer hvis noe mangler i malen
+                    const oppsett = (oppgaveStruktur[aarIMal] && 
+                                     oppgaveStruktur[aarIMal][fag] && 
+                                     oppgaveStruktur[aarIMal][fag][periode]) 
+                                     ? oppgaveStruktur[aarIMal][fag][periode][trinn] 
+                                     : null;
+
+                    if (!oppsett) {
+                        console.warn(`Mangler oppsett for ${fag} ${periode} ${trinn}.trinn i ${aarIMal}`);
+                        continue;
+                    }              
                     const maksPoeng = oppsett.oppgaver.reduce((s, o) => s + o.maks, 0);
                     const eleverIKlasse = trinnData[klasseBokstav];
                     
