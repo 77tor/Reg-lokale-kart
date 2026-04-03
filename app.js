@@ -871,14 +871,21 @@ async function genererKlasseAnalyse() {
                         let årsakTekst = erUnderKritiskGrense ? 
                             `Kritisk lavt nivå (Snitt: ${snitt.toFixed(1)} av ${o.maks})` : 
                             `Lav mestring (${prosent.toFixed(0)}%)`;
+// Finn bildet fra oppsettet basert på gjeldende oppgave
+const bildeSti = o.bilde; 
+const overskriftMedBilde = bildeSti 
+    ? `<span class="hjelpe-ikon-tekst">${malInfo.navn}
+         <img src="${bildeSti}" class="oppgave-preview-bilde">
+       </span>` 
+    : malInfo.navn;
 
-                        detaljHtml += `
-                            <div style="margin-bottom: 20px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 0 8px 8px 0;">
-                                <h4 style="margin:0; color:#c0392b;">${malInfo.navn} — <span style="font-size: 0.9em; font-weight: normal; color: #555;">${årsakTekst}</span></h4>
-                                <p style="margin: 8px 0 0 0; font-size: 14px; line-height: 1.6; color: #333;">
-                                    <strong>Pedagogisk fokus:</strong> ${malInfo.forklaring}
-                                </p>
-                            </div>`;
+detaljHtml += `
+    <div style="margin-bottom: 20px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 0 8px 8px 0;">
+        <h4 style="margin:0; color:#c0392b;">${overskriftMedBilde} — <span style="font-size: 0.9em; font-weight: normal; color: #555;">${årsakTekst}</span></h4>
+        <p style="margin: 8px 0 0 0; font-size: 14px; line-height: 1.6; color: #333;">
+            <strong>Pedagogisk fokus:</strong> ${malInfo.forklaring}
+        </p>
+    </div>`;
                     }
                 });
 
