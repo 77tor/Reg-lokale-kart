@@ -179,31 +179,38 @@ tr:hover { background-color: #f1f1f1; }
 }
 
 
-/* Stil for ikonet */
-.hjelpe-ikon {
-    cursor: help;
+/* Stil for selve teksten/overskriften som har bilde */
+.hjelpe-ikon-tekst {
     position: relative;
-    margin-left: 8px;
-    font-style: normal;
+    border-bottom: 1px dashed #007bff; /* Viser læreren at det er mer info her */
+    cursor: help;
+    color: #333;
+    display: inline-block;
 }
 
-/* Skjul bildet som standard */
+/* Forhåndsvisningen (bildet) */
 .oppgave-preview-bilde {
     display: none;
     position: absolute;
-    z-index: 9999; /* Sørg for at det ligger over alt annet */
-    width: 250px;  /* Du kan justere størrelsen her */
+    z-index: 10000; /* Legger det helt øverst */
+    width: 300px; 
     border: 3px solid #444;
-    border-radius: 8px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    border-radius: 10px;
+    box-shadow: 5px 5px 20px rgba(0,0,0,0.4);
     background: white;
-    left: 30px;
-    top: -20px;
+    left: 20px; /* Flytter bildet litt til høyre for teksten */
+    top: 25px;  /* Flytter bildet litt ned slik at det ikke dekker musa */
 }
 
-/* Vis bildet ved hover */
-.hjelpe-ikon:hover .oppgave-preview-bilde {
+/* Vis bilde ved hover over teksten */
+.hjelpe-ikon-tekst:hover .oppgave-preview-bilde {
     display: block;
+}
+
+/* Enkel animasjon for å gjøre det "tøffere" */
+.hjelpe-ikon-tekst:hover {
+    color: #007bff;
+    transition: color 0.2s;
 }
 
 /* STATUS-VISNING */

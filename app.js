@@ -593,26 +593,26 @@ function visModal(navn) {
         checkBoks.checked = erIkkeGjennomfort;
     }
 
-    // 2. Lag oppgavefeltene
+// 2. Lag oppgavefeltene
 oppsett.oppgaver.forEach((o, i) => {
     const stil = erIkkeGjennomfort ? 'opacity:0.3;' : '';
     const deaktivert = erIkkeGjennomfort ? 'disabled' : '';
 
-    // Sjekk om det finnes et bilde for denne oppgaven
-    const bildeHTML = o.bilde 
-        ? `<span class="hjelpe-ikon">ℹ️
+    // Her gjør vi selve navnet til en "hjelpe-ikon"-trigger hvis bilde finnes
+    const navnMedHjelp = o.bilde 
+        ? `<span class="hjelpe-ikon-tekst">${o.navn} ℹ️
              <img src="${o.bilde}" class="oppgave-preview-bilde">
            </span>` 
-        : "";
+        : o.navn;
 
     container.innerHTML += `
-        <div class="oppgave-rad" style="margin-bottom:10px; ${stil} display: flex; justify-content: space-between; align-items: center;">
-            <label>
-                ${o.navn}${bildeHTML}:
+        <div class="oppgave-rad" style="margin-bottom:12px; ${stil} display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dotted #eee; padding-bottom: 5px;">
+            <label style="cursor: help;">
+                ${navnMedHjelp}:
             </label>
             <input type="number" class="oppg-input" data-index="${i}" min="0" max="${o.maks}" 
             value="${eksisterende[i] !== undefined ? eksisterende[i] : ""}" 
-            ${deaktivert} style="width:60px;">
+            ${deaktivert} style="width:65px; padding: 5px; text-align: center;">
         </div>`;
 });
 
