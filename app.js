@@ -910,47 +910,73 @@ detaljHtml += `
         }
         detaljHtml += `</div>`;
 
-        // --- ÅPNE VINDU OG SKRIV UT ---
-        const win = window.open('', '_blank');
-        win.document.write(`
-            <html>
-            <head>
-                <title>Analyse ${trinn}${klasse}</title>
-                <style>
-                    body { font-family: sans-serif; padding: 30px; color: #333; }
-                    h1, h2, h3 { text-align: center; margin-top: 0; }
-                    table { width: 100%; border-collapse: collapse; margin-bottom: 30px; table-layout: fixed; page-break-inside: avoid; }
-                    th, td { border: 1px solid #333; padding: 8px; text-align: center; overflow: hidden; font-size: 11px; }
-                    th { background-color: #f2f2f2; }
-                    th:first-child, td:first-child { width: 150px; text-align: left; font-weight: bold; }
-                    .chart-container { display: flex; height: 250px; align-items: flex-end; justify-content: flex-start; border-bottom: 2px solid #333; padding-top: 30px; margin-bottom: 60px; }
-                    .bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; position: relative; }
-                    .bar-track { background: #eee; width: 35px; height: 100%; position: relative; display: flex; flex-direction: column-reverse; border: 1px solid #ccc; }
-                    .bar-fill { background: #3498db; width: 100%; }
-                    .total-fill { background: #2ecc71; }
-                    .target-line { position: absolute; left: -10px; right: -10px; border-top: 2px dashed red; z-index: 10; }
-                    .bar-label { font-size: 10px; transform: rotate(-45deg); margin-top: 15px; white-space: nowrap; height: 40px; }
-                    .bar-value { font-size: 11px; font-weight: bold; margin-bottom: 5px; }
-                    .page-break-before { page-break-before: always; margin-top: 50px; }
-                    
-                    @media print { 
-                        .no-print { display: none; } 
-                        body { padding: 0; } 
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="no-print" style="margin-bottom: 20px; text-align:center; background:#eee; padding:15px; border-radius:8px; position: sticky; top: 0; z-index: 1000;">
-                    <button onclick="window.print()" style="padding: 12px 20px; background: #2980b9; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Skriv ut / Lagre PDF</button>
-                    <button onclick="window.close()" style="padding: 12px 20px; background: #95a5a6; color:white; border:none; border-radius:4px; cursor:pointer; margin-left: 10px; font-weight:bold;">Lukk</button>
-                </div>
-                
-                ${html}
-                ${detaljHtml}
-            </body>
-            </html>
-        `);
-        win.document.close();
+// --- ÅPNE VINDU OG SKRIV UT ---
+const win = window.open('', '_blank');
+win.document.write(`
+    <html>
+    <head>
+        <title>Analyse ${trinn}${klasse}</title>
+        <style>
+            body { font-family: sans-serif; padding: 30px; color: #333; }
+            h1, h2, h3 { text-align: center; margin-top: 0; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; table-layout: fixed; page-break-inside: avoid; }
+            th, td { border: 1px solid #333; padding: 8px; text-align: center; overflow: hidden; font-size: 11px; }
+            th { background-color: #f2f2f2; }
+            th:first-child, td:first-child { width: 150px; text-align: left; font-weight: bold; }
+            .chart-container { display: flex; height: 250px; align-items: flex-end; justify-content: flex-start; border-bottom: 2px solid #333; padding-top: 30px; margin-bottom: 60px; }
+            .bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; position: relative; }
+            .bar-track { background: #eee; width: 35px; height: 100%; position: relative; display: flex; flex-direction: column-reverse; border: 1px solid #ccc; }
+            .bar-fill { background: #3498db; width: 100%; }
+            .total-fill { background: #2ecc71; }
+            .target-line { position: absolute; left: -10px; right: -10px; border-top: 2px dashed red; z-index: 10; }
+            .bar-label { font-size: 10px; transform: rotate(-45deg); margin-top: 15px; white-space: nowrap; height: 40px; }
+            .bar-value { font-size: 11px; font-weight: bold; margin-bottom: 5px; }
+            .page-break-before { page-break-before: always; margin-top: 50px; }
+
+            /* --- HOVER-BILDER FOR ANALYSE (MINDRE STØRRELSE) --- */
+            .hjelpe-ikon-tekst { 
+                position: relative; 
+                cursor: help; 
+                border-bottom: 1px dashed #c0392b; 
+                display: inline-block; 
+            }
+
+            .oppgave-preview-bilde { 
+                display: none; 
+                position: absolute; 
+                z-index: 10000; 
+                width: 220px; /* Her styrer du størrelsen for analysen */
+                border: 2px solid #333; 
+                border-radius: 8px; 
+                box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
+                background: white; 
+                left: 20px; 
+                top: 30px; 
+            }
+
+            .hjelpe-ikon-tekst:hover .oppgave-preview-bilde { 
+                display: block; 
+            }
+            
+            @media print { 
+                .no-print, .oppgave-preview-bilde { display: none !important; } 
+                .hjelpe-ikon-tekst { border-bottom: none !important; }
+                body { padding: 0; } 
+            }
+        </style>
+    </head>
+    <body>
+        <div class="no-print" style="margin-bottom: 20px; text-align:center; background:#eee; padding:15px; border-radius:8px; position: sticky; top: 0; z-index: 1000;">
+            <button onclick="window.print()" style="padding: 12px 20px; background: #2980b9; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Skriv ut / Lagre PDF</button>
+            <button onclick="window.close()" style="padding: 12px 20px; background: #95a5a6; color:white; border:none; border-radius:4px; cursor:pointer; margin-left: 10px; font-weight:bold;">Lukk</button>
+        </div>
+        
+        ${html}
+        ${detaljHtml}
+    </body>
+    </html>
+`);
+win.document.close();
 
     } catch (error) {
         console.error("Feil i analysegenerering:", error);
