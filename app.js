@@ -282,7 +282,7 @@ oppsett.oppgaver.forEach(o => {
 
     hode += `<th style="text-align:center;">${overskriftInnhold}<br><small>max ${o.maks}</small></th>`;
 });
-hode += `<th>Sum</th><th class="no-print">Handling</th></tr>`;
+hode += `<th>Sum<br><small style="font-weight:normal; font-size:0.8em; color:#666;">(Kritisk: ≤${oppsett.grenseTotal})</small></th><th class="no-print">Handling</th></tr>`;
 tHead.innerHTML = hode;
 
     const vStartAarValgt = parseInt(vAar.split('-')[0]);
