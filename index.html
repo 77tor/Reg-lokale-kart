@@ -249,7 +249,7 @@ tr:hover { background-color: #f1f1f1; }
     display: none;
     position: absolute;
     z-index: 10000; /* Legger det helt øverst */
-    width: 300px; 
+    width: 200px; 
     border: 3px solid #444;
     border-radius: 10px;
     box-shadow: 5px 5px 20px rgba(0,0,0,0.4);
@@ -293,7 +293,8 @@ tr:hover { background-color: #f1f1f1; }
 @media print {
     @page { size: landscape; margin: 0.5cm; }
     body { background: white; margin: 0; padding: 0; width: 100%; }
-
+    .oppgave-preview-bilde { display: none !important; }
+    .hjelpe-ikon-tekst { border-bottom: none !important; }
     /* 2. Skjul alt unødvendig */
     .no-print, .btn, .modal, .modal-content, #loginScreen, .header-grid, 
     .action-bar, .ny-elev-boks, #adminPanel, .chart-container, 
@@ -306,8 +307,7 @@ tr:hover { background-color: #f1f1f1; }
         left: -9999px !important;
     }
 
-    .oppgave-preview-bilde { display: none !important; }
-    .hjelpe-ikon-tekst { border-bottom: none !important; }
+
 
     /* Tving farger på utskrift */
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
