@@ -285,8 +285,7 @@ oppsett.oppgaver.forEach(o => {
 });
 
 // Vi tvinger cellen til å oppføre seg som en standard tabellcelle og gir den 
-// litt ekstra padding på høyre side så den ikke "stanger" i margen på arket.
-hode += `<th style="text-align:center; min-width:80px !important; padding-right:10px !important;">SUM<br><small>Kr: ${oppsett.grenseTotal}</small></th><th class="no-print">Handling</th></tr>`;
+hode += `<th>Sum<br><span style="font-weight:normal; font-size:10px; color:black !important; display:block !important;">(Kritisk: ≤${oppsett.grenseTotal})</span></th><th class="no-print">Handling</th></tr>`;
 
 tHead.innerHTML = hode;
 
