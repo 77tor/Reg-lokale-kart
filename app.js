@@ -282,7 +282,10 @@ oppsett.oppgaver.forEach(o => {
 
     hode += `<th style="text-align:center;">${overskriftInnhold}<br><small>max ${o.maks}</small></th>`;
 });
-hode += `<th>Sum<br><small style="font-weight:normal; font-size:0.8em; color:black;">(Kritisk: ≤${oppsett.grenseTotal})</small></th><th>Handling</th></tr>`;
+
+// ENDRET HER: Bruker <span> med display:block og !important for å sikre synlighet ved utskrift
+hode += `<th>Sum<br><span style="font-weight:normal; font-size:10px; color:black !important; display:block !important;">(Kritisk: ≤${oppsett.grenseTotal})</span></th><th class="no-print">Handling</th></tr>`;
+
 tHead.innerHTML = hode;
 
     const vStartAarValgt = parseInt(vAar.split('-')[0]);
