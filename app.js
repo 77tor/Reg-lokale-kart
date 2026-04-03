@@ -912,6 +912,7 @@ detaljHtml += `
 
 
 
+
 // --- ÅPNE VINDU OG SKRIV UT ---
 const win = window.open('', '_blank');
 if (!win) {
@@ -919,16 +920,21 @@ if (!win) {
     return;
 }
 
-// 1. "Vask" variablene så de matcher filnavnene dine (f.eks. liten forbokstav på fag)
+// 1. "Vask" variablene
 const fagFil = fag.toLowerCase(); 
-const harFasit = !(fagFil === "lesing" && trinn === "1.trinn" && periode === "Høst");
+// Vi henter ut bare tallet fra trinn (f.eks "2.trinn" blir "2")
+const trinnTall = trinn.replace(/\D/g, ''); 
 
-// 2. Lag de nøyaktige stiene (Sjekk at disse matcher filene dine 100%)
-const oppgaveSti = `Oppgaver/Kartlegging ${fagFil}-${trinn}-${periode}.pdf`;
-const fasitSti = `Fasit/Kartlegging ${fagFil}-${trinn}-${periode}-Fasit.pdf`;
+const harFasit = !(fagFil === "lesing" && trinnTall === "1" && periode === "Høst");
 
-console.log("Sjekk filsti oppgave:", oppgaveSti);
-console.log("Sjekk filsti fasit:", fasitSti);
+// 2. Lag de nøyaktige stiene (Matcher nå: Kartlegging lesing-2-Høst.pdf)
+const oppgaveSti = `Oppgaver/Kartlegging ${fagFil}-${trinnTall}-${periode}.pdf`;
+const fasitSti = `Fasit/Kartlegging ${fagFil}-${trinnTall}-${periode}-Fasit.pdf`;
+
+console.log("NY TEST - Oppgave:", oppgaveSti);
+console.log("NY TEST - Fasit:", fasitSti);
+
+// ... resten av fullHtml og win.document.write som før ...
 
 // 3. Bygg HTML-en
 const fullHtml = `
