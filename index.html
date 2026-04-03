@@ -185,65 +185,54 @@ tr:hover { background-color: #f1f1f1; }
     height: 52px !important;
 }
 
-/* --- MODAL RAMME --- */
-.modal { 
-    display: none; 
-    position: fixed; 
-    z-index: 1000; 
-    left: 0; top: 0; 
-    width: 100%; height: 100%; 
-    background: rgba(0,0,0,0.6); 
-}
-
+/* --- MODAL-RAMME --- */
 .modal-content { 
     background: white; 
     margin: 40px auto; 
     padding: 25px; 
     border-radius: 12px; 
     width: 450px; 
-    max-height: 80vh; 
     
-    /* VIKTIG: Vi bruker 'visible' for at bildet skal kunne stikke ut på siden, 
-       men da må du ha en skrollbar div inni for selve oppgavene (se forklaring under) */
-    overflow: visible; 
+    /* Begrens høyden på selve boksen så den ikke forsvinner ut av skjermen */
+    max-height: 85vh; 
+    display: flex;
+    flex-direction: column;
     
+    /* Tillat bilder å flyte ut på sidene */
+    overflow: visible !important; 
+    position: relative; 
     box-shadow: 0 5px 30px rgba(0,0,0,0.3); 
-    position: relative;
 }
 
-/* --- BILDE-LOGIKK (Felles for både tabell og modal) --- */
-.hjelpe-ikon-tekst {
-    position: relative;
-    border-bottom: 1px dashed #007bff;
-    cursor: help;
-    display: inline-block;
+/* --- NY SKROLLESONE FOR OPPGAVENE --- */
+.modal-body-scroll {
+    overflow-y: auto;   /* Skrolling skjer kun her inne */
+    overflow-x: visible; /* Tillater bilder å poppe ut til siden */
+    padding-right: 15px;
+    flex-grow: 1;       /* Lar denne delen fylle plassen i modalen */
+    margin-bottom: 15px;
 }
 
-.oppgave-preview-bilde {
+/* --- BILDE-POSISJON I MODAL --- */
+.modal-content .oppgave-preview-bilde {
     display: none;
-    position: absolute; /* Gjør at bildet følger teksten ved skrolling */
+    position: absolute; 
     z-index: 999999 !important;
-    width: 350px; 
+    width: 300px; 
     border: 3px solid #2d3748;
     border-radius: 10px;
-    box-shadow: 10px 10px 30px rgba(0,0,0,0.5);
+    box-shadow: 10px 10px 30px rgba(0,0,0,0.4);
     background: white;
-    padding: 2px;
-    pointer-events: none; /* Hindrer flimring når musa treffer bildet */
-    
-    /* Plassering: Denne vil nå følge hver enkelt oppgave-linje nedover */
-    left: 110%; /* Legger bildet til høyre for teksten */
-    top: -50px;  /* Justerer høyden så bildet sentreres litt bedre mot linjen */
+    pointer-events: none;
+
+    /* Plasserer bildet til VENSTRE for modalen for å unngå krasj med input-feltene */
+    left: -320px; 
+    top: -10px; 
 }
 
-/* Vis bildet ved hover */
+/* Vis ved hover */
 .hjelpe-ikon-tekst:hover .oppgave-preview-bilde {
     display: block;
-}
-
-.hjelpe-ikon-tekst:hover {
-    color: #007bff;
-    font-weight: bold;
 }
 
 /* STATUS-VISNING */
@@ -264,6 +253,41 @@ tr:hover { background-color: #f1f1f1; }
     border-radius: 12px;
     font-size: 0.9em;
     color: #495057;
+}
+
+
+/* Containeren for oppgavene inni modalen */
+.modal-body-scroll {
+    max-height: 50vh;   /* Juster denne hvis du vil ha lengre/kortere liste før skroll */
+    overflow-y: auto;   /* Tillater vertikal skrolling */
+    overflow: visible !important; /* VIKTIG: Tillater bilde-preview å stikke ut på siden */
+    padding-right: 10px;
+    margin-bottom: 10px;
+}
+
+/* Selve bilde-previewen når den er inni modalen */
+.modal-body-scroll .oppgave-preview-bilde {
+    display: none;
+    position: absolute;
+    z-index: 999999 !important;
+    width: 320px;
+    
+    /* Flytter bildet til venstre for den hvite boksen */
+    left: -350px; 
+    top: -20px;
+    
+    border: 3px solid #333;
+    border-radius: 10px;
+    box-shadow: 10px 10px 30px rgba(0,0,0,0.5);
+    background: white;
+    pointer-events: none;
+}
+
+/* Sørg for at den ytre boksen også tillater utstikk */
+.modal-content {
+    overflow: visible !important;
+    display: flex;
+    flex-direction: column;
 }
 
 /* --- UTTSKRIFT-LOGIKK (DENNE ER TRYGG FOR BEGGE TYPER) --- */
@@ -598,11 +622,11 @@ tr:hover { background-color: #f1f1f1; }
 
 <div id="modal" class="modal">
     <div class="modal-content">
-        <h3 id="modalNavn">Navn</h3>
-        <p style="font-size: 0.75em; color: #7f8c8d;">Naviger med [Enter]. Lagre på siste felt.</p>
+        <h3 id="modalNavn" style="margin-bottom: 5px;">Navn</h3>
+        <p style="font-size: 0.75em; color: #7f8c8d; margin-bottom: 10px;">Naviger med [Enter]. Lagre på siste felt.</p>
         <hr>
         
-        <div id="oppgaveFelter"></div>
+        <div id="oppgaveFelter" class="modal-body-scroll"></div>
 
         <div style="margin-top: 15px; padding: 10px; background: #fff5f5; border: 1px solid #feb2b2; border-radius: 6px;">
             <label style="display: flex; align-items: center; cursor: pointer; font-weight: bold; color: #c53030;">
