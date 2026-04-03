@@ -185,66 +185,81 @@ tr:hover { background-color: #f1f1f1; }
     height: 52px !important;
 }
 
-/* --- MODAL-RAMME --- */
+/* --- MODAL SYSTEM --- */
+.modal { 
+    display: none; 
+    position: fixed; 
+    z-index: 1000; 
+    left: 0; top: 0; 
+    width: 100%; height: 100%; 
+    background: rgba(0,0,0,0.6); 
+}
+
 .modal-content { 
     background: white; 
     margin: 40px auto; 
     padding: 25px; 
     border-radius: 12px; 
     width: 450px; 
-    
-    /* Begrens høyden på selve boksen så den ikke forsvinner ut av skjermen */
     max-height: 85vh; 
     display: flex;
     flex-direction: column;
-    
-    /* Tillat bilder å flyte ut på sidene */
+    position: relative;
+    box-shadow: 0 5px 30px rgba(0,0,0,0.3);
+    /* VIKTIG: Tillater bilde-preview å stikke ut på siden */
     overflow: visible !important; 
-    position: relative; 
-    box-shadow: 0 5px 30px rgba(0,0,0,0.3); 
 }
 
-/* --- NY SKROLLESONE FOR OPPGAVENE --- */
+/* Skrollesonen for oppgavene */
 .modal-body-scroll {
-    overflow-y: auto;   /* Skrolling skjer kun her inne */
-    overflow-x: visible; /* Tillater bilder å poppe ut til siden */
-    padding-right: 15px;
-    flex-grow: 1;       /* Lar denne delen fylle plassen i modalen */
-    margin-bottom: 15px;
+    max-height: 50vh;
+    overflow-y: auto;
+    /* Må ha visible her for at bildene som ligger inne i listen skal synes utenfor */
+    overflow-x: visible !important; 
+    padding-right: 10px;
+    margin-bottom: 10px;
+    flex-grow: 1;
 }
 
-/* --- BILDE-POSISJON I MODAL --- */
-.modal-content .oppgave-preview-bilde {
+/* --- BILDE-PREVIEW LOGIKK --- */
+
+/* Standard for tabell (absolutt posisjon under teksten) */
+.hjelpe-ikon-tekst .oppgave-preview-bilde {
     display: none;
-    position: absolute; 
-    z-index: 999999 !important;
-    width: 300px; 
+    position: absolute;
+    z-index: 99999 !important;
+    width: 350px;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 100%;
+    margin-top: 10px;
     border: 3px solid #2d3748;
     border-radius: 10px;
-    box-shadow: 10px 10px 30px rgba(0,0,0,0.4);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
     background: white;
     pointer-events: none;
-
-    /* Plasserer bildet til VENSTRE for modalen for å unngå krasj med input-feltene */
-    left: -320px; 
-    top: -10px; 
 }
 
-/* Vis ved hover */
+/* Spesifikk overstyring når bildet er inni modal-skrollesonen */
+.modal-body-scroll .oppgave-preview-bilde {
+    /* Vi beholder absolute, slik at den følger linjen sin når vi skroller */
+    left: -350px; /* Flytter bildet til venstre for modalen */
+    top: -20px;
+    width: 320px;
+    transform: none; /* Fjerner sentreringen fra tabell-stilen */
+}
+
 .hjelpe-ikon-tekst:hover .oppgave-preview-bilde {
     display: block;
 }
 
-/* STATUS-VISNING */
+/* --- STATUS OG ANDRE STILER --- */
 .not-registered { color: #aaa; font-style: italic; }
 .alert-low { background: #ffcccc !important; font-weight: bold; color: #c0392b; }
-
-/* NYTT: Klasser brukt av forberedPrint() */
 .kritisk { background-color: #ffcccc !important; color: #b71c1c !important; font-weight: bold !important; }
 .snitt-rad { background-color: #2c3e50 !important; color: white !important; font-weight: bold !important; }
 .fravær-tekst { font-style: italic; color: #7f8c8d; }
 
-/* Ekstra stil for systemlogg */
 #systemLoggTabell { margin-top: 0; }
 #systemLoggTabell td { padding: 10px 5px; border-bottom: 1px solid #eee; }
 .badge {
@@ -253,41 +268,6 @@ tr:hover { background-color: #f1f1f1; }
     border-radius: 12px;
     font-size: 0.9em;
     color: #495057;
-}
-
-
-/* Containeren for oppgavene inni modalen */
-.modal-body-scroll {
-    max-height: 50vh;   /* Juster denne hvis du vil ha lengre/kortere liste før skroll */
-    overflow-y: auto;   /* Tillater vertikal skrolling */
-    overflow: visible !important; /* VIKTIG: Tillater bilde-preview å stikke ut på siden */
-    padding-right: 10px;
-    margin-bottom: 10px;
-}
-
-/* Selve bilde-previewen når den er inni modalen */
-.modal-body-scroll .oppgave-preview-bilde {
-    display: none;
-    position: absolute;
-    z-index: 999999 !important;
-    width: 320px;
-    
-    /* Flytter bildet til venstre for den hvite boksen */
-    left: -350px; 
-    top: -20px;
-    
-    border: 3px solid #333;
-    border-radius: 10px;
-    box-shadow: 10px 10px 30px rgba(0,0,0,0.5);
-    background: white;
-    pointer-events: none;
-}
-
-/* Sørg for at den ytre boksen også tillater utstikk */
-.modal-content {
-    overflow: visible !important;
-    display: flex;
-    flex-direction: column;
 }
 
 /* --- UTTSKRIFT-LOGIKK (DENNE ER TRYGG FOR BEGGE TYPER) --- */
