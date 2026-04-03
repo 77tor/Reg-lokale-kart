@@ -921,20 +921,18 @@ if (!win) {
 }
 
 // 1. "Vask" variablene
-const fagFil = fag.toLowerCase(); 
-// Vi henter ut bare tallet fra trinn (f.eks "2.trinn" blir "2")
-const trinnTall = trinn.replace(/\D/g, ''); 
+const fagFil = fag.toLowerCase(); // Blir "regning"
+const trinnTall = trinn.replace(/\D/g, ''); // Blir "2"
+const periodeVerdi = periode; // Blir "Høst"
 
-const harFasit = !(fagFil === "lesing" && trinnTall === "1" && periode === "Høst");
+// 2. Lag stiene nøyaktig slik som i lenken din
+// Vi bruker encodeURI for å håndtere "ø" i "Høst" på samme måte som GitHub gjør
+const oppgaveSti = encodeURI(`Oppgaver/Kartlegging ${fagFil}-${trinnTall}-${periodeVerdi}.pdf`);
+const fasitSti = encodeURI(`Fasit/Kartlegging ${fagFil}-${trinnTall}-${periodeVerdi}-Fasit.pdf`);
 
-// 2. Lag de nøyaktige stiene (Matcher nå: Kartlegging lesing-2-Høst.pdf)
-const oppgaveSti = `Oppgaver/Kartlegging ${fagFil}-${trinnTall}-${periode}.pdf`;
-const fasitSti = `Fasit/Kartlegging ${fagFil}-${trinnTall}-${periode}-Fasit.pdf`;
+console.log("Denne stien skal nå matche GitHub:", oppgaveSti);
 
-console.log("NY TEST - Oppgave:", oppgaveSti);
-console.log("NY TEST - Fasit:", fasitSti);
 
-// ... resten av fullHtml og win.document.write som før ...
 
 // 3. Bygg HTML-en
 const fullHtml = `
