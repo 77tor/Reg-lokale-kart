@@ -41,51 +41,59 @@ th {
 
 tr:hover { background-color: #f1f1f1; }
 
-/* --- OPPDATERT HOVER-LOGIKK FOR STØRRE BILDER OG RIKTIG LAG (z-index) --- */
+
+/* --- HOVER-LOGIKK FOR BILDER (TABELL OG MODAL) --- */
 
 .hjelpe-ikon-tekst {
-    position: relative; /* Dette er ankeret for bildet */
+    position: relative; 
     cursor: help;
-    border-bottom: 1px dotted #007bff; /* Blå stiplet linje indikerer hover */
+    border-bottom: 1px dotted #007bff; 
     display: inline-block;
     color: #333;
 }
 
+/* Grunnmuren for bildet (Ramme, skygge, z-index) */
 .oppgave-preview-bilde {
-    display: none; /* Skjult som standard */
+    display: none; 
     position: absolute;
-    
-    /* --- LØSNING 2: UNNGÅ OVERLAPPING --- */
-    /* z-index må være betydelig høyere enn th (som er 10) */
-    z-index: 99999 !important; /* Legger bildet helt øverst, over alt annet */
-    
-    /* --- LØSNING 1: STØRRE BILDER --- */
-    width: 350px; /* Økt bredde (juster etter behov, f.eks. 400px) */
-    
-    /* Stil på rammen */
-    border: 3px solid #2d3748; /* Litt tykkere, mørk ramme */
+    z-index: 999999 !important; /* Ekstremt høy for å ligge over alt */
+    width: 320px; 
+    border: 3px solid #2d3748;
     border-radius: 10px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.4); /* Kraftigere skygge for "løft" */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
     background: white;
-    padding: 2px; /* Liten hvit marg inni rammen */
-    
-    /* Plassering: Sentrert under overskriften */
+    padding: 2px;
+    pointer-events: none; /* Musen går "gjennom" bildet så det ikke flimrer */
+}
+
+/* 1. PLASSERING I TABELL (Hovedsiden) */
+/* Her vil vi ha bildet sentrert under teksten */
+th .oppgave-preview-bilde, 
+td .oppgave-preview-bilde {
     left: 50%;
-    transform: translateX(-50%); /* Sentrerer bildet horisontalt */
-    top: 100%; /* Dukker opp rett under teksten */
-    margin-top: 10px; /* Litt luft mellom tekst og bilde */
+    transform: translateX(-50%);
+    top: 100%;
+    margin-top: 10px;
 }
 
-/* Vis bildet når man hovrer over teksten */
+/* 2. PLASSERING I MODAL (Registreringsvinduet) */
+/* Her tvinger vi bildet til å legge seg til VENSTRE for modal-boksen */
+/* Dette gjør at bildet ikke dekker over poeng-feltene */
+.modal-body-scroll .oppgave-preview-bilde {
+    left: -340px !important; 
+    top: -20px !important;
+    transform: none !important; /* Fjerner sentreringen fra tabellen */
+}
+
+/* Vis bildet ved hover */
 .hjelpe-ikon-tekst:hover .oppgave-preview-bilde {
-    display: block;
+    display: block !important;
 }
 
-/* Valgfritt: Gjør teksten blå og fet når man hovrer */
+/* Tekst-effekt ved hover */
 .hjelpe-ikon-tekst:hover {
     color: #007bff;
     font-weight: bold;
-    transition: color 0.2s ease;
 }
 
 /* --- GRUNNLEGGENDE KNAPPE-STIL (For tabeller, admin og små knapper) --- */
