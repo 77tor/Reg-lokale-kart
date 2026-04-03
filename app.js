@@ -918,19 +918,27 @@ if (!win) {
     return;
 }
 
-// 1. "Vask" variablene
-const fagFil = fag.toLowerCase(); 
-const trinnTall = trinn.replace(/\D/g, ''); 
-const periodeVerdi = periode; 
+// 1. Definer variablene nøyaktig
+const fagFil = fag.toLowerCase(); // "regning"
+const trinnTall = trinn.replace(/\D/g, ''); // "2"
 
-// 2. DEFINER harFasit (Denne linjen manglet i koden din over)
-const harFasit = !(fagFil === "lesing" && trinnTall === "1" && periodeVerdi === "Høst");
+// VIKTIG: Sørg for at første bokstav i periode er stor (Høst / Vår)
+// Dette fikser problemet hvis menyen din har liten "v" eller "h"
+const periodeVasket = periode.charAt(0).toUpperCase() + periode.slice(1).toLowerCase();
 
-// 3. Lag stiene med encodeURI for å håndtere "ø" korrekt på GitHub
-const oppgaveSti = encodeURI(`Oppgaver/Kartlegging ${fagFil}-${trinnTall}-${periodeVerdi}.pdf`);
-const fasitSti = encodeURI(`Fasit/Kartlegging ${fagFil}-${trinnTall}-${periodeVerdi}-Fasit.pdf`);
+// 2. Lag harFasit-sjekken
+const harFasit = !(fagFil === "lesing" && trinnTall === "1" && periodeVasket === "Høst");
 
-console.log("Denne stien skal nå matche GitHub:", oppgaveSti);
+// 3. Bygg stien slik GitHub vil ha den
+// Vi bruker encodeURI for å håndtere "å" i "Vår" og "ø" i "Høst"
+const filNavnStreng = `Kartlegging ${fagFil}-${trinnTall}-${periodeVasket}.pdf`;
+const oppgaveSti = encodeURI(`Oppgaver/${filNavnStreng}`);
+
+const fasitNavnStreng = `Kartlegging ${fagFil}-${trinnTall}-${periodeVasket}-Fasit.pdf`;
+const fasitSti = encodeURI(`Fasit/${fasitNavnStreng}`);
+
+console.log("GENERERT STI:", oppgaveSti);
+// Skal nå logge: Oppgaver/Kartlegging%20regning-2-V%C3%A5r.pdf
 
 // 4. Bygg HTML-en (Nå vil ${harFasit} fungere fordi den er definert over)
 const fullHtml = `
