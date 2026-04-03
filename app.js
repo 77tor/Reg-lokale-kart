@@ -945,7 +945,7 @@ win.document.write(`
                 display: none; 
                 position: absolute; 
                 z-index: 10000; 
-                width: 220px; /* Her styrer du størrelsen for analysen */
+                width: 400px; /* Her styrer du størrelsen for analysen */
                 border: 2px solid #333; 
                 border-radius: 8px; 
                 box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
