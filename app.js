@@ -273,16 +273,18 @@ function tegnTabell() {
 // 1. Lag Tabellhode
 let hode = `<tr><th style="text-align:left">Elevnavn</th>`;
 oppsett.oppgaver.forEach(o => {
+    // Sjekk om oppgaven har bilde for å legge til hover-effekt
     const overskriftInnhold = o.bilde 
-        ? `<span class="hjelpe-ikon-tekst">${o.navn}<img src="${o.bilde}" class="oppgave-preview-bilde"></span>` 
+        ? `<span class="hjelpe-ikon-tekst">${o.navn}
+             <img src="${o.bilde}" class="oppgave-preview-bilde">
+           </span>` 
         : o.navn;
 
     hode += `<th style="text-align:center;">${overskriftInnhold}<br><small>max ${o.maks}</small></th>`;
 });
 
-// VIKTIG ENDRING: Vi legger teksten rett i <th> uten <span>. 
-// Vi bruker en enkel <br> og forkorter teksten litt for å sikre plass.
-hode += `<th style="text-align:center; min-width:80px;">Sum<br>Kritisk: ≤${oppsett.grenseTotal}</th><th class="no-print">Handling</th></tr>`;
+// ENDRET HER: Bruker <span> med display:block og !important for å sikre synlighet ved utskrift
+   hode += `<th>Sum<br><span style="font-weight:normal; font-size:10px; color:black !important; display:block !important;">(Kritisk: ≤${oppsett.grenseTotal})</span></th><th>Handling</th></tr>`;
 
 tHead.innerHTML = hode;
 
