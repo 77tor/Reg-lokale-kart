@@ -330,16 +330,32 @@ td .oppgave-preview-bilde {
         margin: 0 !important;
     }
 
-    /* 5. TABELL-STIL */
+/* 5. TABELL-STIL */
     table { 
         width: 100% !important; 
         border-collapse: collapse !important; 
         font-size: 8.5pt !important; 
-        table-layout: fixed; /* For å holde alt på én side */
+        table-layout: auto !important; /* VIKTIG: Endret fra fixed til auto */
     }
-    th, td { border: 1px solid black !important; padding: 3px 2px !important; text-align: center; }
+    th, td { 
+        border: 1px solid black !important; 
+        padding: 3px 2px !important; 
+        text-align: center;
+        overflow: visible !important; /* Tillater at tekst får plass */
+    }
+
+    /* Tvinger tekst i overskrifter til å vises */
+    th small, th span {
+        display: block !important;
+        visibility: visible !important;
+        color: black !important;
+        font-size: 7pt !important;
+        line-height: 1.1 !important;
+    }
+
     thead { display: table-header-group !important; }
     tr { page-break-inside: avoid !important; }
+
     
     /* Snitt-rad styling for print */
     tr.snitt-rad { background-color: #2c3e50 !important; color: white !important; }
