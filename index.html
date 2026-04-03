@@ -199,18 +199,25 @@ tr:hover { background-color: #f1f1f1; }
 
 .modal-content { 
     background: white; 
-    margin-top: 20px; 
-    margin-bottom: 40px; 
-    margin-left: auto;
-    margin-right: auto;
+    margin: 40px auto; 
     padding: 25px; 
     border-radius: 12px; 
     width: 450px; 
-    max-height: calc(100vh - 80px); 
-    overflow-y: auto; 
-    overflow-x: visible; /* Prøver å tillate utstikk horisontalt */
-    box-shadow: 0 5px 30px rgba(0,0,0,0.3); 
-    position: relative;
+    max-height: 90vh; 
+    display: flex;
+    flex-direction: column;
+    
+    /* VIKTIG: Denne må være visible for at bildet skal kunne flyte UTENFOR */
+    overflow: visible !important; 
+    position: relative; 
+}
+
+/* EN BEHOLDER RUNDT OPPGAVENE (Legg denne til i HTML hvis du kan) */
+.modal-oppgave-liste {
+    overflow-y: auto; /* Skrolling skjer HER inne */
+    overflow-x: visible !important; /* Men vi tillater innhold å stikke ut til siden */
+    flex-grow: 1;
+    padding-right: 10px;
 }
 
 .modal-content h2, 
@@ -238,36 +245,27 @@ tr:hover { background-color: #f1f1f1; }
 
 
 
-/* OPPDATERT BILDE-POSISJON FOR MODAL */
+/* BILDE-INNSTILLINGER */
 .modal-content .oppgave-preview-bilde {
     display: none;
-    position: fixed; 
-    z-index: 999999 !important; 
-    
-    width: 350px; 
+    position: absolute; /* Går tilbake til absolute for å følge teksten */
+    z-index: 999999 !important;
+    width: 350px;
     border: 3px solid #444;
     border-radius: 10px;
     box-shadow: 10px 10px 30px rgba(0,0,0,0.5);
     background: white;
+    pointer-events: none; /* Musen går gjennom bildet */
 
-    /* --- NY POSISJONERING --- */
-    /* 50% er midten av skjermen. 
-       Vi trekker fra halvparten av modalens bredde (225px) 
-       og hele bildets bredde (350px) + litt margin (20px).
-       Totalt: 225 + 350 + 20 = 595px */
-    
-    left: calc(50% - 175px); 
-    
-    /* Vi låser den til en fast høyde på skjermen så den ikke flytter seg når du skroller */
-    top: 150px; 
+    /* PLASSERING: Rett til venstre for teksten */
+    left: -370px; 
+    top: -50px; /* Juster denne for å få bildet i riktig høyde i forhold til linjen */
 }
 
-/* Vis bildet ved hover */
+/* Vis ved hover */
 .hjelpe-ikon-tekst:hover .oppgave-preview-bilde {
     display: block;
 }
-
-
 
 
 
