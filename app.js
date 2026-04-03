@@ -285,7 +285,7 @@ oppsett.oppgaver.forEach(o => {
 });
 
 // ENDRET HER: Bruker <span> med display:block og !important for å sikre synlighet ved utskrift
-    hode += `<th style="text-align:center;">Sum<br><small>(Kritisk: ≤${oppsett.grenseTotal})</small></th><th class="no-print">Handling</th></tr>`;
+    hode += `<th style="text-align:center; min-width:85px !important;">SUM<br>Kr: ${oppsett.grenseTotal}</th><th class="no-print">Handling</th></tr>`;
 
 tHead.innerHTML = hode;
 
