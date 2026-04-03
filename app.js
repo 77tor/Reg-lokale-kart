@@ -918,29 +918,27 @@ if (!win) {
     return;
 }
 
-// 1. Definer variablene nøyaktig
-const fagFil = fag.toLowerCase(); // "regning"
-const trinnTall = trinn.replace(/\D/g, ''); // "2"
+// 1. "Vask" variablene for å matche ditt nye mønster
+const f = fag.toLowerCase();                    // "regning" eller "lesing"
+const t = trinn.replace(/\D/g, '');             // Henter kun tallet, f.eks. "1"
+const p = periode.charAt(0).toUpperCase();      // Henter første bokstav: "H" eller "V"
 
-// VIKTIG: Sørg for at første bokstav i periode er stor (Høst / Vår)
-// Dette fikser problemet hvis menyen din har liten "v" eller "h"
-const periodeVasket = periode.charAt(0).toUpperCase() + periode.slice(1).toLowerCase();
+// 2. Sjekk for unntaket (Fasit mangler for lesing 1. trinn Høst)
+const harFasit = !(f === "lesing" && t === "1" && p === "H");
 
-// 2. Lag harFasit-sjekken
-const harFasit = !(fagFil === "lesing" && trinnTall === "1" && periodeVasket === "Høst");
+// 3. Bygg filnavnene etter det nye mønsteret (f.eks. Kartlegging_regning_1_H.pdf)
+const filOppgave = `Kartlegging_${f}_${t}_${p}.pdf`;
+const filFasit = `Kartlegging_${f}_${t}_${p}_Fasit.pdf`;
 
-// 3. Bygg stien slik GitHub vil ha den
-// Vi bruker encodeURI for å håndtere "å" i "Vår" og "ø" i "Høst"
-const filNavnStreng = `Kartlegging ${fagFil}-${trinnTall}-${periodeVasket}.pdf`;
-const oppgaveSti = encodeURI(`Oppgaver/${filNavnStreng}`);
+// 4. Lag de komplette stiene
+const oppgaveSti = `Oppgaver/${filOppgave}`;
+const fasitSti = `Fasit/${filFasit}`;
 
-const fasitNavnStreng = `Kartlegging ${fagFil}-${trinnTall}-${periodeVasket}-Fasit.pdf`;
-const fasitSti = encodeURI(`Fasit/${fasitNavnStreng}`);
+// Debug-logg (Trykk F12 for å se at disse ser riktige ut)
+console.log("Prøver å åpne oppgave:", oppgaveSti);
+if (harFasit) console.log("Prøver å åpne fasit:", fasitSti);
 
-console.log("GENERERT STI:", oppgaveSti);
-// Skal nå logge: Oppgaver/Kartlegging%20regning-2-V%C3%A5r.pdf
-
-// 4. Bygg HTML-en (Nå vil ${harFasit} fungere fordi den er definert over)
+// 5. Bygg HTML-en
 const fullHtml = `
     <html>
     <head>
@@ -953,22 +951,25 @@ const fullHtml = `
             th { background-color: #f2f2f2; }
             
             .btn-tool { 
-                padding: 10px 15px; 
+                padding: 10px 18px; 
                 color: white !important; 
                 border: none; 
-                border-radius: 4px; 
+                border-radius: 6px; 
                 cursor: pointer; 
                 font-weight: bold; 
                 margin: 0 5px;
                 text-decoration: none !important;
                 display: inline-block;
-                font-size: 13px;
+                font-size: 14px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
             .btn-blue { background: #2980b9; }
             .btn-purple { background: #8e44ad; }
             .btn-dark { background: #2c3e50; }
             .btn-grey { background: #95a5a6; }
+            .btn-tool:hover { opacity: 0.9; transform: translateY(-1px); }
 
+            /* Diagram-stiler */
             .chart-container { display: flex; height: 250px; align-items: flex-end; border-bottom: 2px solid #333; margin-bottom: 60px; padding-bottom: 10px; }
             .bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; height: 100%; }
             .bar-track { background: #eee; width: 30px; height: 100%; position: relative; border: 1px solid #ccc; display: flex; flex-direction: column-reverse; }
@@ -993,7 +994,7 @@ const fullHtml = `
         </style>
     </head>
     <body>
-        <div class="no-print" style="margin-bottom: 20px; text-align:center; background:#f8f9fa; padding:15px; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 1000;">
+        <div class="no-print" style="margin-bottom: 25px; text-align:center; background:#f0f2f5; padding:20px; border-bottom: 2px solid #ddd; position: sticky; top: 0; z-index: 1000;">
             <button onclick="window.print()" class="btn-tool btn-blue">🖨️ Skriv ut / Lagre PDF</button>
             
             <a href="${oppgaveSti}" target="_blank" class="btn-tool btn-purple">
