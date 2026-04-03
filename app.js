@@ -911,8 +911,6 @@ detaljHtml += `
         detaljHtml += `</div>`;
 
 
-
-
 // --- ÅPNE VINDU OG SKRIV UT ---
 const win = window.open('', '_blank');
 if (!win) {
@@ -921,20 +919,20 @@ if (!win) {
 }
 
 // 1. "Vask" variablene
-const fagFil = fag.toLowerCase(); // Blir "regning"
-const trinnTall = trinn.replace(/\D/g, ''); // Blir "2"
-const periodeVerdi = periode; // Blir "Høst"
+const fagFil = fag.toLowerCase(); 
+const trinnTall = trinn.replace(/\D/g, ''); 
+const periodeVerdi = periode; 
 
-// 2. Lag stiene nøyaktig slik som i lenken din
-// Vi bruker encodeURI for å håndtere "ø" i "Høst" på samme måte som GitHub gjør
+// 2. DEFINER harFasit (Denne linjen manglet i koden din over)
+const harFasit = !(fagFil === "lesing" && trinnTall === "1" && periodeVerdi === "Høst");
+
+// 3. Lag stiene med encodeURI for å håndtere "ø" korrekt på GitHub
 const oppgaveSti = encodeURI(`Oppgaver/Kartlegging ${fagFil}-${trinnTall}-${periodeVerdi}.pdf`);
 const fasitSti = encodeURI(`Fasit/Kartlegging ${fagFil}-${trinnTall}-${periodeVerdi}-Fasit.pdf`);
 
 console.log("Denne stien skal nå matche GitHub:", oppgaveSti);
 
-
-
-// 3. Bygg HTML-en
+// 4. Bygg HTML-en (Nå vil ${harFasit} fungere fordi den er definert over)
 const fullHtml = `
     <html>
     <head>
