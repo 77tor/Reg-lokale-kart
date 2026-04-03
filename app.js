@@ -270,13 +270,20 @@ function tegnTabell() {
         return;
     }
 
-    // 1. Lag Tabellhode
-    let hode = `<tr><th style="text-align:left">Elevnavn</th>`;
-    oppsett.oppgaver.forEach(o => {
-        hode += `<th>${o.navn}<br><small>max ${o.maks}</small></th>`;
-    });
-    hode += `<th>Sum</th><th class="no-print">Handling</th></tr>`;
-    tHead.innerHTML = hode;
+// 1. Lag Tabellhode
+let hode = `<tr><th style="text-align:left">Elevnavn</th>`;
+oppsett.oppgaver.forEach(o => {
+    // Sjekk om oppgaven har bilde for å legge til hover-effekt
+    const overskriftInnhold = o.bilde 
+        ? `<span class="hjelpe-ikon-tekst">${o.navn}
+             <img src="${o.bilde}" class="oppgave-preview-bilde">
+           </span>` 
+        : o.navn;
+
+    hode += `<th style="text-align:center;">${overskriftInnhold}<br><small>max ${o.maks}</small></th>`;
+});
+hode += `<th>Sum</th><th class="no-print">Handling</th></tr>`;
+tHead.innerHTML = hode;
 
     const vStartAarValgt = parseInt(vAar.split('-')[0]);
     let antallAktiveMedData = 0;
