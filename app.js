@@ -919,9 +919,18 @@ if (!win) {
     return;
 }
 
-const harFasit = !(fag.toLowerCase() === "lesing" && trinn === "1.trinn" && periode === "Høst");
+// 1. "Vask" variablene så de matcher filnavnene dine (f.eks. liten forbokstav på fag)
+const fagFil = fag.toLowerCase(); 
+const harFasit = !(fagFil === "lesing" && trinn === "1.trinn" && periode === "Høst");
 
-// Bygg hele dokumentet som en streng først
+// 2. Lag de nøyaktige stiene (Sjekk at disse matcher filene dine 100%)
+const oppgaveSti = `Oppgaver/Kartlegging ${fagFil}-${trinn}-${periode}.pdf`;
+const fasitSti = `Fasit/Kartlegging ${fagFil}-${trinn}-${periode}-Fasit.pdf`;
+
+console.log("Sjekk filsti oppgave:", oppgaveSti);
+console.log("Sjekk filsti fasit:", fasitSti);
+
+// 3. Bygg HTML-en
 const fullHtml = `
     <html>
     <head>
@@ -933,7 +942,6 @@ const fullHtml = `
             th, td { border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; }
             th { background-color: #f2f2f2; }
             
-            /* Verktøylinje-knapper */
             .btn-tool { 
                 padding: 10px 15px; 
                 color: white !important; 
@@ -945,7 +953,6 @@ const fullHtml = `
                 text-decoration: none !important;
                 display: inline-block;
                 font-size: 13px;
-                font-family: sans-serif;
             }
             .btn-blue { background: #2980b9; }
             .btn-purple { background: #8e44ad; }
@@ -961,7 +968,6 @@ const fullHtml = `
             .bar-label { font-size: 10px; transform: rotate(-45deg); margin-top: 20px; white-space: nowrap; }
             .bar-value { font-size: 11px; font-weight: bold; margin-bottom: 5px; }
 
-            /* Bilde-hover i analyse */
             .hjelpe-ikon-tekst { position: relative; cursor: help; border-bottom: 1px dashed #c0392b; color: #c0392b; }
             .oppgave-preview-bilde { 
                 display: none; position: absolute; z-index: 10000; width: 350px; 
@@ -980,12 +986,12 @@ const fullHtml = `
         <div class="no-print" style="margin-bottom: 20px; text-align:center; background:#f8f9fa; padding:15px; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 1000;">
             <button onclick="window.print()" class="btn-tool btn-blue">🖨️ Skriv ut / Lagre PDF</button>
             
-            <a href="Oppgaver/Kartlegging ${fag}-${trinn}-${periode}.pdf" target="_blank" class="btn-tool btn-purple">
+            <a href="${oppgaveSti}" target="_blank" class="btn-tool btn-purple">
                 📄 Se hele prøven
             </a>
 
             ${harFasit ? `
-                <a href="Fasit/Kartlegging ${fag}-${trinn}-${periode}-Fasit.pdf" target="_blank" class="btn-tool btn-dark">
+                <a href="${fasitSti}" target="_blank" class="btn-tool btn-dark">
                     ✅ Se fasit
                 </a>
             ` : ''}
