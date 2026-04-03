@@ -178,6 +178,34 @@ tr:hover { background-color: #f1f1f1; }
     padding-bottom: 5px; 
 }
 
+
+/* Stil for ikonet */
+.hjelpe-ikon {
+    cursor: help;
+    position: relative;
+    margin-left: 8px;
+    font-style: normal;
+}
+
+/* Skjul bildet som standard */
+.oppgave-preview-bilde {
+    display: none;
+    position: absolute;
+    z-index: 9999; /* Sørg for at det ligger over alt annet */
+    width: 250px;  /* Du kan justere størrelsen her */
+    border: 3px solid #444;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    background: white;
+    left: 30px;
+    top: -20px;
+}
+
+/* Vis bildet ved hover */
+.hjelpe-ikon:hover .oppgave-preview-bilde {
+    display: block;
+}
+
 /* STATUS-VISNING */
 .not-registered { color: #aaa; font-style: italic; }
 .alert-low { background: #ffcccc !important; font-weight: bold; color: #c0392b; }
