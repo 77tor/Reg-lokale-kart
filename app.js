@@ -594,17 +594,27 @@ function visModal(navn) {
     }
 
     // 2. Lag oppgavefeltene
-    oppsett.oppgaver.forEach((o, i) => {
-        const stil = erIkkeGjennomfort ? 'opacity:0.3;' : '';
-        const deaktivert = erIkkeGjennomfort ? 'disabled' : '';
+oppsett.oppgaver.forEach((o, i) => {
+    const stil = erIkkeGjennomfort ? 'opacity:0.3;' : '';
+    const deaktivert = erIkkeGjennomfort ? 'disabled' : '';
 
-        container.innerHTML += `<div class="oppgave-rad" style="margin-bottom:10px; ${stil}">
-            <label>${o.navn}:</label>
+    // Sjekk om det finnes et bilde for denne oppgaven
+    const bildeHTML = o.bilde 
+        ? `<span class="hjelpe-ikon">ℹ️
+             <img src="${o.bilde}" class="oppgave-preview-bilde">
+           </span>` 
+        : "";
+
+    container.innerHTML += `
+        <div class="oppgave-rad" style="margin-bottom:10px; ${stil} display: flex; justify-content: space-between; align-items: center;">
+            <label>
+                ${o.navn}${bildeHTML}:
+            </label>
             <input type="number" class="oppg-input" data-index="${i}" min="0" max="${o.maks}" 
             value="${eksisterende[i] !== undefined ? eksisterende[i] : ""}" 
-            ${deaktivert} style="width:60px; float:right;">
+            ${deaktivert} style="width:60px;">
         </div>`;
-    });
+});
 
     document.getElementById('modal').style.display = 'block';
 
