@@ -214,24 +214,24 @@ td .oppgave-preview-bilde {
     flex-direction: column;
     position: relative;
     box-shadow: 0 5px 30px rgba(0,0,0,0.3);
-    /* VIKTIG: Tillater bilde-preview å stikke ut på siden */
+    /* Tillater bilde-preview å stikke ut på siden */
     overflow: visible !important; 
 }
 
 /* Skrollesonen for oppgavene */
 .modal-body-scroll {
     max-height: 50vh;
-    overflow-y: auto;
-    /* Må ha visible her for at bildene som ligger inne i listen skal synes utenfor */
+    overflow-y: auto !important; /* Rettet semikolon her */
     overflow-x: visible !important; 
     padding-right: 10px;
     margin-bottom: 10px;
     flex-grow: 1;
+    position: relative; /* Viktig for posisjonering av bilde */
 }
 
 /* --- BILDE-PREVIEW LOGIKK --- */
 
-/* Standard for tabell (absolutt posisjon under teksten) */
+/* Standard for tabell (hovedside) */
 .hjelpe-ikon-tekst .oppgave-preview-bilde {
     display: none;
     position: absolute;
@@ -248,17 +248,31 @@ td .oppgave-preview-bilde {
     pointer-events: none;
 }
 
-/* Spesifikk overstyring når bildet er inni modal-skrollesonen */
+/* Spesifikk overstyring for MODAL */
 .modal-body-scroll .oppgave-preview-bilde {
-    /* Vi beholder absolute, slik at den følger linjen sin når vi skroller */
-    left: -350px; /* Flytter bildet til venstre for modalen */
-    top: -20px;
+    display: none;
+    position: absolute;
+    z-index: 2147483647 !important; 
     width: 320px;
-    transform: none; /* Fjerner sentreringen fra tabell-stilen */
+    height: auto;
+    background: white;
+    border: 3px solid #2d3748;
+    border-radius: 10px;
+    box-shadow: 10px 10px 30px rgba(0,0,0,0.5);
+    
+    /* Flyttet til høyre for modalen */
+    left: 105% !important; 
+    top: -40px !important;
+    transform: none !important;
+    
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: none;
 }
 
+/* Vis ved hover */
 .hjelpe-ikon-tekst:hover .oppgave-preview-bilde {
-    display: block;
+    display: block !important;
 }
 
 /* --- STATUS OG ANDRE STILER --- */
