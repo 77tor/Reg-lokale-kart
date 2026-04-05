@@ -802,7 +802,7 @@ async function genererKlasseAnalyse() {
 
 // --- SAMLESEKSJON FOR ELEVLISTER (Starter på ny side) ---
 html += `<div class="page-break-before">
-            <h2 style="text-align:center; margin-bottom: 10px;">Elevoversikt - Oppfølging og Mestring</h2>`;
+            <h2 style="text-align:center; margin-bottom: 10px; color:#2c3e50;">Elevoversikt - Oppfølging og Mestring</h2>`;
 
 // --- 1. KRITISK GRENSE ---
 html += `<h3 style="color:red; margin: 10px 0 5px 0; font-size: 1.1em;">Under kritisk grense (Sum ≤ ${oppsett.grenseTotal})</h3>`;
