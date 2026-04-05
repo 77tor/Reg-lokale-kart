@@ -940,6 +940,124 @@ detaljHtml += `
         detaljHtml += `</div>`;
 
 
+// --- NY SEKSJON: UTVIKLING OVER TID ---
+let utviklingHtml = `<div class="new-page">
+    <h2 style="text-align:center; color:#2c3e50;">Utvikling over tid</h2>
+    <p style="text-align:center; font-style: italic;">Sammenligning av tidligere resultater for ${fag} - ${trinn}${klasse}</p>`;
+
+try {
+    // 1. Hent alle data for dette faget og trinnet fra Firebase for å finne historikk
+    const historikkSnapshot = await db.ref(`kartlegging`).once('value');
+    const alleAarData = historikkSnapshot.val() || {};
+    
+    let historikkRader = [];
+
+    // 2. Gå gjennom alle år og perioder i databasen
+    Object.keys(alleAarData).forEach(arkivAar => {
+        const fagData = alleAarData[arkivAar][fag];
+        if (!fagData) return;
+
+        Object.keys(fagData).forEach(arkivPeriode => {
+            const klasseData = fagData[arkivPeriode][trinn] ? fagData[arkivPeriode][trinn][klasse] : null;
+            
+            if (klasseData) {
+                let arkivElever = Object.keys(klasseData).filter(n => klasseData[n].oppgaver && !klasseData[n].slettet);
+                if (arkivElever.length === 0) return;
+
+                // Beregn snitt og kritiske elever for denne historiske perioden
+                let arkivSum = 0;
+                let arkivKritiske = 0;
+                
+                // Vi må hente maks-skår for det spesifikke året/perioden for å få riktig prosent
+                const arkivOppsett = oppgaveStruktur[arkivAar][fag][arkivPeriode][trinn];
+                const arkivMaks = arkivOppsett.oppgaver.reduce((s, o) => s + (o.maks || 0), 0);
+
+                arkivElever.forEach(n => {
+                    arkivSum += (klasseData[n].sum || 0);
+                    if (klasseData[n].sum <= arkivOppsett.grenseTotal) arkivKritiske++;
+                });
+
+                const arkivProsent = ((arkivSum / arkivElever.length) / arkivMaks) * 100;
+
+                historikkRader.push({
+                    id: `${arkivAar}-${arkivPeriode}`,
+                    visning: `${arkivPeriode} ${arkivAar}`,
+                    prosent: arkivProsent,
+                    kritiske: arkivKritiske,
+                    sortering: arkivAar + (arkivPeriode === "Høst" ? "1" : "2") // For kronologisk rekkefølge
+                });
+            }
+        });
+    });
+
+    // 3. Sorter historikken kronologisk
+    historikkRader.sort((a, b) => a.sortering.localeCompare(b.sortering));
+
+    if (historikkRader.length > 1) {
+        utviklingHtml += `<table>
+            <thead>
+                <tr>
+                    <th>Periode</th>
+                    <th>Gjennomsnittlig mestring (%)</th>
+                    <th>Elever under kritisk grense</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        historikkRader.forEach(rad => {
+            const erNaavaerende = rad.visning === `${periode} ${aar}`;
+            const stil = erNaavaerende ? 'style="background-color: #e8f4fd; font-weight: bold;"' : '';
+            utviklingHtml += `
+                <tr ${stil}>
+                    <td>${rad.visning} ${erNaavaerende ? '(Denne analysen)' : ''}</td>
+                    <td>${rad.prosent.toFixed(1)}%</td>
+                    <td>${rad.kritiske}</td>
+                </tr>`;
+        });
+
+        utviklingHtml += `</tbody></table>`;
+
+        // 4. Generer tekstlig analyse av utviklingen
+        if (historikkRader.length >= 2) {
+            const siste = historikkRader[historikkRader.length - 1];
+            const forrige = historikkRader[historikkRader.length - 2];
+            const endring = siste.prosent - forrige.prosent;
+            
+            let trendTekst = "";
+            let trendFarge = "#333";
+
+            if (endring > 3) {
+                trendTekst = `Resultatene viser en <b>positiv utvikling</b> med en økning på ${endring.toFixed(1)} prosentpoeng siden forrige måling (${forrige.visning}). Dette kan tyde på at pedagogiske tiltak og fokusområder har hatt god effekt.`;
+                trendFarge = "#27ae60";
+            } else if (endring < -3) {
+                trendTekst = `Resultatene viser en <b>nedgang</b> på ${Math.abs(endring).toFixed(1)} prosentpoeng sammenlignet med ${forrige.visning}. Det bør vurderes om gruppesammensetning eller spesifikke faglige områder krever fornyet fokus.`;
+                trendFarge = "#e67e22";
+            } else {
+                trendTekst = `Resultatene er <b>stabile</b> med en marginal endring på ${endring.toFixed(1)} prosentpoeng. Klassen opprettholder sitt faglige nivå fra forrige periode.`;
+            }
+
+            utviklingHtml += `
+                <div style="padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #fdfdfd; border-left: 6px solid ${trendFarge};">
+                    <p style="margin:0; font-size: 14px; color: #333;">${trendTekst}</p>
+                </div>`;
+        }
+
+    } else {
+        utviklingHtml += `<p style="text-align:center; color:#666;">Ingen tidligere data funnet for denne klassen i ${fag}.</p>`;
+    }
+
+} catch (err) {
+    console.error("Historikk-feil:", err);
+    utviklingHtml += `<p>Kunne ikke laste historisk utvikling.</p>`;
+}
+
+utviklingHtml += `</div>`;
+
+// Husk å legge til utviklingHtml i vindu-skrivingen helt til slutt:
+// ${detaljHtml}
+// ${utviklingHtml}
+
+
 // --- ÅPNE VINDU OG SKRIV UT ---
 const win = window.open('', '_blank');
 if (!win) {
