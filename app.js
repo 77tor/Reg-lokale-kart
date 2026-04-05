@@ -866,7 +866,7 @@ html += `</div>`; // Lukker felles container (ny side starter etter denne)
 
         try {
             // Seksjonen er nå synlig som standard (display:block)
-            detaljHtml = `<div id="detaljanalyse-seksjon" class="page-break-before" style="display:block; padding-top: 20px; border-top: 2px solid #eee;">`;
+            detaljHtml = `<div id="detaljanalyse-seksjon" class="page-break-before" style="display:block;">`;
 
             if (typeof analyseMaler === 'undefined') {
                 throw new Error("Variabelen 'analyseMaler' er ikke lastet inn.");
@@ -1124,7 +1124,8 @@ const fullHtml = `
                 break-before: page; 
                 page-break-before: always; 
                 display: block;
-                margin-top: 30px;
+                margin-top: 0 !important;
+                padding-top: 0 !important;
             }
 
             /* Kompakt men lesbar stil for elevlistene */
