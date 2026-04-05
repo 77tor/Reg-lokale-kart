@@ -825,7 +825,7 @@ if (kritiskeElever.length > 0) {
     });
     html += `</tbody></table>`;
 } else {
-    html += `<p style="font-size:0.9em; margin-bottom:10px;">Ingen under kritisk grense.</p>`;
+    html += `<p style="font-size:0.9em; margin-bottom:10px; text-align:center;">Ingen under kritisk grense.</p>`;
 }
 
 // --- 2. UNDER 65% ---
@@ -840,7 +840,7 @@ if (eleverUnder65.length > 0) {
     });
     html += `</tbody></table>`;
 } else {
-    html += `<p style="font-size:0.9em; margin-bottom:10px;">Ingen ytterligere elever under 65%.</p>`;
+    html += `<p style="font-size:0.9em; margin-bottom:10px; text-align:center;">Ingen ytterligere elever under 65%.</p>`;
 }
 
 // --- 3. OVER 95% ---
@@ -855,7 +855,7 @@ if (topper.length > 0) {
     });
     html += `</tbody></table>`;
 } else {
-    html += `<p style="font-size:0.9em;">Ingen elever over 95%.</p>`;
+    html += `<p style="font-size:0.9em; text-align:center;">Ingen elever over 95%.</p>`;
 }
 
 html += `</div>`; // Lukker felles container (ny side starter etter denne)
