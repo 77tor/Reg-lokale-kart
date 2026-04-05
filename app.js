@@ -881,6 +881,51 @@ if (eleverUnder65.length > 0) {
 }
 html += `</div>`;
 
+// --- NY SEKSJON: ELEVER OVER 90% (HØY MESTRING) ---
+let topper = [];
+
+elever.forEach(navn => {
+    const d = data[navn];
+    const prosent = (d.sum / totalMaksMulig) * 100;
+    
+    if (prosent >= 90) {
+        topper.push({
+            navn: navn,
+            sum: d.sum,
+            prosent: prosent.toFixed(0) // Vi runder av til heltall for renere utseende
+        });
+    }
+});
+
+html += `<div class="page-break-before">
+            <h3 style="color:#27ae60; margin-top:30px; text-align:center;">Elever med høy mestring (Total skår ≥ 90%)</h3>`;
+
+if (topper.length > 0) {
+    html += `<table>
+                <thead>
+                    <tr style="background-color: #f2f9f2;">
+                        <th align="left">Navn</th>
+                        <th>Poengsum (av ${totalMaksMulig})</th>
+                        <th>Prosentmestring</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+    
+    // Sorterer fra høyest til lavest sum
+    topper.sort((a, b) => b.sum - a.sum).forEach(e => {
+        html += `
+            <tr>
+                <td align="left"><b>${e.navn}</b></td>
+                <td align="center">${e.sum}</td>
+                <td align="center" style="background:#e8f5e9; color:#1b5e20; font-weight:bold;">${e.prosent}%</td>
+            </tr>`;
+    });
+    html += `</tbody></table>`;
+} else {
+    html += `<p style="text-align:center; color: #666;">Ingen elever over 90% i denne perioden.</p>`;
+}
+html += `</div>`;
+
 
         // --- GENERER DETALJANALYSE-TEKST ---
         let detaljHtml = "";
