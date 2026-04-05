@@ -310,7 +310,7 @@ td .oppgave-preview-bilde {
         left: -9999px !important;
     }
 
-
+.page-break-before { page-break-before: always; break-before: page; }
 
     /* Tving farger på utskrift */
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -366,19 +366,20 @@ td .oppgave-preview-bilde {
     /* Kritisk styling for print */
     .kritisk { background-color: #ffcccc !important; color: #b71c1c !important; }
 
-    /* 6. OVERSKRIFTS-KONTROLL */
-    h1, h2, h3, h4 { display: none !important; }
+/* 6. OVERSKRIFTS-KONTROLL */
+/* Skjuler alle standardoverskrifter i selve app-grensesnittet ved print */
+h1, h2, h3, h4 { display: none !important; }
 
-    #printTittel, 
-    #utskriftRapportArea h1, 
-    #utskriftRapportArea h2, 
-    #utskriftRapportArea h3 {
-        display: block !important;
-        color: black !important;
-        text-align: center;
-        margin: 5px 0 !important;
-        font-size: 14pt !important;
-    }
+/* Tillater overskrifter i utskriftsområder OG i den nye analysen */
+#printTittel, 
+#utskriftRapportArea h1, #utskriftRapportArea h2, #utskriftRapportArea h3,
+.analyse-content h1, .analyse-content h2, .analyse-content h3 {
+    display: block !important;
+    color: black !important;
+    text-align: center;
+    margin: 10px 0 !important;
+    font-size: 14pt !important;
+}
 
     .page-break { page-break-before: always; }
 }
