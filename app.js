@@ -802,7 +802,7 @@ async function genererKlasseAnalyse() {
 
 // --- SAMLESEKSJON FOR ELEVLISTER (Starter på ny side) ---
 html += `<div class="page-break-before">
-            <h2 style="text-align:center; margin-bottom: 10px; color:#2c3e50;">Elevoversikt - Oppfølging og Mestring</h2>`;
+            <h2 style="text-align:center; margin-bottom: 10px; color:#2c3e50;">Elevoversikt - Oppfølging og mestring</h2>`;
 
 // --- 1. KRITISK GRENSE ---
 html += `<h3 style="color:red; margin: 10px 0 5px 0; font-size: 1.1em;">Under kritisk grense (Sum ≤ ${oppsett.grenseTotal})</h3>`;
@@ -944,7 +944,7 @@ detaljHtml += `
 let utviklingHtml = `
 <div class="page-break-before">
     <h2 style="text-align:center; color:#2c3e50; margin-top: 40px;">Utvikling over tid</h2>
-    <p style="text-align:center; font-style: italic; margin-bottom: 30px;">
+    <p style="text-align:center; font-style: italic; margin-bottom: 10px;">
         Sammenligning av tidligere resultater for ${fag} - ${trinn}${klasse}
     </p>`;
 
