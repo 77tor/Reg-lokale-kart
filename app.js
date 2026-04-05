@@ -877,7 +877,7 @@ if (eleverUnder65.length > 0) {
     });
     html += `</tbody></table>`;
 } else {
-    html += `<p style="text-align:center; color: #27ae60;">Ingen ytterligere elever under 65%.</p>`;
+    html += `<p style="text-align:center; color: #e67e22;">Ingen ytterligere elever under 65%.</p>`;
 }
 html += `</div>`;
 
