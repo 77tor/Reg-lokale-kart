@@ -836,6 +836,52 @@ async function genererKlasseAnalyse() {
         html += `</div>`;
 
 
+// --- NY SEKSJON: ELEVER UNDER 65% ---
+let eleverUnder65 = [];
+elever.forEach(navn => {
+    const d = data[navn];
+    const prosent = (d.sum / totalMaksMulig) * 100;
+    
+    // Vi lister opp de som er under 65%, men som IKKE allerede står i den kritiske listen
+    // (Valgfritt: Fjern "d.sum > oppsett.grenseTotal" hvis du vil at de kritiske også skal stå her)
+    if (prosent < 65 && d.sum > oppsett.grenseTotal) {
+        eleverUnder65.push({
+            navn: navn,
+            sum: d.sum,
+            prosent: prosent.toFixed(1)
+        });
+    }
+});
+
+html += `<div class="page-break-before">
+            <h3 style="color:#e67e22; margin-top:30px; text-align:center;">Elever med lav mestring (Total skår < 65%)</h3>`;
+
+if (eleverUnder65.length > 0) {
+    html += `<table>
+                <thead>
+                    <tr>
+                        <th align="left">Navn</th>
+                        <th>Poengsum (av ${totalMaksMulig})</th>
+                        <th>Prosentmestring</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+    
+    eleverUnder65.sort((a, b) => a.sum - b.sum).forEach(e => {
+        html += `
+            <tr>
+                <td align="left"><b>${e.navn}</b></td>
+                <td align="center">${e.sum}</td>
+                <td align="center" style="background:#fff3e0; font-weight:bold;">${e.prosent}%</td>
+            </tr>`;
+    });
+    html += `</tbody></table>`;
+} else {
+    html += `<p style="text-align:center; color: #27ae60;">Ingen ytterligere elever under 65%.</p>`;
+}
+html += `</div>`;
+
+
         // --- GENERER DETALJANALYSE-TEKST ---
         let detaljHtml = "";
 
