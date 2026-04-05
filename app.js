@@ -960,21 +960,28 @@ try {
         Object.keys(fagData).forEach(arkivPeriode => {
             const klasseData = fagData[arkivPeriode][trinn] ? fagData[arkivPeriode][trinn][klasse] : null;
             
-            if (klasseData) {
+             if (klasseData) {
                 let arkivElever = Object.keys(klasseData).filter(n => klasseData[n].oppgaver && !klasseData[n].slettet);
                 if (arkivElever.length === 0) return;
 
-                // Beregn snitt og kritiske elever for denne historiske perioden
+                // SIKKERHETSSJEKK: Sjekk om vi faktisk har oppsett for dette året/perioden
+                const aarData = oppgaveStruktur[arkivAar];
+                if (!aarData || !aarData[fag] || !aarData[fag][arkivPeriode] || !aarData[fag][arkivPeriode][trinn]) {
+                    console.warn(`Mangler oppsett for ${arkivAar} ${arkivPeriode} ${trinn}. Hopper over.`);
+                    return; // Går til neste periode i loop-en i stedet for å krasje
+                }
+
+                const arkivOppsett = aarData[fag][arkivPeriode][trinn];
+                const arkivMaks = arkivOppsett.oppgaver.reduce((s, o) => s + (o.maks || 0), 0);
+
+                // Beregn snitt og kritiske elever
                 let arkivSum = 0;
                 let arkivKritiske = 0;
                 
-                // Vi må hente maks-skår for det spesifikke året/perioden for å få riktig prosent
-                const arkivOppsett = oppgaveStruktur[arkivAar][fag][arkivPeriode][trinn];
-                const arkivMaks = arkivOppsett.oppgaver.reduce((s, o) => s + (o.maks || 0), 0);
-
                 arkivElever.forEach(n => {
-                    arkivSum += (klasseData[n].sum || 0);
-                    if (klasseData[n].sum <= arkivOppsett.grenseTotal) arkivKritiske++;
+                    const elevSum = klasseData[n].sum || 0;
+                    arkivSum += elevSum;
+                    if (elevSum <= arkivOppsett.grenseTotal) arkivKritiske++;
                 });
 
                 const arkivProsent = ((arkivSum / arkivElever.length) / arkivMaks) * 100;
@@ -984,7 +991,7 @@ try {
                     visning: `${arkivPeriode} ${arkivAar}`,
                     prosent: arkivProsent,
                     kritiske: arkivKritiske,
-                    sortering: arkivAar + (arkivPeriode === "Høst" ? "1" : "2") // For kronologisk rekkefølge
+                    sortering: arkivAar + (arkivPeriode === "Høst" ? "1" : "2")
                 });
             }
         });
@@ -1180,6 +1187,7 @@ const fullHtml = `
         <div class="analyse-content">
             ${html}
             ${detaljHtml}
+            ${utviklingHtml}
         </div>
     </body>
     </html>
