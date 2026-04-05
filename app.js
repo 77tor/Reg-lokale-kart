@@ -940,52 +940,54 @@ detaljHtml += `
         detaljHtml += `</div>`;
 
 
-// --- NY SEKSJON: UTVIKLING OVER TID ---
-let utviklingHtml = `<div class="page-break-before">
+// --- NY SEKSJON: UTVIKLING OVER TID (Starter på egen side) ---
+let utviklingHtml = `
+<div class="page-break-before">
     <h2 style="text-align:center; color:#2c3e50; margin-top: 40px;">Utvikling over tid</h2>
-    <p style="text-align:center; font-style: italic;">Sammenligning av tidligere resultater for ${fag} - ${trinn}${klasse}</p>`;
+    <p style="text-align:center; font-style: italic; margin-bottom: 30px;">
+        Sammenligning av tidligere resultater for ${fag} - ${trinn}${klasse}
+    </p>`;
 
 try {
-    // 1. Hent alle data for dette faget og trinnet fra Firebase for å finne historikk
+    // 1. Hent alle data fra Firebase
     const historikkSnapshot = await db.ref(`kartlegging`).once('value');
     const alleAarData = historikkSnapshot.val() || {};
     
     let historikkRader = [];
 
-    // 2. Gå gjennom alle år og perioder i databasen
-    Object.keys(alleAarData).forEach(arkivAar => {
-        const fagData = alleAarData[arkivAar][fag];
-        if (!fagData) return;
-
-// 2. Gå gjennom alle år og perioder i databasen
-    Object.keys(alleAarData).forEach(arkivAar => {
-        // HVIS arkivåret er større enn valgt år (f.eks. 2026-2027 > 2025-2026), hopp over
-        if (arkivAar > aar) return;
+    // 2. Gå gjennom databasen (bruker for...of for bedre kontroll over async/await)
+    for (const arkivAar of Object.keys(alleAarData)) {
+        
+        // FILTER: Hopp over år som er frem i tid (f.eks. ikke vis 2026-27 hvis vi ser på 2025-26)
+        if (arkivAar > aar) continue;
 
         const fagData = alleAarData[arkivAar][fag];
-        if (!fagData) return;
+        if (!fagData) continue;
 
-        Object.keys(fagData).forEach(arkivPeriode => {
-            // HVIS det er samme år, men arkivPerioden er Vår og vi ser på Høst, hopp over
-            if (arkivAar === aar && arkivPeriode === "Vår" && periode === "Høst") return;
+        for (const arkivPeriode of Object.keys(fagData)) {
+            
+            // FILTER: Hvis vi er i samme år, men ser på Høst, skal vi ikke vise Vår
+            if (arkivAar === aar && arkivPeriode === "Vår" && periode === "Høst") continue;
 
             const klasseData = fagData[arkivPeriode][trinn] ? fagData[arkivPeriode][trinn][klasse] : null;
             
             if (klasseData) {
-                let arkivElever = Object.keys(klasseData).filter(n => klasseData[n].oppgaver && !klasseData[n].slettet);
-                if (arkivElever.length === 0) return;
+                let arkivElever = Object.keys(klasseData).filter(n => 
+                    klasseData[n].oppgaver && !klasseData[n].slettet && !klasseData[n].ikkeGjennomfort
+                );
+                
+                if (arkivElever.length === 0) continue;
 
-                // SIKKERHETSSJEKK: Sjekk om vi faktisk har oppsett for dette året/perioden
+                // SIKKERHETSSJEKK: Sjekk om oppsett/struktur finnes for dette året/perioden
                 const aarData = oppgaveStruktur[arkivAar];
                 if (!aarData || !aarData[fag] || !aarData[fag][arkivPeriode] || !aarData[fag][arkivPeriode][trinn]) {
-                    console.warn(`Mangler oppsett for ${arkivAar} ${arkivPeriode} ${trinn}. Hopper over.`);
-                    return; // Går til neste periode i loop-en i stedet for å krasje
+                    console.warn(`Mangler oppsett for ${arkivAar} ${arkivPeriode}.`);
+                    continue; 
                 }
 
                 const arkivOppsett = aarData[fag][arkivPeriode][trinn];
                 const arkivMaks = arkivOppsett.oppgaver.reduce((s, o) => s + (o.maks || 0), 0);
 
-                // Beregn snitt og kritiske elever
                 let arkivSum = 0;
                 let arkivKritiske = 0;
                 
@@ -1005,8 +1007,8 @@ try {
                     sortering: arkivAar + (arkivPeriode === "Høst" ? "1" : "2")
                 });
             }
-        });
-    });
+        }
+    }
 
     // 3. Sorter historikken kronologisk
     historikkRader.sort((a, b) => a.sortering.localeCompare(b.sortering));
