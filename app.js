@@ -941,8 +941,8 @@ detaljHtml += `
 
 
 // --- NY SEKSJON: UTVIKLING OVER TID ---
-let utviklingHtml = `<div class="new-page">
-    <h2 style="text-align:center; color:#2c3e50;">Utvikling over tid</h2>
+let utviklingHtml = `<div class="page-break-before">
+    <h2 style="text-align:center; color:#2c3e50; margin-top: 40px;">Utvikling over tid</h2>
     <p style="text-align:center; font-style: italic;">Sammenligning av tidligere resultater for ${fag} - ${trinn}${klasse}</p>`;
 
 try {
