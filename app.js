@@ -881,14 +881,14 @@ if (eleverUnder65.length > 0) {
 }
 html += `</div>`;
 
-// --- NY SEKSJON: ELEVER OVER 90% (HØY MESTRING) ---
+// --- NY SEKSJON: ELEVER OVER 95% (HØY MESTRING) ---
 let topper = [];
 
 elever.forEach(navn => {
     const d = data[navn];
     const prosent = (d.sum / totalMaksMulig) * 100;
     
-    if (prosent >= 90) {
+    if (prosent >= 95) {
         topper.push({
             navn: navn,
             sum: d.sum,
@@ -898,7 +898,7 @@ elever.forEach(navn => {
 });
 
 html += `<div class="page-break-before">
-            <h3 style="color:#27ae60; margin-top:30px; text-align:center;">Elever med høy mestring (Total skår ≥ 90%)</h3>`;
+            <h3 style="color:#27ae60; margin-top:30px; text-align:center;">Elever med høy mestring (Total skår ≥ 95%)</h3>`;
 
 if (topper.length > 0) {
     html += `<table>
