@@ -957,10 +957,21 @@ try {
         const fagData = alleAarData[arkivAar][fag];
         if (!fagData) return;
 
+// 2. Gå gjennom alle år og perioder i databasen
+    Object.keys(alleAarData).forEach(arkivAar => {
+        // HVIS arkivåret er større enn valgt år (f.eks. 2026-2027 > 2025-2026), hopp over
+        if (arkivAar > aar) return;
+
+        const fagData = alleAarData[arkivAar][fag];
+        if (!fagData) return;
+
         Object.keys(fagData).forEach(arkivPeriode => {
+            // HVIS det er samme år, men arkivPerioden er Vår og vi ser på Høst, hopp over
+            if (arkivAar === aar && arkivPeriode === "Vår" && periode === "Høst") return;
+
             const klasseData = fagData[arkivPeriode][trinn] ? fagData[arkivPeriode][trinn][klasse] : null;
             
-             if (klasseData) {
+            if (klasseData) {
                 let arkivElever = Object.keys(klasseData).filter(n => klasseData[n].oppgaver && !klasseData[n].slettet);
                 if (arkivElever.length === 0) return;
 
