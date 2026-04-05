@@ -975,9 +975,27 @@ const fullHtml = `
         <style>
             body { font-family: sans-serif; padding: 30px; color: #333; line-height: 1.5; }
             h1, h2, h3 { text-align: center; }
+            
+            /* Standard tabellstiler */
             table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
             th, td { border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; }
             th { background-color: #f2f2f2; }
+
+            /* Tvinger ny side før elementet */
+            .page-break-before { 
+                break-before: page; 
+                page-break-before: always; 
+                display: block;
+                margin-top: 30px;
+            }
+
+            /* Kompakt men lesbar stil for elevlistene */
+            .kompakt-tabell { margin-bottom: 20px !important; }
+            .kompakt-tabell th, .kompakt-tabell td { 
+                padding: 5px 4px !important; /* Økt litt fra 2px for bedre lesbarhet */
+                line-height: 1.2 !important; 
+                font-size: 10.5px !important; 
+            }
             
             .btn-tool { 
                 padding: 10px 18px; 
@@ -1008,15 +1026,6 @@ const fullHtml = `
             .bar-label { font-size: 10px; transform: rotate(-45deg); margin-top: 20px; white-space: nowrap; }
             .bar-value { font-size: 11px; font-weight: bold; margin-bottom: 5px; }
 
-.kompakt-tabell { margin-bottom: 10px !important; }
-.kompakt-tabell th, .kompakt-tabell td { 
-    padding: 2px 4px !important;  /* Minimal padding */
-    line-height: 1.1 !important;  /* Tettere tekstlinjer */
-    font-size: 10px !important;   /* Litt mindre skrift for å få plass til alle */
-}
-.kompakt-tabell h3 { margin-top: 5px !important; margin-bottom: 2px !important; }
-
-
             .hjelpe-ikon-tekst { position: relative; cursor: help; border-bottom: 1px dashed #c0392b; color: #c0392b; }
             .oppgave-preview-bilde { 
                 display: none; position: absolute; z-index: 10000; width: 350px; 
@@ -1028,6 +1037,8 @@ const fullHtml = `
             @media print { 
                 .no-print { display: none !important; } 
                 body { padding: 0; }
+                /* Sikrer at farger vises på utskrift */
+                * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             }
         </style>
     </head>
