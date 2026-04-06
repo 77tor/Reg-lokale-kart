@@ -748,17 +748,34 @@ let elever = Object.keys(firebaseData).filter(navn => {
 
         const totalMaksMulig = oppsett.oppgaver.reduce((sum, o) => sum + (o.maks || 0), 0);
 
-        elever.forEach(navn => {
-            const d = data[navn];
-            d.oppgaver.forEach((p, i) => {
-                oppgaveSummer[i] += (p || 0);
-            });
-            totalSumKlasse += (d.sum || 0);
+elever.forEach(navn => {
+    // 1. Hent dataen for denne spesifikke eleven fra det store objektet
+    // Sjekk om det skal være 'lagredeResultater[navn]' eller 'klasseData[navn]' 
+    // basert på hva du har kalt variabelen lenger opp i funksjonen.
+    const d = lagredeResultater[navn] || {}; 
 
-            if (d.sum <= oppsett.grenseTotal) {
-                kritiskeElever.push({navn: navn, oppgaver: d.oppgaver, sum: d.sum});
-            }
+    // 2. SIKKERHETSSJEKK: Hopp over hvis eleven er slettet eller mangler oppgaver
+    if (d.slettet || !d.oppgaver) return;
+
+    // 3. Beregn verdier
+    d.oppgaver.forEach((p, i) => {
+        // Sørg for at oppgaveSummer[i] eksisterer før vi legger til
+        if (oppgaveSummer[i] !== undefined) {
+            oppgaveSummer[i] += (parseFloat(p) || 0);
+        }
+    });
+
+    totalSumKlasse += (parseFloat(d.sum) || 0);
+
+    // 4. Sjekk kritisk grense
+    if (d.sum <= oppsett.grenseTotal) {
+        kritiskeElever.push({
+            navn: navn, 
+            oppgaver: d.oppgaver, 
+            sum: d.sum
         });
+    }
+});
 
         const totalKlasseSnittProsent = ((totalSumKlasse / antall) / totalMaksMulig) * 100;
 
