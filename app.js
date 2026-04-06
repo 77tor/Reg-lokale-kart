@@ -800,78 +800,68 @@ async function genererKlasseAnalyse() {
             html += `<td><b>${totalKlasseSnittProsent.toFixed(0)}%</b></td></tr>
         </tbody></table>`;
 
-// --- SAMLESEKSJON FOR ELEVLISTER (Starter på ny side) ---
-html += `<div class="page-break-before">
-            <h2 style="text-align:center; margin-bottom: 10px; color:#2c3e50;">Elevoversikt - Oppfølging og mestring</h2>`;
+// --- NY DEL: LAG ELEVLISTER (Lagres i egen variabel) ---
+        let elevListerHtml = ""; // Vi definerer den her slik at den er tilgjengelig senere
 
-// --- 1. KRITISK GRENSE ---
-html += `<h3 style="color:red; margin: 10px 0 5px 0; font-size: 1.1em;">Under kritisk grense (Sum ≤ ${oppsett.grenseTotal})</h3>`;
-if (kritiskeElever.length > 0) {
-    html += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th>`;
-    oppsett.oppgaver.forEach((o, i) => {
-        let visningsNavn = (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) 
-            ? gjeldendeMalTabell.oppgaver[i + 1].navn : o.navn;
-        html += `<th>${visningsNavn}</th>`;
-    });
-    html += `<th>Sum</th></tr></thead><tbody>`;
-    kritiskeElever.sort((a,b) => a.sum - b.sum).forEach(e => {
-        html += `<tr><td align="left"><b>${e.navn}</b></td>`;
-        e.oppgaver.forEach((p, i) => {
-            const o = oppsett.oppgaver[i];
-            const stil = (o.grense !== -1 && p <= o.grense) ? 'style="background:#ffcccc"' : '';
-            html += `<td align="center" ${stil}>${p}</td>`;
-        });
-        html += `<td align="center" style="background:#ffcccc; font-weight:bold;">${e.sum}</td></tr>`;
-    });
-    html += `</tbody></table>`;
-} else {
-    html += `<p style="font-size:0.9em; margin-bottom:10px; text-align:center;">Ingen under kritisk grense.</p>`;
-}
+        // --- 1. KRITISK GRENSE ---
+        elevListerHtml += `<h3 style="color:red; margin: 10px 0 5px 0; font-size: 1.1em;">Under kritisk grense (Sum ≤ ${oppsett.grenseTotal})</h3>`;
+        if (kritiskeElever.length > 0) {
+            elevListerHtml += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th>`;
+            oppsett.oppgaver.forEach((o, i) => {
+                let visningsNavn = (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) 
+                    ? gjeldendeMalTabell.oppgaver[i + 1].navn : o.navn;
+                elevListerHtml += `<th>${visningsNavn}</th>`;
+            });
+            elevListerHtml += `<th>Sum</th></tr></thead><tbody>`;
+            kritiskeElever.sort((a,b) => a.sum - b.sum).forEach(e => {
+                elevListerHtml += `<tr><td align="left"><b>${e.navn}</b></td>`;
+                e.oppgaver.forEach((p, i) => {
+                    const o = oppsett.oppgaver[i];
+                    const stil = (o.grense !== -1 && p <= o.grense) ? 'style="background:#ffcccc"' : '';
+                    elevListerHtml += `<td align="center" ${stil}>${p}</td>`;
+                });
+                elevListerHtml += `<td align="center" style="background:#ffcccc; font-weight:bold;">${e.sum}</td></tr>`;
+            });
+            elevListerHtml += `</tbody></table>`;
+        } else {
+            elevListerHtml += `<p style="font-size:0.9em; margin-bottom:10px; text-align:center;">Ingen under kritisk grense.</p>`;
+        }
 
-// --- 2. UNDER 65% ---
-let eleverUnder65 = elever.map(n => ({navn: n, sum: data[n].sum, prosent: (data[n].sum / totalMaksMulig) * 100}))
-                          .filter(e => e.prosent < 65 && e.sum > oppsett.grenseTotal);
+        // --- 2. UNDER 65% ---
+        let eleverUnder65 = elever.map(n => ({navn: n, sum: data[n].sum, prosent: (data[n].sum / totalMaksMulig) * 100}))
+                                  .filter(e => e.prosent < 65 && e.sum > oppsett.grenseTotal);
 
-html += `<h3 style="color:#e67e22; margin: 15px 0 5px 0; font-size: 1.1em;">Lav mestring (Total skår < 65%)</h3>`;
-if (eleverUnder65.length > 0) {
-    html += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th><th>Poengsum</th><th>Prosent</th></tr></thead><tbody>`;
-    eleverUnder65.sort((a, b) => a.sum - b.sum).forEach(e => {
-        html += `<tr><td align="left"><b>${e.navn}</b></td><td align="center">${e.sum}</td><td align="center" style="background:#fff3e0; font-weight:bold;">${e.prosent.toFixed(1)}%</td></tr>`;
-    });
-    html += `</tbody></table>`;
-} else {
-    html += `<p style="font-size:0.9em; margin-bottom:10px; text-align:center;">Ingen ytterligere elever under 65%.</p>`;
-}
+        elevListerHtml += `<h3 style="color:#e67e22; margin: 15px 0 5px 0; font-size: 1.1em;">Lav mestring (Total skår < 65%)</h3>`;
+        if (eleverUnder65.length > 0) {
+            elevListerHtml += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th><th>Poengsum</th><th>Prosent</th></tr></thead><tbody>`;
+            eleverUnder65.sort((a, b) => a.sum - b.sum).forEach(e => {
+                elevListerHtml += `<tr><td align="left"><b>${e.navn}</b></td><td align="center">${e.sum}</td><td align="center" style="background:#fff3e0; font-weight:bold;">${e.prosent.toFixed(1)}%</td></tr>`;
+            });
+            elevListerHtml += `</tbody></table>`;
+        } else {
+            elevListerHtml += `<p style="font-size:0.9em; margin-bottom:10px; text-align:center;">Ingen ytterligere elever under 65%.</p>`;
+        }
 
-// --- 3. OVER 95% ---
-let topper = elever.map(n => ({navn: n, sum: data[n].sum, prosent: (data[n].sum / totalMaksMulig) * 100}))
-                   .filter(e => e.prosent >= 95);
+        // --- 3. OVER 95% ---
+        let topper = elever.map(n => ({navn: n, sum: data[n].sum, prosent: (data[n].sum / totalMaksMulig) * 100}))
+                           .filter(e => e.prosent >= 95);
 
-html += `<h3 style="color:#27ae60; margin: 15px 0 5px 0; font-size: 1.1em;">Høy mestring (Total skår ≥ 95%)</h3>`;
-if (topper.length > 0) {
-    html += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th><th>Poengsum</th><th>Prosent</th></tr></thead><tbody>`;
-    topper.sort((a, b) => b.sum - a.sum).forEach(e => {
-        html += `<tr><td align="left"><b>${e.navn}</b></td><td align="center">${e.sum}</td><td align="center" style="background:#e8f5e9; font-weight:bold;">${e.prosent.toFixed(0)}%</td></tr>`;
-    });
-    html += `</tbody></table>`;
-} else {
-    html += `<p style="font-size:0.9em; text-align:center;">Ingen elever over 95%.</p>`;
-}
-
-html += `</div>`; // Lukker felles container (ny side starter etter denne)
+        elevListerHtml += `<h3 style="color:#27ae60; margin: 15px 0 5px 0; font-size: 1.1em;">Høy mestring (Total skår ≥ 95%)</h3>`;
+        if (topper.length > 0) {
+            elevListerHtml += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th><th>Poengsum</th><th>Prosent</th></tr></thead><tbody>`;
+            topper.sort((a, b) => b.sum - a.sum).forEach(e => {
+                elevListerHtml += `<tr><td align="left"><b>${e.navn}</b></td><td align="center">${e.sum}</td><td align="center" style="background:#e8f5e9; font-weight:bold;">${e.prosent.toFixed(0)}%</td></tr>`;
+            });
+            elevListerHtml += `</tbody></table>`;
+        } else {
+            elevListerHtml += `<p style="font-size:0.9em; text-align:center;">Ingen elever over 95%.</p>`;
+        }
 
 
         // --- GENERER DETALJANALYSE-TEKST ---
         let detaljHtml = "";
-
         try {
-            // Seksjonen er nå synlig som standard (display:block)
-            detaljHtml = `<div id="detaljanalyse-seksjon" class="page-break-before" style="display:block;">`;
-
-            if (typeof analyseMaler === 'undefined') {
-                throw new Error("Variabelen 'analyseMaler' er ikke lastet inn.");
-            }
-
+            detaljHtml = `<div id="detaljanalyse-seksjon">`;
             const malForFag = analyseMaler[fag];
             const malForTrinn = malForFag ? malForFag[trinn] : null;
             const gjeldendeMal = malForTrinn ? malForTrinn[periode] : null;
@@ -885,65 +875,38 @@ html += `</div>`; // Lukker felles container (ny side starter etter denne)
                     </p>`;
                 
                 let harSvakheter = false;
-                const oppgaveDataMaler = gjeldendeMal.oppgaver;
-
                 oppsett.oppgaver.forEach((o, i) => {
                     const snitt = oppgaveSummer[i] / antall;
                     const prosent = (snitt / o.maks) * 100;
-                    const malInfo = oppgaveDataMaler[i + 1]; 
+                    const malInfo = gjeldendeMal.oppgaver[i + 1]; 
 
-                    const erUnderProsent = prosent < 65;
-                    const erUnderKritiskGrense = o.grense !== -1 && snitt <= o.grense;
-
-                    if ((erUnderProsent || erUnderKritiskGrense) && malInfo) {
+                    if ((prosent < 65 || (o.grense !== -1 && snitt <= o.grense)) && malInfo) {
                         harSvakheter = true;
-                        let årsakTekst = erUnderKritiskGrense ? 
+                        let årsakTekst = (o.grense !== -1 && snitt <= o.grense) ? 
                             `Kritisk lavt nivå (Snitt: ${snitt.toFixed(1)} av ${o.maks})` : 
                             `Lav mestring (${prosent.toFixed(0)}%)`;
-// Finn bildet fra oppsettet basert på gjeldende oppgave
-const bildeSti = o.bilde; 
-const overskriftMedBilde = bildeSti 
-    ? `<span class="hjelpe-ikon-tekst">${malInfo.navn}
-         <img src="${bildeSti}" class="oppgave-preview-bilde">
-       </span>` 
-    : malInfo.navn;
 
-detaljHtml += `
-    <div style="margin-bottom: 20px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 0 8px 8px 0;">
-        <h4 style="margin:0; color:#c0392b;">${overskriftMedBilde} — <span style="font-size: 0.9em; font-weight: normal; color: #555;">${årsakTekst}</span></h4>
-        <p style="margin: 8px 0 0 0; font-size: 14px; line-height: 1.6; color: #333;">
-            <strong>Pedagogisk fokus:</strong> ${malInfo.forklaring}
-        </p>
-    </div>`;
+                        const bildeSti = o.bilde; 
+                        const overskriftMedBilde = bildeSti 
+                            ? `<span class="hjelpe-ikon-tekst">${malInfo.navn}<img src="${bildeSti}" class="oppgave-preview-bilde"></span>` 
+                            : malInfo.navn;
+
+                        detaljHtml += `
+                            <div style="margin-bottom: 20px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 0 8px 8px 0;">
+                                <h4 style="margin:0; color:#c0392b;">${overskriftMedBilde} — <span style="font-size: 0.9em; font-weight: normal; color: #555;">${årsakTekst}</span></h4>
+                                <p style="margin: 8px 0 0 0; font-size: 14px; line-height: 1.6; color: #333;">
+                                    <strong>Pedagogisk fokus:</strong> ${malInfo.forklaring}
+                                </p>
+                            </div>`;
                     }
                 });
-
-                if (!harSvakheter) {
-                    detaljHtml += `
-                        <div style="text-align:center; padding: 30px; background: #f2f9f2; border: 1px solid #c2e0c2; border-radius: 8px;">
-                            <p style="color: #27ae60; font-weight: bold;">Resultatene viser et stabilt høyt nivå på alle områder.</p>
-                        </div>`;
-                }
-            } else {
-                detaljHtml += `
-                    <div style="text-align:center; padding: 20px; color: #666;">
-                        <p>Pedagogisk analyse er ikke tilgjengelig for ${fag} ${trinn}. trinn (${periode}) ennå.</p>
-                    </div>`;
+                if (!harSvakheter) detaljHtml += `<p style="text-align:center; color:green;">Stabilt høyt nivå på alle områder.</p>`;
             }
-
-        } catch (e) {
-            console.error("DETALJANALYSE FEIL:", e.message);
-            detaljHtml = `<div id="detaljanalyse-seksjon" style="padding: 20px; border: 1px dashed red;">
-                            <p style="color:red; font-weight:bold;">Kunne ikke generere analyse: ${e.message}</p>
-                          </div>`;
-        }
+        } catch (e) { console.error(e); }
         detaljHtml += `</div>`;
 
-
 // --- NY SEKSJON: UTVIKLING OVER TID (Starter på egen side) ---
-let utviklingHtml = `
-<div class="page-break-before">
-    <h2 style="text-align:center; color:#2c3e50; margin-top: 40px;">Utvikling over tid</h2>
+let utviklingHtml = `<div><h2 style="text-align:center; color:#2c3e50;">Utvikling over tid</h2>`;
     <p style="text-align:center; font-style: italic; margin-bottom: 10px;">
         Sammenligning av tidligere resultater for ${fag} - ${trinn}${klasse}
     </p>`;
@@ -1077,163 +1040,64 @@ utviklingHtml += `</div>`;
 // ${detaljHtml}
 // ${utviklingHtml}
 
-// --- ÅPNE VINDU OG SKRIV UT ---
-const win = window.open('', '_blank');
-if (!win) {
-    alert("Popup ble blokkert! Vennligst tillat popups for dette nettstedet.");
-    return;
-}
+// --- ÅPNE VINDU OG BYGG ENDELIG HTML ---
+        const win = window.open('', '_blank');
+        const f_clean = fag.toLowerCase(); 
+        const t_clean = trinn.replace(/\D/g, ''); 
+        const p_clean = periode.charAt(0).toUpperCase(); 
+        const harFasit = !(f_clean === "lesing" && t_clean === "1" && p_clean === "H");
+        const oppgaveSti = `Oppgaver/Kartlegging_${f_clean}_${t_clean}_${p_clean}.pdf`;
+        const fasitSti = `Fasit/Kartlegging_${f_clean}_${t_clean}_${p_clean}_Fasit.pdf`;
 
-// 1. "Vask" variablene for å matche ditt nye mønster
-const f = fag.toLowerCase();                    // "regning" eller "lesing"
-const t = trinn.replace(/\D/g, '');             // Henter kun tallet, f.eks. "1"
-const p = periode.charAt(0).toUpperCase();      // Henter første bokstav: "H" eller "V"
+        const fullHtml = `
+            <html>
+            <head>
+                <title>Analyse ${trinn}${klasse}</title>
+                <style>
+                    body { font-family: sans-serif; background-color: #f0f2f5; margin: 0; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; }
+                    .analyse-section { background: white; width: 210mm; min-height: 297mm; padding: 20mm; margin-bottom: 40px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); box-sizing: border-box; }
+                    .toolbar { margin-bottom: 30px; position: sticky; top: 20px; z-index: 1000; display: flex; gap: 10px; background: white; padding: 15px; border-radius: 50px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+                    th, td { border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; }
+                    .btn-tool { padding: 10px 18px; color: white !important; border-radius: 6px; text-decoration: none; font-weight: bold; cursor: pointer; }
+                    .btn-blue { background: #2980b9; } .btn-purple { background: #8e44ad; } .btn-dark { background: #2c3e50; } .btn-grey { background: #95a5a6; }
+                    .chart-container { display: flex; height: 230px; align-items: flex-end; border-bottom: 2px solid #333; margin-bottom: 50px; }
+                    .bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; position: relative; }
+                    .bar-track { background: #eee; width: 25px; height: 100%; position: relative; display: flex; flex-direction: column-reverse; border: 1px solid #ccc; }
+                    .bar-fill { background: #3498db; width: 100%; }
+                    .target-line { position: absolute; width: 100%; border-top: 2px dashed red; z-index: 5; }
+                    @media print {
+                        body { background: white; padding: 0; }
+                        .toolbar { display: none; }
+                        .analyse-section { box-shadow: none; margin: 0; width: 100%; page-break-after: always; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="toolbar">
+                    <button onclick="window.print()" class="btn-tool btn-blue">🖨️ Skriv ut / Lagre PDF</button>
+                    <a href="${oppgaveSti}" target="_blank" class="btn-tool btn-purple">📄 Se hele prøven</a>
+                    ${harFasit ? `<a href="${fasitSti}" target="_blank" class="btn-tool btn-dark">✅ Se fasit</a>` : ''}
+                    <button onclick="window.close()" class="btn-tool btn-grey">Lukk</button>
+                </div>
+                
+                <div class="analyse-section">${html}</div>
+                <div class="analyse-section">
+                    <h2 style="text-align:center; color:#2c3e50;">Elevoversikt - Oppfølging og Mestring</h2>
+                    ${elevListerHtml}
+                </div>
+                <div class="analyse-section">${detaljHtml}</div>
+                <div class="analyse-section">${utviklingHtml}</div>
+            </body>
+            </html>`;
 
-// 2. Sjekk for unntaket (Fasit mangler for lesing 1. trinn Høst)
-const harFasit = !(f === "lesing" && t === "1" && p === "H");
-
-// 3. Bygg filnavnene etter det nye mønsteret (f.eks. Kartlegging_regning_1_H.pdf)
-const filOppgave = `Kartlegging_${f}_${t}_${p}.pdf`;
-const filFasit = `Kartlegging_${f}_${t}_${p}_Fasit.pdf`;
-
-// 4. Lag de komplette stiene
-const oppgaveSti = `Oppgaver/${filOppgave}`;
-const fasitSti = `Fasit/${filFasit}`;
-
-// Debug-logg (Trykk F12 for å se at disse ser riktige ut)
-console.log("Prøver å åpne oppgave:", oppgaveSti);
-if (harFasit) console.log("Prøver å åpne fasit:", fasitSti);
-
-// 5. Bygg HTML-en
-const fullHtml = `
-    <html>
-    <head>
-        <title>Analyse ${trinn}${klasse}</title>
-        <style>
-            /* GRUNNSTILER FOR SKJERM (Dashboard-visning) */
-            body { 
-                font-family: sans-serif; 
-                background-color: #f0f2f5; /* Grå bakgrunn på skjerm */
-                margin: 0; 
-                padding: 40px 20px; 
-                display: flex; 
-                flex-direction: column; 
-                align-items: center; 
-                color: #333;
-            }
-
-            /* DEFINERER HVERT "ARK" PÅ SKJERMEN */
-            .analyse-section {
-                background: white;
-                width: 210mm; /* A4-bredde */
-                min-height: 297mm;
-                padding: 20mm;
-                margin-bottom: 40px;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-                box-sizing: border-box;
-                position: relative;
-            }
-
-            /* Knapperad-styling */
-            .toolbar {
-                margin-bottom: 30px; 
-                text-align: center; 
-                background: white; 
-                padding: 15px 30px; 
-                border-radius: 50px; 
-                box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
-                position: sticky; 
-                top: 20px; 
-                z-index: 1000;
-                display: flex;
-                gap: 10px;
-                align-items: center;
-            }
-
-            /* Tabellstiler */
-            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-            th, td { border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; }
-            th { background-color: #f8f9fa; }
-
-            /* Kompakt stil for elevlistene */
-            .kompakt-tabell th, .kompakt-tabell td { 
-                padding: 5px 4px !important; 
-                line-height: 1.2 !important; 
-                font-size: 10.5px !important; 
-            }
-
-            /* Knapper */
-            .btn-tool { 
-                padding: 10px 18px; color: white !important; border: none; border-radius: 6px; 
-                cursor: pointer; font-weight: bold; text-decoration: none !important; font-size: 14px;
-            }
-            .btn-blue { background: #2980b9; }
-            .btn-purple { background: #8e44ad; }
-            .btn-dark { background: #2c3e50; }
-            .btn-grey { background: #95a5a6; }
-            .btn-tool:hover { opacity: 0.9; transform: translateY(-1px); }
-
-            /* Diagram-stiler */
-            .chart-container { display: flex; height: 230px; align-items: flex-end; border-bottom: 2px solid #333; margin-bottom: 50px; padding-bottom: 10px; }
-            .bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; height: 100%; }
-            .bar-track { background: #eee; width: 30px; height: 100%; position: relative; border: 1px solid #ccc; display: flex; flex-direction: column-reverse; }
-            .bar-fill { background: #3498db; width: 100%; }
-            .total-fill { background: #2ecc71; }
-            .target-line { position: absolute; left: -5px; right: -5px; border-top: 2px dashed red; z-index: 5; }
-            .bar-label { font-size: 10px; transform: rotate(-45deg); margin-top: 25px; white-space: nowrap; }
-
-            /* REGLER FOR UTSKRIFT (PRINT) */
-            @media print {
-                body { background-color: white; padding: 0; }
-                .toolbar { display: none !important; }
-                .analyse-section { 
-                    width: 100%; 
-                    box-shadow: none; 
-                    margin: 0; 
-                    padding: 0;
-                    min-height: auto;
-                    page-break-after: always; 
-                }
-                .analyse-section:last-child { page-break-after: auto; }
-                * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            }
-        </style>
-    </head>
-<body>
-        <div class="toolbar no-print">
-            <button onclick="window.print()" class="btn-tool btn-blue">🖨️ Skriv ut / Lagre PDF</button>
-            <a href="${oppgaveSti}" target="_blank" class="btn-tool btn-purple">📄 Se hele prøven</a>
-            ${harFasit ? `<a href="${fasitSti}" target="_blank" class="btn-tool btn-dark">✅ Se fasit</a>` : ''}
-            <button onclick="window.close()" class="btn-tool btn-grey">Lukk</button>
-        </div>
-        
-        <div class="analyse-section">
-            ${html}
-        </div>
-
-        <div class="analyse-section">
-            <h2 style="text-align:center; color:#2c3e50;">Elevoversikt - Oppfølging og Mestring</h2>
-            ${elevListerHtml}
-        </div>
-
-        <div class="analyse-section">
-            ${detaljHtml}
-        </div>
-
-        <div class="analyse-section">
-            ${utviklingHtml}
-        </div>
-    </body>
-    </html>
-`;
-
-win.document.open();
-win.document.write(fullHtml);
-win.document.close();
+        win.document.open();
+        win.document.write(fullHtml);
+        win.document.close();
 
     } catch (error) {
-        console.error("Feil i analysegenerering:", error);
-        alert("Det oppstod en teknisk feil: " + error.message);
+        console.error("Feil:", error);
+        alert("Feil: " + error.message);
     }
 }
 
