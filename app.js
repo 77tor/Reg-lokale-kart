@@ -1007,7 +1007,7 @@ if (topper.length > 0) {
     }
     /* -------------------------------------------------------- */
 
-    .chart-container { display:flex; height:180px; align-items:flex-end; border-bottom:2px solid #333; margin-bottom:20px; }
+    .chart-container { display:flex; height:200px; align-items:flex-end; border-bottom:2px solid #333; margin-bottom:50px; padding-bottom: 30px; }
     .bar-wrapper { flex:1; display:flex; flex-direction:column; align-items:center; position:relative; }
     .bar-track { 
     background: #eee; 
@@ -1022,7 +1022,7 @@ if (topper.length > 0) {
     .bar-fill { background:#3498db; width:100%; }
     .total-fill { background:#2ecc71; }
     .target-line { position:absolute; width:100%; border-top:2px dashed red; z-index:5; }
-    .bar-label { font-size:8px; margin-top:5px; font-weight:bold; }
+    .bar-label { font-size:8px; margin-top:10px; font-weight:bold; }
     .toolbar { margin-bottom:20px; background:white; padding:10px; border-radius:50px; display:flex; gap:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; }
     .btn-tool { padding:8px 15px; border-radius:5px; text-decoration:none; font-weight:bold; color:white !important; border:none; cursor:pointer; font-size:12px; }
     .btn-grey { background: #95a5a6; }
