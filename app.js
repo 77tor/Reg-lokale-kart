@@ -1047,18 +1047,20 @@ if (historikkRader.length > 0) {
         </div>`;
 
     // 4. Oppsummering av sårbarhet
-if (siste.kritiske > 0 && siste.visning === `${periode} ${aar}`) {
-        htmlSide4 += `
-            <div style="margin-top:15px; padding:12px; background:#fff5f5; border:1px solid #feb2b2; border-radius:8px; text-align:center;">
-                <span style="color:#c53030; font-weight:bold;">⚠️ OBS:</span> 
-                Det er ${siste.kritiske} elever under kritisk grense i denne perioden. Se Side 2 for detaljerte elevlister.
-            </div>`;
+        if (siste.kritiske > 0 && siste.visning === `${periode} ${aar}`) {
+            htmlSide4 += `
+                <div style="margin-top:15px; padding:12px; background:#fff5f5; border:1px solid #feb2b2; border-radius:8px; text-align:center;">
+                    <span style="color:#c53030; font-weight:bold;">⚠️ OBS:</span> 
+                    Det er ${siste.kritiske} elever under kritisk grense i denne perioden. Se Side 2 for detaljerte elevlister.
+                </div>`;
+        }
+    } else {
+        // VIKTIG: Dette håndterer tilfeller uten data
+        htmlSide4 += `<p style="text-align:center; margin-top:20px;">Ingen historiske data tilgjengelig for denne klassen ennå.</p>`;
     }
 
-} // <--- VIKTIG: Denne lukker "if (historikkRader.length > 0)"
-} // <--- VIKTIG: Denne lukker "try"-blokken som startet øverst på Side 4
-catch(err) { 
-    console.error(err);
+} catch(err) { 
+    console.error("Feil i Side 4:", err);
     htmlSide4 += `<p style="text-align:center; color:red;">Kunne ikke laste historikk: ${err.message}</p>`; 
 }
 
