@@ -793,52 +793,70 @@ async function genererKlasseAnalyse() {
             htmlSide1 += `<td><b>${totalKlasseSnittProsent.toFixed(0)}%</b></td></tr>
         </tbody></table>`;
 
-        // --- SIDE 2: ELEVOVERSIKT ---
-        let htmlSide2 = `<h2 style="text-align:center; color:#2c3e50;">Elevoversikt - Oppfølging og Mestring</h2>`;
-        htmlSide2 += `<h3 style="color:red; margin: 10px 0 5px 0;">Under kritisk grense (Sum ≤ ${oppsett.grenseTotal})</h3>`;
-        if (kritiskeElever.length > 0) {
-            htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th>`;
-            oppsett.oppgaver.forEach((o, i) => {
-                let visningsNavn = (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) 
-                    ? gjeldendeMalTabell.oppgaver[i + 1].navn : o.navn;
-                htmlSide2 += `<th>${visningsNavn}</th>`;
-            });
-            htmlSide2 += `<th>Sum</th></tr></thead><tbody>`;
-            kritiskeElever.sort((a,b) => a.sum - b.sum).forEach(e => {
-                htmlSide2 += `<tr><td align="left"><b>${e.navn}</b></td>`;
-                e.oppgaver.forEach((p, i) => {
-                    const o = oppsett.oppgaver[i];
-                    const stil = (o.grense !== -1 && p <= o.grense) ? 'style="background:#ffcccc"' : '';
-                    htmlSide2 += `<td align="center" ${stil}>${p}</td>`;
-                });
-                htmlSide2 += `<td align="center" style="background:#ffcccc; font-weight:bold;">${e.sum}</td></tr>`;
-            });
-            htmlSide2 += `</tbody></table>`;
-        } else {
-            htmlSide2 += `<p style="text-align:center;">Ingen under kritisk grense.</p>`;
-        }
 
-        let eleverUnder65 = elever.map(n => ({navn: n, sum: data[n].sum, prosent: (data[n].sum / totalMaksMulig) * 100}))
-                                  .filter(e => e.prosent < 65 && e.sum > oppsett.grenseTotal);
-        htmlSide2 += `<h3 style="color:#e67e22; margin: 15px 0 5px 0;">Lav mestring (Total skår < 65%)</h3>`;
-        if (eleverUnder65.length > 0) {
-            htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th><th>Poengsum</th><th>Prosent</th></tr></thead><tbody>`;
-            eleverUnder65.sort((a, b) => a.sum - b.sum).forEach(e => {
-                htmlSide2 += `<tr><td align="left"><b>${e.navn}</b></td><td align="center">${e.sum}</td><td align="center" style="background:#fff3e0; font-weight:bold;">${e.prosent.toFixed(1)}%</td></tr>`;
-            });
-            htmlSide2 += `</tbody></table>`;
-        }
+// --- SIDE 2: ELEVOVERSIKT (Med sjekk for tomme lister) ---
+let htmlSide2 = fellesHeader; // Bruker den felles overskriften definert tidligere
+htmlSide2 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Elevoversikt - Oppfølging og Mestring</h2>`;
 
-        let topper = elever.map(n => ({navn: n, sum: data[n].sum, prosent: (data[n].sum / totalMaksMulig) * 100}))
-                           .filter(e => e.prosent >= 95);
-        htmlSide2 += `<h3 style="color:#27ae60; margin: 15px 0 5px 0;">Høy mestring (Total skår ≥ 95%)</h3>`;
-        if (topper.length > 0) {
-            htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th><th>Poengsum</th><th>Prosent</th></tr></thead><tbody>`;
-            topper.sort((a, b) => b.sum - a.sum).forEach(e => {
-                htmlSide2 += `<tr><td align="left"><b>${e.navn}</b></td><td align="center">${e.sum}</td><td align="center" style="background:#e8f5e9; font-weight:bold;">${e.prosent.toFixed(0)}%</td></tr>`;
-            });
-            htmlSide2 += `</tbody></table>`;
-        }
+// --- 1. UNDER KRITISK GRENSE ---
+htmlSide2 += `<h3 style="color:red; margin: 10px 0 5px 0; font-size: 1.1em;">Under kritisk grense (Sum ≤ ${oppsett.grenseTotal})</h3>`;
+
+if (kritiskeElever.length > 0) {
+    htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th>`;
+    oppsett.oppgaver.forEach((o, i) => {
+        let visningsNavn = (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) 
+            ? gjeldendeMalTabell.oppgaver[i + 1].navn : o.navn;
+        htmlSide2 += `<th>${visningsNavn}</th>`;
+    });
+    htmlSide2 += `<th>Sum</th></tr></thead><tbody>`;
+    kritiskeElever.sort((a,b) => a.sum - b.sum).forEach(e => {
+        htmlSide2 += `<tr><td align="left"><b>${e.navn}</b></td>`;
+        e.oppgaver.forEach((p, i) => {
+            const o = oppsett.oppgaver[i];
+            const stil = (o.grense !== -1 && p <= o.grense) ? 'style="background:#ffcccc"' : '';
+            htmlSide2 += `<td align="center" ${stil}>${p}</td>`;
+        });
+        htmlSide2 += `<td align="center" style="background:#ffcccc; font-weight:bold;">${e.sum}</td></tr>`;
+    });
+    htmlSide2 += `</tbody></table>`;
+} else {
+    // Tekst hvis ingen er under kritisk grense
+    htmlSide2 += `<p style="font-size:0.9em; margin-bottom:10px; text-align:center;">Ingen under kritisk grense.</p>`;
+}
+
+// --- 2. LAV MESTRING (UNDER 65%) ---
+let eleverUnder65 = elever.map(n => ({navn: n, sum: data[n].sum, prosent: (data[n].sum / totalMaksMulig) * 100}))
+                          .filter(e => e.prosent < 65 && e.sum > oppsett.grenseTotal);
+
+htmlSide2 += `<h3 style="color:#e67e22; margin: 15px 0 5px 0; font-size: 1.1em;">Lav mestring (Total skår < 65%)</h3>`;
+
+if (eleverUnder65.length > 0) {
+    htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th><th>Poengsum</th><th>Prosent</th></tr></thead><tbody>`;
+    eleverUnder65.sort((a, b) => a.sum - b.sum).forEach(e => {
+        htmlSide2 += `<tr><td align="left"><b>${e.navn}</b></td><td align="center">${e.sum}</td><td align="center" style="background:#fff3e0; font-weight:bold;">${e.prosent.toFixed(1)}%</td></tr>`;
+    });
+    htmlSide2 += `</tbody></table>`;
+} else {
+    // Tekst hvis ingen andre er under 65%
+    htmlSide2 += `<p style="font-size:0.9em; margin-bottom:10px; text-align:center;">Ingen ytterligere elever under 65%.</p>`;
+}
+
+// --- 3. HØY MESTRING (OVER 95%) ---
+let topper = elever.map(n => ({navn: n, sum: data[n].sum, prosent: (data[n].sum / totalMaksMulig) * 100}))
+                   .filter(e => e.prosent >= 95);
+
+htmlSide2 += `<h3 style="color:#27ae60; margin: 15px 0 5px 0; font-size: 1.1em;">Høy mestring (Total skår ≥ 95%)</h3>`;
+
+if (topper.length > 0) {
+    htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th><th>Poengsum</th><th>Prosent</th></tr></thead><tbody>`;
+    topper.sort((a, b) => b.sum - a.sum).forEach(e => {
+        htmlSide2 += `<tr><td align="left"><b>${e.navn}</b></td><td align="center">${e.sum}</td><td align="center" style="background:#e8f5e9; font-weight:bold;">${e.prosent.toFixed(0)}%</td></tr>`;
+    });
+    htmlSide2 += `</tbody></table>`;
+} else {
+    // Tekst hvis ingen er over 95%
+    htmlSide2 += `<p style="font-size:0.9em; text-align:center;">Ingen elever over 95%.</p>`;
+}
 
         // --- SIDE 3: PEDAGOGISK DETALJANALYSE ---
         let htmlSide3 = `<h2 style="text-align:center; color:#2c3e50;">Pedagogisk Detaljanalyse</h2>`;
