@@ -858,8 +858,6 @@ async function genererKlasseAnalyse() {
         // --- SIDE 3: PEDAGOGISK DETALJANALYSE ---
         let htmlSide3 = fellesHeader;
         htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Pedagogisk Detaljanalyse</h2>`;
-        htmlSide3 += `<p style="text-align:center; font-style: italic;">Analyse for ${fag}, ${trinn}. trinn (${periode})</p>`;
-        
         if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             let harSvakheter = false;
             oppsett.oppgaver.forEach((o, i) => {
@@ -882,13 +880,13 @@ async function genererKlasseAnalyse() {
             if (!harSvakheter) htmlSide3 += `<p style="text-align:center; color:green;">Stabilt høyt nivå på alle områder.</p>`;
         }
 
-        // --- SIDE 4: UTVIKLING OVER TID ---
-        let htmlSide4 = fellesHeader;
-        htmlSide4 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
+// --- SIDE 4: UTVIKLING OVER TID (Rettet logikk) ---
+        let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
         try {
             const histSnap = await db.ref(`kartlegging`).once('value');
             const alleData = histSnap.val() || {};
-            let rader = [];
+            let historikkRader = [];
+
             for (const aKey of Object.keys(alleData)) {
                 if (aKey > aar) continue;
                 const fData = alleData[aKey][fag];
@@ -907,99 +905,81 @@ async function genererKlasseAnalyse() {
                             aSum += (kData[n].sum || 0);
                             if ((kData[n].sum || 0) <= aOppsett.grenseTotal) aKritiske++;
                         });
-                        rader.push({ visning: `${pKey} ${aKey}`, prosent: ((aSum/aElever.length)/aMaks)*100, kritiske: aKritiske, sort: aKey + (pKey === "Høst" ? "1" : "2") });
+                        historikkRader.push({ 
+                            visning: `${pKey} ${aKey}`, 
+                            prosent: ((aSum/aElever.length)/aMaks)*100, 
+                            kritiske: aKritiske, 
+                            sort: aKey + (pKey === "Høst" ? "1" : "2") 
+                        });
                     }
                 }
             }
-            rader.sort((a,b) => a.sort.localeCompare(b.sort));
-            if (rader.length > 1) {
-                htmlSide4 += `<table><thead><tr><th>Periode</th><th>Mestring (%)</th><th>Antall under kritisk grense</th></tr></thead><tbody>`;
-                rader.forEach(r => {
+            
+            historikkRader.sort((a,b) => a.sort.localeCompare(b.sort));
+
+            if (historikkRader.length > 1) {
+                htmlSide4 += `<table><thead><tr><th>Periode</th><th>Mestring (%)</th><th>Under kritisk grense</th></tr></thead><tbody>`;
+                historikkRader.forEach(r => {
                     const aktiv = r.visning === `${periode} ${aar}` ? 'style="background:#e8f4fd; font-weight:bold;"' : '';
                     htmlSide4 += `<tr ${aktiv}><td>${r.visning}</td><td>${r.prosent.toFixed(1)}%</td><td>${r.kritiske}</td></tr>`;
                 });
                 htmlSide4 += `</tbody></table>`;
+
+                // Trend-analyse
+                const siste = historikkRader[historikkRader.length - 1];
+                const forrige = historikkRader[historikkRader.length - 2];
+                const endring = siste.prosent - forrige.prosent;
+                let trendFarge = endring > 3 ? "#27ae60" : (endring < -3 ? "#e67e22" : "#333");
+                let trendTekst = endring > 3 ? `Positiv utvikling (+${endring.toFixed(1)}%) siden ${forrige.visning}.` : 
+                                (endring < -3 ? `Nedgang (${endring.toFixed(1)}%) sammenlignet med ${forrige.visning}.` : `Stabile resultater.`);
+
+                htmlSide4 += `<div style="padding:15px; border-left:6px solid ${trendFarge}; background:#f9f9f9; margin-top:20px;">${trendTekst}</div>`;
             } else {
                 htmlSide4 += `<p style="text-align:center;">Ingen tidligere data funnet.</p>`;
             }
         } catch(err) { htmlSide4 += `<p>Kunne ikke laste historikk.</p>`; }
 
-        // --- ÅPNE VINDU OG GENERER HTML ---
+        // --- GENERER ENDELIG HTML ---
         const win = window.open('', '_blank');
         const f_clean = fag.toLowerCase(); 
         const t_clean = trinn.replace(/\D/g, ''); 
         const p_clean = periode.charAt(0).toUpperCase(); 
-        const harFasit = !(f_clean === "lesing" && t_clean === "1" && p_clean === "H");
         const oppgaveSti = `Oppgaver/Kartlegging_${f_clean}_${t_clean}_${p_clean}.pdf`;
         const fasitSti = `Fasit/Kartlegging_${f_clean}_${t_clean}_${p_clean}_Fasit.pdf`;
+        const harFasit = !(f_clean === "lesing" && t_clean === "1" && p_clean === "H");
 
-        const fullHtml = `
-            <html>
-            <head>
-                <title>Analyse ${trinn}${klasse}</title>
-                <style>
-                    @page { size: A4 landscape; margin: 0; }
-                    body { font-family: sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-                    .analyse-section { 
-                        background: white; width: 297mm; height: 210mm; padding: 12mm 15mm; 
-                        margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
-                        box-sizing: border-box; overflow: hidden; position: relative; page-break-after: always; 
-                    }
-                    .side-header { 
-                        border-bottom: 2px solid #2c3e50; margin-bottom: 15px; padding-bottom: 5px;
-                        font-size: 16px; font-weight: bold; color: #2c3e50; text-align: left;
-                    }
-                    .toolbar { 
-                        margin-bottom: 20px; position: sticky; top: 10px; z-index: 1000; 
-                        display: flex; gap: 10px; background: white; padding: 12px; 
-                        border-radius: 50px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
-                    }
-                    table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-                    .kompakt-tabell { width: 100%; }
-                    th, td { border: 1px solid #333; padding: 5px; text-align: center; font-size: 10px; }
-                    th { background: #f8f9fa; }
-                    .btn-tool { padding: 10px 18px; color: white !important; border-radius: 6px; text-decoration: none; font-weight: bold; cursor: pointer; border: none; }
-                    .btn-blue { background: #2980b9; } .btn-purple { background: #8e44ad; } .btn-dark { background: #2c3e50; } .btn-grey { background: #95a5a6; }
-                    
-                    .chart-container { display: flex; height: 200px; align-items: flex-end; border-bottom: 2px solid #333; margin-bottom: 30px; }
-                    .bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; }
-                    .bar-track { background: #eee; width: 22px; height: 160px; position: relative; display: flex; flex-direction: column-reverse; border: 1px solid #ccc; }
-                    .bar-fill { background: #3498db; width: 100%; }
-                    .total-fill { background: #2ecc71; }
-                    .target-line { position: absolute; width: 100%; border-top: 2px dashed red; z-index: 5; }
-                    .bar-label { font-size: 9px; margin-top: 5px; text-align: center; font-weight: bold; }
-                    .bar-value { font-size: 10px; margin-bottom: 3px; font-weight: bold; }
-
-                    @media print {
-                        body { background: white; padding: 0; }
-                        .toolbar { display: none; }
-                        .analyse-section { box-shadow: none; margin: 0; width: 297mm; height: 210mm; }
-                        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="toolbar">
-                    <button onclick="window.print()" class="btn-tool btn-blue">🖨️ Skriv ut / Lagre PDF</button>
-                    <a href="${oppgaveSti}" target="_blank" class="btn-tool btn-purple">📄 Se prøve</a>
-                    ${harFasit ? `<a href="${fasitSti}" target="_blank" class="btn-tool btn-dark">✅ Se fasit</a>` : ''}
-                    <button onclick="window.close()" class="btn-tool btn-grey">Lukk</button>
-                </div>
-                
-                <div class="analyse-section">${htmlSide1}</div>
-                <div class="analyse-section">${htmlSide2}</div>
-                <div class="analyse-section">${htmlSide3}</div>
-                <div class="analyse-section">${htmlSide4}</div>
-            </body>
-            </html>`;
-
-        win.document.write(fullHtml);
+        win.document.write(`<html><head><title>Analyse</title><style>
+            @page { size: A4 landscape; margin: 0; }
+            body { font-family: sans-serif; background:#f0f2f5; margin:0; padding:20px; display:flex; flex-direction:column; align-items:center; }
+            .analyse-section { background:white; width:297mm; height:210mm; padding:12mm 15mm; margin-bottom:30px; box-shadow:0 4px 15px rgba(0,0,0,0.15); box-sizing:border-box; page-break-after:always; }
+            .side-header { border-bottom:2px solid #2c3e50; margin-bottom:15px; font-size:16px; font-weight:bold; color:#2c3e50; }
+            table { width:100%; border-collapse:collapse; margin-bottom:15px; }
+            th, td { border:1px solid #333; padding:5px; text-align:center; font-size:10px; }
+            th { background:#f8f9fa; }
+            .chart-container { display:flex; height:180px; align-items:flex-end; border-bottom:2px solid #333; margin-bottom:20px; }
+            .bar-wrapper { flex:1; display:flex; flex-direction:column; align-items:center; position:relative; }
+            .bar-track { background:#eee; width:20px; height:150px; position:relative; border:1px solid #ccc; display:flex; flex-direction:column-reverse; }
+            .bar-fill { background:#3498db; width:100%; }
+            .total-fill { background:#2ecc71; }
+            .target-line { position:absolute; width:100%; border-top:2px dashed red; z-index:5; }
+            .bar-label { font-size:8px; margin-top:5px; font-weight:bold; }
+            .toolbar { margin-bottom:20px; background:white; padding:10px; border-radius:50px; display:flex; gap:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+            .btn-tool { padding:8px 15px; border-radius:5px; text-decoration:none; font-weight:bold; color:white; border:none; cursor:pointer; font-size:12px; }
+            @media print { .toolbar { display:none; } body { padding:0; } .analyse-section { box-shadow:none; margin:0; } * { -webkit-print-color-adjust: exact; } }
+        </style></head><body>
+            <div class="toolbar">
+                <button onclick="window.print()" style="background:#2980b9;" class="btn-tool">🖨️ Lagre PDF</button>
+                <a href="${oppgaveSti}" target="_blank" style="background:#8e44ad;" class="btn-tool">📄 Se prøve</a>
+                ${harFasit ? `<a href="${fasitSti}" target="_blank" style="background:#2c3e50;" class="btn-tool">✅ Se fasit</a>` : ''}
+            </div>
+            <div class="analyse-section">${htmlSide1}</div>
+            <div class="analyse-section">${htmlSide2}</div>
+            <div class="analyse-section">${htmlSide3}</div>
+            <div class="analyse-section">${htmlSide4}</div>
+        </body></html>`);
         win.document.close();
 
-    } catch (error) {
-        console.error("Feil:", error);
-        alert("Feil: " + error.message);
-    }
+    } catch (error) { alert("Feil: " + error.message); }
 }
 
 
