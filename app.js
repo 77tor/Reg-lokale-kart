@@ -695,7 +695,8 @@ document.addEventListener('change', function(e) {
     }
 });
 
-// --- KOMBINERT ANALYSE-KODE (Original stil i 4-siders Landskap) ---
+
+// --- KOMBINERT ANALYSE-KODE (Rettet versjon med alle sjekker) ---
 async function genererKlasseAnalyse() {
     try { 
         // 1. Hent kriterier fra menyene
@@ -739,8 +740,16 @@ async function genererKlasseAnalyse() {
 
         const totalKlasseSnittProsent = ((totalSumKlasse / antall) / totalMaksMulig) * 100;
 
+        // --- DEFINER FELLES TOPPTEKST OG MALER ---
+        const malForFag = analyseMaler[fag];
+        const malForTrinn = malForFag ? malForFag[trinn] : null;
+        const gjeldendeMalTabell = malForTrinn ? malForTrinn[periode] : null;
+        
+        const sideTittel = `Analyse: ${fag} - ${trinn}${klasse} (${periode} ${aar})`;
+        const fellesHeader = `<div class="side-header">${sideTittel}</div>`;
+
         // --- SIDE 1: HOVEDANALYSE OG TABELL ---
-        let htmlSide1 = `<h1>Analyse: ${fag} - ${trinn}${klasse} (${periode} ${aar})</h1>`;
+        let htmlSide1 = fellesHeader;
         htmlSide1 += `<h3>Gjennomsnittlig skår per oppgave (%)</h3><div class="chart-container">`;
         htmlSide1 += `<div style="width: 150px;"></div>`;
 
@@ -771,10 +780,6 @@ async function genererKlasseAnalyse() {
                 <div class="bar-label"><b>TOTAL</b></div>
             </div></div>`;
 
-        const malForFag = analyseMaler[fag];
-        const malForTrinn = malForFag ? malForFag[trinn] : null;
-        const gjeldendeMalTabell = malForTrinn ? malForTrinn[periode] : null;
-
         htmlSide1 += `<h3>Klassens resultater vs Maks-skår</h3><table><thead><tr><th>Oppgave</th>`;
         oppsett.oppgaver.forEach((o, i) => {
             let visningsNavn = (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) 
@@ -794,72 +799,65 @@ async function genererKlasseAnalyse() {
         </tbody></table>`;
 
 
-// --- SIDE 2: ELEVOVERSIKT (Med sjekk for tomme lister) ---
-let htmlSide2 = fellesHeader; // Bruker den felles overskriften definert tidligere
-htmlSide2 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Elevoversikt - Oppfølging og Mestring</h2>`;
+        // --- SIDE 2: ELEVOVERSIKT ---
+        let htmlSide2 = fellesHeader;
+        htmlSide2 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Elevoversikt - Oppfølging og Mestring</h2>`;
 
-// --- 1. UNDER KRITISK GRENSE ---
-htmlSide2 += `<h3 style="color:red; margin: 10px 0 5px 0; font-size: 1.1em;">Under kritisk grense (Sum ≤ ${oppsett.grenseTotal})</h3>`;
+        // 1. Under kritisk grense
+        htmlSide2 += `<h3 style="color:red; margin: 10px 0 5px 0; font-size: 1.1em;">Under kritisk grense (Sum ≤ ${oppsett.grenseTotal})</h3>`;
+        if (kritiskeElever.length > 0) {
+            htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th>`;
+            oppsett.oppgaver.forEach((o, i) => {
+                let visningsNavn = (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) ? gjeldendeMalTabell.oppgaver[i + 1].navn : o.navn;
+                htmlSide2 += `<th>${visningsNavn}</th>`;
+            });
+            htmlSide2 += `<th>Sum</th></tr></thead><tbody>`;
+            kritiskeElever.sort((a,b) => a.sum - b.sum).forEach(e => {
+                htmlSide2 += `<tr><td align="left"><b>${e.navn}</b></td>`;
+                e.oppgaver.forEach((p, i) => {
+                    const o = oppsett.oppgaver[i];
+                    const stil = (o.grense !== -1 && p <= o.grense) ? 'style="background:#ffcccc"' : '';
+                    htmlSide2 += `<td align="center" ${stil}>${p}</td>`;
+                });
+                htmlSide2 += `<td align="center" style="background:#ffcccc; font-weight:bold;">${e.sum}</td></tr>`;
+            });
+            htmlSide2 += `</tbody></table>`;
+        } else {
+            htmlSide2 += `<p style="font-size:0.9em; margin-bottom:10px; text-align:center;">Ingen under kritisk grense.</p>`;
+        }
 
-if (kritiskeElever.length > 0) {
-    htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th>`;
-    oppsett.oppgaver.forEach((o, i) => {
-        let visningsNavn = (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) 
-            ? gjeldendeMalTabell.oppgaver[i + 1].navn : o.navn;
-        htmlSide2 += `<th>${visningsNavn}</th>`;
-    });
-    htmlSide2 += `<th>Sum</th></tr></thead><tbody>`;
-    kritiskeElever.sort((a,b) => a.sum - b.sum).forEach(e => {
-        htmlSide2 += `<tr><td align="left"><b>${e.navn}</b></td>`;
-        e.oppgaver.forEach((p, i) => {
-            const o = oppsett.oppgaver[i];
-            const stil = (o.grense !== -1 && p <= o.grense) ? 'style="background:#ffcccc"' : '';
-            htmlSide2 += `<td align="center" ${stil}>${p}</td>`;
-        });
-        htmlSide2 += `<td align="center" style="background:#ffcccc; font-weight:bold;">${e.sum}</td></tr>`;
-    });
-    htmlSide2 += `</tbody></table>`;
-} else {
-    // Tekst hvis ingen er under kritisk grense
-    htmlSide2 += `<p style="font-size:0.9em; margin-bottom:10px; text-align:center;">Ingen under kritisk grense.</p>`;
-}
+        // 2. Lav mestring
+        let eleverUnder65 = elever.map(n => ({navn: n, sum: data[n].sum, prosent: (data[n].sum / totalMaksMulig) * 100}))
+                                  .filter(e => e.prosent < 65 && e.sum > oppsett.grenseTotal);
+        htmlSide2 += `<h3 style="color:#e67e22; margin: 15px 0 5px 0; font-size: 1.1em;">Lav mestring (Total skår < 65%)</h3>`;
+        if (eleverUnder65.length > 0) {
+            htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th><th>Poengsum</th><th>Prosent</th></tr></thead><tbody>`;
+            eleverUnder65.sort((a, b) => a.sum - b.sum).forEach(e => {
+                htmlSide2 += `<tr><td align="left"><b>${e.navn}</b></td><td align="center">${e.sum}</td><td align="center" style="background:#fff3e0; font-weight:bold;">${e.prosent.toFixed(1)}%</td></tr>`;
+            });
+            htmlSide2 += `</tbody></table>`;
+        } else {
+            htmlSide2 += `<p style="font-size:0.9em; margin-bottom:10px; text-align:center;">Ingen ytterligere elever under 65%.</p>`;
+        }
 
-// --- 2. LAV MESTRING (UNDER 65%) ---
-let eleverUnder65 = elever.map(n => ({navn: n, sum: data[n].sum, prosent: (data[n].sum / totalMaksMulig) * 100}))
-                          .filter(e => e.prosent < 65 && e.sum > oppsett.grenseTotal);
+        // 3. Høy mestring
+        let topper = elever.map(n => ({navn: n, sum: data[n].sum, prosent: (data[n].sum / totalMaksMulig) * 100}))
+                           .filter(e => e.prosent >= 95);
+        htmlSide2 += `<h3 style="color:#27ae60; margin: 15px 0 5px 0; font-size: 1.1em;">Høy mestring (Total skår ≥ 95%)</h3>`;
+        if (topper.length > 0) {
+            htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th><th>Poengsum</th><th>Prosent</th></tr></thead><tbody>`;
+            topper.sort((a, b) => b.sum - a.sum).forEach(e => {
+                htmlSide2 += `<tr><td align="left"><b>${e.navn}</b></td><td align="center">${e.sum}</td><td align="center" style="background:#e8f5e9; font-weight:bold;">${e.prosent.toFixed(0)}%</td></tr>`;
+            });
+            htmlSide2 += `</tbody></table>`;
+        } else {
+            htmlSide2 += `<p style="font-size:0.9em; text-align:center;">Ingen elever over 95%.</p>`;
+        }
 
-htmlSide2 += `<h3 style="color:#e67e22; margin: 15px 0 5px 0; font-size: 1.1em;">Lav mestring (Total skår < 65%)</h3>`;
-
-if (eleverUnder65.length > 0) {
-    htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th><th>Poengsum</th><th>Prosent</th></tr></thead><tbody>`;
-    eleverUnder65.sort((a, b) => a.sum - b.sum).forEach(e => {
-        htmlSide2 += `<tr><td align="left"><b>${e.navn}</b></td><td align="center">${e.sum}</td><td align="center" style="background:#fff3e0; font-weight:bold;">${e.prosent.toFixed(1)}%</td></tr>`;
-    });
-    htmlSide2 += `</tbody></table>`;
-} else {
-    // Tekst hvis ingen andre er under 65%
-    htmlSide2 += `<p style="font-size:0.9em; margin-bottom:10px; text-align:center;">Ingen ytterligere elever under 65%.</p>`;
-}
-
-// --- 3. HØY MESTRING (OVER 95%) ---
-let topper = elever.map(n => ({navn: n, sum: data[n].sum, prosent: (data[n].sum / totalMaksMulig) * 100}))
-                   .filter(e => e.prosent >= 95);
-
-htmlSide2 += `<h3 style="color:#27ae60; margin: 15px 0 5px 0; font-size: 1.1em;">Høy mestring (Total skår ≥ 95%)</h3>`;
-
-if (topper.length > 0) {
-    htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th><th>Poengsum</th><th>Prosent</th></tr></thead><tbody>`;
-    topper.sort((a, b) => b.sum - a.sum).forEach(e => {
-        htmlSide2 += `<tr><td align="left"><b>${e.navn}</b></td><td align="center">${e.sum}</td><td align="center" style="background:#e8f5e9; font-weight:bold;">${e.prosent.toFixed(0)}%</td></tr>`;
-    });
-    htmlSide2 += `</tbody></table>`;
-} else {
-    // Tekst hvis ingen er over 95%
-    htmlSide2 += `<p style="font-size:0.9em; text-align:center;">Ingen elever over 95%.</p>`;
-}
 
         // --- SIDE 3: PEDAGOGISK DETALJANALYSE ---
-        let htmlSide3 = `<h2 style="text-align:center; color:#2c3e50;">Pedagogisk Detaljanalyse</h2>`;
+        let htmlSide3 = fellesHeader;
+        htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Pedagogisk Detaljanalyse</h2>`;
         htmlSide3 += `<p style="text-align:center; font-style: italic;">Analyse for ${fag}, ${trinn}. trinn (${periode})</p>`;
         
         if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
@@ -875,9 +873,9 @@ if (topper.length > 0) {
                     const bildeLenke = o.bilde ? `<a href="${o.bilde}" target="_blank" style="margin-left:10px; font-size:0.8em; color:#2980b9;">[Se oppgavebilde]</a>` : "";
 
                     htmlSide3 += `
-                        <div style="margin-bottom: 15px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 8px;">
+                        <div style="margin-bottom: 12px; padding: 12px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 8px;">
                             <h4 style="margin:0; color:#c0392b;">${malInfo.navn} — <span style="font-weight:normal; color:#555;">${årsakTekst}</span> ${bildeLenke}</h4>
-                            <p style="margin: 8px 0 0 0; font-size: 14px; color: #333;"><strong>Pedagogisk fokus:</strong> ${malInfo.forklaring}</p>
+                            <p style="margin: 5px 0 0 0; font-size: 14px; color: #333;"><strong>Pedagogisk fokus:</strong> ${malInfo.forklaring}</p>
                         </div>`;
                 }
             });
@@ -885,12 +883,12 @@ if (topper.length > 0) {
         }
 
         // --- SIDE 4: UTVIKLING OVER TID ---
-        let htmlSide4 = `<h2 style="text-align:center; color:#2c3e50;">Utvikling over tid</h2>`;
+        let htmlSide4 = fellesHeader;
+        htmlSide4 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
         try {
             const histSnap = await db.ref(`kartlegging`).once('value');
             const alleData = histSnap.val() || {};
             let rader = [];
-
             for (const aKey of Object.keys(alleData)) {
                 if (aKey > aar) continue;
                 const fData = alleData[aKey][fag];
@@ -943,30 +941,34 @@ if (topper.length > 0) {
                     @page { size: A4 landscape; margin: 0; }
                     body { font-family: sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
                     .analyse-section { 
-                        background: white; width: 297mm; height: 210mm; padding: 15mm; 
+                        background: white; width: 297mm; height: 210mm; padding: 12mm 15mm; 
                         margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
                         box-sizing: border-box; overflow: hidden; position: relative; page-break-after: always; 
+                    }
+                    .side-header { 
+                        border-bottom: 2px solid #2c3e50; margin-bottom: 15px; padding-bottom: 5px;
+                        font-size: 16px; font-weight: bold; color: #2c3e50; text-align: left;
                     }
                     .toolbar { 
                         margin-bottom: 20px; position: sticky; top: 10px; z-index: 1000; 
                         display: flex; gap: 10px; background: white; padding: 12px; 
                         border-radius: 50px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
                     }
-                    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                    th, td { border: 1px solid #333; padding: 6px; text-align: center; font-size: 11px; }
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+                    .kompakt-tabell { width: 100%; }
+                    th, td { border: 1px solid #333; padding: 5px; text-align: center; font-size: 10px; }
                     th { background: #f8f9fa; }
                     .btn-tool { padding: 10px 18px; color: white !important; border-radius: 6px; text-decoration: none; font-weight: bold; cursor: pointer; border: none; }
                     .btn-blue { background: #2980b9; } .btn-purple { background: #8e44ad; } .btn-dark { background: #2c3e50; } .btn-grey { background: #95a5a6; }
                     
-                    /* Original Diagram-stil */
-                    .chart-container { display: flex; height: 230px; align-items: flex-end; border-bottom: 2px solid #333; margin-bottom: 40px; }
-                    .bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; position: relative; }
-                    .bar-track { background: #eee; width: 25px; height: 100%; position: relative; display: flex; flex-direction: column-reverse; border: 1px solid #ccc; }
+                    .chart-container { display: flex; height: 200px; align-items: flex-end; border-bottom: 2px solid #333; margin-bottom: 30px; }
+                    .bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; }
+                    .bar-track { background: #eee; width: 22px; height: 160px; position: relative; display: flex; flex-direction: column-reverse; border: 1px solid #ccc; }
                     .bar-fill { background: #3498db; width: 100%; }
                     .total-fill { background: #2ecc71; }
                     .target-line { position: absolute; width: 100%; border-top: 2px dashed red; z-index: 5; }
-                    .bar-label { font-size: 10px; margin-top: 5px; text-align: center; font-weight: bold; }
-                    .bar-value { font-size: 11px; margin-bottom: 3px; font-weight: bold; }
+                    .bar-label { font-size: 9px; margin-top: 5px; text-align: center; font-weight: bold; }
+                    .bar-value { font-size: 10px; margin-bottom: 3px; font-weight: bold; }
 
                     @media print {
                         body { background: white; padding: 0; }
@@ -999,6 +1001,7 @@ if (topper.length > 0) {
         alert("Feil: " + error.message);
     }
 }
+
 
 
 // --- 6. ADMIN-FUNKSJONER ---
