@@ -748,10 +748,14 @@ async function genererKlasseAnalyse() {
         const sideTittel = `Analyse: ${fag} - ${trinn}${klasse} (${periode} ${aar})`;
         const fellesHeader = `<div class="side-header">${sideTittel}</div>`;
 
-// --- SIDE 1: HOVEDANALYSE OG TABELL (Oppdatert for å passe på arket) ---
+// --- SIDE 1: HOVEDANALYSE OG TABELL ---
 let htmlSide1 = fellesHeader;
-htmlSide1 += `<h3>Gjennomsnittlig skår per oppgave (%)</h3><div class="chart-container">`;
-htmlSide1 += `<div style="width: 150px;"></div>`;
+// Overskrift 1 - Nå som h2 og sentrert
+htmlSide1 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Gjennomsnittlig skår per oppgave (%)</h2>`;
+htmlSide1 += `<div class="chart-container">`;
+
+// Viktig: Denne tomme div-en lager avstand på venstre side slik at første søyle ikke klistrer seg til kanten
+htmlSide1 += `<div style="width: 50px;"></div>`; 
 
 oppsett.oppgaver.forEach((o, i) => {
     const snitt = oppgaveSummer[i] / antall;
@@ -780,8 +784,10 @@ htmlSide1 += `
         <div class="bar-label"><b>TOTAL</b></div>
     </div></div>`;
 
-// HER ER ENDRINGENE I TABELLEN:
-htmlSide1 += `<h3>Klassens resultater vs Maks-skår</h3><table><thead><tr><th class="col-navn">Oppgave</th>`;
+// Overskrift 2 - Nå også som h2, sentrert og med litt luft over
+htmlSide1 += `<h2 style="text-align:center; color:#2c3e50; margin-top:30px;">Klassens resultater vs Maks-skår</h2>`;
+
+htmlSide1 += `<table><thead><tr><th class="col-navn">Oppgave</th>`;
 oppsett.oppgaver.forEach((o, i) => {
     let visningsNavn = (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) 
         ? gjeldendeMalTabell.oppgaver[i + 1].navn : o.navn;
