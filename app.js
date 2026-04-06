@@ -748,18 +748,17 @@ let elever = Object.keys(firebaseData).filter(navn => {
 
         const totalMaksMulig = oppsett.oppgaver.reduce((sum, o) => sum + (o.maks || 0), 0);
 
+// 1. Sørg for at du bruker riktig kilde (sannsynligvis lagredeResultater)
 elever.forEach(navn => {
-    // 1. Hent dataen for denne spesifikke eleven fra det store objektet
-    // Sjekk om det skal være 'lagredeResultater[navn]' eller 'klasseData[navn]' 
-    // basert på hva du har kalt variabelen lenger opp i funksjonen.
+    // ENDRET: Bruk lagredeResultater (eller det navnet du har definert lenger opp)
     const d = lagredeResultater[navn] || {}; 
 
-    // 2. SIKKERHETSSJEKK: Hopp over hvis eleven er slettet eller mangler oppgaver
-    if (d.slettet || !d.oppgaver) return;
+    // 2. SIKKERHETSSJEKK: Hopp over hvis eleven mangler data eller er slettet
+    if (!d.oppgaver || d.slettet) return;
 
-    // 3. Beregn verdier
+    // 3. Kjør loopen bare hvis d.oppgaver faktisk eksisterer
     d.oppgaver.forEach((p, i) => {
-        // Sørg for at oppgaveSummer[i] eksisterer før vi legger til
+        // Sjekk at indexen i finnes i oppgaveSummer før addisjon
         if (oppgaveSummer[i] !== undefined) {
             oppgaveSummer[i] += (parseFloat(p) || 0);
         }
@@ -767,8 +766,8 @@ elever.forEach(navn => {
 
     totalSumKlasse += (parseFloat(d.sum) || 0);
 
-    // 4. Sjekk kritisk grense
-    if (d.sum <= oppsett.grenseTotal) {
+    // 4. Sjekk mot kritisk grense
+    if (parseFloat(d.sum) <= oppsett.grenseTotal) {
         kritiskeElever.push({
             navn: navn, 
             oppgaver: d.oppgaver, 
