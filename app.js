@@ -906,7 +906,8 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     if (!harSvakheter) htmlSide3 += `<p style="text-align:center; color:green;">Stabilt høyt nivå på alle områder.</p>`;
 }
 
-// --- SIDE 4: UTVIKLING OVER TID (Rettet og ryddet versjon) ---
+
+// --- SIDE 4: UTVIKLING OVER TID (Inkludert Lav Mestring og Trinnsnitt) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
 try {
     const histSnap = await db.ref(`kartlegging`).once('value');
@@ -927,20 +928,30 @@ try {
             if (!aOppsett) continue;
             const aMaks = aOppsett.oppgaver.reduce((s, o) => s + (o.maks || 0), 0);
 
-            let klasseSum = 0; let klasseAntall = 0; let klasseKritiske = 0;
+            let klasseSum = 0; let klasseAntall = 0; 
+            let klasseKritiske = 0; let klasseLavMestring = 0; 
             let trinnSum = 0; let trinnAntall = 0;
 
             Object.keys(trinnData).forEach(kNavn => {
                 const kData = trinnData[kNavn];
                 const kElever = Object.keys(kData).filter(n => kData[n].oppgaver && !kData[n].slettet);
+                
                 kElever.forEach(n => {
                     const eSum = kData[n].sum || 0;
+                    const eProsent = (eSum / aMaks) * 100;
                     trinnSum += eSum;
                     trinnAntall++;
+
                     if (kNavn === klasse) {
                         klasseSum += eSum;
                         klasseAntall++;
-                        if (eSum <= aOppsett.grenseTotal) klasseKritiske++;
+                        
+                        // Logikk for kategorisering
+                        if (eSum <= aOppsett.grenseTotal) {
+                            klasseKritiske++;
+                        } else if (eProsent < 65) {
+                            klasseLavMestring++;
+                        }
                     }
                 });
             });
@@ -951,6 +962,7 @@ try {
                     klasseProsent: ((klasseSum / klasseAntall) / aMaks) * 100,
                     trinnProsent: ((trinnSum / trinnAntall) / aMaks) * 100, 
                     kritiske: klasseKritiske, 
+                    lavMestring: klasseLavMestring,
                     sort: aKey + (pKey === "Høst" ? "1" : "2") 
                 });
             }
@@ -960,11 +972,34 @@ try {
     historikkRader.sort((a,b) => a.sort.localeCompare(b.sort));
 
     if (historikkRader.length > 0) {
-        htmlSide4 += `<table><thead><tr><th>Periode</th><th>Klasse (%)</th><th>Trinn (%)</th><th>Diff.</th><th>Kritiske</th></tr></thead><tbody>`;
+        // Tabell med "Lav mestring" før "Kritiske"
+        htmlSide4 += `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Periode</th>
+                        <th>Klasse (%)</th>
+                        <th>Trinn (%)</th>
+                        <th>Diff.</th>
+                        <th>Lav mestring</th>
+                        <th>Under kritisk grense</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
         historikkRader.forEach(r => {
             const aktiv = r.visning === `${periode} ${aar}` ? 'style="background:#e8f4fd; font-weight:bold;"' : '';
             const diff = r.klasseProsent - r.trinnProsent;
-            htmlSide4 += `<tr ${aktiv}><td>${r.visning}</td><td>${r.klasseProsent.toFixed(1)}%</td><td>${r.trinnProsent.toFixed(1)}%</td><td style="color:${diff >= 0 ? 'green':'red'}; font-weight:bold;">${diff >= 0 ? '+':''}${diff.toFixed(1)}%</td><td>${r.kritiske}</td></tr>`;
+            
+            htmlSide4 += `
+                <tr ${aktiv}>
+                    <td>${r.visning}</td>
+                    <td>${r.klasseProsent.toFixed(1)}%</td>
+                    <td style="color:#666;">${r.trinnProsent.toFixed(1)}%</td>
+                    <td style="color:${diff >= 0 ? 'green':'red'}; font-weight:bold;">${diff >= 0 ? '+':''}${diff.toFixed(1)}%</td>
+                    <td>${r.lavMestring}</td>
+                    <td style="${r.kritiske > 0 ? 'color:red; font-weight:bold;' : ''}">${r.kritiske}</td>
+                </tr>`;
         });
         htmlSide4 += `</tbody></table>`;
 
@@ -994,7 +1029,7 @@ try {
             </div>`;
 
         if (siste.kritiske > 0 && siste.visning === `${periode} ${aar}`) {
-            htmlSide4 += `<div style="margin-top:15px; padding:10px; background:#fff5f5; border:1px solid #feb2b2; border-radius:5px; text-align:center; color:#c53030; font-size:13px;">⚠️ <b>OBS:</b> ${siste.kritiske} elever under kritisk grense.</div>`;
+            htmlSide4 += `<div style="margin-top:15px; padding:10px; background:#fff5f5; border:1px solid #feb2b2; border-radius:5px; text-align:center; color:#c53030; font-size:13px;">⚠️ <b>OBS:</b> Det er ${siste.kritiske} elever under kritisk grense i denne perioden.</div>`;
         }
     } else {
         htmlSide4 += `<p style="text-align:center;">Ingen historikk funnet.</p>`;
