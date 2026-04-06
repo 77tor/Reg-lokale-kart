@@ -906,7 +906,9 @@ async function genererKlasseAnalyse() {
         detaljHtml += `</div>`;
 
 // --- NY SEKSJON: UTVIKLING OVER TID (Starter på egen side) ---
-let utviklingHtml = `<div><h2 style="text-align:center; color:#2c3e50;">Utvikling over tid</h2>`;
+let utviklingHtml = `
+<div class="page-break-before">
+    <h2 style="text-align:center; color:#2c3e50; margin-top: 40px;">Utvikling over tid</h2>
     <p style="text-align:center; font-style: italic; margin-bottom: 10px;">
         Sammenligning av tidligere resultater for ${fag} - ${trinn}${klasse}
     </p>`;
