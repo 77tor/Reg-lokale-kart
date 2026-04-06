@@ -1056,28 +1056,84 @@ utviklingHtml += `</div>`;
             <head>
                 <title>Analyse ${trinn}${klasse}</title>
                 <style>
-                    body { font-family: sans-serif; background-color: #f0f2f5; margin: 0; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; }
-                    .analyse-section { background: white; width: 210mm; min-height: 297mm; padding: 20mm; margin-bottom: 40px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); box-sizing: border-box; }
-                    .toolbar { margin-bottom: 30px; position: sticky; top: 20px; z-index: 1000; display: flex; gap: 10px; background: white; padding: 15px; border-radius: 50px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-                    table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-                    th, td { border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; }
-                    .btn-tool { padding: 10px 18px; color: white !important; border-radius: 6px; text-decoration: none; font-weight: bold; cursor: pointer; }
+                    /* Liggende format definisjoner */
+                    @page { 
+                        size: A4 landscape; 
+                        margin: 0; 
+                    }
+
+                    body { 
+                        font-family: sans-serif; 
+                        background-color: #f0f2f5; 
+                        margin: 0; 
+                        padding: 20px; 
+                        display: flex; 
+                        flex-direction: column; 
+                        align-items: center; 
+                    }
+
+                    .analyse-section { 
+                        background: white; 
+                        width: 297mm;   /* Liggende bredde */
+                        height: 210mm;  /* Liggende høyde */
+                        padding: 15mm; 
+                        margin-bottom: 30px; 
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
+                        box-sizing: border-box; 
+                        overflow: hidden; /* Hindrer innhold i å flyte over kanten */
+                        position: relative;
+                        page-break-after: always;
+                    }
+
+                    .toolbar { 
+                        margin-bottom: 20px; 
+                        position: sticky; 
+                        top: 10px; 
+                        z-index: 1000; 
+                        display: flex; 
+                        gap: 10px; 
+                        background: white; 
+                        padding: 12px; 
+                        border-radius: 50px; 
+                        box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+                    }
+
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                    th, td { border: 1px solid #333; padding: 6px; text-align: center; font-size: 11px; }
+                    
+                    .btn-tool { padding: 10px 18px; color: white !important; border-radius: 6px; text-decoration: none; font-weight: bold; cursor: pointer; border: none; }
                     .btn-blue { background: #2980b9; } .btn-purple { background: #8e44ad; } .btn-dark { background: #2c3e50; } .btn-grey { background: #95a5a6; }
-                    .chart-container { display: flex; height: 230px; align-items: flex-end; border-bottom: 2px solid #333; margin-bottom: 50px; }
+                    
+                    /* Justering for diagram i liggende format */
+                    .chart-container { 
+                        display: flex; 
+                        height: 280px; /* Litt høyere siden vi har mer plass */
+                        align-items: flex-end; 
+                        border-bottom: 2px solid #333; 
+                        margin-bottom: 40px; 
+                        padding: 0 20px;
+                    }
                     .bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; position: relative; }
-                    .bar-track { background: #eee; width: 25px; height: 100%; position: relative; display: flex; flex-direction: column-reverse; border: 1px solid #ccc; }
+                    .bar-track { background: #eee; width: 35px; height: 100%; position: relative; display: flex; flex-direction: column-reverse; border: 1px solid #ccc; }
                     .bar-fill { background: #3498db; width: 100%; }
                     .target-line { position: absolute; width: 100%; border-top: 2px dashed red; z-index: 5; }
+
+                    /* Spesifikke regler for utskrift */
                     @media print {
                         body { background: white; padding: 0; }
                         .toolbar { display: none; }
-                        .analyse-section { box-shadow: none; margin: 0; width: 100%; page-break-after: always; }
+                        .analyse-section { 
+                            box-shadow: none; 
+                            margin: 0; 
+                            width: 297mm; 
+                            height: 210mm;
+                        }
                     }
                 </style>
             </head>
             <body>
                 <div class="toolbar">
-                    <button onclick="window.print()" class="btn-tool btn-blue">🖨️ Skriv ut / Lagre PDF</button>
+                    <button onclick="window.print()" class="btn-tool btn-blue">🖨️ Skriv ut / Lagre PDF (Liggende)</button>
                     <a href="${oppgaveSti}" target="_blank" class="btn-tool btn-purple">📄 Se hele prøven</a>
                     ${harFasit ? `<a href="${fasitSti}" target="_blank" class="btn-tool btn-dark">✅ Se fasit</a>` : ''}
                     <button onclick="window.close()" class="btn-tool btn-grey">Lukk</button>
