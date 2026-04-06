@@ -799,59 +799,62 @@ async function genererKlasseAnalyse() {
         </tbody></table>`;
 
 
-        // --- SIDE 2: ELEVOVERSIKT ---
+// --- SIDE 2: ELEVOVERSIKT (Rettet med statiske bredder) ---
         let htmlSide2 = fellesHeader;
         htmlSide2 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Elevoversikt - Oppfølging og Mestring</h2>`;
 
         // 1. Under kritisk grense
-        htmlSide2 += `<h3 style="color:red; margin: 10px 0 5px 0; font-size: 1.1em;">Under kritisk grense (Sum ≤ ${oppsett.grenseTotal})</h3>`;
+        htmlSide2 += `<h3 style="color:red; margin: 10px 0 5px 0; font-size: 1.1em; text-align:center;">Under kritisk grense (Sum ≤ ${oppsett.grenseTotal})</h3>`;
         if (kritiskeElever.length > 0) {
-            htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th>`;
+            htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th class="col-navn">Navn</th>`;
             oppsett.oppgaver.forEach((o, i) => {
                 let visningsNavn = (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) ? gjeldendeMalTabell.oppgaver[i + 1].navn : o.navn;
-                htmlSide2 += `<th>${visningsNavn}</th>`;
+                htmlSide2 += `<th class="col-tall">${visningsNavn}</th>`;
             });
-            htmlSide2 += `<th>Sum</th></tr></thead><tbody>`;
+            htmlSide2 += `<th class="col-tall">Sum</th></tr></thead><tbody>`;
+            
             kritiskeElever.sort((a,b) => a.sum - b.sum).forEach(e => {
-                htmlSide2 += `<tr><td align="left"><b>${e.navn}</b></td>`;
+                htmlSide2 += `<tr><td class="col-navn"><b>${e.navn}</b></td>`;
                 e.oppgaver.forEach((p, i) => {
                     const o = oppsett.oppgaver[i];
                     const stil = (o.grense !== -1 && p <= o.grense) ? 'style="background:#ffcccc"' : '';
-                    htmlSide2 += `<td align="center" ${stil}>${p}</td>`;
+                    htmlSide2 += `<td class="col-tall" ${stil}>${p}</td>`;
                 });
-                htmlSide2 += `<td align="center" style="background:#ffcccc; font-weight:bold;">${e.sum}</td></tr>`;
+                htmlSide2 += `<td class="col-tall" style="background:#ffcccc; font-weight:bold;">${e.sum}</td></tr>`;
             });
             htmlSide2 += `</tbody></table>`;
         } else {
-            htmlSide2 += `<p style="font-size:0.9em; margin-bottom:10px; text-align:center;">Ingen under kritisk grense.</p>`;
+            htmlSide2 += `<p style="text-align:center;">Ingen under kritisk grense.</p>`;
         }
 
         // 2. Lav mestring
         let eleverUnder65 = elever.map(n => ({navn: n, sum: data[n].sum, prosent: (data[n].sum / totalMaksMulig) * 100}))
                                   .filter(e => e.prosent < 65 && e.sum > oppsett.grenseTotal);
-        htmlSide2 += `<h3 style="color:#e67e22; margin: 15px 0 5px 0; font-size: 1.1em;">Lav mestring (Total skår < 65%)</h3>`;
+        
+        htmlSide2 += `<h3 style="color:#e67e22; margin: 15px 0 5px 0; font-size: 1.1em; text-align:center;">Lav mestring (Total skår < 65%)</h3>`;
         if (eleverUnder65.length > 0) {
-            htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th><th>Poengsum</th><th>Prosent</th></tr></thead><tbody>`;
+            htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th class="col-navn">Navn</th><th class="col-tall">Poeng</th><th class="col-tall">Prosent</th></tr></thead><tbody>`;
             eleverUnder65.sort((a, b) => a.sum - b.sum).forEach(e => {
-                htmlSide2 += `<tr><td align="left"><b>${e.navn}</b></td><td align="center">${e.sum}</td><td align="center" style="background:#fff3e0; font-weight:bold;">${e.prosent.toFixed(1)}%</td></tr>`;
+                htmlSide2 += `<tr><td class="col-navn"><b>${e.navn}</b></td><td class="col-tall">${e.sum}</td><td class="col-tall" style="background:#fff3e0; font-weight:bold;">${e.prosent.toFixed(1)}%</td></tr>`;
             });
             htmlSide2 += `</tbody></table>`;
         } else {
-            htmlSide2 += `<p style="font-size:0.9em; margin-bottom:10px; text-align:center;">Ingen ytterligere elever under 65%.</p>`;
+            htmlSide2 += `<p style="text-align:center;">Ingen ytterligere elever under 65%.</p>`;
         }
 
         // 3. Høy mestring
         let topper = elever.map(n => ({navn: n, sum: data[n].sum, prosent: (data[n].sum / totalMaksMulig) * 100}))
                            .filter(e => e.prosent >= 95);
-        htmlSide2 += `<h3 style="color:#27ae60; margin: 15px 0 5px 0; font-size: 1.1em;">Høy mestring (Total skår ≥ 95%)</h3>`;
+        
+        htmlSide2 += `<h3 style="color:#27ae60; margin: 15px 0 5px 0; font-size: 1.1em; text-align:center;">Høy mestring (Total skår ≥ 95%)</h3>`;
         if (topper.length > 0) {
-            htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th><th>Poengsum</th><th>Prosent</th></tr></thead><tbody>`;
+            htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th class="col-navn">Navn</th><th class="col-tall">Poeng</th><th class="col-tall">Prosent</th></tr></thead><tbody>`;
             topper.sort((a, b) => b.sum - a.sum).forEach(e => {
-                htmlSide2 += `<tr><td align="left"><b>${e.navn}</b></td><td align="center">${e.sum}</td><td align="center" style="background:#e8f5e9; font-weight:bold;">${e.prosent.toFixed(0)}%</td></tr>`;
+                htmlSide2 += `<tr><td class="col-navn"><b>${e.navn}</b></td><td class="col-tall">${e.sum}</td><td class="col-tall" style="background:#e8f5e9; font-weight:bold;">${e.prosent.toFixed(0)}%</td></tr>`;
             });
             htmlSide2 += `</tbody></table>`;
         } else {
-            htmlSide2 += `<p style="font-size:0.9em; text-align:center;">Ingen elever over 95%.</p>`;
+            htmlSide2 += `<p style="text-align:center;">Ingen elever over 95%.</p>`;
         }
 
 
@@ -965,6 +968,20 @@ async function genererKlasseAnalyse() {
                     table { width:100%; border-collapse:collapse; margin-bottom:15px; }
                     th, td { border:1px solid #333; padding:5px; text-align:center; font-size:10px; }
                     th { background:#f8f9fa; }
+
+/* Kolonne for navn - Bred og stabil */
+.col-navn { 
+    width: 280px !important; 
+    text-align: left !important; 
+    white-space: nowrap;       /* Hindrer navnet i å gå over to linjer */
+    text-overflow: ellipsis;   /* Legger til ... hvis navnet er ekstremt langt */
+    padding-left: 10px !important;
+}
+
+/* Kolonne for tall/prosent - Smal og fast */
+.col-tall { 
+    width: 65px !important; 
+}
                     .chart-container { display:flex; height:180px; align-items:flex-end; border-bottom:2px solid #333; margin-bottom:20px; }
                     .bar-wrapper { flex:1; display:flex; flex-direction:column; align-items:center; position:relative; }
                     .bar-track { background:#eee; width:20px; height:150px; position:relative; border:1px solid #ccc; display:flex; flex-direction:column-reverse; }
