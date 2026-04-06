@@ -971,15 +971,22 @@ async function genererKlasseAnalyse() {
                 <button onclick="window.print()" style="background:#2980b9;" class="btn-tool">🖨️ Lagre PDF</button>
                 <a href="${oppgaveSti}" target="_blank" style="background:#8e44ad;" class="btn-tool">📄 Se prøve</a>
                 ${harFasit ? `<a href="${fasitSti}" target="_blank" style="background:#2c3e50;" class="btn-tool">✅ Se fasit</a>` : ''}
+                <button onclick="window.close()" class="btn-tool btn-grey">Lukk</button>
             </div>
             <div class="analyse-section">${htmlSide1}</div>
             <div class="analyse-section">${htmlSide2}</div>
             <div class="analyse-section">${htmlSide3}</div>
             <div class="analyse-section">${htmlSide4}</div>
-        </body></html>`);
+            </body>
+            </html>`;
+
+        win.document.write(fullHtml);
         win.document.close();
 
-    } catch (error) { alert("Feil: " + error.message); }
+    } catch (error) {
+        console.error("Feil:", error);
+        alert("Feil: " + error.message);
+    }
 }
 
 
