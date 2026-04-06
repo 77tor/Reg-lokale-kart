@@ -871,7 +871,7 @@ if (topper.length > 0) {
 
 // --- SIDE 3: PEDAGOGISK DETALJANALYSE ---
 let htmlSide3 = fellesHeader;
-htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Pedagogisk Detaljanalyse</h2>`;
+htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Områder klassen skårer under 65%</h2>`;
 
 if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     let harSvakheter = false;
