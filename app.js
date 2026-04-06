@@ -998,26 +998,68 @@ try {
         });
         htmlSide4 += `</tbody></table>`;
 
-        // Trend-analyse (sammenligner klassens nåværende resultat mot trinnets nåværende)
-        const siste = historikkRader[historikkRader.length - 1];
-        const klasseMotTrinn = siste.klasseProsent - siste.trinnProsent;
-        
-        let sammenligningTekst = "";
-        if (klasseMotTrinn > 2) {
-            sammenligningTekst = `Klassen ligger <b>${klasseMotTrinn.toFixed(1)}% over</b> gjennomsnittet for trinnet i denne perioden.`;
-        } else if (klasseMotTrinn < -2) {
-            sammenligningTekst = `Klassen ligger <b>${Math.abs(klasseMotTrinn).toFixed(1)}% under</b> gjennomsnittet for trinnet. Vurder målrettede tiltak.`;
-        } else {
-            sammenligningTekst = `Klassen ligger på samme nivå som trinnet for øvrig.`;
-        }
+// --- TREND-ANALYSE (Settes inn etter tabellen på Side 4) ---
+if (historikkRader.length > 0) {
+    const siste = historikkRader[historikkRader.length - 1];
+    
+    // 1. Beregn utvikling internt i klassen (hvis det finnes mer enn én rad)
+    let utviklingTekst = "Første registrerte måling for denne klassen.";
+    let utviklingFarge = "#2980b9"; // Blå for nøytral/info
 
-        htmlSide4 += `<div style="padding:15px; border-left:6px solid #2980b9; background:#f9f9f9; margin-top:20px;">${sammenligningTekst}</div>`;
-    } else {
-        htmlSide4 += `<p style="text-align:center;">Ingen data funnet.</p>`;
+    if (historikkRader.length > 1) {
+        const forrige = historikkRader[historikkRader.length - 2];
+        const endring = siste.klasseProsent - forrige.klasseProsent;
+        
+        if (endring > 3) {
+            utviklingTekst = `<b>Positiv utvikling:</b> Klassen har løftet seg med ${endring.toFixed(1)}% siden ${forrige.visning}.`;
+            utviklingFarge = "#27ae60"; // Grønn
+        } else if (endring < -3) {
+            utviklingTekst = `<b>Nedgang:</b> Klassen scorer ${Math.abs(endring).toFixed(1)}% lavere enn ved ${forrige.visning}.`;
+            utviklingFarge = "#e67e22"; // Oransje/Rød
+        } else {
+            utviklingTekst = `<b>Stabil utvikling:</b> Klassen holder et jevnt nivå sammenlignet med ${forrige.visning}.`;
+        }
     }
-} catch(err) { 
+
+    // 2. Beregn sammenligning mot resten av trinnet (Klasse vs Trinn)
+    const diffMotTrinn = siste.klasseProsent - siste.trinnProsent;
+    let trinnSammenligning = "";
+    
+    if (diffMotTrinn > 2) {
+        trinnSammenligning = `Klassen presterer <b>sterkere enn trinnsnittet</b> (+${diffMotTrinn.toFixed(1)}%).`;
+    } else if (diffMotTrinn < -2) {
+        trinnSammenligning = `Klassen ligger <b>under trinnsnittet</b> (${diffMotTrinn.toFixed(1)}%). Dette kan indikere behov for ekstra ressurser i denne gruppen.`;
+    } else {
+        trinnSammenligning = `Klassens resultat samsvarer godt med resten av trinnet.`;
+    }
+
+    // 3. Sett sammen den endelige infoboksen
+    htmlSide4 += `
+        <div style="margin-top:25px; display: flex; gap: 20px;">
+            <div style="flex: 1; padding:15px; border-left:6px solid ${utviklingFarge}; background:#f9f9f9; border-radius: 4px;">
+                <h4 style="margin:0 0 10px 0; color:#333;">Intern utvikling</h4>
+                <p style="margin:0; font-size:14px;">${utviklingTekst}</p>
+            </div>
+            <div style="flex: 1; padding:15px; border-left:6px solid #2c3e50; background:#f9f9f9; border-radius: 4px;">
+                <h4 style="margin:0 0 10px 0; color:#333;">Sammenlignet med trinnet</h4>
+                <p style="margin:0; font-size:14px;">${trinnSammenligning}</p>
+            </div>
+        </div>`;
+
+    // 4. Oppsummering av sårbarhet
+if (siste.kritiske > 0 && siste.visning === `${periode} ${aar}`) {
+        htmlSide4 += `
+            <div style="margin-top:15px; padding:12px; background:#fff5f5; border:1px solid #feb2b2; border-radius:8px; text-align:center;">
+                <span style="color:#c53030; font-weight:bold;">⚠️ OBS:</span> 
+                Det er ${siste.kritiske} elever under kritisk grense i denne perioden. Se Side 2 for detaljerte elevlister.
+            </div>`;
+    }
+
+} // <--- VIKTIG: Denne lukker "if (historikkRader.length > 0)"
+} // <--- VIKTIG: Denne lukker "try"-blokken som startet øverst på Side 4
+catch(err) { 
     console.error(err);
-    htmlSide4 += `<p>Kunne ikke laste historikk.</p>`; 
+    htmlSide4 += `<p style="text-align:center; color:red;">Kunne ikke laste historikk: ${err.message}</p>`; 
 }
 
 // --- GENERER ENDELIG HTML ---
