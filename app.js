@@ -2672,7 +2672,7 @@ function leggTilNyElev() {
         const registerData = {
             startAar: startAarForRegister,
             startTrinn: startTrinnForRegister,
-            startKlasse: vKlasse
+            startKlasse: vKlasse,
             sluttAar: null // VIKTIG: Nullstill sluttdato hvis eleven legges til på nytt
         };
 
