@@ -1079,155 +1079,150 @@ utviklingHtml += `</div>`;
 
 
 // --- ÅPNE VINDU OG SKRIV UT ---
-const win = window.open('', '_blank');
-if (!win) {
-    alert("Popup ble blokkert! Vennligst tillat popups for dette nettstedet.");
-    return;
-}
+try {  // <--- DENNE MANGLER I DIN KODE
+    const win = window.open('', '_blank');
+    if (!win) {
+        alert("Popup ble blokkert! Vennligst tillat popups for dette nettstedet.");
+        return;
+    }
 
-// 1. "Vask" variablene
-const f = fag.toLowerCase(); 
-const t = trinn.replace(/\D/g, ''); 
-const p = periode.charAt(0).toUpperCase(); 
+    // 1. "Vask" variablene
+    const f = fag.toLowerCase(); 
+    const t = trinn.replace(/\D/g, ''); 
+    const p = periode.charAt(0).toUpperCase(); 
 
-// 2. Sjekk for unntaket (Fasit mangler for lesing 1. trinn Høst)
-const harFasit = !(f === "lesing" && t === "1" && p === "H");
+    // 2. Sjekk for unntaket (Fasit mangler for lesing 1. trinn Høst)
+    const harFasit = !(f === "lesing" && t === "1" && p === "H");
 
-// 3. Bygg filstier
-const oppgaveSti = `Oppgaver/Kartlegging_${f}_${t}_${p}.pdf`;
-const fasitSti = `Fasit/Kartlegging_${f}_${t}_${p}_Fasit.pdf`;
+    // 3. Bygg filstier
+    const oppgaveSti = `Oppgaver/Kartlegging_${f}_${t}_${p}.pdf`;
+    const fasitSti = `Fasit/Kartlegging_${f}_${t}_${p}_Fasit.pdf`;
 
-// 5. Bygg HTML-en
-const fullHtml = `
-    <html>
-    <head>
-        <title>Analyse ${trinn}${klasse}</title>
-        <style>
-            /* GRUNNSTILER FOR SKJERM (Dashboard-visning) */
-            body { 
-                font-family: sans-serif; 
-                background-color: #f0f2f5; /* Grå bakgrunn på skjerm */
-                margin: 0; 
-                padding: 40px 20px; 
-                display: flex; 
-                flex-direction: column; 
-                align-items: center; 
-                color: #333;
-            }
-
-            /* DEFINERER HVERT "ARK" PÅ SKJERMEN */
-            .analyse-section {
-                background: white;
-                width: 210mm; /* A4-bredde */
-                min-height: 297mm;
-                padding: 20mm;
-                margin-bottom: 40px;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-                box-sizing: border-box;
-                position: relative;
-            }
-
-            /* Knapperad-styling */
-            .toolbar {
-                margin-bottom: 30px; 
-                text-align: center; 
-                background: white; 
-                padding: 15px 30px; 
-                border-radius: 50px; 
-                box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
-                position: sticky; 
-                top: 20px; 
-                z-index: 1000;
-                display: flex;
-                gap: 10px;
-                align-items: center;
-            }
-
-            /* Tabellstiler */
-            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-            th, td { border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; }
-            th { background-color: #f8f9fa; }
-
-            /* Kompakt stil for elevlistene */
-            .kompakt-tabell th, .kompakt-tabell td { 
-                padding: 5px 4px !important; 
-                line-height: 1.2 !important; 
-                font-size: 10.5px !important; 
-            }
-
-            /* Knapper */
-            .btn-tool { 
-                padding: 10px 18px; color: white !important; border: none; border-radius: 6px; 
-                cursor: pointer; font-weight: bold; text-decoration: none !important; font-size: 14px;
-            }
-            .btn-blue { background: #2980b9; }
-            .btn-purple { background: #8e44ad; }
-            .btn-dark { background: #2c3e50; }
-            .btn-grey { background: #95a5a6; }
-            .btn-tool:hover { opacity: 0.9; transform: translateY(-1px); }
-
-            /* Diagram-stiler */
-            .chart-container { display: flex; height: 230px; align-items: flex-end; border-bottom: 2px solid #333; margin-bottom: 50px; padding-bottom: 10px; }
-            .bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; height: 100%; }
-            .bar-track { background: #eee; width: 30px; height: 100%; position: relative; border: 1px solid #ccc; display: flex; flex-direction: column-reverse; }
-            .bar-fill { background: #3498db; width: 100%; }
-            .total-fill { background: #2ecc71; }
-            .target-line { position: absolute; left: -5px; right: -5px; border-top: 2px dashed red; z-index: 5; }
-            .bar-label { font-size: 10px; transform: rotate(-45deg); margin-top: 25px; white-space: nowrap; }
-
-            /* REGLER FOR UTSKRIFT (PRINT) */
-            @media print {
-                body { background-color: white; padding: 0; }
-                .toolbar { display: none !important; }
-                .analyse-section { 
-                    width: 100%; 
-                    box-shadow: none; 
+    // 5. Bygg HTML-en
+    const fullHtml = `
+        <html>
+        <head>
+            <title>Analyse ${trinn}${klasse}</title>
+            <style>
+                /* GRUNNSTILER FOR SKJERM (Dashboard-visning) */
+                body { 
+                    font-family: sans-serif; 
+                    background-color: #f0f2f5; 
                     margin: 0; 
-                    padding: 0;
-                    min-height: auto;
-                    page-break-after: always; 
+                    padding: 40px 20px; 
+                    display: flex; 
+                    flex-direction: column; 
+                    align-items: center; 
+                    color: #333;
                 }
-                .analyse-section:last-child { page-break-after: auto; }
-                * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            }
-        </style>
-    </head>
-    <body>
-        <div class="toolbar no-print">
-            <button onclick="window.print()" class="btn-tool btn-blue">🖨️ Skriv ut / Lagre PDF</button>
-            <a href="${oppgaveSti}" target="_blank" class="btn-tool btn-purple">📄 Se hele prøven</a>
-            ${harFasit ? `<a href="${fasitSti}" target="_blank" class="btn-tool btn-dark">✅ Se fasit</a>` : ''}
-            <button onclick="window.close()" class="btn-tool btn-grey">Lukk</button>
-        </div>
-        
-        <div class="analyse-section">
-            ${html}
-        </div>
 
-        <div class="analyse-section">
-            <h2 style="text-align:center; color:#2c3e50;">Elevoversikt - Oppfølging og Mestring</h2>
-            ${elevListerHtml}
-        </div>
+                .analyse-section {
+                    background: white;
+                    width: 210mm; 
+                    min-height: 297mm;
+                    padding: 20mm;
+                    margin-bottom: 40px;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+                    box-sizing: border-box;
+                    position: relative;
+                }
 
-        <div class="analyse-section">
-            ${detaljHtml}
-        </div>
+                .toolbar {
+                    margin-bottom: 30px; 
+                    text-align: center; 
+                    background: white; 
+                    padding: 15px 30px; 
+                    border-radius: 50px; 
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+                    position: sticky; 
+                    top: 20px; 
+                    z-index: 1000;
+                    display: flex;
+                    gap: 10px;
+                    align-items: center;
+                }
 
-        <div class="analyse-section">
-            ${utviklingHtml}
-        </div>
-    </body>
-    </html>
-`;
+                table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+                th, td { border: 1px solid #333; padding: 8px; text-align: center; font-size: 11px; }
+                th { background-color: #f8f9fa; }
 
-win.document.open();
-win.document.write(fullHtml);
-win.document.close();
+                .kompakt-tabell th, .kompakt-tabell td { 
+                    padding: 5px 4px !important; 
+                    line-height: 1.2 !important; 
+                    font-size: 10.5px !important; 
+                }
+
+                .btn-tool { 
+                    padding: 10px 18px; color: white !important; border: none; border-radius: 6px; 
+                    cursor: pointer; font-weight: bold; text-decoration: none !important; font-size: 14px;
+                }
+                .btn-blue { background: #2980b9; }
+                .btn-purple { background: #8e44ad; }
+                .btn-dark { background: #2c3e50; }
+                .btn-grey { background: #95a5a6; }
+                .btn-tool:hover { opacity: 0.9; transform: translateY(-1px); }
+
+                .chart-container { display: flex; height: 230px; align-items: flex-end; border-bottom: 2px solid #333; margin-bottom: 50px; padding-bottom: 10px; }
+                .bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; height: 100%; }
+                .bar-track { background: #eee; width: 30px; height: 100%; position: relative; border: 1px solid #ccc; display: flex; flex-direction: column-reverse; }
+                .bar-fill { background: #3498db; width: 100%; }
+                .total-fill { background: #2ecc71; }
+                .target-line { position: absolute; left: -5px; right: -5px; border-top: 2px dashed red; z-index: 5; }
+                .bar-label { font-size: 10px; transform: rotate(-45deg); margin-top: 25px; white-space: nowrap; }
+
+                @media print {
+                    body { background-color: white; padding: 0; }
+                    .toolbar { display: none !important; }
+                    .analyse-section { 
+                        width: 100%; 
+                        box-shadow: none; 
+                        margin: 0; 
+                        padding: 0;
+                        min-height: auto;
+                        page-break-after: always; 
+                    }
+                    .analyse-section:last-child { page-break-after: auto; }
+                    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="toolbar no-print">
+                <button onclick="window.print()" class="btn-tool btn-blue">🖨️ Skriv ut / Lagre PDF</button>
+                <a href="${oppgaveSti}" target="_blank" class="btn-tool btn-purple">📄 Se hele prøven</a>
+                ${harFasit ? `<a href="${fasitSti}" target="_blank" class="btn-tool btn-dark">✅ Se fasit</a>` : ''}
+                <button onclick="window.close()" class="btn-tool btn-grey">Lukk</button>
+            </div>
+            
+            <div class="analyse-section">
+                ${html}
+            </div>
+
+            <div class="analyse-section">
+                <h2 style="text-align:center; color:#2c3e50;">Elevoversikt - Oppfølging og Mestring</h2>
+                ${elevListerHtml}
+            </div>
+
+            <div class="analyse-section">
+                ${detaljHtml}
+            </div>
+
+            <div class="analyse-section">
+                ${utviklingHtml}
+            </div>
+        </body>
+        </html>
+    `;
+
+    win.document.open();
+    win.document.write(fullHtml);
+    win.document.close();
 
 } catch (error) {
     console.error("Feil i analysegenerering:", error);
     alert("Det oppstod en teknisk feil: " + error.message);
 }
+// Sjekk at du har en avslutnings-parentes for funksjonen her hvis dette er inne i en funksjon.
 
 
 
