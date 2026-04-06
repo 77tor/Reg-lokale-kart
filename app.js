@@ -695,7 +695,7 @@ document.addEventListener('change', function(e) {
     }
 });
 
-// --- ANALYSE_DEL (Fullstendig og feilfri versjon) ---
+// --- KOMBINERT ANALYSE-KODE (Original stil i 4-siders Landskap) ---
 async function genererKlasseAnalyse() {
     try { 
         // 1. Hent kriterier fra menyene
@@ -739,19 +739,17 @@ async function genererKlasseAnalyse() {
 
         const totalKlasseSnittProsent = ((totalSumKlasse / antall) / totalMaksMulig) * 100;
 
-        // 5. Bygg innholdet
-        let html = `<h1>Analyse: ${fag} - ${trinn}${klasse} (${periode} ${aar})</h1>`;
-        
-        // --- SØYLEDIAGRAM ---
-        html += `<h3>Gjennomsnittlig skår per oppgave (%)</h3><div class="chart-container">`;
-        html += `<div style="width: 150px;"></div>`;
+        // --- SIDE 1: HOVEDANALYSE OG TABELL ---
+        let htmlSide1 = `<h1>Analyse: ${fag} - ${trinn}${klasse} (${periode} ${aar})</h1>`;
+        htmlSide1 += `<h3>Gjennomsnittlig skår per oppgave (%)</h3><div class="chart-container">`;
+        htmlSide1 += `<div style="width: 150px;"></div>`;
 
         oppsett.oppgaver.forEach((o, i) => {
             const snitt = oppgaveSummer[i] / antall;
             const prosent = (snitt / o.maks) * 100;
             const grenseProsent = (o.grense / o.maks) * 100;
             
-            html += `
+            htmlSide1 += `
                 <div class="bar-wrapper">
                     <div class="bar-value">${prosent.toFixed(0)}%</div>
                     <div class="bar-track">
@@ -763,7 +761,7 @@ async function genererKlasseAnalyse() {
         });
 
         const totalGrenseProsent = (oppsett.grenseTotal / totalMaksMulig) * 100;
-        html += `
+        htmlSide1 += `
             <div class="bar-wrapper total">
                 <div class="bar-value">${totalKlasseSnittProsent.toFixed(0)}%</div>
                 <div class="bar-track">
@@ -773,281 +771,144 @@ async function genererKlasseAnalyse() {
                 <div class="bar-label"><b>TOTAL</b></div>
             </div></div>`;
 
-        // --- TABELL OVER SNITT ---
         const malForFag = analyseMaler[fag];
         const malForTrinn = malForFag ? malForFag[trinn] : null;
         const gjeldendeMalTabell = malForTrinn ? malForTrinn[periode] : null;
 
-        html += `<h3>Klassens resultater vs Maks-skår</h3><table><thead><tr><th>Oppgave</th>`;
-
+        htmlSide1 += `<h3>Klassens resultater vs Maks-skår</h3><table><thead><tr><th>Oppgave</th>`;
         oppsett.oppgaver.forEach((o, i) => {
-            let visningsNavn = o.navn;
-            if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) {
-                visningsNavn = gjeldendeMalTabell.oppgaver[i + 1].navn;
-            }
-            html += `<th>${visningsNavn}</th>`;
+            let visningsNavn = (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) 
+                ? gjeldendeMalTabell.oppgaver[i + 1].navn : o.navn;
+            htmlSide1 += `<th>${visningsNavn}</th>`;
         });
-
-        html += `<th>TOTAL</th></tr></thead><tbody>
+        htmlSide1 += `<th>TOTAL</th></tr></thead><tbody>
             <tr><td><b>Maks poeng</b></td>`;
-            oppsett.oppgaver.forEach(o => html += `<td>${o.maks}</td>`);
-            html += `<td><b>${totalMaksMulig}</b></td></tr>
+            oppsett.oppgaver.forEach(o => htmlSide1 += `<td>${o.maks}</td>`);
+            htmlSide1 += `<td><b>${totalMaksMulig}</b></td></tr>
             <tr><td><b>Snitt (poeng)</b></td>`;
-            oppgaveSummer.forEach(s => html += `<td>${(s/antall).toFixed(1)}</td>`);
-            html += `<td><b>${(totalSumKlasse/antall).toFixed(1)}</b></td></tr>
+            oppgaveSummer.forEach(s => htmlSide1 += `<td>${(s/antall).toFixed(1)}</td>`);
+            htmlSide1 += `<td><b>${(totalSumKlasse/antall).toFixed(1)}</b></td></tr>
             <tr><td><b>I % av maks</b></td>`;
-            oppgaveSummer.forEach((s, i) => html += `<td>${((s/antall)/oppsett.oppgaver[i].maks*100).toFixed(0)}%</td>`);
-            html += `<td><b>${totalKlasseSnittProsent.toFixed(0)}%</b></td></tr>
+            oppgaveSummer.forEach((s, i) => htmlSide1 += `<td>${((s/antall)/oppsett.oppgaver[i].maks*100).toFixed(0)}%</td>`);
+            htmlSide1 += `<td><b>${totalKlasseSnittProsent.toFixed(0)}%</b></td></tr>
         </tbody></table>`;
 
-// --- NY DEL: LAG ELEVLISTER (Lagres i egen variabel) ---
-        let elevListerHtml = ""; // Vi definerer den her slik at den er tilgjengelig senere
-
-        // --- 1. KRITISK GRENSE ---
-        elevListerHtml += `<h3 style="color:red; margin: 10px 0 5px 0; font-size: 1.1em;">Under kritisk grense (Sum ≤ ${oppsett.grenseTotal})</h3>`;
+        // --- SIDE 2: ELEVOVERSIKT ---
+        let htmlSide2 = `<h2 style="text-align:center; color:#2c3e50;">Elevoversikt - Oppfølging og Mestring</h2>`;
+        htmlSide2 += `<h3 style="color:red; margin: 10px 0 5px 0;">Under kritisk grense (Sum ≤ ${oppsett.grenseTotal})</h3>`;
         if (kritiskeElever.length > 0) {
-            elevListerHtml += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th>`;
+            htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th>`;
             oppsett.oppgaver.forEach((o, i) => {
                 let visningsNavn = (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) 
                     ? gjeldendeMalTabell.oppgaver[i + 1].navn : o.navn;
-                elevListerHtml += `<th>${visningsNavn}</th>`;
+                htmlSide2 += `<th>${visningsNavn}</th>`;
             });
-            elevListerHtml += `<th>Sum</th></tr></thead><tbody>`;
+            htmlSide2 += `<th>Sum</th></tr></thead><tbody>`;
             kritiskeElever.sort((a,b) => a.sum - b.sum).forEach(e => {
-                elevListerHtml += `<tr><td align="left"><b>${e.navn}</b></td>`;
+                htmlSide2 += `<tr><td align="left"><b>${e.navn}</b></td>`;
                 e.oppgaver.forEach((p, i) => {
                     const o = oppsett.oppgaver[i];
                     const stil = (o.grense !== -1 && p <= o.grense) ? 'style="background:#ffcccc"' : '';
-                    elevListerHtml += `<td align="center" ${stil}>${p}</td>`;
+                    htmlSide2 += `<td align="center" ${stil}>${p}</td>`;
                 });
-                elevListerHtml += `<td align="center" style="background:#ffcccc; font-weight:bold;">${e.sum}</td></tr>`;
+                htmlSide2 += `<td align="center" style="background:#ffcccc; font-weight:bold;">${e.sum}</td></tr>`;
             });
-            elevListerHtml += `</tbody></table>`;
+            htmlSide2 += `</tbody></table>`;
         } else {
-            elevListerHtml += `<p style="font-size:0.9em; margin-bottom:10px; text-align:center;">Ingen under kritisk grense.</p>`;
+            htmlSide2 += `<p style="text-align:center;">Ingen under kritisk grense.</p>`;
         }
 
-        // --- 2. UNDER 65% ---
         let eleverUnder65 = elever.map(n => ({navn: n, sum: data[n].sum, prosent: (data[n].sum / totalMaksMulig) * 100}))
                                   .filter(e => e.prosent < 65 && e.sum > oppsett.grenseTotal);
-
-        elevListerHtml += `<h3 style="color:#e67e22; margin: 15px 0 5px 0; font-size: 1.1em;">Lav mestring (Total skår < 65%)</h3>`;
+        htmlSide2 += `<h3 style="color:#e67e22; margin: 15px 0 5px 0;">Lav mestring (Total skår < 65%)</h3>`;
         if (eleverUnder65.length > 0) {
-            elevListerHtml += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th><th>Poengsum</th><th>Prosent</th></tr></thead><tbody>`;
+            htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th><th>Poengsum</th><th>Prosent</th></tr></thead><tbody>`;
             eleverUnder65.sort((a, b) => a.sum - b.sum).forEach(e => {
-                elevListerHtml += `<tr><td align="left"><b>${e.navn}</b></td><td align="center">${e.sum}</td><td align="center" style="background:#fff3e0; font-weight:bold;">${e.prosent.toFixed(1)}%</td></tr>`;
+                htmlSide2 += `<tr><td align="left"><b>${e.navn}</b></td><td align="center">${e.sum}</td><td align="center" style="background:#fff3e0; font-weight:bold;">${e.prosent.toFixed(1)}%</td></tr>`;
             });
-            elevListerHtml += `</tbody></table>`;
-        } else {
-            elevListerHtml += `<p style="font-size:0.9em; margin-bottom:10px; text-align:center;">Ingen ytterligere elever under 65%.</p>`;
+            htmlSide2 += `</tbody></table>`;
         }
 
-        // --- 3. OVER 95% ---
         let topper = elever.map(n => ({navn: n, sum: data[n].sum, prosent: (data[n].sum / totalMaksMulig) * 100}))
                            .filter(e => e.prosent >= 95);
-
-        elevListerHtml += `<h3 style="color:#27ae60; margin: 15px 0 5px 0; font-size: 1.1em;">Høy mestring (Total skår ≥ 95%)</h3>`;
+        htmlSide2 += `<h3 style="color:#27ae60; margin: 15px 0 5px 0;">Høy mestring (Total skår ≥ 95%)</h3>`;
         if (topper.length > 0) {
-            elevListerHtml += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th><th>Poengsum</th><th>Prosent</th></tr></thead><tbody>`;
+            htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th align="left">Navn</th><th>Poengsum</th><th>Prosent</th></tr></thead><tbody>`;
             topper.sort((a, b) => b.sum - a.sum).forEach(e => {
-                elevListerHtml += `<tr><td align="left"><b>${e.navn}</b></td><td align="center">${e.sum}</td><td align="center" style="background:#e8f5e9; font-weight:bold;">${e.prosent.toFixed(0)}%</td></tr>`;
+                htmlSide2 += `<tr><td align="left"><b>${e.navn}</b></td><td align="center">${e.sum}</td><td align="center" style="background:#e8f5e9; font-weight:bold;">${e.prosent.toFixed(0)}%</td></tr>`;
             });
-            elevListerHtml += `</tbody></table>`;
-        } else {
-            elevListerHtml += `<p style="font-size:0.9em; text-align:center;">Ingen elever over 95%.</p>`;
+            htmlSide2 += `</tbody></table>`;
         }
 
-
-// --- GENERER DETALJANALYSE-TEKST ---
-let detaljHtml = "";
-try {
-    detaljHtml = `<div id="detaljanalyse-seksjon">`;
-    const malForFag = analyseMaler[fag];
-    const malForTrinn = malForFag ? malForFag[trinn] : null;
-    const gjeldendeMal = malForTrinn ? malForTrinn[periode] : null;
-
-    if (gjeldendeMal && gjeldendeMal.oppgaver) {
-        detaljHtml += `
-            <h2 style="text-align:center; color:#2c3e50;">Pedagogisk Detaljanalyse</h2>
-            <p style="text-align:center; margin-bottom:30px; font-style: italic;">
-                Analyse for ${fag}, ${trinn}. trinn (${periode})<br>
-                Viser forklaring for områder med lav mestring (<65%) eller resultater under kritisk grense.
-            </p>`;
+        // --- SIDE 3: PEDAGOGISK DETALJANALYSE ---
+        let htmlSide3 = `<h2 style="text-align:center; color:#2c3e50;">Pedagogisk Detaljanalyse</h2>`;
+        htmlSide3 += `<p style="text-align:center; font-style: italic;">Analyse for ${fag}, ${trinn}. trinn (${periode})</p>`;
         
-        let harSvakheter = false;
-        oppsett.oppgaver.forEach((o, i) => {
-            const snitt = oppgaveSummer[i] / antall;
-            const prosent = (snitt / o.maks) * 100;
-            const malInfo = gjeldendeMal.oppgaver[i + 1]; 
+        if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
+            let harSvakheter = false;
+            oppsett.oppgaver.forEach((o, i) => {
+                const snitt = oppgaveSummer[i] / antall;
+                const prosent = (snitt / o.maks) * 100;
+                const malInfo = gjeldendeMalTabell.oppgaver[i + 1]; 
 
-            if ((prosent < 65 || (o.grense !== -1 && snitt <= o.grense)) && malInfo) {
-                harSvakheter = true;
-                let årsakTekst = (o.grense !== -1 && snitt <= o.grense) ? 
-                    `Kritisk lavt nivå (Snitt: ${snitt.toFixed(1)} av ${o.maks})` : 
-                    `Lav mestring (${prosent.toFixed(0)}%)`;
+                if ((prosent < 65 || (o.grense !== -1 && snitt <= o.grense)) && malInfo) {
+                    harSvakheter = true;
+                    let årsakTekst = (o.grense !== -1 && snitt <= o.grense) ? `Kritisk lavt` : `Lav mestring`;
+                    const bildeLenke = o.bilde ? `<a href="${o.bilde}" target="_blank" style="margin-left:10px; font-size:0.8em; color:#2980b9;">[Se oppgavebilde]</a>` : "";
 
-                // ENDRING HER: Lager en tekstlenke i stedet for å vise bildet
-                const bildeSti = o.bilde; 
-                const lenkeTilBilde = bildeSti 
-                    ? `<a href="${bildeSti}" target="_blank" style="margin-left:10px; font-size:0.8em; color:#2980b9; text-decoration:underline;">[Se oppgavebilde]</a>` 
-                    : "";
-
-                detaljHtml += `
-                    <div style="margin-bottom: 20px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 0 8px 8px 0;">
-                        <h4 style="margin:0; color:#c0392b;">
-                            ${malInfo.navn}${lenkeTilBilde} 
-                            <span style="font-size: 0.9em; font-weight: normal; color: #555; margin-left:10px;">— ${årsakTekst}</span>
-                        </h4>
-                        <p style="margin: 8px 0 0 0; font-size: 14px; line-height: 1.6; color: #333;">
-                            <strong>Pedagogisk fokus:</strong> ${malInfo.forklaring}
-                        </p>
-                    </div>`;
-            }
-        });
-        if (!harSvakheter) detaljHtml += `<p style="text-align:center; color:green;">Stabilt høyt nivå på alle områder.</p>`;
-    }
-} catch (e) { console.error(e); }
-detaljHtml += `</div>`;
-
-
-// --- NY SEKSJON: UTVIKLING OVER TID (Starter på egen side) ---
-let utviklingHtml = `
-<div class="page-break-before">
-    <h2 style="text-align:center; color:#2c3e50; margin-top: 40px;">Utvikling over tid</h2>
-    <p style="text-align:center; font-style: italic; margin-bottom: 10px;">
-        Sammenligning av tidligere resultater for ${fag} - ${trinn}${klasse}
-    </p>`;
-
-try {
-    // 1. Hent alle data fra Firebase
-    const historikkSnapshot = await db.ref(`kartlegging`).once('value');
-    const alleAarData = historikkSnapshot.val() || {};
-    
-    let historikkRader = [];
-
-    // 2. Gå gjennom databasen (bruker for...of for bedre kontroll over async/await)
-    for (const arkivAar of Object.keys(alleAarData)) {
-        
-        // FILTER: Hopp over år som er frem i tid (f.eks. ikke vis 2026-27 hvis vi ser på 2025-26)
-        if (arkivAar > aar) continue;
-
-        const fagData = alleAarData[arkivAar][fag];
-        if (!fagData) continue;
-
-        for (const arkivPeriode of Object.keys(fagData)) {
-            
-            // FILTER: Hvis vi er i samme år, men ser på Høst, skal vi ikke vise Vår
-            if (arkivAar === aar && arkivPeriode === "Vår" && periode === "Høst") continue;
-
-            const klasseData = fagData[arkivPeriode][trinn] ? fagData[arkivPeriode][trinn][klasse] : null;
-            
-            if (klasseData) {
-                let arkivElever = Object.keys(klasseData).filter(n => 
-                    klasseData[n].oppgaver && !klasseData[n].slettet && !klasseData[n].ikkeGjennomfort
-                );
-                
-                if (arkivElever.length === 0) continue;
-
-                // SIKKERHETSSJEKK: Sjekk om oppsett/struktur finnes for dette året/perioden
-                const aarData = oppgaveStruktur[arkivAar];
-                if (!aarData || !aarData[fag] || !aarData[fag][arkivPeriode] || !aarData[fag][arkivPeriode][trinn]) {
-                    console.warn(`Mangler oppsett for ${arkivAar} ${arkivPeriode}.`);
-                    continue; 
+                    htmlSide3 += `
+                        <div style="margin-bottom: 15px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 8px;">
+                            <h4 style="margin:0; color:#c0392b;">${malInfo.navn} — <span style="font-weight:normal; color:#555;">${årsakTekst}</span> ${bildeLenke}</h4>
+                            <p style="margin: 8px 0 0 0; font-size: 14px; color: #333;"><strong>Pedagogisk fokus:</strong> ${malInfo.forklaring}</p>
+                        </div>`;
                 }
-
-                const arkivOppsett = aarData[fag][arkivPeriode][trinn];
-                const arkivMaks = arkivOppsett.oppgaver.reduce((s, o) => s + (o.maks || 0), 0);
-
-                let arkivSum = 0;
-                let arkivKritiske = 0;
-                
-                arkivElever.forEach(n => {
-                    const elevSum = klasseData[n].sum || 0;
-                    arkivSum += elevSum;
-                    if (elevSum <= arkivOppsett.grenseTotal) arkivKritiske++;
-                });
-
-                const arkivProsent = ((arkivSum / arkivElever.length) / arkivMaks) * 100;
-
-                historikkRader.push({
-                    id: `${arkivAar}-${arkivPeriode}`,
-                    visning: `${arkivPeriode} ${arkivAar}`,
-                    prosent: arkivProsent,
-                    kritiske: arkivKritiske,
-                    sortering: arkivAar + (arkivPeriode === "Høst" ? "1" : "2")
-                });
-            }
+            });
+            if (!harSvakheter) htmlSide3 += `<p style="text-align:center; color:green;">Stabilt høyt nivå på alle områder.</p>`;
         }
-    }
 
-    // 3. Sorter historikken kronologisk
-    historikkRader.sort((a, b) => a.sortering.localeCompare(b.sortering));
+        // --- SIDE 4: UTVIKLING OVER TID ---
+        let htmlSide4 = `<h2 style="text-align:center; color:#2c3e50;">Utvikling over tid</h2>`;
+        try {
+            const histSnap = await db.ref(`kartlegging`).once('value');
+            const alleData = histSnap.val() || {};
+            let rader = [];
 
-    if (historikkRader.length > 1) {
-        utviklingHtml += `<table>
-            <thead>
-                <tr>
-                    <th>Periode</th>
-                    <th>Gjennomsnittlig mestring (%)</th>
-                    <th>Elever under kritisk grense</th>
-                </tr>
-            </thead>
-            <tbody>`;
-
-        historikkRader.forEach(rad => {
-            const erNaavaerende = rad.visning === `${periode} ${aar}`;
-            const stil = erNaavaerende ? 'style="background-color: #e8f4fd; font-weight: bold;"' : '';
-            utviklingHtml += `
-                <tr ${stil}>
-                    <td>${rad.visning} ${erNaavaerende ? '(Denne analysen)' : ''}</td>
-                    <td>${rad.prosent.toFixed(1)}%</td>
-                    <td>${rad.kritiske}</td>
-                </tr>`;
-        });
-
-        utviklingHtml += `</tbody></table>`;
-
-        // 4. Generer tekstlig analyse av utviklingen
-        if (historikkRader.length >= 2) {
-            const siste = historikkRader[historikkRader.length - 1];
-            const forrige = historikkRader[historikkRader.length - 2];
-            const endring = siste.prosent - forrige.prosent;
-            
-            let trendTekst = "";
-            let trendFarge = "#333";
-
-            if (endring > 3) {
-                trendTekst = `Resultatene viser en <b>positiv utvikling</b> med en økning på ${endring.toFixed(1)} prosentpoeng siden forrige måling (${forrige.visning}). Dette kan tyde på at pedagogiske tiltak og fokusområder har hatt god effekt.`;
-                trendFarge = "#27ae60";
-            } else if (endring < -3) {
-                trendTekst = `Resultatene viser en <b>nedgang</b> på ${Math.abs(endring).toFixed(1)} prosentpoeng sammenlignet med ${forrige.visning}. Det bør vurderes om gruppesammensetning eller spesifikke faglige områder krever fornyet fokus.`;
-                trendFarge = "#e67e22";
+            for (const aKey of Object.keys(alleData)) {
+                if (aKey > aar) continue;
+                const fData = alleData[aKey][fag];
+                if (!fData) continue;
+                for (const pKey of Object.keys(fData)) {
+                    if (aKey === aar && pKey === "Vår" && periode === "Høst") continue;
+                    const kData = fData[pKey][trinn] ? fData[pKey][trinn][klasse] : null;
+                    if (kData) {
+                        let aElever = Object.keys(kData).filter(n => kData[n].oppgaver && !kData[n].slettet);
+                        if (aElever.length === 0) continue;
+                        const aOppsett = oppgaveStruktur[aKey] ? oppgaveStruktur[aKey][fag][pKey][trinn] : null;
+                        if (!aOppsett) continue;
+                        const aMaks = aOppsett.oppgaver.reduce((s, o) => s + (o.maks || 0), 0);
+                        let aSum = 0; let aKritiske = 0;
+                        aElever.forEach(n => {
+                            aSum += (kData[n].sum || 0);
+                            if ((kData[n].sum || 0) <= aOppsett.grenseTotal) aKritiske++;
+                        });
+                        rader.push({ visning: `${pKey} ${aKey}`, prosent: ((aSum/aElever.length)/aMaks)*100, kritiske: aKritiske, sort: aKey + (pKey === "Høst" ? "1" : "2") });
+                    }
+                }
+            }
+            rader.sort((a,b) => a.sort.localeCompare(b.sort));
+            if (rader.length > 1) {
+                htmlSide4 += `<table><thead><tr><th>Periode</th><th>Mestring (%)</th><th>Antall under kritisk grense</th></tr></thead><tbody>`;
+                rader.forEach(r => {
+                    const aktiv = r.visning === `${periode} ${aar}` ? 'style="background:#e8f4fd; font-weight:bold;"' : '';
+                    htmlSide4 += `<tr ${aktiv}><td>${r.visning}</td><td>${r.prosent.toFixed(1)}%</td><td>${r.kritiske}</td></tr>`;
+                });
+                htmlSide4 += `</tbody></table>`;
             } else {
-                trendTekst = `Resultatene er <b>stabile</b> med en marginal endring på ${endring.toFixed(1)} prosentpoeng. Klassen opprettholder sitt faglige nivå fra forrige periode.`;
+                htmlSide4 += `<p style="text-align:center;">Ingen tidligere data funnet.</p>`;
             }
+        } catch(err) { htmlSide4 += `<p>Kunne ikke laste historikk.</p>`; }
 
-            utviklingHtml += `
-                <div style="padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #fdfdfd; border-left: 6px solid ${trendFarge};">
-                    <p style="margin:0; font-size: 14px; color: #333;">${trendTekst}</p>
-                </div>`;
-        }
-
-    } else {
-        utviklingHtml += `<p style="text-align:center; color:#666;">Ingen tidligere data funnet for denne klassen i ${fag}.</p>`;
-    }
-
-} catch (err) {
-    console.error("Historikk-feil:", err);
-    utviklingHtml += `<p>Kunne ikke laste historisk utvikling.</p>`;
-}
-
-utviklingHtml += `</div>`;
-
-// Husk å legge til utviklingHtml i vindu-skrivingen helt til slutt:
-// ${detaljHtml}
-// ${utviklingHtml}
-
-// --- ÅPNE VINDU OG BYGG ENDELIG HTML ---
+        // --- ÅPNE VINDU OG GENERER HTML ---
         const win = window.open('', '_blank');
         const f_clean = fag.toLowerCase(); 
         const t_clean = trinn.replace(/\D/g, ''); 
@@ -1061,100 +922,57 @@ utviklingHtml += `</div>`;
             <head>
                 <title>Analyse ${trinn}${klasse}</title>
                 <style>
-                    /* Liggende format definisjoner */
-                    @page { 
-                        size: A4 landscape; 
-                        margin: 0; 
-                    }
-
-                    body { 
-                        font-family: sans-serif; 
-                        background-color: #f0f2f5; 
-                        margin: 0; 
-                        padding: 20px; 
-                        display: flex; 
-                        flex-direction: column; 
-                        align-items: center; 
-                    }
-
+                    @page { size: A4 landscape; margin: 0; }
+                    body { font-family: sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
                     .analyse-section { 
-                        background: white; 
-                        width: 297mm;   /* Liggende bredde */
-                        height: 210mm;  /* Liggende høyde */
-                        padding: 15mm; 
-                        margin-bottom: 30px; 
-                        box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
-                        box-sizing: border-box; 
-                        overflow: hidden; /* Hindrer innhold i å flyte over kanten */
-                        position: relative;
-                        page-break-after: always;
+                        background: white; width: 297mm; height: 210mm; padding: 15mm; 
+                        margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
+                        box-sizing: border-box; overflow: hidden; position: relative; page-break-after: always; 
                     }
-
                     .toolbar { 
-                        margin-bottom: 20px; 
-                        position: sticky; 
-                        top: 10px; 
-                        z-index: 1000; 
-                        display: flex; 
-                        gap: 10px; 
-                        background: white; 
-                        padding: 12px; 
-                        border-radius: 50px; 
-                        box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+                        margin-bottom: 20px; position: sticky; top: 10px; z-index: 1000; 
+                        display: flex; gap: 10px; background: white; padding: 12px; 
+                        border-radius: 50px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
                     }
-
                     table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
                     th, td { border: 1px solid #333; padding: 6px; text-align: center; font-size: 11px; }
-                    
+                    th { background: #f8f9fa; }
                     .btn-tool { padding: 10px 18px; color: white !important; border-radius: 6px; text-decoration: none; font-weight: bold; cursor: pointer; border: none; }
                     .btn-blue { background: #2980b9; } .btn-purple { background: #8e44ad; } .btn-dark { background: #2c3e50; } .btn-grey { background: #95a5a6; }
                     
-                    /* Justering for diagram i liggende format */
-                    .chart-container { 
-                        display: flex; 
-                        height: 280px; /* Litt høyere siden vi har mer plass */
-                        align-items: flex-end; 
-                        border-bottom: 2px solid #333; 
-                        margin-bottom: 40px; 
-                        padding: 0 20px;
-                    }
+                    /* Original Diagram-stil */
+                    .chart-container { display: flex; height: 230px; align-items: flex-end; border-bottom: 2px solid #333; margin-bottom: 40px; }
                     .bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; position: relative; }
-                    .bar-track { background: #eee; width: 35px; height: 100%; position: relative; display: flex; flex-direction: column-reverse; border: 1px solid #ccc; }
+                    .bar-track { background: #eee; width: 25px; height: 100%; position: relative; display: flex; flex-direction: column-reverse; border: 1px solid #ccc; }
                     .bar-fill { background: #3498db; width: 100%; }
+                    .total-fill { background: #2ecc71; }
                     .target-line { position: absolute; width: 100%; border-top: 2px dashed red; z-index: 5; }
+                    .bar-label { font-size: 10px; margin-top: 5px; text-align: center; font-weight: bold; }
+                    .bar-value { font-size: 11px; margin-bottom: 3px; font-weight: bold; }
 
-                    /* Spesifikke regler for utskrift */
                     @media print {
                         body { background: white; padding: 0; }
                         .toolbar { display: none; }
-                        .analyse-section { 
-                            box-shadow: none; 
-                            margin: 0; 
-                            width: 297mm; 
-                            height: 210mm;
-                        }
+                        .analyse-section { box-shadow: none; margin: 0; width: 297mm; height: 210mm; }
+                        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                     }
                 </style>
             </head>
             <body>
                 <div class="toolbar">
-                    <button onclick="window.print()" class="btn-tool btn-blue">🖨️ Skriv ut / Lagre PDF (Liggende)</button>
-                    <a href="${oppgaveSti}" target="_blank" class="btn-tool btn-purple">📄 Se hele prøven</a>
+                    <button onclick="window.print()" class="btn-tool btn-blue">🖨️ Skriv ut / Lagre PDF</button>
+                    <a href="${oppgaveSti}" target="_blank" class="btn-tool btn-purple">📄 Se prøve</a>
                     ${harFasit ? `<a href="${fasitSti}" target="_blank" class="btn-tool btn-dark">✅ Se fasit</a>` : ''}
                     <button onclick="window.close()" class="btn-tool btn-grey">Lukk</button>
                 </div>
                 
-                <div class="analyse-section">${html}</div>
-                <div class="analyse-section">
-                    <h2 style="text-align:center; color:#2c3e50;">Elevoversikt - Oppfølging og Mestring</h2>
-                    ${elevListerHtml}
-                </div>
-                <div class="analyse-section">${detaljHtml}</div>
-                <div class="analyse-section">${utviklingHtml}</div>
+                <div class="analyse-section">${htmlSide1}</div>
+                <div class="analyse-section">${htmlSide2}</div>
+                <div class="analyse-section">${htmlSide3}</div>
+                <div class="analyse-section">${htmlSide4}</div>
             </body>
             </html>`;
 
-        win.document.open();
         win.document.write(fullHtml);
         win.document.close();
 
