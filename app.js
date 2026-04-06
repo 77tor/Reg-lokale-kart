@@ -858,52 +858,57 @@ async function genererKlasseAnalyse() {
         }
 
 
-        // --- GENERER DETALJANALYSE-TEKST ---
-        let detaljHtml = "";
-        try {
-            detaljHtml = `<div id="detaljanalyse-seksjon">`;
-            const malForFag = analyseMaler[fag];
-            const malForTrinn = malForFag ? malForFag[trinn] : null;
-            const gjeldendeMal = malForTrinn ? malForTrinn[periode] : null;
+// --- GENERER DETALJANALYSE-TEKST ---
+let detaljHtml = "";
+try {
+    detaljHtml = `<div id="detaljanalyse-seksjon">`;
+    const malForFag = analyseMaler[fag];
+    const malForTrinn = malForFag ? malForFag[trinn] : null;
+    const gjeldendeMal = malForTrinn ? malForTrinn[periode] : null;
 
-            if (gjeldendeMal && gjeldendeMal.oppgaver) {
+    if (gjeldendeMal && gjeldendeMal.oppgaver) {
+        detaljHtml += `
+            <h2 style="text-align:center; color:#2c3e50;">Pedagogisk Detaljanalyse</h2>
+            <p style="text-align:center; margin-bottom:30px; font-style: italic;">
+                Analyse for ${fag}, ${trinn}. trinn (${periode})<br>
+                Viser forklaring for områder med lav mestring (<65%) eller resultater under kritisk grense.
+            </p>`;
+        
+        let harSvakheter = false;
+        oppsett.oppgaver.forEach((o, i) => {
+            const snitt = oppgaveSummer[i] / antall;
+            const prosent = (snitt / o.maks) * 100;
+            const malInfo = gjeldendeMal.oppgaver[i + 1]; 
+
+            if ((prosent < 65 || (o.grense !== -1 && snitt <= o.grense)) && malInfo) {
+                harSvakheter = true;
+                let årsakTekst = (o.grense !== -1 && snitt <= o.grense) ? 
+                    `Kritisk lavt nivå (Snitt: ${snitt.toFixed(1)} av ${o.maks})` : 
+                    `Lav mestring (${prosent.toFixed(0)}%)`;
+
+                // ENDRING HER: Lager en tekstlenke i stedet for å vise bildet
+                const bildeSti = o.bilde; 
+                const lenkeTilBilde = bildeSti 
+                    ? `<a href="${bildeSti}" target="_blank" style="margin-left:10px; font-size:0.8em; color:#2980b9; text-decoration:underline;">[Se oppgavebilde]</a>` 
+                    : "";
+
                 detaljHtml += `
-                    <h2 style="text-align:center; color:#2c3e50;">Pedagogisk Detaljanalyse</h2>
-                    <p style="text-align:center; margin-bottom:30px; font-style: italic;">
-                        Analyse for ${fag}, ${trinn}. trinn (${periode})<br>
-                        Viser forklaring for områder med lav mestring (<65%) eller resultater under kritisk grense.
-                    </p>`;
-                
-                let harSvakheter = false;
-                oppsett.oppgaver.forEach((o, i) => {
-                    const snitt = oppgaveSummer[i] / antall;
-                    const prosent = (snitt / o.maks) * 100;
-                    const malInfo = gjeldendeMal.oppgaver[i + 1]; 
-
-                    if ((prosent < 65 || (o.grense !== -1 && snitt <= o.grense)) && malInfo) {
-                        harSvakheter = true;
-                        let årsakTekst = (o.grense !== -1 && snitt <= o.grense) ? 
-                            `Kritisk lavt nivå (Snitt: ${snitt.toFixed(1)} av ${o.maks})` : 
-                            `Lav mestring (${prosent.toFixed(0)}%)`;
-
-                        const bildeSti = o.bilde; 
-                        const overskriftMedBilde = bildeSti 
-                            ? `<span class="hjelpe-ikon-tekst">${malInfo.navn}<img src="${bildeSti}" class="oppgave-preview-bilde"></span>` 
-                            : malInfo.navn;
-
-                        detaljHtml += `
-                            <div style="margin-bottom: 20px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 0 8px 8px 0;">
-                                <h4 style="margin:0; color:#c0392b;">${overskriftMedBilde} — <span style="font-size: 0.9em; font-weight: normal; color: #555;">${årsakTekst}</span></h4>
-                                <p style="margin: 8px 0 0 0; font-size: 14px; line-height: 1.6; color: #333;">
-                                    <strong>Pedagogisk fokus:</strong> ${malInfo.forklaring}
-                                </p>
-                            </div>`;
-                    }
-                });
-                if (!harSvakheter) detaljHtml += `<p style="text-align:center; color:green;">Stabilt høyt nivå på alle områder.</p>`;
+                    <div style="margin-bottom: 20px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 0 8px 8px 0;">
+                        <h4 style="margin:0; color:#c0392b;">
+                            ${malInfo.navn}${lenkeTilBilde} 
+                            <span style="font-size: 0.9em; font-weight: normal; color: #555; margin-left:10px;">— ${årsakTekst}</span>
+                        </h4>
+                        <p style="margin: 8px 0 0 0; font-size: 14px; line-height: 1.6; color: #333;">
+                            <strong>Pedagogisk fokus:</strong> ${malInfo.forklaring}
+                        </p>
+                    </div>`;
             }
-        } catch (e) { console.error(e); }
-        detaljHtml += `</div>`;
+        });
+        if (!harSvakheter) detaljHtml += `<p style="text-align:center; color:green;">Stabilt høyt nivå på alle områder.</p>`;
+    }
+} catch (e) { console.error(e); }
+detaljHtml += `</div>`;
+
 
 // --- NY SEKSJON: UTVIKLING OVER TID (Starter på egen side) ---
 let utviklingHtml = `
