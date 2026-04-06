@@ -906,7 +906,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     if (!harSvakheter) htmlSide3 += `<p style="text-align:center; color:green;">Stabilt høyt nivå på alle områder.</p>`;
 }
 
-// --- SIDE 4: UTVIKLING OVER TID (Inkludert Trinnsnitt) ---
+// --- SIDE 4: UTVIKLING OVER TID (Rettet og ryddet versjon) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
 try {
     const histSnap = await db.ref(`kartlegging`).once('value');
@@ -914,37 +914,29 @@ try {
     let historikkRader = [];
 
     for (const aKey of Object.keys(alleData)) {
-        if (aKey > aar) continue; // Ikke vis fremtidige år
+        if (aKey > aar) continue;
         const fData = alleData[aKey][fag];
         if (!fData) continue;
 
         for (const pKey of Object.keys(fData)) {
-            // Logikk for å ikke vise Vår hvis vi analyserer Høst i samme år
             if (aKey === aar && pKey === "Vår" && periode === "Høst") continue;
-
-            const trinnData = fData[pKey][trinn]; // Henter alle klasser på trinnet
+            const trinnData = fData[pKey][trinn];
             if (!trinnData) continue;
 
             const aOppsett = oppgaveStruktur[aKey] ? oppgaveStruktur[aKey][fag][pKey][trinn] : null;
             if (!aOppsett) continue;
             const aMaks = aOppsett.oppgaver.reduce((s, o) => s + (o.maks || 0), 0);
 
-            // Variabler for klassen
             let klasseSum = 0; let klasseAntall = 0; let klasseKritiske = 0;
-            // Variabler for hele trinnet
             let trinnSum = 0; let trinnAntall = 0;
 
-            // Gå gjennom alle klasser på dette trinnet (a, b, c...)
             Object.keys(trinnData).forEach(kNavn => {
                 const kData = trinnData[kNavn];
                 const kElever = Object.keys(kData).filter(n => kData[n].oppgaver && !kData[n].slettet);
-                
                 kElever.forEach(n => {
                     const eSum = kData[n].sum || 0;
                     trinnSum += eSum;
                     trinnAntall++;
-
-                    // Hvis dette er klassen vi analyserer, lagre klasse-spesifikk data
                     if (kNavn === klasse) {
                         klasseSum += eSum;
                         klasseAntall++;
@@ -968,101 +960,50 @@ try {
     historikkRader.sort((a,b) => a.sort.localeCompare(b.sort));
 
     if (historikkRader.length > 0) {
-        htmlSide4 += `
-            <table>
-                <thead>
-                    <tr>
-                        <th>Periode</th>
-                        <th>Klassens snitt (%)</th>
-                        <th>Trinnets snitt (%)</th>
-                        <th>Differanse</th>
-                        <th>Under kritisk grense (Klasse)</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-        
+        htmlSide4 += `<table><thead><tr><th>Periode</th><th>Klasse (%)</th><th>Trinn (%)</th><th>Diff.</th><th>Kritiske</th></tr></thead><tbody>`;
         historikkRader.forEach(r => {
             const aktiv = r.visning === `${periode} ${aar}` ? 'style="background:#e8f4fd; font-weight:bold;"' : '';
             const diff = r.klasseProsent - r.trinnProsent;
-            const diffFarge = diff >= 0 ? "green" : "red";
-            const diffTegn = diff >= 0 ? "+" : "";
-
-            htmlSide4 += `
-                <tr ${aktiv}>
-                    <td>${r.visning}</td>
-                    <td>${r.klasseProsent.toFixed(1)}%</td>
-                    <td style="color:#666;">${r.trinnProsent.toFixed(1)}%</td>
-                    <td style="color:${diffFarge}; font-weight:bold;">${diffTegn}${diff.toFixed(1)}%</td>
-                    <td>${r.kritiske}</td>
-                </tr>`;
+            htmlSide4 += `<tr ${aktiv}><td>${r.visning}</td><td>${r.klasseProsent.toFixed(1)}%</td><td>${r.trinnProsent.toFixed(1)}%</td><td style="color:${diff >= 0 ? 'green':'red'}; font-weight:bold;">${diff >= 0 ? '+':''}${diff.toFixed(1)}%</td><td>${r.kritiske}</td></tr>`;
         });
         htmlSide4 += `</tbody></table>`;
 
-// --- TREND-ANALYSE (Settes inn etter tabellen på Side 4) ---
-if (historikkRader.length > 0) {
-    const siste = historikkRader[historikkRader.length - 1];
-    
-    // 1. Beregn utvikling internt i klassen (hvis det finnes mer enn én rad)
-    let utviklingTekst = "Første registrerte måling for denne klassen.";
-    let utviklingFarge = "#2980b9"; // Blå for nøytral/info
+        const siste = historikkRader[historikkRader.length - 1];
+        let utviklingTekst = "Første måling.";
+        let utviklingFarge = "#2980b9";
 
-    if (historikkRader.length > 1) {
-        const forrige = historikkRader[historikkRader.length - 2];
-        const endring = siste.klasseProsent - forrige.klasseProsent;
-        
-        if (endring > 3) {
-            utviklingTekst = `<b>Positiv utvikling:</b> Klassen har løftet seg med ${endring.toFixed(1)}% siden ${forrige.visning}.`;
-            utviklingFarge = "#27ae60"; // Grønn
-        } else if (endring < -3) {
-            utviklingTekst = `<b>Nedgang:</b> Klassen scorer ${Math.abs(endring).toFixed(1)}% lavere enn ved ${forrige.visning}.`;
-            utviklingFarge = "#e67e22"; // Oransje/Rød
-        } else {
-            utviklingTekst = `<b>Stabil utvikling:</b> Klassen holder et jevnt nivå sammenlignet med ${forrige.visning}.`;
+        if (historikkRader.length > 1) {
+            const forrige = historikkRader[historikkRader.length - 2];
+            const endring = siste.klasseProsent - forrige.klasseProsent;
+            if (endring > 3) { utviklingTekst = `<b>Fremgang:</b> +${endring.toFixed(1)}% siden ${forrige.visning}.`; utviklingFarge = "#27ae60"; }
+            else if (endring < -3) { utviklingTekst = `<b>Nedgang:</b> ${endring.toFixed(1)}% siden ${forrige.visning}.`; utviklingFarge = "#e67e22"; }
+            else { utviklingTekst = `Stabil utvikling siden ${forrige.visning}.`; }
         }
-    }
 
-    // 2. Beregn sammenligning mot resten av trinnet (Klasse vs Trinn)
-    const diffMotTrinn = siste.klasseProsent - siste.trinnProsent;
-    let trinnSammenligning = "";
-    
-    if (diffMotTrinn > 2) {
-        trinnSammenligning = `Klassen presterer <b>sterkere enn trinnsnittet</b> (+${diffMotTrinn.toFixed(1)}%).`;
-    } else if (diffMotTrinn < -2) {
-        trinnSammenligning = `Klassen ligger <b>under trinnsnittet</b> (${diffMotTrinn.toFixed(1)}%). Dette kan indikere behov for ekstra ressurser i denne gruppen.`;
-    } else {
-        trinnSammenligning = `Klassens resultat samsvarer godt med resten av trinnet.`;
-    }
+        const diffMotTrinn = siste.klasseProsent - siste.trinnProsent;
+        let trinnSammenligning = diffMotTrinn > 2 ? `Klassen presterer over trinnsnittet.` : (diffMotTrinn < -2 ? `Klassen presterer under trinnsnittet.` : `Klassen følger trinnsnittet.`);
 
-    // 3. Sett sammen den endelige infoboksen
-    htmlSide4 += `
-        <div style="margin-top:25px; display: flex; gap: 20px;">
-            <div style="flex: 1; padding:15px; border-left:6px solid ${utviklingFarge}; background:#f9f9f9; border-radius: 4px;">
-                <h4 style="margin:0 0 10px 0; color:#333;">Intern utvikling</h4>
-                <p style="margin:0; font-size:14px;">${utviklingTekst}</p>
-            </div>
-            <div style="flex: 1; padding:15px; border-left:6px solid #2c3e50; background:#f9f9f9; border-radius: 4px;">
-                <h4 style="margin:0 0 10px 0; color:#333;">Sammenlignet med trinnet</h4>
-                <p style="margin:0; font-size:14px;">${trinnSammenligning}</p>
-            </div>
-        </div>`;
+        htmlSide4 += `
+            <div style="margin-top:20px; display: flex; gap: 15px;">
+                <div style="flex: 1; padding:12px; border-left:5px solid ${utviklingFarge}; background:#f9f9f9;">
+                    <h4 style="margin:0 0 5px 0;">Intern utvikling</h4><p style="margin:0; font-size:13px;">${utviklingTekst}</p>
+                </div>
+                <div style="flex: 1; padding:12px; border-left:5px solid #2c3e50; background:#f9f9f9;">
+                    <h4 style="margin:0 0 5px 0;">Mot trinn</h4><p style="margin:0; font-size:13px;">${trinnSammenligning}</p>
+                </div>
+            </div>`;
 
-    // 4. Oppsummering av sårbarhet
         if (siste.kritiske > 0 && siste.visning === `${periode} ${aar}`) {
-            htmlSide4 += `
-                <div style="margin-top:15px; padding:12px; background:#fff5f5; border:1px solid #feb2b2; border-radius:8px; text-align:center;">
-                    <span style="color:#c53030; font-weight:bold;">⚠️ OBS:</span> 
-                    Det er ${siste.kritiske} elever under kritisk grense i denne perioden. Se Side 2 for detaljerte elevlister.
-                </div>`;
+            htmlSide4 += `<div style="margin-top:15px; padding:10px; background:#fff5f5; border:1px solid #feb2b2; border-radius:5px; text-align:center; color:#c53030; font-size:13px;">⚠️ <b>OBS:</b> ${siste.kritiske} elever under kritisk grense.</div>`;
         }
     } else {
-        // VIKTIG: Dette håndterer tilfeller uten data
-        htmlSide4 += `<p style="text-align:center; margin-top:20px;">Ingen historiske data tilgjengelig for denne klassen ennå.</p>`;
+        htmlSide4 += `<p style="text-align:center;">Ingen historikk funnet.</p>`;
     }
-
-} catch(err) { 
-    console.error("Feil i Side 4:", err);
-    htmlSide4 += `<p style="text-align:center; color:red;">Kunne ikke laste historikk: ${err.message}</p>`; 
+} catch(err) {
+    console.error("Side 4 feil:", err);
+    htmlSide4 += `<p>Kunne ikke laste historikk.</p>`;
 }
+// --- SIDE 4 FERDIG ---
 
 // --- GENERER ENDELIG HTML ---
         const win = window.open('', '_blank');
