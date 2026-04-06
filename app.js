@@ -869,30 +869,42 @@ if (topper.length > 0) {
 }
 
 
-        // --- SIDE 3: PEDAGOGISK DETALJANALYSE ---
-        let htmlSide3 = fellesHeader;
-        htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Pedagogisk Detaljanalyse</h2>`;
-        if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
-            let harSvakheter = false;
-            oppsett.oppgaver.forEach((o, i) => {
-                const snitt = oppgaveSummer[i] / antall;
-                const prosent = (snitt / o.maks) * 100;
-                const malInfo = gjeldendeMalTabell.oppgaver[i + 1]; 
+// --- SIDE 3: PEDAGOGISK DETALJANALYSE ---
+let htmlSide3 = fellesHeader;
+htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Pedagogisk Detaljanalyse</h2>`;
 
-                if ((prosent < 65 || (o.grense !== -1 && snitt <= o.grense)) && malInfo) {
-                    harSvakheter = true;
-                    let årsakTekst = (o.grense !== -1 && snitt <= o.grense) ? `Kritisk lavt` : `Lav mestring`;
-                    const bildeLenke = o.bilde ? `<a href="${o.bilde}" target="_blank" style="margin-left:10px; font-size:0.8em; color:#2980b9;">[Se oppgavebilde]</a>` : "";
+if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
+    let harSvakheter = false;
+    oppsett.oppgaver.forEach((o, i) => {
+        const snitt = oppgaveSummer[i] / antall;
+        const prosent = (snitt / o.maks) * 100;
+        const malInfo = gjeldendeMalTabell.oppgaver[i + 1]; 
 
-                    htmlSide3 += `
-                        <div style="margin-bottom: 12px; padding: 12px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 8px;">
-                            <h4 style="margin:0; color:#c0392b;">${malInfo.navn} — <span style="font-weight:normal; color:#555;">${årsakTekst}</span> ${bildeLenke}</h4>
-                            <p style="margin: 5px 0 0 0; font-size: 14px; color: #333;"><strong>Pedagogisk fokus:</strong> ${malInfo.forklaring}</p>
-                        </div>`;
-                }
-            });
-            if (!harSvakheter) htmlSide3 += `<p style="text-align:center; color:green;">Stabilt høyt nivå på alle områder.</p>`;
+        if ((prosent < 65 || (o.grense !== -1 && snitt <= o.grense)) && malInfo) {
+            harSvakheter = true;
+            let årsakTekst = (o.grense !== -1 && snitt <= o.grense) ? `Kritisk lavt` : `Lav mestring`;
+            
+            // NY LOGIKK FOR BILDE-HOVER:
+            let bildeLenke = "";
+            if (o.bilde) {
+                bildeLenke = `
+                    <span class="bilde-container">
+                        <a href="${o.bilde}" target="_blank" style="margin-left:10px; font-size:0.8em; color:#2980b9; cursor:zoom-in;">
+                            [Se oppgavebilde 👁️]
+                        </a>
+                        <img src="${o.bilde}" class="hover-bilde" alt="Oppgavebilde">
+                    </span>`;
+            }
+
+            htmlSide3 += `
+                <div style="margin-bottom: 12px; padding: 12px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 8px;">
+                    <h4 style="margin:0; color:#c0392b;">${malInfo.navn} — <span style="font-weight:normal; color:#555;">${årsakTekst}</span> ${bildeLenke}</h4>
+                    <p style="margin: 5px 0 0 0; font-size: 14px; color: #333;"><strong>Pedagogisk fokus:</strong> ${malInfo.forklaring}</p>
+                </div>`;
         }
+    });
+    if (!harSvakheter) htmlSide3 += `<p style="text-align:center; color:green;">Stabilt høyt nivå på alle områder.</p>`;
+}
 
 // --- SIDE 4: UTVIKLING OVER TID (Rettet logikk) ---
         let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
@@ -1007,6 +1019,23 @@ if (topper.length > 0) {
         width: 60px !important; 
     }
 
+
+.hover-bilde {
+    display: none; /* Skjult som standard */
+    position: absolute;
+    z-index: 100;
+    border: 3px solid #2c3e50;
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    width: 400px; /* Juster størrelsen på forhåndsvisningen her */
+    left: 20px;
+    top: 25px;
+}
+/* Vis bildet ved hover på skjerm */
+.bilde-container:hover .hover-bilde {
+    display: block;
+}
     /* Brukes for alle oppgave-kolonner slik at de deler resten av plassen */
     .col-oppgave {
         width: auto;
@@ -1036,6 +1065,8 @@ if (topper.length > 0) {
     @media print { 
         .toolbar { display:none; } 
         body { background: white; padding:0; } 
+.hover-bilde {
+        display: none !important;}
         .analyse-section { box-shadow:none; margin:0; width: 297mm; height: 210mm; } 
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } 
     }
