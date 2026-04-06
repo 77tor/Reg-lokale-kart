@@ -1009,7 +1009,16 @@ if (topper.length > 0) {
 
     .chart-container { display:flex; height:180px; align-items:flex-end; border-bottom:2px solid #333; margin-bottom:20px; }
     .bar-wrapper { flex:1; display:flex; flex-direction:column; align-items:center; position:relative; }
-    .bar-track { background:#eee; width:20px; height:150px; position:relative; border:1px solid #ccc; display:flex; flex-direction:column-reverse; }
+    .bar-track { 
+    background: #eee; 
+    width: 35px; /* Endret fra 20px til 35px for tykkere søyler */
+    height: 150px; 
+    position: relative; 
+    border: 1px solid #ccc; 
+    display: flex; 
+    flex-direction: column-reverse; 
+    margin: 0 auto; /* Sikrer at søylen sentreres i sitt område */
+}
     .bar-fill { background:#3498db; width:100%; }
     .total-fill { background:#2ecc71; }
     .target-line { position:absolute; width:100%; border-top:2px dashed red; z-index:5; }
