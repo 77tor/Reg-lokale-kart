@@ -3009,24 +3009,35 @@ async function forberedPrint() {
         snittHtml += `</tr>`;
 
 let html = `
+            <style>
+                /* Denne blokken tvinger rammene til å vises i overskriften */
+                #utskriftRapportArea table { border-collapse: collapse !important; }
+                #utskriftRapportArea th, #utskriftRapportArea td { 
+                    border: 1px solid #000 !important; 
+                }
+                @media print {
+                    th { background-color: #f1f1f1 !important; -webkit-print-color-adjust: exact; }
+                }
+            </style>
             <div style="padding: 5px; font-family: Arial, sans-serif;">
                 <h2 style="text-align:center; margin: 0 0 5px 0; font-size: 16px; letter-spacing:1px;">KLASSERESULTATER</h2>
                 <h3 style="text-align:center; margin: 0 0 12px 0; font-size: 13px; color: #444;">${vFag.toUpperCase()} &nbsp;|&nbsp; ${vTrinn}${vKlasse} &nbsp;|&nbsp; ${vPeriode} ${vAar}</h3>
                 
-                <table style="width:100%; border-collapse: collapse; text-align:center; font-size: 10.5px; line-height: 1.2; border: 1px solid #000;">
+                <table style="width:100%; text-align:center; font-size: 10.5px; line-height: 1.2;">
                     <thead>
-                        <tr style="background-color: #f1f1f1 !important;">
-                            <th style="border: 1px solid #000 !important; padding: 6px; width: 190px;">Elevnavn</th>
+                        <tr style="background-color: #f1f1f1;">
+                            <th style="padding: 6px; width: 190px;">Elevnavn</th>
                             ${oppsett.oppgaver.map(o => `
-                                <th style="border: 1px solid #000 !important; padding: 4px;">
+                                <th style="padding: 4px;">
                                     ${o.navn}<br>
                                     <small style="font-size: 8px; font-weight: normal;">(maks ${o.maks})</small>
                                 </th>
                             `).join('')}
-                            <th style="border: 1px solid #000 !important; padding: 4px; width: 50px;">SUM</th>
+                            <th style="padding: 4px; width: 50px;">SUM</th>
                         </tr>
                     </thead>
-                    <tbody> ${raderHtml}
+                    <tbody>
+                        ${raderHtml}
                         ${snittHtml}
                     </tbody>
                 </table>
