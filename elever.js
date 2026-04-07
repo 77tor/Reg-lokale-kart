@@ -556,5 +556,4 @@ let elevRegister = {
 "Vu, Alexander Theodor Hoang": { startTrinn: 7, startKlasse: 'D', startAar: 2024, sluttAar: 2025 },
 "Øhman, Fabian Putra": { startTrinn: 7, startKlasse: 'D', startAar: 2024, sluttAar: 2025 },
 "Aagren, Andrea Krossen": { startTrinn: 7, startKlasse: 'D', startAar: 2024, sluttAar: 2025 }
-
 };
