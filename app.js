@@ -1,3 +1,37 @@
+// LEGG DENNE HELT ØVERST I app.js
+window.kopierKIPrompt = function(base64Prompt) {
+    console.log("KI-funksjon trigget"); // For feilsøking i konsollen
+    try {
+        // Dekoder og håndterer norske tegn
+        const prompt = decodeURIComponent(escape(window.atob(base64Prompt)));
+        
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(prompt).then(() => {
+                alert("✨ KI-instruksjon er kopiert!\n\nLim inn i ChatGPT eller Gemini (Ctrl+V).");
+            }).catch(err => {
+                fallbackKopier(prompt);
+            });
+        } else {
+            fallbackKopier(prompt);
+        }
+    } catch (e) {
+        console.error("Feil ved dekoding:", e);
+        alert("Kunne ikke kopiere. Sjekk konsollen (F12).");
+    }
+};
+
+// En liten hjelpefunksjon for eldre nettlesere
+function fallbackKopier(tekst) {
+    const el = document.createElement('textarea');
+    el.value = tekst;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    alert("Instruksjon kopiert (fallback-metode)!");
+}
+
+
 // --- 1. FIREBASE CONFIG ---
 const firebaseConfig = {
     apiKey: "AIzaSyC7g1gllBUVACl3fkpYeEe7r1LfBs2ck3U",
@@ -90,38 +124,7 @@ function registrerInnlogging(user) {
 }
 
 
-// LEGG DENNE HELT ØVERST I app.js
-window.kopierKIPrompt = function(base64Prompt) {
-    console.log("KI-funksjon trigget"); // For feilsøking i konsollen
-    try {
-        // Dekoder og håndterer norske tegn
-        const prompt = decodeURIComponent(escape(window.atob(base64Prompt)));
-        
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(prompt).then(() => {
-                alert("✨ KI-instruksjon er kopiert!\n\nLim inn i ChatGPT eller Gemini (Ctrl+V).");
-            }).catch(err => {
-                fallbackKopier(prompt);
-            });
-        } else {
-            fallbackKopier(prompt);
-        }
-    } catch (e) {
-        console.error("Feil ved dekoding:", e);
-        alert("Kunne ikke kopiere. Sjekk konsollen (F12).");
-    }
-};
 
-// En liten hjelpefunksjon for eldre nettlesere
-function fallbackKopier(tekst) {
-    const el = document.createElement('textarea');
-    el.value = tekst;
-    document.body.appendChild(el);
-    el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
-    alert("Instruksjon kopiert (fallback-metode)!");
-}
 
 
 
