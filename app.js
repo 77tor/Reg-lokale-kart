@@ -1020,6 +1020,7 @@ if (topper.length > 0) {
     htmlSide2 += `<p style="text-align:center;">Ingen elever over 95%.</p>`;
 }
 
+
 // --- SIDE 3: PEDAGOGISK DETALJANALYSE MED KI-HJELP ---
 let htmlSide3 = fellesHeader;
 htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Områder klassen skårer under 65%</h2>`;
@@ -1035,11 +1036,13 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             harSvakheter = true;
             let årsakTekst = (o.grense !== -1 && snitt <= o.grense) ? `Kritisk lavt` : `Lav mestring`;
             
-            // Logikk for bilde og KI-knapp
             let bildeOgKI = "";
             if (o.bilde) {
-                // Vi lager en "pakke" med info til KI-en
+                // 1. Lag prompten
                 const kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}". \n\nPedagogisk forklaring: ${malInfo.forklaring}. \n\nKan du lage 5 lignende oppgaver basert på vedlagte bilde (${o.bilde}) slik at elevene får mengdetrening? Tilpass oppgavene til ${trinn}. trinn.`;
+
+                // 2. Gjør den trygg for norske tegn og Base64-konvertering
+                const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
 
                 bildeOgKI = `
                     <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
@@ -1050,7 +1053,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                             <img src="${o.bilde}" class="hover-bilde" alt="Oppgavebilde">
                         </span>
                         
-                        <button onclick="kopierKIPrompt('${btoa(kiPrompt)}')" class="btn" style="background:#8e44ad; color:white; padding:4px 10px; font-size:0.85em; border-radius:4px; border:none; cursor:pointer;">
+                        <button onclick="window.kopierKIPrompt('${safePrompt}')" class="btn" style="background:#8e44ad; color:white; padding:4px 10px; font-size:0.85em; border-radius:4px; border:none; cursor:pointer;">
                             Lag nye oppgaver (KI) ✨
                         </button>
                     </div>`;
@@ -1066,7 +1069,6 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     });
     if (!harSvakheter) htmlSide3 += `<p style="text-align:center; color:green;">Stabilt høyt nivå på alle områder.</p>`;
 }
-
 
 // --- SIDE 4: UTVIKLING OVER TID (Oppdatert med Prøve-snitt logikk) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
