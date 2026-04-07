@@ -386,6 +386,36 @@ h1, h2, h3, h4 { display: none !important; }
 
 /* Skjul utskriftsområdet helt på vanlig skjerm */
 #utskriftRapportArea { display: none; }
+
+/* FIX FOR UTSKRIFT AV RAMMER OG OVERSKRIFTER */
+@media print {
+    /* 1. Tving overskrifter i utskriftsområdet til å vises uansett */
+    #utskriftRapportArea h2, #utskriftRapportArea h3 { 
+        display: block !important; 
+        visibility: visible !important; 
+    }
+
+    /* 2. Fjern 'sticky' under utskrift (viktig for at rammer skal vises) */
+    th { 
+        position: static !important; 
+    }
+
+    /* 3. Tving svarte rammer på ALLE celler i utskriftsområdet */
+    #utskriftRapportArea table, 
+    #utskriftRapportArea th, 
+    #utskriftRapportArea td {
+        border: 1px solid #000000 !important;
+        border-collapse: collapse !important;
+    }
+    
+    /* 4. Sikre at bakgrunnsfargen i overskriften vises */
+    thead tr {
+        background-color: #f1f1f1 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}
+
     </style>
 </head>
 <body>
