@@ -1342,17 +1342,29 @@ try {
     }
 }
 
-  
-
- //  - - -KI-PROMT AV BILDER
-    navigator.clipboard.writeText(prompt).then(() => {
-        alert("KI-instruksjon er kopiert!\n\n1. Gå til f.eks. ChatGPT eller Gemini.\n2. Lim inn teksten (Ctrl+V).\n3. KI-en vil nå lage nye oppgaver tilpasset dette nivået.");
-    }).catch(err => {
-        console.error('Kunne ikke kopiere:', err);
-        // Fallback hvis navigator.clipboard feiler
-        prompt("Kopier denne teksten til KI:", prompt);
-    });
-}
+// Denne må ligge utenfor alle andre funksjoner for å være tilgjengelig globalt
+window.kopierKIPrompt = function(base64Prompt) {
+    try {
+        const prompt = atob(base64Prompt);
+        
+        // Bruk det moderne Clipboard API-et
+        navigator.clipboard.writeText(prompt).then(() => {
+            alert("✨ KI-instruksjon er kopiert til utklippstavlen!\n\nDu kan nå lime den inn i ChatGPT, Gemini eller en annen KI-tjeneste for å generere nye oppgaver.");
+        }).catch(err => {
+            // Fallback hvis Clipboard API blir blokkert (f.eks. i enkelte nettlesere uten HTTPS)
+            console.error('Kunne ikke kopiere automatisk:', err);
+            const midlertidigInput = document.createElement("textarea");
+            midlertidigInput.value = prompt;
+            document.body.appendChild(midlertidigInput);
+            midlertidigInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(midlertidigInput);
+            alert("Instruksjon kopiert (via fallback).");
+        });
+    } catch (e) {
+        console.error("Feil ved dekoding av prompt:", e);
+    }
+};
 
 // --- 6. ADMIN-FUNKSJONER ---
 function sjekkAdminKode() {
