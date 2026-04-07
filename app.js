@@ -1093,11 +1093,8 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
 let bildeOgKI = "";
 
 if (o.bilde) {
-    // AUTOMATISK FIKS: Her vaskes lenken uansett hvilken oppgave det er
     const bildeUrl = fiksGithubLenke(o.bilde);
-
     const kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}". \n\nPedagogisk forklaring: ${malInfo.forklaring}. \n\nKan du lage 5 lignende oppgaver basert på bildet (${bildeUrl})? Tilpass til ${trinn}. trinn.`;
-
     const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
 
     bildeOgKI = `
@@ -1120,14 +1117,18 @@ if (o.bilde) {
                         document.execCommand('copy');
                         document.body.removeChild(el);
                         
-                        const opprinneligTekst = btn.innerHTML;
-                        btn.innerHTML = '✅ Kopiert!';
+                        btn.innerHTML = '✅ Kopiert - Åpner KI...';
                         btn.style.background = '#27ae60';
-                        setTimeout(function(){ 
-                            btn.innerHTML = opprinneligTekst; 
+
+                        // ÅPNER KI AUTOMATISK (Velg den du bruker mest):
+                        setTimeout(() => {
+                            window.open('https://chatgpt.com', '_blank'); 
+                            // Eller: window.open('https://gemini.google.com', '_blank');
+                            
+                            btn.innerHTML = 'Lag nye oppgaver (KI) ✨';
                             btn.style.background = '#8e44ad';
-                        }, 2000);
-                    } catch(e) { console.error('Kopieringsfeil:', e); }
+                        }, 800);
+                    } catch(e) { console.error(e); }
                 })(this)" 
                 class="btn" 
                 style="background:#8e44ad; color:white; padding:4px 10px; font-size:0.85em; border-radius:4px; border:none; cursor:pointer;">
