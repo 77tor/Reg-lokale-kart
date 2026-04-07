@@ -1,17 +1,13 @@
-// --- HELT ØVERST I app.js ---
+// HELT ØVERST I app.js
+console.log("Initialiserer KI-funksjon...");
+
 window.kopierKIPrompt = function(base64) {
-    console.log("Forsøker å kjøre kopiering...");
+    console.log("Knapp trykket! Mottok base64:", base64);
     try {
-        if (!base64) {
-            console.error("Ingen data mottatt i kopieringsfunksjonen");
-            return;
-        }
         const tekst = decodeURIComponent(escape(window.atob(base64)));
-        
         navigator.clipboard.writeText(tekst).then(() => {
-            alert("✨ KI-instruksjon kopiert! Lim inn i ChatGPT/Gemini.");
+            alert("✨ Kopiert! Lim inn i ChatGPT/Gemini.");
         }).catch(err => {
-            console.warn("Clipboard API feilet, prøver fallback", err);
             const el = document.createElement('textarea');
             el.value = tekst;
             document.body.appendChild(el);
@@ -21,9 +17,12 @@ window.kopierKIPrompt = function(base64) {
             alert("Instruksjon kopiert!");
         });
     } catch (e) {
-        console.error("Kritisk feil i kopierKIPrompt:", e);
+        console.error("Feil i kopieringsfunksjon:", e);
     }
 };
+
+console.log("Status på funksjon etter definisjon:", typeof window.kopierKIPrompt);
+
 
 // --- 1. FIREBASE CONFIG ---
 const firebaseConfig = {
