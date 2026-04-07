@@ -1052,6 +1052,7 @@ if (topper.length > 0) {
 }
 
 
+
 // --- SIDE 3: PEDAGOGISK DETALJANALYSE MED KI-HJELP ---
 let htmlSide3 = fellesHeader;
 htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Områder klassen skårer under 65%</h2>`;
@@ -1070,31 +1071,28 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             
             let bildeOgKI = "";
             if (o.bilde) {
-                // Lag selve instruksjonen til KI
-            // --- SIDE 3: PEDAGOGISK DETALJANALYSE ---
-// ... (inne i loopen der du lager kiPrompt)
+                // 1. Definer selve teksten (prompten)
+                const kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}". \n\nPedagogisk forklaring: ${malInfo.forklaring}. \n\nKan du lage 5 lignende oppgaver basert på bildet (${o.bilde})? Tilpass til ${trinn}. trinn.`;
 
-const kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}". \n\nPedagogisk forklaring: ${malInfo.forklaring}. \n\nKan du lage 5 lignende oppgaver basert på bildet (${o.bilde})? Tilpass til ${trinn}. trinn.`;
+                // 2. Gjør teksten trygg (Base64) for å unngå krøll med fnutter og norske tegn
+                const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
 
-// Konverter til base64 for å unngå trøbbel med tegnsetting
-const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
-
-bildeOgKI = `
-    <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
-        <span class="bilde-container">
-            <a href="${o.bilde}" target="_blank" style="font-size:0.85em; color:#2980b9; text-decoration:none; border:1px solid #2980b9; padding:2px 8px; border-radius:4px;">
-                Se oppgave 👁️
-            </a>
-            <img src="${o.bilde}" class="hover-bilde" alt="Oppgavebilde">
-        </span>
-        
-        <button type="button" 
-                onclick="window.kopierKIPrompt('${safePrompt}')" 
-                class="ki-generer-btn" 
-                style="background:#8e44ad; color:white; padding:4px 10px; font-size:0.85em; border-radius:4px; border:none; cursor:pointer;">
-            Lag nye oppgaver (KI) ✨
-        </button>
-    </div>`;
+                bildeOgKI = `
+                    <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
+                        <span class="bilde-container">
+                            <a href="${o.bilde}" target="_blank" style="font-size:0.85em; color:#2980b9; text-decoration:none; border:1px solid #2980b9; padding:2px 8px; border-radius:4px;">
+                                Se oppgave 👁️
+                            </a>
+                            <img src="${o.bilde}" class="hover-bilde" alt="Oppgavebilde">
+                        </span>
+                        
+                        <button type="button" 
+                                onclick="window.kopierKIPrompt('${safePrompt}')" 
+                                class="btn" 
+                                style="background:#8e44ad; color:white; padding:4px 10px; font-size:0.85em; border-radius:4px; border:none; cursor:pointer;">
+                            Lag nye oppgaver (KI) ✨
+                        </button>
+                    </div>`;
             }
 
             htmlSide3 += `
