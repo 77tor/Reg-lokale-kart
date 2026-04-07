@@ -1342,14 +1342,7 @@ try {
     }
 }
 
-// Denne må ligge utenfor alle andre funksjoner for å være tilgjengelig globalt
-window.kopierKIPrompt = function(base64Prompt) {
-    try {
-        const prompt = atob(base64Prompt);
-        
-     function kopierKIPrompt(base64Prompt) {
-    const prompt = atob(base64Prompt);
-    
+  
 
  //  - - -KI-PROMT AV BILDER
     navigator.clipboard.writeText(prompt).then(() => {
