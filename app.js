@@ -2921,6 +2921,7 @@ function eksporter() {
     XLSX.utils.book_append_sheet(wb, ws, "Resultater");
     XLSX.writeFile(wb, `Resultat_${vFag}_${vTrinn}${vKlasse}_${vPeriode}.xlsx`);
 }
+
 // function forberedPrint() { window.print(); }
 async function forberedPrint() {
     const utskriftArea = document.getElementById('utskriftRapportArea');
@@ -3014,13 +3015,17 @@ async function forberedPrint() {
                 
                 <table style="width:100%; border-collapse: collapse; text-align:center; font-size: 10.5px; line-height: 1.2;">
                     <thead>
-                        <tr style="background-color: #f1f1f1;">
-                            <th style="border:1px solid #000; padding:6px; width:190px;">Elevnavn</th>
-                            ${oppsett.oppgaver.map(o => `<th style="border:1px solid #000; padding:4px;">${o.navn}<br><small style="font-size:8px; font-weight:normal;">(maks ${o.maks})</small></th>`).join('')}
-                            <th style="border:1px solid #000; padding:4px; width:50px;">SUM</th>
+                        <tr style="background-color: #f1f1f1 !important;">
+                            <th style="border: 1px solid #000 !important; padding: 6px; width: 190px; text-align: center;">Elevnavn</th>
+                            ${oppsett.oppgaver.map(o => `
+                                <th style="border: 1px solid #000 !important; padding: 4px; text-align: center;">
+                                    ${o.navn}<br>
+                                    <small style="font-size: 8px; font-weight: normal;">(maks ${o.maks})</small>
+                                </th>
+                            `).join('')}
+                            <th style="border: 1px solid #000 !important; padding: 4px; width: 50px; text-align: center;">SUM</th>
                         </tr>
                     </thead>
-                    <tbody>
                         ${raderHtml}
                         ${snittHtml}
                     </tbody>
