@@ -522,16 +522,32 @@ async function aapneLoggModal() {
     const snapshot = await db.ref('systemLogg').once('value');
     const loggData = snapshot.val() || {};
     
-    const loggArray = Object.values(loggData).reverse();
+    // Sorterer slik at nyeste er først for tabellen
+    const loggArray = Object.values(loggData).sort((a, b) => b.innLogget - a.innLogget);
     
-    // --- 1. BEREGN STATISTIKK ---
+    // Lagre dataen globalt så diagram-knappene får tak i den uten å spørre databasen på nytt
+    window.gjeldendeLoggData = loggArray;
+
     const totalt = loggArray.length;
-    const sjuDagerSiden = new Date().getTime() - (7 * 24 * 60 * 60 * 1000);
+    const sjuDagerSiden = Date.now() - (7 * 24 * 60 * 60 * 1000);
     const sisteUke = loggArray.filter(l => l.innLogget > sjuDagerSiden).length;
     const unikeBrukere = [...new Set(loggArray.map(l => l.epost))].length;
 
-    // --- 2. GENERER HTML FOR TOPPPARTIER (Søk og Stats) ---
     let html = `
+        <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-weight: bold; font-size: 0.9em; color: #4a5568;">Bruksstatistikk</span>
+                <div class="chart-controls" style="display: flex; gap: 5px;">
+                    <button onclick="oppdaterLoggDiagram('uke')" id="btnUke" class="btn" style="padding: 4px 10px; font-size: 11px;">Uke</button>
+                    <button onclick="oppdaterLoggDiagram('mnd')" id="btnMnd" class="btn" style="padding: 4px 10px; font-size: 11px;">Mnd</button>
+                    <button onclick="oppdaterLoggDiagram('aar')" id="btnAar" class="btn" style="padding: 4px 10px; font-size: 11px;">År</button>
+                </div>
+            </div>
+            <div style="height: 200px; position: relative;">
+                <canvas id="systemLoggCanvas"></canvas>
+            </div>
+        </div>
+
         <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center;">
             <div><small>Totalt antall besøk</small><br><strong>${totalt}</strong></div>
             <div><small>Siste 7 dager</small><br><strong>${sisteUke}</strong></div>
@@ -541,12 +557,12 @@ async function aapneLoggModal() {
         <div style="display: flex; gap: 10px; margin-bottom: 15px;">
             <input type="text" id="loggSok" placeholder="Søk på navn eller e-post..." 
                 style="flex-grow: 1; margin-bottom: 0;" onkeyup="filtrerLogg()">
-            <button class="btn btn-danger" onclick="slettHeleLoggen()" style="background: #c0392b; font-size: 0.8em;">Tøm logg</button>
+            <button class="btn btn-danger" onclick="slettHeleLoggen()" style="font-size: 0.85em;">Tøm logg</button>
         </div>
 
-        <div id="loggTabellContainer">
+        <div id="loggTabellContainer" style="max-height: 350px; overflow-y: auto; border: 1px solid #eee; border-radius: 4px;">
             <table id="systemLoggTabell">
-                <thead>
+                <thead style="position: sticky; top: 0; background: white; z-index: 5;">
                     <tr><th>Bruker</th><th>Innlogget</th><th>Varighet</th></tr>
                 </thead>
                 <tbody>`;
@@ -566,7 +582,103 @@ async function aapneLoggModal() {
 
     html += `</tbody></table></div>`;
     document.getElementById('loggListe').innerHTML = html;
+
+    // Tegn diagrammet (venter litt så canvas rekker å bli synlig)
+    setTimeout(() => oppdaterLoggDiagram('uke'), 50);
 }
+
+
+
+let loggChartInstance = null; // Holder styr på diagrammet så vi kan slette det gamle
+
+function oppdaterLoggDiagram(type) {
+    const data = window.gjeldendeLoggData || [];
+    const ctx = document.getElementById('systemLoggCanvas').getContext('2d');
+    const na = new Date();
+    
+    let labels = [];
+    let counts = {};
+
+    if (type === 'uke') {
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(na.getDate() - i);
+            const key = d.toLocaleDateString('no-NO', { weekday: 'short', day: 'numeric' });
+            labels.push(key);
+            counts[key] = 0;
+        }
+        data.forEach(l => {
+            const d = new Date(l.innLogget);
+            const key = d.toLocaleDateString('no-NO', { weekday: 'short', day: 'numeric' });
+            if (counts[key] !== undefined) counts[key]++;
+        });
+    } 
+    else if (type === 'mnd') {
+        // Viser de siste 4 ukene
+        for (let i = 3; i >= 0; i--) {
+            const key = i === 0 ? "Denne uka" : `Uke -${i}`;
+            labels.push(key);
+            counts[key] = 0;
+        }
+        data.forEach(l => {
+            const dagerSiden = (na - l.innLogget) / (1000 * 60 * 60 * 24);
+            if (dagerSiden < 28) {
+                const ukeIndex = 3 - Math.floor(dagerSiden / 7);
+                if (labels[ukeIndex]) counts[labels[ukeIndex]]++;
+            }
+        });
+    } 
+    else if (type === 'aar') {
+        const mndNavn = ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Des"];
+        labels = mndNavn;
+        mndNavn.forEach(m => counts[m] = 0);
+        data.forEach(l => {
+            const d = new Date(l.innLogget);
+            if (d.getFullYear() === na.getFullYear()) {
+                counts[mndNavn[d.getMonth()]]++;
+            }
+        });
+    }
+
+    // Ødelegg gammelt diagram hvis det finnes
+    if (loggChartInstance) loggChartInstance.destroy();
+
+    // Lag nytt diagram
+    loggChartInstance = new Chart(ctx, {
+        type: 'bar', // 'bar' fungerer ofte best for pålogginger, men 'line' er også fint
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Besøk',
+                data: labels.map(l => counts[l]),
+                backgroundColor: '#3498db',
+                borderRadius: 4,
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                datalabels: { display: false } // Skjuler tall over stolpene for renere design
+            },
+            scales: {
+                y: { beginAtZero: true, ticks: { precision: 0 } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // Oppdater knappestiler (hvilken som er aktiv)
+    ['btnUke', 'btnMnd', 'btnAar'].forEach(id => {
+        const btn = document.getElementById(id);
+        const isActive = id === 'btn' + type.charAt(0).toUpperCase() + type.slice(1);
+        btn.style.background = isActive ? '#2980b9' : '#bdc3c7';
+        btn.style.color = 'white';
+    });
+}
+
 
 // --- 3. FUNKSJON FOR SØKING I TABELLEN ---
 function filtrerLogg() {
