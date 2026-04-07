@@ -132,7 +132,7 @@ function hentSti(elev) {
 // --- OPPDATER ELEVLISTE (Dropdown i registrerings-modalen) ---
 function oppdaterElevListe() {
     const vAar = document.getElementById('mAar').value;
-    const vTrinnValgt = parseInt(document.getElementById('mTrinn').value); // Gjør om til tall med en gang
+    const vTrinnValgt = parseInt(document.getElementById('mTrinn').value);
     const vKlasse = document.getElementById('mKlasse').value;
     const select = document.getElementById('regElev');
     
@@ -146,13 +146,16 @@ function oppdaterElevListe() {
     Object.keys(elevRegister).sort().forEach(navn => {
         const e = elevRegister[navn];
         
-        // Beregn hvilket trinn eleven går på i det valgte skoleåret
+        // Beregn trinn
         const cTrinn = parseInt(e.startTrinn) + (vStartAarValgt - parseInt(e.startAar));
 
-        // Debug-hjelp: Se i F12-konsollen hvis navnene ikke dukker opp
-        // console.log(`${navn}: Beregnet trinn ${cTrinn}, Valgt trinn ${vTrinnValgt}`);
+        // --- ENDRET LOGIKK HER ---
+        const erRiktigTrinn = (cTrinn === vTrinnValgt);
+        const erRiktigKlasse = (e.startKlasse === vKlasse);
+        const harBegynt = vStartAarValgt >= parseInt(e.startAar);
+        const harIkkeSluttet = !e.sluttAar || vStartAarValgt <= parseInt(e.sluttAar);
 
-        if (cTrinn === vTrinnValgt && e.startKlasse === vKlasse) {
+        if (erRiktigTrinn && erRiktigKlasse && harBegynt && harIkkeSluttet) {
             const opt = document.createElement('option');
             opt.value = navn;
             opt.textContent = navn;
@@ -296,16 +299,21 @@ tHead.innerHTML = hode;
     let aktiveRader = "";
     let slettedeRader = "";
 
-    // 2. Gå gjennom alle elever i registeret
-        Object.keys(elevRegister).sort().forEach(navn => {
+// 2. Gå gjennom alle elever i registeret
+    Object.keys(elevRegister).sort().forEach(navn => {
         const e = elevRegister[navn];
-        // Beregn trinn: Starttrinn + (Valgt år - Startår)
+        
+        // Beregn hvilket trinn eleven går på i det valgte skoleåret
         const cTrinn = parseInt(e.startTrinn) + (vStartAarValgt - parseInt(e.startAar));
 
-        // VIKTIG: Bruk parseInt(vTrinn) for å sammenligne tall mot tall
-        if (cTrinn === parseInt(vTrinn) && e.startKlasse === vKlasse) {
+        // --- NY LOGIKK FOR FILTRERING ---
+        const harBegynt = vStartAarValgt >= parseInt(e.startAar);
+        const harIkkeSluttet = !e.sluttAar || vStartAarValgt <= parseInt(e.sluttAar);
+        const erRiktigTrinnOgKlasse = (cTrinn === parseInt(vTrinn) && e.startKlasse === vKlasse);
+
+        // Vi tegner bare raden hvis alle kriterier er oppfylt
+        if (erRiktigTrinnOgKlasse && harBegynt && harIkkeSluttet) {
             const d = lagredeResultater[navn] || {};
-            // ... resten av koden din for å tegne raden er lik
             const erSlettet = d.slettet === true;
             const erIkkeGjennomfort = d.ikkeGjennomfort === true;
 
@@ -712,12 +720,26 @@ async function genererKlasseAnalyse() {
         if (!oppsett) return alert("Fant ikke oppsett for denne analysen.");
 
         // 3. Samle data fra Firebase
-        const snapshot = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}`).once('value');
-        const data = snapshot.val() || {};
-        
-        let elever = Object.keys(data).filter(navn => data[navn].oppgaver && !data[navn].slettet && !data[navn].ikkeGjennomfort);
-        if (elever.length === 0) return alert("Ingen data å analysere for denne klassen.");
+const snapshot = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}`).once('value');
+const firebaseData = snapshot.val() || {};
 
+const vStartAarValgt = parseInt(aar.split('-')[0]);
+
+// Filtrer elever slik at vi kun analyserer de som faktisk "eksisterer" dette året i registeret
+let elever = Object.keys(firebaseData).filter(navn => {
+    const e = elevRegister[navn];
+    if (!e) return false; // Eleven finnes ikke i registeret
+
+    const cTrinn = parseInt(e.startTrinn) + (vStartAarValgt - parseInt(e.startAar));
+    const harBegynt = vStartAarValgt >= parseInt(e.startAar);
+    const harIkkeSluttet = !e.sluttAar || vStartAarValgt <= parseInt(e.sluttAar);
+    const erRiktigTrinn = cTrinn === parseInt(trinn);
+
+    return erRiktigTrinn && harBegynt && harIkkeSluttet && 
+           firebaseData[navn].oppgaver && 
+           !firebaseData[navn].slettet && 
+           !firebaseData[navn].ikkeGjennomfort;
+});
         // 4. Beregn statistikk
         let antall = elever.length;
         let oppgaveSummer = new Array(oppsett.oppgaver.length).fill(0);
@@ -726,17 +748,33 @@ async function genererKlasseAnalyse() {
 
         const totalMaksMulig = oppsett.oppgaver.reduce((sum, o) => sum + (o.maks || 0), 0);
 
-        elever.forEach(navn => {
-            const d = data[navn];
-            d.oppgaver.forEach((p, i) => {
-                oppgaveSummer[i] += (p || 0);
-            });
-            totalSumKlasse += (d.sum || 0);
+// 1. Sørg for at du bruker riktig kilde (sannsynligvis lagredeResultater)
+elever.forEach(navn => {
+    // ENDRET: Bruk lagredeResultater (eller det navnet du har definert lenger opp)
+    const d = lagredeResultater[navn] || {}; 
 
-            if (d.sum <= oppsett.grenseTotal) {
-                kritiskeElever.push({navn: navn, oppgaver: d.oppgaver, sum: d.sum});
-            }
+    // 2. SIKKERHETSSJEKK: Hopp over hvis eleven mangler data eller er slettet
+    if (!d.oppgaver || d.slettet) return;
+
+    // 3. Kjør loopen bare hvis d.oppgaver faktisk eksisterer
+    d.oppgaver.forEach((p, i) => {
+        // Sjekk at indexen i finnes i oppgaveSummer før addisjon
+        if (oppgaveSummer[i] !== undefined) {
+            oppgaveSummer[i] += (parseFloat(p) || 0);
+        }
+    });
+
+    totalSumKlasse += (parseFloat(d.sum) || 0);
+
+    // 4. Sjekk mot kritisk grense
+    if (parseFloat(d.sum) <= oppsett.grenseTotal) {
+        kritiskeElever.push({
+            navn: navn, 
+            oppgaver: d.oppgaver, 
+            sum: d.sum
         });
+    }
+});
 
         const totalKlasseSnittProsent = ((totalSumKlasse / antall) / totalMaksMulig) * 100;
 
@@ -807,6 +845,7 @@ htmlSide1 += `<th class="col-sum">TOTAL</th></tr></thead><tbody>
 
 
 // --- SIDE 2: ELEVOVERSIKT (Optimalisert for mange oppgaver) ---
+// --- SIDE 2: ELEVOVERSIKT (Optimalisert for mange oppgaver) ---
 let htmlSide2 = fellesHeader;
 htmlSide2 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Elevoversikt - Oppfølging og Mestring</h2>`;
 
@@ -839,7 +878,8 @@ if (kritiskeElever.length > 0) {
 }
 
 // 2. Lav mestring (Denne tabellen har bare 3 kolonner, så her fungerer col-tall utmerket)
-let eleverUnder65 = elever.map(n => ({navn: n, sum: data[n].sum, prosent: (data[n].sum / totalMaksMulig) * 100}))
+// RETTELSE: Bruker firebaseData[n] og den filtrerte 'elever'-listen
+let eleverUnder65 = elever.map(n => ({navn: n, sum: firebaseData[n].sum, prosent: (firebaseData[n].sum / totalMaksMulig) * 100}))
                           .filter(e => e.prosent < 65 && e.sum > oppsett.grenseTotal);
 
 htmlSide2 += `<h3 style="color:#e67e22; margin: 15px 0 5px 0; font-size: 1.1em; text-align:center;">Lav mestring (Total skår < 65%)</h3>`;
@@ -854,7 +894,8 @@ if (eleverUnder65.length > 0) {
 }
 
 // 3. Høy mestring
-let topper = elever.map(n => ({navn: n, sum: data[n].sum, prosent: (data[n].sum / totalMaksMulig) * 100}))
+// RETTELSE: Bruker firebaseData[n]
+let topper = elever.map(n => ({navn: n, sum: firebaseData[n].sum, prosent: (firebaseData[n].sum / totalMaksMulig) * 100}))
                    .filter(e => e.prosent >= 95);
 
 htmlSide2 += `<h3 style="color:#27ae60; margin: 15px 0 5px 0; font-size: 1.1em; text-align:center;">Høy mestring (Total skår ≥ 95%)</h3>`;
@@ -867,7 +908,6 @@ if (topper.length > 0) {
 } else {
     htmlSide2 += `<p style="text-align:center;">Ingen elever over 95%.</p>`;
 }
-
 
 // --- SIDE 3: PEDAGOGISK DETALJANALYSE ---
 let htmlSide3 = fellesHeader;
@@ -907,7 +947,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
 }
 
 
-// --- SIDE 4: UTVIKLING OVER TID (Inkludert Lav Mestring og Trinnsnitt) ---
+// --- SIDE 4: UTVIKLING OVER TID (Oppdatert med logikk for sluttdato) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
 try {
     const histSnap = await db.ref(`kartlegging`).once('value');
@@ -932,9 +972,22 @@ try {
             let klasseKritiske = 0; let klasseLavMestring = 0; 
             let trinnSum = 0; let trinnAntall = 0;
 
+            // Hent startåret for den historiske perioden vi looper gjennom nå
+            const historiskStartAar = parseInt(aKey.split('-')[0]);
+
             Object.keys(trinnData).forEach(kNavn => {
                 const kData = trinnData[kNavn];
-                const kElever = Object.keys(kData).filter(n => kData[n].oppgaver && !kData[n].slettet);
+                
+                // NY FILTRERING: Sjekk om eleven faktisk var aktiv i dette historiske året
+                const kElever = Object.keys(kData).filter(n => {
+                    const e = elevRegister[n];
+                    if (!e) return false; // Eleven finnes ikke i registeret
+
+                    const harBegynt = historiskStartAar >= parseInt(e.startAar);
+                    const harIkkeSluttet = !e.sluttAar || historiskStartAar <= parseInt(e.sluttAar);
+                    
+                    return kData[n].oppgaver && !kData[n].slettet && harBegynt && harIkkeSluttet;
+                });
                 
                 kElever.forEach(n => {
                     const eSum = kData[n].sum || 0;
@@ -946,7 +999,6 @@ try {
                         klasseSum += eSum;
                         klasseAntall++;
                         
-                        // Logikk for kategorisering
                         if (eSum <= aOppsett.grenseTotal) {
                             klasseKritiske++;
                         } else if (eProsent < 65) {
@@ -963,7 +1015,7 @@ try {
                     trinnProsent: ((trinnSum / trinnAntall) / aMaks) * 100, 
                     kritiske: klasseKritiske, 
                     lavMestring: klasseLavMestring,
-                    sort: aKey + (pKey === "Høst" ? "1" : "2") 
+                    sort: aKey + (pKey === "Høst" ? "1" : "2")
                 });
             }
         }
@@ -1304,44 +1356,57 @@ async function kjorAdminRapport(type) {
             const vStartAar = parseInt(aar.split('-')[0]);
 
             Object.keys(elevRegister).sort().forEach(navn => {
-                const e = elevRegister[navn];
-                const cTrinn = parseInt(e.startTrinn) + (vStartAar - parseInt(e.startAar));
-                
-                if (cTrinn === parseInt(trinn) && e.startKlasse === klasse) {
-                    const d = data[navn] || {};
-                    if (d.slettet === true) return;
+    const e = elevRegister[navn];
+    
+    // 1. Definer hvilket skoleår vi ser på (vStartAar er f.eks. 2025)
+    // vStartAar er allerede definert rett over denne koden i din funksjon
+    
+    // 2. NYTT: Sjekk om eleven er aktiv i dette skoleåret
+    const harBegynt = vStartAar >= parseInt(e.startAar);
+    const harIkkeSluttet = !e.sluttAar || vStartAar <= parseInt(e.sluttAar);
+    
+    // Hvis eleven ikke hører til i denne tidsperioden, hopper vi over helt
+    if (!harBegynt || !harIkkeSluttet) return;
 
-                    const sumVerdi = d.sum || 0;
-                    // Sikrer at grenseTotal finnes, ellers sett til -1 (ingen blir kritiske)
-                    const gTotal = oppsett.grenseTotal !== undefined ? oppsett.grenseTotal : -1;
-                    const erKritisk = sumVerdi <= gTotal;
-                    
-                    // Hvis vi kun skal vise kritiske, hopp over de som er OK
-                    if (type === 'kritisk' && (!d.sum || !erKritisk || d.ikkeGjennomfort)) return;
+    // 3. Beregn hvilket trinn eleven var på i det aktuelle året
+    const cTrinn = parseInt(e.startTrinn) + (vStartAar - parseInt(e.startAar));
+    
+    // Sjekk om eleven matcher trinnet og klassen som rapporten kjøres for
+    if (cTrinn === parseInt(trinn) && e.startKlasse === klasse) {
+        const d = data[navn] || {};
+        if (d.slettet === true) return;
 
-                    antallEleverVist++;
-                    tabellHtml += `<tr><td><b>${navn}</b></td>`;
+        const sumVerdi = d.sum || 0;
+        // Sikrer at grenseTotal finnes, ellers sett til -1 (ingen blir kritiske)
+        const gTotal = oppsett.grenseTotal !== undefined ? oppsett.grenseTotal : -1;
+        const erKritisk = sumVerdi <= gTotal;
+        
+        // Hvis vi kun skal vise kritiske, hopp over de som er OK
+        if (type === 'kritisk' && (!d.sum || !erKritisk || d.ikkeGjennomfort)) return;
 
-                    if (d.ikkeGjennomfort === true) {
-                        const colSpanTotal = oppsett.oppgaver.length + 1;
-                        tabellHtml += `<td colspan="${colSpanTotal}" align="center" style="color:red; font-style:italic;">Ikke gjennomført</td>`;
-                    } else if (d.oppgaver) {
-                        antallMedData++;
-                        oppsett.oppgaver.forEach((o, i) => {
-                            const poeng = d.oppgaver[i] || 0;
-                            kolonneSummer[i] += poeng;
-                            const bakgrunn = (o.grense !== -1 && poeng <= o.grense) ? 'background-color:#ffcccc' : '';
-                            tabellHtml += `<td align="center" style="${bakgrunn}">${poeng}</td>`;
-                        });
-                        totalSumKlasse += sumVerdi;
-                        tabellHtml += `<td align="center" style="${erKritisk ? 'background-color:#ffcccc; font-weight:bold;' : ''}">${sumVerdi}</td>`;
-                    } else {
-                        oppsett.oppgaver.forEach(() => tabellHtml += `<td align="center">-</td>`);
-                        tabellHtml += `<td align="center">-</td>`;
-                    }
-                    tabellHtml += `</tr>`;
-                }
+        antallEleverVist++;
+        tabellHtml += `<tr><td><b>${navn}</b></td>`;
+
+        if (d.ikkeGjennomfort === true) {
+            const colSpanTotal = oppsett.oppgaver.length + 1;
+            tabellHtml += `<td colspan="${colSpanTotal}" align="center" style="color:red; font-style:italic;">Ikke gjennomført</td>`;
+        } else if (d.oppgaver) {
+            antallMedData++;
+            oppsett.oppgaver.forEach((o, i) => {
+                const poeng = d.oppgaver[i] || 0;
+                kolonneSummer[i] += poeng;
+                const bakgrunn = (o.grense !== -1 && poeng <= o.grense) ? 'background-color:#ffcccc' : '';
+                tabellHtml += `<td align="center" style="${bakgrunn}">${poeng}</td>`;
             });
+            totalSumKlasse += sumVerdi;
+            tabellHtml += `<td align="center" style="${erKritisk ? 'background-color:#ffcccc; font-weight:bold;' : ''}">${sumVerdi}</td>`;
+        } else {
+            oppsett.oppgaver.forEach(() => tabellHtml += `<td align="center">-</td>`);
+            tabellHtml += `<td align="center">-</td>`;
+        }
+        tabellHtml += `</tr>`;
+    }
+});
 
             // Legg til snitt-rad hvis det er data (og ikke kritisk-liste)
             if (antallMedData > 0 && type !== 'kritisk') {
@@ -1462,8 +1527,23 @@ async function kjorSammenligning() {
 
         Object.keys(data).forEach(n => {
             const d = data[n];
+            const e = elevRegister[n]; // Henter info om eleven fra registeret
+
+            // --- NY SJEKK FOR START/SLUTT ---
+            if (e) {
+                // Vi henter startåret for skoleåret (f.eks. 2025 fra "2025-2026")
+                const vStartAarRapport = parseInt(aar.split('-')[0]);
+                
+                const harBegynt = vStartAarRapport >= parseInt(e.startAar);
+                const harIkkeSluttet = !e.sluttAar || vStartAarRapport <= parseInt(e.sluttAar);
+                
+                // Hvis eleven ikke var aktiv i det valgte skoleåret, hopper vi over dem
+                if (!harBegynt || !harIkkeSluttet) return;
+            }
+            // --------------------------------
+
             if (d.oppgaver && d.slettet !== true && d.ikkeGjennomfort !== true) {
-                antall++;
+                antall++; // Nå teller vi kun aktive elever i snitt-beregningen
                 d.oppgaver.forEach((p, idx) => {
                     if (idx < oppsett.oppgaver.length) summer[idx] += (p || 0);
                 });
@@ -1730,38 +1810,52 @@ for (let skoleaar of sorterteAar) {
                     let elevListeTilPrint = []; 
 
                     for (let id in eleverIKlasse) {
-                        const e = eleverIKlasse[id];
-                        
-                        // Vi hopper over slettede elever, men inkluderer alle andre
-                        if (e.slettet) continue;
+    const e = eleverIKlasse[id];
 
-                        let visningsNavn = e.navn || e.elevNavn || id;
-                        
-                        // Sjekk om eleven faktisk har gjennomført og har poeng
-                        if (!e.ikkeGjennomfort && e.sum !== undefined) {
-                            const prosent = Math.round((e.sum / maksPoeng) * 100);
-                            summerTilSnitt.push(prosent); // Tas med i snitt-beregning
+    // --- NY SJEKK: Er eleven aktiv i DETTE skoleåret (skoleaar)? ---
+    const e_reg = elevRegister[id]; 
+    if (e_reg) {
+        // Vi bruker startåret fra den nåværende runden i loopen (skoleaar)
+        const vStartAarSkole = parseInt(skoleaar.split('-')[0]);
+        const harBegynt = vStartAarSkole >= parseInt(e_reg.startAar);
+        const harIkkeSluttet = !e_reg.sluttAar || vStartAarSkole <= parseInt(e_reg.sluttAar);
+        
+        // Hvis eleven ikke har begynt ennå, eller har sluttet i dette året:
+        // Vi hopper helt over dem for denne spesifikke perioden.
+        if (!harBegynt || !harIkkeSluttet) continue; 
+    }
+    // -------------------------------------------------------------
 
-                            elevListeTilPrint.push({
-                                navn: visningsNavn,
-                                sum: e.sum,
-                                maks: maksPoeng,
-                                prosent: prosent,
-                                oppgaver: e.oppgaver || [],
-                                status: "ok"
-                            });
-                        } else {
-                            // Eleven er merket "Ikke gjennomført" eller mangler data
-                            elevListeTilPrint.push({
-                                navn: visningsNavn,
-                                sum: "-",
-                                maks: maksPoeng,
-                                prosent: "-",
-                                oppgaver: [],
-                                status: "ikke_gjennomfort" // Markør for utskriftsfunksjonen
-                            });
-                        }
-                    }
+    // Vi hopper over slettede elever, men inkluderer alle andre
+    if (e.slettet) continue;
+
+    let visningsNavn = e.navn || e.elevNavn || id;
+    
+    // Sjekk om eleven faktisk har gjennomført og har poeng
+    if (!e.ikkeGjennomfort && e.sum !== undefined) {
+        const prosent = Math.round((e.sum / maksPoeng) * 100);
+        summerTilSnitt.push(prosent); 
+
+        elevListeTilPrint.push({
+            navn: visningsNavn,
+            sum: e.sum,
+            maks: maksPoeng,
+            prosent: prosent,
+            oppgaver: e.oppgaver || [],
+            status: "ok"
+        });
+    } else {
+        // Eleven er merket "Ikke gjennomført" eller mangler data
+        elevListeTilPrint.push({
+            navn: visningsNavn,
+            sum: "-",
+            maks: maksPoeng,
+            prosent: "-",
+            oppgaver: [],
+            status: "ikke_gjennomfort" 
+        });
+    }
+}
 
                     if (elevListeTilPrint.length > 0) {
                         // Beregn snitt kun for de som har prosent-tall
@@ -2006,28 +2100,38 @@ function filtrerElevListe() {
 function aapneElevrapportValg() {
     const container = document.getElementById('elevListeContainer');
     container.innerHTML = "";
-    document.getElementById('elevSokInput').value = ""; // Tøm søkefelt
+    document.getElementById('elevSokInput').value = ""; 
     
-    // Henter alle unike navn fra elevRegisteret og lager rader
+    // Vi definerer hva som er "i år" for å sjekke mot sluttAar
+    const innevaerendeAar = 2026; // Eller bruk new Date().getFullYear()
+
     Object.keys(elevRegister).sort().forEach(navn => {
+        const e = elevRegister[navn];
         const div = document.createElement('div');
         div.className = "elev-valg-rad";
         div.style.padding = "10px";
         div.style.cursor = "pointer";
         div.style.borderBottom = "1px solid #eee";
-        div.innerText = navn;
 
-        // --- ENDRING HER: Skjuler modalen FØR rapporten genereres ---
-div.onclick = () => {
-    // 1. Skjul modalen umiddelbart
-    document.getElementById('modalElevrapport').style.display = 'none';
-    
-    // 2. Vent 200 millisekunder (0.2 sek) før vi lager rapporten
-    // Dette gir nettleseren tid til å tegne skjermen på nytt UTEN modalen
-    setTimeout(() => {
-        genererFullElevrapport(navn);
-    }, 200);
-};
+        // --- SJEKK FOR SLUTTDATO ---
+        const harSluttet = e.sluttAar && parseInt(e.sluttAar) < innevaerendeAar;
+
+        if (harSluttet) {
+            // Marker elever som har sluttet med grå tekst og info
+            div.style.color = "#95a5a6"; 
+            div.innerText = `${navn} (Sluttet ${e.sluttAar})`;
+        } else {
+            // Vanlige aktive elever
+            div.innerText = navn;
+        }
+        // ---------------------------
+
+        div.onclick = () => {
+            document.getElementById('modalElevrapport').style.display = 'none';
+            setTimeout(() => {
+                genererFullElevrapport(navn);
+            }, 200);
+        };
         
         container.appendChild(div);
     });
@@ -2067,11 +2171,22 @@ async function eksporterAlleKlasser() {
             const klasseResultater = alleKlasseData[klasseNavn] || {};
             let rader = [];
             
-            // Finn elever i denne spesifikke klassen fra registeret
+// Finn elever i denne spesifikke klassen fra registeret
             const relevanteElever = Object.keys(elevRegister).filter(navn => {
                 const e = elevRegister[navn];
+                
+                // Beregn hvilket trinn eleven er på i det valgte skoleåret
                 const cTrinn = e.startTrinn + (vStartAar - e.startAar);
-                return cTrinn == vTrinn && e.startKlasse === klasseNavn;
+                
+                // --- NY SJEKK FOR START- OG SLUTTDATO ---
+                const harBegynt = vStartAar >= parseInt(e.startAar);
+                const harIkkeSluttet = !e.sluttAar || vStartAar <= parseInt(e.sluttAar);
+                
+                // Eleven må gå på riktig trinn, i riktig klasse, og være aktiv i det valgte året
+                return cTrinn == vTrinn && 
+                       e.startKlasse === klasseNavn && 
+                       harBegynt && 
+                       harIkkeSluttet;
             }).sort();
 
             if (relevanteElever.length > 0) {
@@ -2146,11 +2261,16 @@ function analyserImportData(data) {
     const vAar = document.getElementById('mAar').value;
     const vStartAar = parseInt(vAar.split('-')[0]);
 
-    // Finn alle aktive elever i valgt klasse
+// Finn alle aktive elever i valgt klasse
     const aktuelleElever = Object.keys(elevRegister).filter(navn => {
         const e = elevRegister[navn];
         const cTrinn = e.startTrinn + (vStartAar - e.startAar);
-        return cTrinn === vTrinn && e.startKlasse === vKlasse;
+        
+        // --- NY SJEKK FOR SLUTTDATO ---
+        const harIkkeSluttet = !e.sluttAar || vStartAar <= parseInt(e.sluttAar);
+        const harBegynt = vStartAar >= parseInt(e.startAar);
+        
+        return cTrinn === vTrinn && e.startKlasse === vKlasse && harIkkeSluttet && harBegynt;
     }).sort((a, b) => a.localeCompare(b, 'nb'));
 
     midlertidigImportData = [];
@@ -2274,12 +2394,23 @@ async function kjorFullSkoleEksport() {
                 const klasseData = trinnData[kl] || {};
                 let rader = [];
                 
-                // 3. DYNAMISK TRINN-BEREGNING (Med parseInt for sikkerhet)
-                const elever = Object.keys(elevRegister).filter(navn => {
-                    const e = elevRegister[navn];
-                    const beregnetTrinn = parseInt(e.startTrinn) + (valgtStartAar - parseInt(e.startAar));
-                    return beregnetTrinn === trinnInt && e.startKlasse === kl;
-                }).sort();
+// 3. DYNAMISK TRINN-BEREGNING (Med sjekk for start- og sluttdato)
+const elever = Object.keys(elevRegister).filter(navn => {
+    const e = elevRegister[navn];
+    
+    // Finn ut hvilket trinn denne eleven ville vært på i det valgte skoleåret
+    const beregnetTrinn = parseInt(e.startTrinn) + (valgtStartAar - parseInt(e.startAar));
+    
+    // --- NYE SJEKKER ---
+    const harBegynt = valgtStartAar >= parseInt(e.startAar);
+    const harIkkeSluttet = !e.sluttAar || valgtStartAar <= parseInt(e.sluttAar);
+    
+    // Legg til harBegynt og harIkkeSluttet i returen
+    return beregnetTrinn === trinnInt && 
+           e.startKlasse === kl && 
+           harBegynt && 
+           harIkkeSluttet;
+}).sort();
 
                 if (elever.length > 0) {
                     let headers = ["Elevnavn", ...trinnOppsett.oppgaver.map(o => o.navn), "Sum"];
@@ -2557,7 +2688,8 @@ function leggTilNyElev() {
         const registerData = {
             startAar: startAarForRegister,
             startTrinn: startTrinnForRegister,
-            startKlasse: vKlasse
+            startKlasse: vKlasse,
+            sluttAar: null // VIKTIG: Nullstill sluttdato hvis eleven legges til på nytt
         };
 
         // Lagre til både elevRegister (lokalt) og Firebase
@@ -2758,6 +2890,10 @@ function eksporter() {
         const e = elevRegister[navn];
         const cTrinn = e.startTrinn + (vStartAar - e.startAar);
 
+// --- NY SJEKK FOR START- OG SLUTTDATO ---
+        const harBegynt = vStartAar >= parseInt(e.startAar);
+        const harIkkeSluttet = !e.sluttAar || vStartAar <= parseInt(e.sluttAar);
+
         if (cTrinn == vTrinn && e.startKlasse === vKlasse) {
             const d = lagredeResultater[navn] || {};
             if (d.slettet) return;
@@ -2808,10 +2944,15 @@ async function forberedPrint() {
 
         const sorterteNavn = Object.keys(elevRegister).sort();
         
-        const aktuelleElever = sorterteNavn.filter(navn => {
+       const aktuelleElever = sorterteNavn.filter(navn => {
             const e = elevRegister[navn];
             const cTrinn = e.startTrinn + (vStartAar - e.startAar);
-            return (cTrinn == vTrinn && e.startKlasse === vKlasse);
+            
+            // --- NY SJEKK FOR START- OG SLUTTDATO ---
+            const harBegynt = vStartAar >= parseInt(e.startAar);
+            const harIkkeSluttet = !e.sluttAar || vStartAar <= parseInt(e.sluttAar);
+            
+            return (cTrinn == vTrinn && e.startKlasse === vKlasse && harBegynt && harIkkeSluttet);
         });
         
         const totalAntall = aktuelleElever.length;
@@ -2919,7 +3060,6 @@ let globalUtviklingPerioder = [];
 async function aapneUtviklingsModal() {
     document.getElementById('modalUtvikling').style.display = 'block';
     
-    // Henter all data én gang for hele skolen
     const snapshot = await db.ref('kartlegging').once('value');
     const allData = snapshot.val();
     if (!allData) return;
@@ -2930,6 +3070,9 @@ async function aapneUtviklingsModal() {
 
     // Loop gjennom År -> Fag -> Periode -> Trinn -> Klasse -> Elev
     for (let aar in allData) {
+        // NYTT: Hent startåret for dette spesifikke året i loopen (f.eks. 2026)
+        const loopAarStart = parseInt(aar.split('-')[0]);
+
         for (let fag in allData[aar]) {
             if (!fagene.includes(fag)) continue;
 
@@ -2948,8 +3091,20 @@ async function aapneUtviklingsModal() {
 
                     const klasser = allData[aar][fag][periode][trinn];
                     for (let klasse in klasser) {
-                        for (let elev in klasser[klasse]) {
-                            const d = klasser[klasse][elev];
+                        for (let elevNavn in klasser[klasse]) {
+                            const d = klasser[klasse][elevNavn];
+
+                            // --- NYTT FILTER FOR SLUTTDATO ---
+                            const e = elevRegister[elevNavn];
+                            if (e) {
+                                const harBegynt = loopAarStart >= parseInt(e.startAar);
+                                const harIkkeSluttet = !e.sluttAar || loopAarStart <= parseInt(e.sluttAar);
+                                
+                                // Hvis eleven ikke var aktiv dette skoleåret, hopp over
+                                if (!harBegynt || !harIkkeSluttet) continue;
+                            }
+                            // --------------------------------
+
                             if (d.slettet || d.ikkeGjennomfort || d.sum === undefined) continue;
                             
                             const prosent = (d.sum / maksPoeng) * 100;
@@ -2961,7 +3116,7 @@ async function aapneUtviklingsModal() {
         }
     }
 
-    // Lagre data globalt så vi kan filtrere uten å spørre databasen på nytt
+    // Lagre data globalt (resten er som før)
     globalUtviklingPerioder = Array.from(allePerioderSet).sort((a, b) => {
         const aarA = a.split(' ')[1];
         const aarB = b.split(' ')[1];
@@ -2970,7 +3125,6 @@ async function aapneUtviklingsModal() {
     });
     globalUtviklingData = resultater;
 
-    // Start med å vise alle trinn
     oppdaterUtviklingFilter('alle');
 }
 
