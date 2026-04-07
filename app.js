@@ -1068,20 +1068,6 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
 }
 
 
-function kopierKIPrompt(base64Prompt) {
-    const prompt = atob(base64Prompt);
-    
-    // Kopier til utklippstavle
-    navigator.clipboard.writeText(prompt).then(() => {
-        alert("KI-instruksjon er kopiert!\n\n1. Gå til f.eks. ChatGPT eller Gemini.\n2. Lim inn teksten (Ctrl+V).\n3. KI-en vil nå lage nye oppgaver tilpasset dette nivået.");
-    }).catch(err => {
-        console.error('Kunne ikke kopiere:', err);
-        // Fallback hvis navigator.clipboard feiler
-        prompt("Kopier denne teksten til KI:", prompt);
-    });
-}
-
-
 // --- SIDE 4: UTVIKLING OVER TID (Oppdatert med Prøve-snitt logikk) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
 try {
@@ -1356,7 +1342,24 @@ try {
     }
 }
 
+// Denne må ligge utenfor alle andre funksjoner for å være tilgjengelig globalt
+window.kopierKIPrompt = function(base64Prompt) {
+    try {
+        const prompt = atob(base64Prompt);
+        
+     function kopierKIPrompt(base64Prompt) {
+    const prompt = atob(base64Prompt);
+    
 
+ //  - - -KI-PROMT AV BILDER
+    navigator.clipboard.writeText(prompt).then(() => {
+        alert("KI-instruksjon er kopiert!\n\n1. Gå til f.eks. ChatGPT eller Gemini.\n2. Lim inn teksten (Ctrl+V).\n3. KI-en vil nå lage nye oppgaver tilpasset dette nivået.");
+    }).catch(err => {
+        console.error('Kunne ikke kopiere:', err);
+        // Fallback hvis navigator.clipboard feiler
+        prompt("Kopier denne teksten til KI:", prompt);
+    });
+}
 
 // --- 6. ADMIN-FUNKSJONER ---
 function sjekkAdminKode() {
