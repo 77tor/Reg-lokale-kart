@@ -1,32 +1,29 @@
-// --- ALLER ØVERST I app.js ---
+// --- HELT ØVERST I app.js ---
 window.kopierKIPrompt = function(base64) {
-    console.log("KI-funksjon trigget");
+    console.log("Forsøker å kjøre kopiering...");
     try {
+        if (!base64) {
+            console.error("Ingen data mottatt i kopieringsfunksjonen");
+            return;
+        }
         const tekst = decodeURIComponent(escape(window.atob(base64)));
         
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(tekst).then(() => {
-                alert("✨ Instruksjon kopiert! Lim inn i ChatGPT/Gemini (Ctrl+V).");
-            }).catch(() => fallbackKopier(tekst));
-        } else {
-            fallbackKopier(tekst);
-        }
+        navigator.clipboard.writeText(tekst).then(() => {
+            alert("✨ KI-instruksjon kopiert! Lim inn i ChatGPT/Gemini.");
+        }).catch(err => {
+            console.warn("Clipboard API feilet, prøver fallback", err);
+            const el = document.createElement('textarea');
+            el.value = tekst;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            alert("Instruksjon kopiert!");
+        });
     } catch (e) {
-        console.error("Kopieringsfeil:", e);
+        console.error("Kritisk feil i kopierKIPrompt:", e);
     }
 };
-
-// Kun ÉN utgave av denne:
-function fallbackKopier(t) {
-    const el = document.createElement('textarea');
-    el.value = t;
-    document.body.appendChild(el);
-    el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
-    alert("Instruksjon kopiert!");
-}
-
 
 // --- 1. FIREBASE CONFIG ---
 const firebaseConfig = {
@@ -1075,27 +1072,30 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             let bildeOgKI = "";
             if (o.bilde) {
                 // Lag selve instruksjonen til KI
-                const kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}". \n\nPedagogisk forklaring: ${malInfo.forklaring}. \n\nKan du lage 5 lignende oppgaver basert på bildet (${o.bilde})? Tilpass til ${trinn}. trinn.`;
+            // --- SIDE 3: PEDAGOGISK DETALJANALYSE ---
+// ... (inne i loopen der du lager kiPrompt)
 
-                // Gjør teksten trygg for overføring
-                const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
+const kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}". \n\nPedagogisk forklaring: ${malInfo.forklaring}. \n\nKan du lage 5 lignende oppgaver basert på bildet (${o.bilde})? Tilpass til ${trinn}. trinn.`;
 
-                bildeOgKI = `
-                    <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
-                        <span class="bilde-container">
-                            <a href="${o.bilde}" target="_blank" style="font-size:0.85em; color:#2980b9; text-decoration:none; border:1px solid #2980b9; padding:2px 8px; border-radius:4px;">
-                                Se oppgave 👁️
-                            </a>
-                            <img src="${o.bilde}" class="hover-bilde" alt="Oppgavebilde">
-                        </span>
-                        
-                        <button type="button" 
-                                onclick="window.kopierKIPrompt('${safePrompt}')" 
-                                class="btn" 
-                                style="background:#8e44ad; color:white; padding:4px 10px; font-size:0.85em; border-radius:4px; border:none; cursor:pointer;">
-                            Lag nye oppgaver (KI) ✨
-                        </button>
-                    </div>`;
+// Konverter til base64 for å unngå trøbbel med tegnsetting
+const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
+
+bildeOgKI = `
+    <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
+        <span class="bilde-container">
+            <a href="${o.bilde}" target="_blank" style="font-size:0.85em; color:#2980b9; text-decoration:none; border:1px solid #2980b9; padding:2px 8px; border-radius:4px;">
+                Se oppgave 👁️
+            </a>
+            <img src="${o.bilde}" class="hover-bilde" alt="Oppgavebilde">
+        </span>
+        
+        <button type="button" 
+                onclick="window.kopierKIPrompt('${safePrompt}')" 
+                class="ki-generer-btn" 
+                style="background:#8e44ad; color:white; padding:4px 10px; font-size:0.85em; border-radius:4px; border:none; cursor:pointer;">
+            Lag nye oppgaver (KI) ✨
+        </button>
+    </div>`;
             }
 
             htmlSide3 += `
