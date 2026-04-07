@@ -28,10 +28,19 @@
 
 function fiksGithubLenke(url) {
     if (!url || typeof url !== 'string') return url;
-    // Bytter ut github.com/.../blob/ med raw.githubusercontent.com/.../
+
+    // 1. Hvis det er en forkortet sti (starter med Oppgavebilder/), legg på hele GitHub-adressen
+    if (url.startsWith("Oppgavebilder/")) {
+        const brukernavn = "77tor"; // Sjekk at dette er ditt brukernavn
+        const repo = "Reg-lokale-kart";
+        return `https://raw.githubusercontent.com/${brukernavn}/${repo}/main/${url}`;
+    }
+
+    // 2. Hvis det er en vanlig GitHub-lenke med /blob/, gjør den om til raw
     if (url.includes("github.com") && url.includes("/blob/")) {
         return url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
     }
+
     return url;
 }
 
