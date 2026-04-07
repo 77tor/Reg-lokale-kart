@@ -89,6 +89,42 @@ function registrerInnlogging(user) {
     sessionStorage.setItem('currentLogId', loggRef.key);
 }
 
+
+// LEGG DENNE HELT ØVERST I app.js
+window.kopierKIPrompt = function(base64Prompt) {
+    console.log("KI-funksjon trigget"); // For feilsøking i konsollen
+    try {
+        // Dekoder og håndterer norske tegn
+        const prompt = decodeURIComponent(escape(window.atob(base64Prompt)));
+        
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(prompt).then(() => {
+                alert("✨ KI-instruksjon er kopiert!\n\nLim inn i ChatGPT eller Gemini (Ctrl+V).");
+            }).catch(err => {
+                fallbackKopier(prompt);
+            });
+        } else {
+            fallbackKopier(prompt);
+        }
+    } catch (e) {
+        console.error("Feil ved dekoding:", e);
+        alert("Kunne ikke kopiere. Sjekk konsollen (F12).");
+    }
+};
+
+// En liten hjelpefunksjon for eldre nettlesere
+function fallbackKopier(tekst) {
+    const el = document.createElement('textarea');
+    el.value = tekst;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    alert("Instruksjon kopiert (fallback-metode)!");
+}
+
+
+
 // --- 3. HJELPEFUNKSJONER ---
 function hentOppsett() {
     const aarValgt = document.getElementById('mAar').value;
@@ -3403,27 +3439,3 @@ function printUtvikling() {
     `);
     printVindu.document.close();
 }
-
-
-
-window.kopierKIPrompt = function(base64Prompt) {
-    try {
-        // Dekoder teksten (håndterer også norske tegn via decodeURIComponent)
-        const prompt = decodeURIComponent(escape(atob(base64Prompt)));
-        
-        navigator.clipboard.writeText(prompt).then(() => {
-            alert("✨ KI-instruksjon er kopiert!\n\nÅpne ChatGPT eller Gemini og lim inn (Ctrl+V) for å lage nye oppgaver.");
-        }).catch(err => {
-            // Backup-metode hvis clipboard-API feiler
-            const el = document.createElement('textarea');
-            el.value = prompt;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-            alert("Instruksjon kopiert!");
-        });
-    } catch (e) {
-        console.error("Feil ved kopiering:", e);
-    }
-};
