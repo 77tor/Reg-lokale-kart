@@ -947,7 +947,8 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
 }
 
 
-// --- SIDE 4: UTVIKLING OVER TID (Oppdatert med logikk for sluttdato) ---
+
+// --- SIDE 4: UTVIKLING OVER TID (Oppdatert med Prøve-snitt logikk) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
 try {
     const histSnap = await db.ref(`kartlegging`).once('value');
@@ -970,18 +971,16 @@ try {
 
             let klasseSum = 0; let klasseAntall = 0; 
             let klasseKritiske = 0; let klasseLavMestring = 0; 
-            let trinnSum = 0; let trinnAntall = 0;
+            let totalProveSum = 0; let totalProveAntall = 0; // Samler data for alle klasser
 
-            // Hent startåret for den historiske perioden vi looper gjennom nå
             const historiskStartAar = parseInt(aKey.split('-')[0]);
 
             Object.keys(trinnData).forEach(kNavn => {
                 const kData = trinnData[kNavn];
                 
-                // NY FILTRERING: Sjekk om eleven faktisk var aktiv i dette historiske året
                 const kElever = Object.keys(kData).filter(n => {
                     const e = elevRegister[n];
-                    if (!e) return false; // Eleven finnes ikke i registeret
+                    if (!e) return false; 
 
                     const harBegynt = historiskStartAar >= parseInt(e.startAar);
                     const harIkkeSluttet = !e.sluttAar || historiskStartAar <= parseInt(e.sluttAar);
@@ -992,8 +991,10 @@ try {
                 kElever.forEach(n => {
                     const eSum = kData[n].sum || 0;
                     const eProsent = (eSum / aMaks) * 100;
-                    trinnSum += eSum;
-                    trinnAntall++;
+                    
+                    // Legger til i totalsnittet for denne prøven (alle klasser)
+                    totalProveSum += eSum;
+                    totalProveAntall++;
 
                     if (kNavn === klasse) {
                         klasseSum += eSum;
@@ -1012,7 +1013,7 @@ try {
                 historikkRader.push({ 
                     visning: `${pKey} ${aKey}`, 
                     klasseProsent: ((klasseSum / klasseAntall) / aMaks) * 100,
-                    trinnProsent: ((trinnSum / trinnAntall) / aMaks) * 100, 
+                    proveProsent: ((totalProveSum / totalProveAntall) / aMaks) * 100, // Snitt av alle i alle klasser
                     kritiske: klasseKritiske, 
                     lavMestring: klasseLavMestring,
                     sort: aKey + (pKey === "Høst" ? "1" : "2")
@@ -1024,14 +1025,13 @@ try {
     historikkRader.sort((a,b) => a.sort.localeCompare(b.sort));
 
     if (historikkRader.length > 0) {
-        // Tabell med "Lav mestring" før "Kritiske"
         htmlSide4 += `
             <table>
                 <thead>
                     <tr>
                         <th>Periode</th>
                         <th>Klasse (%)</th>
-                        <th>Trinn (%)</th>
+                        <th>Prøve (%)</th>
                         <th>Diff.</th>
                         <th>Lav mestring</th>
                         <th>Under kritisk grense</th>
@@ -1041,13 +1041,13 @@ try {
 
         historikkRader.forEach(r => {
             const aktiv = r.visning === `${periode} ${aar}` ? 'style="background:#e8f4fd; font-weight:bold;"' : '';
-            const diff = r.klasseProsent - r.trinnProsent;
+            const diff = r.klasseProsent - r.proveProsent;
             
             htmlSide4 += `
                 <tr ${aktiv}>
                     <td>${r.visning}</td>
                     <td>${r.klasseProsent.toFixed(1)}%</td>
-                    <td style="color:#666;">${r.trinnProsent.toFixed(1)}%</td>
+                    <td style="color:#666;">${r.proveProsent.toFixed(1)}%</td>
                     <td style="color:${diff >= 0 ? 'green':'red'}; font-weight:bold;">${diff >= 0 ? '+':''}${diff.toFixed(1)}%</td>
                     <td>${r.lavMestring}</td>
                     <td style="${r.kritiske > 0 ? 'color:red; font-weight:bold;' : ''}">${r.kritiske}</td>
@@ -1067,8 +1067,8 @@ try {
             else { utviklingTekst = `Stabil utvikling siden ${forrige.visning}.`; }
         }
 
-        const diffMotTrinn = siste.klasseProsent - siste.trinnProsent;
-        let trinnSammenligning = diffMotTrinn > 2 ? `Klassen presterer over trinnsnittet.` : (diffMotTrinn < -2 ? `Klassen presterer under trinnsnittet.` : `Klassen følger trinnsnittet.`);
+        const diffMotProve = siste.klasseProsent - siste.proveProsent;
+        let sammenligningTekst = diffMotProve > 2 ? `Klassen presterer over gjennomsnittet for denne prøven.` : (diffMotProve < -2 ? `Klassen presterer under gjennomsnittet for denne prøven.` : `Klassen følger snittet for prøven.`);
 
         htmlSide4 += `
             <div style="margin-top:20px; display: flex; gap: 15px;">
@@ -1076,7 +1076,7 @@ try {
                     <h4 style="margin:0 0 5px 0;">Intern utvikling</h4><p style="margin:0; font-size:13px;">${utviklingTekst}</p>
                 </div>
                 <div style="flex: 1; padding:12px; border-left:5px solid #2c3e50; background:#f9f9f9;">
-                    <h4 style="margin:0 0 5px 0;">Mot trinn</h4><p style="margin:0; font-size:13px;">${trinnSammenligning}</p>
+                    <h4 style="margin:0 0 5px 0;">Mot prøvesnitt</h4><p style="margin:0; font-size:13px;">${sammenligningTekst}</p>
                 </div>
             </div>`;
 
