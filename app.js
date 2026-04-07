@@ -3008,25 +3008,25 @@ async function forberedPrint() {
         }
         snittHtml += `</tr>`;
 
-        let html = `
+let html = `
             <div style="padding: 5px; font-family: Arial, sans-serif;">
                 <h2 style="text-align:center; margin: 0 0 5px 0; font-size: 16px; letter-spacing:1px;">KLASSERESULTATER</h2>
                 <h3 style="text-align:center; margin: 0 0 12px 0; font-size: 13px; color: #444;">${vFag.toUpperCase()} &nbsp;|&nbsp; ${vTrinn}${vKlasse} &nbsp;|&nbsp; ${vPeriode} ${vAar}</h3>
                 
-                <table style="width:100%; border-collapse: collapse; text-align:center; font-size: 10.5px; line-height: 1.2;">
+                <table style="width:100%; border-collapse: collapse; text-align:center; font-size: 10.5px; line-height: 1.2; border: 1px solid #000;">
                     <thead>
                         <tr style="background-color: #f1f1f1 !important;">
-                            <th style="border: 1px solid #000 !important; padding: 6px; width: 190px; text-align: center;">Elevnavn</th>
+                            <th style="border: 1px solid #000 !important; padding: 6px; width: 190px;">Elevnavn</th>
                             ${oppsett.oppgaver.map(o => `
-                                <th style="border: 1px solid #000 !important; padding: 4px; text-align: center;">
+                                <th style="border: 1px solid #000 !important; padding: 4px;">
                                     ${o.navn}<br>
                                     <small style="font-size: 8px; font-weight: normal;">(maks ${o.maks})</small>
                                 </th>
                             `).join('')}
-                            <th style="border: 1px solid #000 !important; padding: 4px; width: 50px; text-align: center;">SUM</th>
+                            <th style="border: 1px solid #000 !important; padding: 4px; width: 50px;">SUM</th>
                         </tr>
                     </thead>
-                        ${raderHtml}
+                    <tbody> ${raderHtml}
                         ${snittHtml}
                     </tbody>
                 </table>
