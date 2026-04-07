@@ -1053,7 +1053,6 @@ if (topper.length > 0) {
 }
 
 
-
 // --- SIDE 3: PEDAGOGISK DETALJANALYSE MED KI-HJELP ---
 let htmlSide3 = fellesHeader;
 htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Områder klassen skårer under 65%</h2>`;
@@ -1071,29 +1070,45 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             let årsakTekst = (o.grense !== -1 && snitt <= o.grense) ? `Kritisk lavt` : `Lav mestring`;
             
             let bildeOgKI = "";
-           // ... inne i loopen på Side 3 ...
-if (o.bilde) {
-    const kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}". \n\nPedagogisk forklaring: ${malInfo.forklaring}. \n\nKan du lage 5 lignende oppgaver basert på bildet (${o.bilde})? Tilpass til ${trinn}. trinn.`;
+            if (o.bilde) {
+                const kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}". \n\nPedagogisk forklaring: ${malInfo.forklaring}. \n\nKan du lage 5 lignende oppgaver basert på bildet (${o.bilde})? Tilpass til ${trinn}. trinn.`;
+                const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
 
-    const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
+                bildeOgKI = `
+                    <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
+                        <span class="bilde-container">
+                            <a href="${o.bilde}" target="_blank" style="font-size:0.85em; color:#2980b9; text-decoration:none; border:1px solid #2980b9; padding:2px 8px; border-radius:4px;">
+                                Se oppgave 👁️
+                            </a>
+                            <img src="${o.bilde}" class="hover-bilde" alt="Oppgavebilde">
+                        </span>
+                        <button type="button" 
+                            onclick="(function(btn){ 
+                                try {
+                                    const tekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
+                                    const el = document.createElement('textarea');
+                                    el.value = tekst;
+                                    document.body.appendChild(el);
+                                    el.select();
+                                    document.execCommand('copy');
+                                    document.body.removeChild(el);
+                                    const opprinneligTekst = btn.innerHTML;
+                                    btn.innerHTML = '✅ Kopiert!';
+                                    btn.style.background = '#27ae60';
+                                    setTimeout(function(){ 
+                                        btn.innerHTML = opprinneligTekst; 
+                                        btn.style.background = '#8e44ad';
+                                    }, 2000);
+                                } catch(e) { console.error('Kopieringsfeil:', e); }
+                            })(this)" 
+                            class="btn" 
+                            style="background:#8e44ad; color:white; padding:4px 10px; font-size:0.85em; border-radius:4px; border:none; cursor:pointer; transition: background 0.3s;">
+                            Lag nye oppgaver (KI) ✨
+                        </button>
+                    </div>`;
+            }
 
-    bildeOgKI = `
-        <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
-            <span class="bilde-container">
-                <a href="${o.bilde}" target="_blank" style="font-size:0.85em; color:#2980b9; text-decoration:none; border:1px solid #2980b9; padding:2px 8px; border-radius:4px;">
-                    Se oppgave 👁️
-                </a>
-                <img src="${o.bilde}" class="hover-bilde" alt="Oppgavebilde">
-            </span>
-            
-            <button type="button" 
-                    onclick="window.KI_KOPIER_FIX('${safePrompt}')" 
-                    class="btn" 
-                    style="background:#8e44ad; color:white; padding:4px 10px; font-size:0.85em; border-radius:4px; border:none; cursor:pointer;">
-                Lag nye oppgaver (KI) ✨
-            </button>
-        </div>`;
-}
+            // DENNE BLOKKEN MANGLER I DIN KODE OVER:
             htmlSide3 += `
                 <div style="margin-bottom: 15px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 8px; position:relative;">
                     <h4 style="margin:0; color:#c0392b;">${malInfo.navn} — <span style="font-weight:normal; color:#555;">${årsakTekst} (${prosent.toFixed(1)}%)</span></h4>
@@ -1351,6 +1366,10 @@ try {
     @media print { 
         .toolbar { display:none; } 
         body { background: white; padding:0; } 
+/* Skjul KI-knappene ved utskrift, da de ikke gir mening på papir */
+    .btn { display: none !important; }
+    /* Sørg for at de røde boksene på side 3 ikke blir grå (tving farger) */
+    .analyse-section { -webkit-print-color-adjust: exact; }
 .hover-bilde {
         display: none !important;}
         .analyse-section { box-shadow:none; margin:0; width: 297mm; height: 210mm; } 
