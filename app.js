@@ -1342,29 +1342,6 @@ try {
     }
 }
 
-// Denne må ligge utenfor alle andre funksjoner for å være tilgjengelig globalt
-window.kopierKIPrompt = function(base64Prompt) {
-    try {
-        const prompt = atob(base64Prompt);
-        
-        // Bruk det moderne Clipboard API-et
-        navigator.clipboard.writeText(prompt).then(() => {
-            alert("✨ KI-instruksjon er kopiert til utklippstavlen!\n\nDu kan nå lime den inn i ChatGPT, Gemini eller en annen KI-tjeneste for å generere nye oppgaver.");
-        }).catch(err => {
-            // Fallback hvis Clipboard API blir blokkert (f.eks. i enkelte nettlesere uten HTTPS)
-            console.error('Kunne ikke kopiere automatisk:', err);
-            const midlertidigInput = document.createElement("textarea");
-            midlertidigInput.value = prompt;
-            document.body.appendChild(midlertidigInput);
-            midlertidigInput.select();
-            document.execCommand("copy");
-            document.body.removeChild(midlertidigInput);
-            alert("Instruksjon kopiert (via fallback).");
-        });
-    } catch (e) {
-        console.error("Feil ved dekoding av prompt:", e);
-    }
-};
 
 // --- 6. ADMIN-FUNKSJONER ---
 function sjekkAdminKode() {
@@ -3424,3 +3401,27 @@ function printUtvikling() {
     `);
     printVindu.document.close();
 }
+
+
+
+window.kopierKIPrompt = function(base64Prompt) {
+    try {
+        // Dekoder teksten (håndterer også norske tegn via decodeURIComponent)
+        const prompt = decodeURIComponent(escape(atob(base64Prompt)));
+        
+        navigator.clipboard.writeText(prompt).then(() => {
+            alert("✨ KI-instruksjon er kopiert!\n\nÅpne ChatGPT eller Gemini og lim inn (Ctrl+V) for å lage nye oppgaver.");
+        }).catch(err => {
+            // Backup-metode hvis clipboard-API feiler
+            const el = document.createElement('textarea');
+            el.value = prompt;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            alert("Instruksjon kopiert!");
+        });
+    } catch (e) {
+        console.error("Feil ved kopiering:", e);
+    }
+};
