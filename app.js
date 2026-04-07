@@ -957,7 +957,6 @@ htmlSide1 += `<th class="col-sum">TOTAL</th></tr></thead><tbody>
 
 
 // --- SIDE 2: ELEVOVERSIKT (Optimalisert for mange oppgaver) ---
-// --- SIDE 2: ELEVOVERSIKT (Optimalisert for mange oppgaver) ---
 let htmlSide2 = fellesHeader;
 htmlSide2 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Elevoversikt - Oppfølging og Mestring</h2>`;
 
@@ -1021,7 +1020,7 @@ if (topper.length > 0) {
     htmlSide2 += `<p style="text-align:center;">Ingen elever over 95%.</p>`;
 }
 
-// --- SIDE 3: PEDAGOGISK DETALJANALYSE ---
+// --- SIDE 3: PEDAGOGISK DETALJANALYSE MED KI-HJELP ---
 let htmlSide3 = fellesHeader;
 htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Områder klassen skårer under 65%</h2>`;
 
@@ -1036,28 +1035,51 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             harSvakheter = true;
             let årsakTekst = (o.grense !== -1 && snitt <= o.grense) ? `Kritisk lavt` : `Lav mestring`;
             
-            // NY LOGIKK FOR BILDE-HOVER:
-            let bildeLenke = "";
+            // Logikk for bilde og KI-knapp
+            let bildeOgKI = "";
             if (o.bilde) {
-                bildeLenke = `
-                    <span class="bilde-container">
-                        <a href="${o.bilde}" target="_blank" style="margin-left:10px; font-size:0.8em; color:#2980b9; cursor:zoom-in;">
-                            [Se oppgavebilde 👁️]
-                        </a>
-                        <img src="${o.bilde}" class="hover-bilde" alt="Oppgavebilde">
-                    </span>`;
+                // Vi lager en "pakke" med info til KI-en
+                const kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}". \n\nPedagogisk forklaring: ${malInfo.forklaring}. \n\nKan du lage 5 lignende oppgaver basert på vedlagte bilde (${o.bilde}) slik at elevene får mengdetrening? Tilpass oppgavene til ${trinn}. trinn.`;
+
+                bildeOgKI = `
+                    <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
+                        <span class="bilde-container">
+                            <a href="${o.bilde}" target="_blank" style="font-size:0.85em; color:#2980b9; text-decoration:none; border:1px solid #2980b9; padding:2px 8px; border-radius:4px;">
+                                Se oppgave 👁️
+                            </a>
+                            <img src="${o.bilde}" class="hover-bilde" alt="Oppgavebilde">
+                        </span>
+                        
+                        <button onclick="kopierKIPrompt('${btoa(kiPrompt)}')" class="btn" style="background:#8e44ad; color:white; padding:4px 10px; font-size:0.85em; border-radius:4px; border:none; cursor:pointer;">
+                            Lag nye oppgaver (KI) ✨
+                        </button>
+                    </div>`;
             }
 
             htmlSide3 += `
-                <div style="margin-bottom: 12px; padding: 12px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 8px;">
-                    <h4 style="margin:0; color:#c0392b;">${malInfo.navn} — <span style="font-weight:normal; color:#555;">${årsakTekst}</span> ${bildeLenke}</h4>
-                    <p style="margin: 5px 0 0 0; font-size: 14px; color: #333;"><strong>Pedagogisk fokus:</strong> ${malInfo.forklaring}</p>
+                <div style="margin-bottom: 15px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 8px; position:relative;">
+                    <h4 style="margin:0; color:#c0392b;">${malInfo.navn} — <span style="font-weight:normal; color:#555;">${årsakTekst} (${prosent.toFixed(1)}%)</span></h4>
+                    <p style="margin: 8px 0; font-size: 14px; color: #333;"><strong>Pedagogisk fokus:</strong> ${malInfo.forklaring}</p>
+                    ${bildeOgKI}
                 </div>`;
         }
     });
     if (!harSvakheter) htmlSide3 += `<p style="text-align:center; color:green;">Stabilt høyt nivå på alle områder.</p>`;
 }
 
+
+function kopierKIPrompt(base64Prompt) {
+    const prompt = atob(base64Prompt);
+    
+    // Kopier til utklippstavle
+    navigator.clipboard.writeText(prompt).then(() => {
+        alert("KI-instruksjon er kopiert!\n\n1. Gå til f.eks. ChatGPT eller Gemini.\n2. Lim inn teksten (Ctrl+V).\n3. KI-en vil nå lage nye oppgaver tilpasset dette nivået.");
+    }).catch(err => {
+        console.error('Kunne ikke kopiere:', err);
+        // Fallback hvis navigator.clipboard feiler
+        prompt("Kopier denne teksten til KI:", prompt);
+    });
+}
 
 
 // --- SIDE 4: UTVIKLING OVER TID (Oppdatert med Prøve-snitt logikk) ---
