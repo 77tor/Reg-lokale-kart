@@ -2944,27 +2944,21 @@ async function forberedPrint() {
 
         const sorterteNavn = Object.keys(elevRegister).sort();
         
-       const aktuelleElever = sorterteNavn.filter(navn => {
+        const aktuelleElever = sorterteNavn.filter(navn => {
             const e = elevRegister[navn];
             const cTrinn = e.startTrinn + (vStartAar - e.startAar);
-            
-            // --- NY SJEKK FOR START- OG SLUTTDATO ---
             const harBegynt = vStartAar >= parseInt(e.startAar);
             const harIkkeSluttet = !e.sluttAar || vStartAar <= parseInt(e.sluttAar);
-            
             return (cTrinn == vTrinn && e.startKlasse === vKlasse && harBegynt && harIkkeSluttet);
         });
         
         const totalAntall = aktuelleElever.length;
-        
-        // JUSTERT: Litt mer padding (3.5px) for bedre lesbarhet, men fortsatt kompakt
         const cellePadding = "padding: 3.5px 2px;"; 
 
         aktuelleElever.forEach((navn, index) => {
             const d = lagredeResultater[navn] || {};
             if (d.slettet) return;
 
-            // Zebra-striper: Annenhver rad får en syltynn gråfarge for å lede øyet
             const zebraStyle = index % 2 === 0 ? "background-color: #ffffff;" : "background-color: #fcfcfc;";
 
             if (d.ikkeGjennomfort) {
@@ -2986,11 +2980,9 @@ async function forberedPrint() {
                     const verdi = parseFloat(oppgaveData[i]) || 0;
                     elevSum += verdi;
                     kolonneSummer[i] += verdi;
-
                     const grense = o.grense !== undefined ? o.grense : o.kritisk;
                     const erKritisk = (grense !== undefined && verdi <= grense);
                     const kritiskStil = erKritisk ? 'background-color: #ffcccc !important; color: #b71c1c; font-weight:bold;' : '';
-
                     raderHtml += `<td style="border:1px solid #000; ${cellePadding} ${kritiskStil}">${verdi}</td>`;
                 });
 
@@ -3049,7 +3041,6 @@ async function forberedPrint() {
         utskriftArea.innerHTML = "";
     }
 }
-
 
 // -- SAMMENLIGNE PRØVER/ÅR ---
 let devChartLesing = null;
