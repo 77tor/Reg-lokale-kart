@@ -1074,11 +1074,10 @@ if (topper.length > 0) {
 
 
 // --- SIDE 3: PEDAGOGISK DETALJANALYSE MED KI-HJELP ---
-// --- SIDE 3: PEDAGOGISK DETALJANALYSE MED KI-HJELP ---
 let htmlSide3 = fellesHeader;
 htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Områder klassen skårer under 65%</h2>`;
 
-// 1. Definer bøkene (legg denne gjerne rett over loopen)
+// 1. Definer bøkene (Husk: "1", ikke "1. trinn")
 const matteBoker = {
     "1": "https://raw.githubusercontent.com/77tor/Reg-lokale-kart/main/Mattebok/Multi_1_ove_s_1_50.pdf",
     "2": "https://raw.githubusercontent.com/77tor/Reg-lokale-kart/main/Mattebok/Multi_2_ove_s_1_50.pdf"
@@ -1099,22 +1098,24 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             let bildeOgKI = "";
             if (o.bilde) {
                 const bildeUrl = fiksGithubLenke(o.bilde);
-                const aktuellBok = matteBoker[trinn] || "";
                 
-                // Lag tekst om boka hvis den finnes
+                // Hent ut kun tallet fra trinn-variabelen (viktig!)
+                const rentTrinnNummer = trinn.replace(/\D/g, ''); 
+                const aktuellBok = matteBoker[rentTrinnNummer] || "";
+                
                 let bokTekst = "";
                 if (aktuellBok) {
-                    bokTekst = `\n\nI tillegg har jeg lastet opp matteboka for ${trinn}. trinn her: ${aktuellBok}. \nKan du foreslå hvilke sider i denne boka (mellom side 1 og 50) som er mest relevante for å trene på "${malInfo.navn}"?`;
+                    bokTekst = `\n\nI tillegg har jeg lastet opp matteboka for ${rentTrinnNummer}. trinn her: ${aktuellBok}. \nKan du foreslå hvilke sider i denne boka (mellom side 1 og 50) som er mest relevante for å trene på "${malInfo.navn}"?`;
                 }
 
-                // Sett sammen den fulle instruksjonen
+                // VIKTIG: Kun ÉN definisjon av kiPrompt her
                 const kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}". 
 Pedagogisk forklaring: ${malInfo.forklaring}. 
 
 1. Kan du lage 5 lignende oppgaver basert på bildet (${bildeUrl})? 
 2. ${bokTekst} 
 
-Tilpass alt til ${trinn}. trinn.`;
+Tilpass alt til ${rentTrinnNummer}. trinn.`;
 
                 const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
 
@@ -1138,7 +1139,7 @@ Tilpass alt til ${trinn}. trinn.`;
                                     document.execCommand('copy');
                                     document.body.removeChild(el);
                                     
-                                    btn.innerHTML = '✅ Kopiert - Åpner KI...';
+                                    btn.innerHTML = '✅ Kopiert - Åpner ChatGPT...';
                                     btn.style.background = '#27ae60';
 
                                     setTimeout(() => {
@@ -1155,6 +1156,7 @@ Tilpass alt til ${trinn}. trinn.`;
                     </div>`;
             }
 
+            // Legg til boksen i Side 3
             htmlSide3 += `
                 <div style="margin-bottom: 15px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 8px; position:relative;">
                     <h4 style="margin:0; color:#c0392b;">${malInfo.navn} — <span style="font-weight:normal; color:#555;">${årsakTekst} (${prosent.toFixed(1)}%)</span></h4>
