@@ -1,34 +1,30 @@
-// LEGG DENNE HELT ØVERST I app.js
-window.kopierKIPrompt = function(base64Prompt) {
-    console.log("KI-funksjon trigget"); // For feilsøking i konsollen
+// --- ALLER ØVERST I app.js ---
+window.kopierKIPrompt = function(base64) {
+    console.log("KI-funksjon trigget");
     try {
-        // Dekoder og håndterer norske tegn
-        const prompt = decodeURIComponent(escape(window.atob(base64Prompt)));
+        const tekst = decodeURIComponent(escape(window.atob(base64)));
         
         if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(prompt).then(() => {
-                alert("✨ KI-instruksjon er kopiert!\n\nLim inn i ChatGPT eller Gemini (Ctrl+V).");
-            }).catch(err => {
-                fallbackKopier(prompt);
-            });
+            navigator.clipboard.writeText(tekst).then(() => {
+                alert("✨ Instruksjon kopiert! Lim inn i ChatGPT/Gemini (Ctrl+V).");
+            }).catch(() => fallbackKopier(tekst));
         } else {
-            fallbackKopier(prompt);
+            fallbackKopier(tekst);
         }
     } catch (e) {
-        console.error("Feil ved dekoding:", e);
-        alert("Kunne ikke kopiere. Sjekk konsollen (F12).");
+        console.error("Kopieringsfeil:", e);
     }
 };
 
-// En liten hjelpefunksjon for eldre nettlesere
-function fallbackKopier(tekst) {
+// Kun ÉN utgave av denne:
+function fallbackKopier(t) {
     const el = document.createElement('textarea');
-    el.value = tekst;
+    el.value = t;
     document.body.appendChild(el);
     el.select();
     document.execCommand('copy');
     document.body.removeChild(el);
-    alert("Instruksjon kopiert (fallback-metode)!");
+    alert("Instruksjon kopiert!");
 }
 
 
@@ -1066,6 +1062,7 @@ htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Områd
 
 if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     let harSvakheter = false;
+    
     oppsett.oppgaver.forEach((o, i) => {
         const snitt = oppgaveSummer[i] / antall;
         const prosent = (snitt / o.maks) * 100;
@@ -1077,10 +1074,10 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             
             let bildeOgKI = "";
             if (o.bilde) {
-                // 1. Lag prompten
-                const kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}". \n\nPedagogisk forklaring: ${malInfo.forklaring}. \n\nKan du lage 5 lignende oppgaver basert på vedlagte bilde (${o.bilde}) slik at elevene får mengdetrening? Tilpass oppgavene til ${trinn}. trinn.`;
+                // Lag selve instruksjonen til KI
+                const kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}". \n\nPedagogisk forklaring: ${malInfo.forklaring}. \n\nKan du lage 5 lignende oppgaver basert på bildet (${o.bilde})? Tilpass til ${trinn}. trinn.`;
 
-                // 2. Gjør den trygg for norske tegn og Base64-konvertering
+                // Gjør teksten trygg for overføring
                 const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
 
                 bildeOgKI = `
@@ -1092,7 +1089,10 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                             <img src="${o.bilde}" class="hover-bilde" alt="Oppgavebilde">
                         </span>
                         
-                        <button onclick="window.kopierKIPrompt('${safePrompt}')" class="btn" style="background:#8e44ad; color:white; padding:4px 10px; font-size:0.85em; border-radius:4px; border:none; cursor:pointer;">
+                        <button type="button" 
+                                onclick="window.kopierKIPrompt('${safePrompt}')" 
+                                class="btn" 
+                                style="background:#8e44ad; color:white; padding:4px 10px; font-size:0.85em; border-radius:4px; border:none; cursor:pointer;">
                             Lag nye oppgaver (KI) ✨
                         </button>
                     </div>`;
@@ -1106,9 +1106,11 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                 </div>`;
         }
     });
-    if (!harSvakheter) htmlSide3 += `<p style="text-align:center; color:green;">Stabilt høyt nivå på alle områder.</p>`;
+    
+    if (!harSvakheter) {
+        htmlSide3 += `<p style="text-align:center; color:green; padding:20px;">Stabilt høyt nivå på alle områder.</p>`;
+    }
 }
-
 // --- SIDE 4: UTVIKLING OVER TID (Oppdatert med Prøve-snitt logikk) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
 try {
