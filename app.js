@@ -25,6 +25,17 @@
     });
 })();
 
+
+function fiksGithubLenke(url) {
+    if (!url || typeof url !== 'string') return url;
+    // Bytter ut github.com/.../blob/ med raw.githubusercontent.com/.../
+    if (url.includes("github.com") && url.includes("/blob/")) {
+        return url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
+    }
+    return url;
+}
+
+
 // --- 1. FIREBASE CONFIG ---
 const firebaseConfig = {
     apiKey: "AIzaSyC7g1gllBUVACl3fkpYeEe7r1LfBs2ck3U",
@@ -1069,44 +1080,52 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             harSvakheter = true;
             let årsakTekst = (o.grense !== -1 && snitt <= o.grense) ? `Kritisk lavt` : `Lav mestring`;
             
-            let bildeOgKI = "";
-            if (o.bilde) {
-                const kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}". \n\nPedagogisk forklaring: ${malInfo.forklaring}. \n\nKan du lage 5 lignende oppgaver basert på bildet (${o.bilde})? Tilpass til ${trinn}. trinn.`;
-                const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
+// ... inne i loopen på Side 3 ...
+let bildeOgKI = "";
 
-                bildeOgKI = `
-                    <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
-                        <span class="bilde-container">
-                            <a href="${o.bilde}" target="_blank" style="font-size:0.85em; color:#2980b9; text-decoration:none; border:1px solid #2980b9; padding:2px 8px; border-radius:4px;">
-                                Se oppgave 👁️
-                            </a>
-                            <img src="${o.bilde}" class="hover-bilde" alt="Oppgavebilde">
-                        </span>
-                        <button type="button" 
-                            onclick="(function(btn){ 
-                                try {
-                                    const tekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
-                                    const el = document.createElement('textarea');
-                                    el.value = tekst;
-                                    document.body.appendChild(el);
-                                    el.select();
-                                    document.execCommand('copy');
-                                    document.body.removeChild(el);
-                                    const opprinneligTekst = btn.innerHTML;
-                                    btn.innerHTML = '✅ Kopiert!';
-                                    btn.style.background = '#27ae60';
-                                    setTimeout(function(){ 
-                                        btn.innerHTML = opprinneligTekst; 
-                                        btn.style.background = '#8e44ad';
-                                    }, 2000);
-                                } catch(e) { console.error('Kopieringsfeil:', e); }
-                            })(this)" 
-                            class="btn" 
-                            style="background:#8e44ad; color:white; padding:4px 10px; font-size:0.85em; border-radius:4px; border:none; cursor:pointer; transition: background 0.3s;">
-                            Lag nye oppgaver (KI) ✨
-                        </button>
-                    </div>`;
-            }
+if (o.bilde) {
+    // AUTOMATISK FIKS: Her vaskes lenken uansett hvilken oppgave det er
+    const bildeUrl = fiksGithubLenke(o.bilde);
+
+    const kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}". \n\nPedagogisk forklaring: ${malInfo.forklaring}. \n\nKan du lage 5 lignende oppgaver basert på bildet (${bildeUrl})? Tilpass til ${trinn}. trinn.`;
+
+    const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
+
+    bildeOgKI = `
+        <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
+            <span class="bilde-container">
+                <a href="${bildeUrl}" target="_blank" style="font-size:0.85em; color:#2980b9; text-decoration:none; border:1px solid #2980b9; padding:2px 8px; border-radius:4px;">
+                    Se oppgave 👁️
+                </a>
+                <img src="${bildeUrl}" class="hover-bilde" alt="Oppgavebilde">
+            </span>
+            
+            <button type="button" 
+                onclick="(function(btn){ 
+                    try {
+                        const tekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
+                        const el = document.createElement('textarea');
+                        el.value = tekst;
+                        document.body.appendChild(el);
+                        el.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(el);
+                        
+                        const opprinneligTekst = btn.innerHTML;
+                        btn.innerHTML = '✅ Kopiert!';
+                        btn.style.background = '#27ae60';
+                        setTimeout(function(){ 
+                            btn.innerHTML = opprinneligTekst; 
+                            btn.style.background = '#8e44ad';
+                        }, 2000);
+                    } catch(e) { console.error('Kopieringsfeil:', e); }
+                })(this)" 
+                class="btn" 
+                style="background:#8e44ad; color:white; padding:4px 10px; font-size:0.85em; border-radius:4px; border:none; cursor:pointer;">
+                Lag nye oppgaver (KI) ✨
+            </button>
+        </div>`;
+}
 
             // DENNE BLOKKEN MANGLER I DIN KODE OVER:
             htmlSide3 += `
