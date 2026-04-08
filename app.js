@@ -867,6 +867,31 @@ document.addEventListener('change', function(e) {
     }
 });
 
+function finnRelevanteSider(rentTrinnNummer, oppgaveNavn) {
+    const trinnNokkel = "trinn" + rentTrinnNummer;
+    const data = matteData[trinnNokkel];
+    if (!data) return "Ingen data for dette trinnet.";
+
+    let funn = [];
+    const sokeOrd = oppgaveNavn.toLowerCase().split(" ");
+
+    // Gå gjennom alle bøkene for trinnet (grunnbokA, grunnbokB, ovebok)
+    ["grunnbokA", "grunnbokB", "ovebok"].forEach(bokType => {
+        if (data[bokType]) {
+            data[bokType].innhold.forEach(kap => {
+                kap.emner.forEach(emne => {
+                    // Sjekk om noen av ordene i oppgaven finnes i emnenavnet
+                    const match = sokeOrd.some(ord => ord.length > 3 && emne.navn.toLowerCase().includes(ord));
+                    if (match) {
+                        funn.push(`${data[bokType].tittel}: Kap ${kap.kapittel} - "${emne.navn}" (Side ${emne.side})`);
+                    }
+                });
+            });
+        }
+    });
+
+    return funn.length > 0 ? funn.join("\n") : "Fant ingen direkte treff i innholdsfortegnelsen.";
+}
 
 // --- KOMBINERT ANALYSE-KODE (Rettet versjon med alle sjekker) ---
 async function genererKlasseAnalyse() {
@@ -1077,12 +1102,6 @@ if (topper.length > 0) {
 let htmlSide3 = fellesHeader;
 htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Områder klassen skårer under 65%</h2>`;
 
-// 1. Definer bøkene (Husk: "1", ikke "1. trinn")
-const matteBoker = {
-    "1": "https://raw.githubusercontent.com/77tor/Reg-lokale-kart/main/Mattebok/Multi_1_ove_s_1_50.pdf",
-    "2": "https://raw.githubusercontent.com/77tor/Reg-lokale-kart/main/Mattebok/Multi_2_ove_s_1_50.pdf"
-};
-
 if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     let harSvakheter = false;
     
@@ -1095,32 +1114,23 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             harSvakheter = true;
             let årsakTekst = (o.grense !== -1 && snitt <= o.grense) ? `Kritisk lavt` : `Lav mestring`;
             
+            // Hent ut rent trinnnummer
+            const rentTrinnNummer = trinn.replace(/\D/g, ''); 
+            
+            // Finn bokreferanser fra mattebok.js
+            const bokReferanser = finnRelevanteSider(rentTrinnNummer, malInfo.navn);
+            const safeBokReferanser = btoa(unescape(encodeURIComponent(bokReferanser)));
+
             let bildeOgKI = "";
             if (o.bilde) {
                 const bildeUrl = fiksGithubLenke(o.bilde);
                 
-                // Hent ut kun tallet fra trinn-variabelen (viktig!)
-                const rentTrinnNummer = trinn.replace(/\D/g, ''); 
-                const aktuellBok = matteBoker[rentTrinnNummer] || "";
-                
-                let bokTekst = "";
-                if (aktuellBok) {
-                    bokTekst = `\n\nI tillegg har jeg lastet opp matteboka for ${rentTrinnNummer}. trinn her: ${aktuellBok}. \nKan du foreslå hvilke sider i denne boka (mellom side 1 og 50) som er mest relevante for å trene på "${malInfo.navn}"?`;
-                }
-
-                // VIKTIG: Kun ÉN definisjon av kiPrompt her
-                const kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}". 
-Pedagogisk forklaring: ${malInfo.forklaring}. 
-
-1. Kan du lage 5 lignende oppgaver basert på bildet (${bildeUrl})? 
-2. ${bokTekst} 
-
-Tilpass alt til ${rentTrinnNummer}. trinn.`;
-
+                // KI PROMPT
+                const kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}".\nPedagogisk forklaring: ${malInfo.forklaring}.\n\n1. Kan du lage 5 lignende oppgaver basert på bildet (${bildeUrl})?\n\nTilpass alt til ${rentTrinnNummer}. trinn.`;
                 const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
 
                 bildeOgKI = `
-                    <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
+                    <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
                         <span class="bilde-container">
                             <a href="${bildeUrl}" target="_blank" style="font-size:0.85em; color:#2980b9; text-decoration:none; border:1px solid #2980b9; padding:2px 8px; border-radius:4px;">
                                 Se oppgave 👁️
@@ -1130,33 +1140,32 @@ Tilpass alt til ${rentTrinnNummer}. trinn.`;
                         
                         <button type="button" 
                             onclick="(function(btn){ 
-                                try {
-                                    const tekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
-                                    const el = document.createElement('textarea');
-                                    el.value = tekst;
-                                    document.body.appendChild(el);
-                                    el.select();
-                                    document.execCommand('copy');
-                                    document.body.removeChild(el);
-                                    
-                                    btn.innerHTML = '✅ Kopiert - Åpner ChatGPT...';
-                                    btn.style.background = '#27ae60';
-
-                                    setTimeout(() => {
-                                        window.open('https://chatgpt.com', '_blank'); 
+                                const tekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
+                                navigator.clipboard.writeText(tekst).then(() => {
+                                    btn.innerHTML = '✅ Kopiert!';
+                                    setTimeout(() => { 
+                                        window.open('https://chatgpt.com', '_blank');
                                         btn.innerHTML = 'Lag nye oppgaver (KI) ✨';
-                                        btn.style.background = '#8e44ad';
                                     }, 800);
-                                } catch(e) { console.error(e); }
+                                });
                             })(this)" 
                             class="btn" 
                             style="background:#8e44ad; color:white; padding:4px 10px; font-size:0.85em; border-radius:4px; border:none; cursor:pointer;">
                             Lag nye oppgaver (KI) ✨
                         </button>
+
+                        <button type="button" 
+                            onclick="(function(){ 
+                                const info = decodeURIComponent(escape(window.atob('${safeBokReferanser}')));
+                                alert('Relevante sider i Multi for ${rentTrinnNummer}. trinn:\\n\\n' + info);
+                            })()" 
+                            class="btn" 
+                            style="background:#2980b9; color:white; padding:4px 10px; font-size:0.85em; border-radius:4px; border:none; cursor:pointer;">
+                            Bok-referanse 📚
+                        </button>
                     </div>`;
             }
 
-            // Legg til boksen i Side 3
             htmlSide3 += `
                 <div style="margin-bottom: 15px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 8px; position:relative;">
                     <h4 style="margin:0; color:#c0392b;">${malInfo.navn} — <span style="font-weight:normal; color:#555;">${årsakTekst} (${prosent.toFixed(1)}%)</span></h4>
@@ -1170,6 +1179,7 @@ Tilpass alt til ${rentTrinnNummer}. trinn.`;
         htmlSide3 += `<p style="text-align:center; color:green; padding:20px;">Stabilt høyt nivå på alle områder.</p>`;
     }
 }
+
 // --- SIDE 4: UTVIKLING OVER TID (Oppdatert med Prøve-snitt logikk) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
 try {
