@@ -1098,7 +1098,7 @@ if (topper.length > 0) {
 }
 
 
-// --- SIDE 3: ULTRA-KOMPAKT DETALJANALYSE (Med utvidet boksøk) ---
+// --- SIDE 3: ULTRA-KOMPAKT DETALJANALYSE (Med smart boksøk på tvers av trinn) ---
 let htmlSide3 = fellesHeader; 
 htmlSide3 += `<div class="analyse-side-3">`; 
 htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Områder klassen skårer under kritisk grense eller under 65%</h2>`;
@@ -1124,32 +1124,40 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             let farge = (o.grense !== -1 && snitt <= o.grense) ? "#c0392b" : "#d35400";
             const rentTrinnNummer = parseInt(trinn.replace(/\D/g, '')); 
             
-            // --- NY LOGIKK FOR BOKSØK ---
+            // --- OPPDATERT LOGIKK FOR BOKSØK ---
             let bokReferanser = finnRelevanteSider(rentTrinnNummer, malInfo.navn);
             let bokInfoTekst = `Relevante sider i Multi for ${rentTrinnNummer}. trinn:`;
 
-            // Hvis ingen treff på eget trinn, søk i alle lavere + ett trinn over
-            if (!bokReferanser || bokReferanser.trim().length === 0) {
+            // Sjekk om resultatet er "tomt" eller inneholder feilmeldingen din
+            const erTom = !bokReferanser || 
+                          bokReferanser.trim().length === 0 || 
+                          bokReferanser.includes("Fant ingen direkte treff");
+
+            if (erTom) {
                 let funnetIAndre = [];
-                
-                // Sjekk alle lavere trinn og ett trinn over (f.eks. 1 til trinn+1)
-                for (let t = 1; t <= rentTrinnNummer + 1; t++) {
-                    if (t === rentTrinnNummer) continue; // Allerede sjekket
+                // Let i alle trinn fra 1 til 7 (eller 1 til egetTrinn + 1)
+                for (let t = 1; t <= 7; t++) {
+                    if (t === rentTrinnNummer) continue; 
                     
                     let ref = finnRelevanteSider(t, malInfo.navn);
-                    if (ref && ref.trim().length > 0) {
+                    // Sjekk at vi faktisk fant ekte sidetall, ikke en feilmelding
+                    if (ref && ref.trim().length > 0 && !ref.includes("Fant ingen direkte treff")) {
                         funnetIAndre.push(`${t}. trinn: ${ref}`);
                     }
                 }
                 
                 if (funnetIAndre.length > 0) {
                     bokReferanser = funnetIAndre.join('\\n');
-                    bokInfoTekst = `Ingen treff på ${rentTrinnNummer}. trinn. Fant sider på disse trinnene:`;
+                    bokInfoTekst = `Ingen treff på ${rentTrinnNummer}. trinn. Du kan finne stoff om dette her:`;
+                } else {
+                    // Hvis absolutt ingenting finnes i noen bøker
+                    bokReferanser = "Fant ingen treff i Multi-serien (1-7).";
+                    bokInfoTekst = "Søk i læreverk:";
                 }
             }
-            // ----------------------------
+            // ----------------------------------
 
-            const visBokKnapp = !erLesing && (bokReferanser && bokReferanser.trim().length > 0);
+            const visBokKnapp = !erLesing;
             const safeBokReferanser = btoa(unescape(encodeURIComponent(bokReferanser)));
             const safeBokTittel = btoa(unescape(encodeURIComponent(bokInfoTekst)));
             
@@ -1178,14 +1186,14 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                                 btn.innerText = '✅';
                                 setTimeout(() => { window.open('https://chatgpt.com', '_blank'); btn.innerText = 'KI'; }, 1000);
                             });
-                        })(this)" style="cursor:pointer; border:1px solid #8e44ad; background:white; color:#8e44ad; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:35px;">KI</button>
+                        })(this)" class="no-print" style="cursor:pointer; border:1px solid #8e44ad; background:white; color:#8e44ad; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:35px;">KI</button>
 
                         ${visBokKnapp ? `
                         <button onclick="(function(){
                             const tittel = decodeURIComponent(escape(window.atob('${safeBokTittel}')));
                             const info = decodeURIComponent(escape(window.atob('${safeBokReferanser}')));
                             alert(tittel + '\\n\\n' + info);
-                        })()" 
+                        })()" class="no-print"
                             style="cursor:pointer; border:1px solid #2980b9; background:white; color:#2980b9; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:45px;">BOK</button>
                         ` : ''}
                     </div>
@@ -1198,7 +1206,6 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     }
 }
 htmlSide3 += `</div>`;
-
 
 // --- SIDE 4: UTVIKLING OVER TID (Oppdatert med Prøve-snitt logikk) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
