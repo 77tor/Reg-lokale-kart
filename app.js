@@ -1099,13 +1099,13 @@ if (topper.length > 0) {
 
 
 // --- SIDE 3: ULTRA-KOMPAKT DETALJANALYSE ---
-// 1. DU MÅ HA DENNE LINJEN FØRST (deklarer variabelen):
 let htmlSide3 = fellesHeader; 
 
-// 2. Deretter kan du legge til overskriften:
+// 1. Åpne containeren (viktig for CSS-en)
+htmlSide3 += `<div class="analyse-side-3">`; 
+
 htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Områder klassen skårer under 65%</h2>`;
 
-// 3. Så legger du til tabell-headeren:
 htmlSide3 += `
     <div style="display: grid; grid-template-columns: 1fr auto; gap: 20px; padding: 10px 15px; background: #eee; font-weight: bold; border-radius: 4px; margin-bottom: 5px; font-size: 0.85em;">
         <div>OMRÅDE / PEDAGOGISK FOKUS</div>
@@ -1131,7 +1131,6 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
             const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
 
-            // Rad-layout
             htmlSide3 += `
                 <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 8px 15px; border-bottom: 1px solid #eee; font-size: 0.85em; background: white;">
                     <div style="padding-right: 15px;">
@@ -1144,7 +1143,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                         ${bildeUrl ? `
                             <span class="bilde-container">
                                 <a href="${bildeUrl}" target="_blank" title="Se oppgave" style="text-decoration:none; padding: 2px 5px; border: 1px solid #ccc; border-radius:3px; background:#f9f9f9;">👁️</a>
-                                <img src="${bildeUrl}" class="hover-bilde" style="right: 100%; left: auto;">
+                                <img src="${bildeUrl}" class="hover-bilde" alt="Oppgavebilde">
                             </span>` : ''}
                         
                         <button onclick="(function(btn){ 
@@ -1166,6 +1165,9 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
         htmlSide3 += `<p style="text-align:center; color:green; padding:20px;">Stabilt høyt nivå på alle områder.</p>`;
     }
 }
+
+// 2. Lukk containeren HER (utenfor alle if-setninger)
+htmlSide3 += `</div>`;
 
 // --- SIDE 4: UTVIKLING OVER TID (Oppdatert med Prøve-snitt logikk) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;

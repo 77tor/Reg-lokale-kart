@@ -66,7 +66,41 @@ tr:hover { background-color: #f1f1f1; }
     pointer-events: none; /* Musen går "gjennom" bildet så det ikke flimrer */
 }
 
+/* Spesifikke stiler kun for Side 3-analysen */
+.analyse-side-3 .bilde-container {
+    position: relative;
+    display: inline-block;
+}
 
+/* Dette er "sikkerhets-stilen" for bildet i analysen */
+.analyse-side-3 .hover-bilde {
+    display: none;
+    position: absolute;
+    
+    /* Tvinger bildet til venstre for å unngå skjermkant-problemer */
+    right: 140% !important; 
+    left: auto !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    
+    /* Sikrer at bildet faktisk har en størrelse */
+    width: 380px !important;
+    max-width: none !important;
+    height: auto !important;
+    
+    z-index: 999999 !important;
+    background: white !important;
+    border: 3px solid #2d3748 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+    padding: 2px !important;
+    pointer-events: none;
+}
+
+/* Vis bildet kun når man hovrer inni analyse-side-3 */
+.analyse-side-3 .bilde-container:hover .hover-bilde {
+    display: block !important;
+}
 
 /* 1. PLASSERING I TABELL (Hovedsiden) */
 /* Her vil vi ha bildet sentrert under teksten */
