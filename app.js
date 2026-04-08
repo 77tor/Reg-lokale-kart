@@ -1104,7 +1104,7 @@ let htmlSide3 = fellesHeader;
 // 1. Åpne containeren (viktig for den isolerte CSS-en .analyse-side-3)
 htmlSide3 += `<div class="analyse-side-3">`; 
 
-htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Områder klassen skårer under 65%</h2>`;
+htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Områder klassen skårer under kritisk grense eller under 65%</h2>`;
 
 // Tabell-header for analysen
 htmlSide3 += `
@@ -1438,7 +1438,7 @@ try {
             </head>
             <body>
                 <div class="toolbar">
-                    <button onclick="window.print()" style="background:#2980b9;" class="btn-tool">🖨️ Lagre PDF</button>
+                    <button onclick="window.print()" style="background:#2980b9;" class="btn-tool">🖨️ Skriv ut / Lagre PDF</button>
                     <a href="${oppgaveSti}" target="_blank" style="background:#8e44ad;" class="btn-tool">📄 Se prøve</a>
                     ${harFasit ? `<a href="${fasitSti}" target="_blank" style="background:#2c3e50;" class="btn-tool">✅ Se fasit</a>` : ''}
                     <button onclick="window.close()" class="btn-tool btn-grey">Lukk</button>
