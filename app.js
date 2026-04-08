@@ -1099,8 +1099,13 @@ if (topper.length > 0) {
 
 
 // --- SIDE 3: ULTRA-KOMPAKT DETALJANALYSE ---
+// 1. DU MÅ HA DENNE LINJEN FØRST (deklarer variabelen):
+let htmlSide3 = fellesHeader; 
 
-// 1. Tabell-header
+// 2. Deretter kan du legge til overskriften:
+htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Områder klassen skårer under 65%</h2>`;
+
+// 3. Så legger du til tabell-headeren:
 htmlSide3 += `
     <div style="display: grid; grid-template-columns: 1fr auto; gap: 20px; padding: 10px 15px; background: #eee; font-weight: bold; border-radius: 4px; margin-bottom: 5px; font-size: 0.85em;">
         <div>OMRÅDE / PEDAGOGISK FOKUS</div>
