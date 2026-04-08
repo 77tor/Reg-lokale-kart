@@ -1037,15 +1037,12 @@ htmlSide1 += `<th class="col-sum">TOTAL</th></tr></thead><tbody>
 let htmlSide2 = fellesHeader;
 htmlSide2 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Elevoversikt - Oppfølging og Mestring</h2>`;
 
-// 1. Under kritisk grense (Dette er tabellen som ofte blir for bred)
+// 1. Under kritisk grense
 htmlSide2 += `<h3 style="color:red; margin: 10px 0 5px 0; font-size: 1.1em; text-align:center;">Under kritisk grense (Sum ≤ ${oppsett.grenseTotal})</h3>`;
 if (kritiskeElever.length > 0) {
-    // Vi bruker 'kompakt-tabell'
     htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th class="col-navn">Navn</th>`;
     oppsett.oppgaver.forEach((o, i) => {
         let visningsNavn = (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) ? gjeldendeMalTabell.oppgaver[i + 1].navn : o.navn;
-        // ENDRING: Bruk en nøytral th eller 'col-oppgave' i stedet for 'col-tall' her 
-        // slik at de mange kolonnene kan krympes av 'table-layout: fixed'
         htmlSide2 += `<th>${visningsNavn}</th>`; 
     });
     htmlSide2 += `<th class="col-sum">Sum</th></tr></thead><tbody>`;
@@ -1055,7 +1052,6 @@ if (kritiskeElever.length > 0) {
         e.oppgaver.forEach((p, i) => {
             const o = oppsett.oppgaver[i];
             const stil = (o.grense !== -1 && p <= o.grense) ? 'style="background:#ffcccc"' : '';
-            // Her fjerner vi col-tall for at nettleseren skal få lov til å krympe cellen ved behov
             htmlSide2 += `<td ${stil}>${p}</td>`;
         });
         htmlSide2 += `<td class="col-sum" style="background:#ffcccc; font-weight:bold;">${e.sum}</td></tr>`;
@@ -1065,24 +1061,22 @@ if (kritiskeElever.length > 0) {
     htmlSide2 += `<p style="text-align:center;">Ingen under kritisk grense.</p>`;
 }
 
-// 2. Lav mestring (Denne tabellen har bare 3 kolonner, så her fungerer col-tall utmerket)
-// RETTELSE: Bruker firebaseData[n] og den filtrerte 'elever'-listen
-let eleverUnder65 = elever.map(n => ({navn: n, sum: firebaseData[n].sum, prosent: (firebaseData[n].sum / totalMaksMulig) * 100}))
-                          .filter(e => e.prosent < 70 && e.sum > oppsett.grenseTotal);
+// 2. Lav mestring - ENDRET FRA 65 TIL 70
+let eleverUnder70 = elever.map(n => ({navn: n, sum: firebaseData[n].sum, prosent: (firebaseData[n].sum / totalMaksMulig) * 100}))
+                          .filter(e => e.prosent < 70 && e.sum > oppsett.grenseTotal); // Endret her
 
-htmlSide2 += `<h3 style="color:#e67e22; margin: 15px 0 5px 0; font-size: 1.1em; text-align:center;">Lav mestring (Total skår < 70%)</h3>`;
-if (eleverUnder65.length > 0) {
+htmlSide2 += `<h3 style="color:#e67e22; margin: 15px 0 5px 0; font-size: 1.1em; text-align:center;">Lav mestring (Total skår < 70%)</h3>`; // Endret her
+if (eleverUnder70.length > 0) {
     htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th class="col-navn">Navn</th><th class="col-tall">Poeng</th><th class="col-tall">Prosent</th></tr></thead><tbody>`;
-    eleverUnder65.sort((a, b) => a.sum - b.sum).forEach(e => {
+    eleverUnder70.sort((a, b) => a.sum - b.sum).forEach(e => {
         htmlSide2 += `<tr><td class="col-navn"><b>${e.navn}</b></td><td class="col-tall">${e.sum}</td><td class="col-tall" style="background:#fff3e0; font-weight:bold;">${e.prosent.toFixed(1)}%</td></tr>`;
     });
     htmlSide2 += `</tbody></table>`;
 } else {
-    htmlSide2 += `<p style="text-align:center;">Ingen ytterligere elever under 70%.</p>`;
+    htmlSide2 += `<p style="text-align:center;">Ingen ytterligere elever under 70%.</p>`; // Endret her
 }
 
 // 3. Høy mestring
-// RETTELSE: Bruker firebaseData[n]
 let topper = elever.map(n => ({navn: n, sum: firebaseData[n].sum, prosent: (firebaseData[n].sum / totalMaksMulig) * 100}))
                    .filter(e => e.prosent >= 95);
 
