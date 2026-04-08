@@ -1380,6 +1380,16 @@ try {
     }
 
 
+/* Legg gjerne til dette i <style> blokken din */
+.analyse-side-3 div[style*="display: grid"]:hover {
+    background-color: #fcfcfc !important;
+}
+
+/* Sørg for at overskriften på side 3 ikke blir med på neste side ved et uhell */
+.analyse-side-3 {
+    page-break-inside: avoid;
+}
+
 .hover-bilde {
     display: none; /* Skjult som standard */
     position: absolute;
