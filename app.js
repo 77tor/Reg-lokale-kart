@@ -1098,12 +1098,27 @@ if (topper.length > 0) {
 }
 
 
-// --- SIDE 3: PEDAGOGISK DETALJANALYSE MED KI-HJELP ---
-let htmlSide3 = fellesHeader;
+// --- SIDE 3: ULTRA-KOMPAKT DETALJANALYSE ---
+let htmlSide3 = fellesHeader; 
+
+// 1. Åpne containeren (viktig for den isolerte CSS-en .analyse-side-3)
+htmlSide3 += `<div class="analyse-side-3">`; 
+
 htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Områder klassen skårer under 65%</h2>`;
 
+// Tabell-header for analysen
+htmlSide3 += `
+    <div style="display: grid; grid-template-columns: 1fr auto; gap: 20px; padding: 10px 15px; background: #eee; font-weight: bold; border-radius: 4px; margin-bottom: 5px; font-size: 0.85em;">
+        <div>OMRÅDE / PEDAGOGISK FOKUS</div>
+        <div style="text-align: right;">TILTAK</div>
+    </div>`;
 if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     let harSvakheter = false;
+    
+    // Vi henter teksten fra overskriften (fellesHeader) for å se hvilket fag det er
+    // Jeg ser på bildet ditt at det står "Analyse: Lesing" eller lignende der.
+    const headerTekst = fellesHeader.toLowerCase();
+    const erLesing = headerTekst.includes("lesing");
     
     oppsett.oppgaver.forEach((o, i) => {
         const snitt = oppgaveSummer[i] / antall;
@@ -1112,77 +1127,59 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
 
         if ((prosent < 65 || (o.grense !== -1 && snitt <= o.grense)) && malInfo) {
             harSvakheter = true;
-            let årsakTekst = (o.grense !== -1 && snitt <= o.grense) ? `Kritisk lavt` : `Lav mestring`;
+            let farge = (o.grense !== -1 && snitt <= o.grense) ? "#c0392b" : "#d35400";
             
-            // Hent ut rent trinnnummer
             const rentTrinnNummer = trinn.replace(/\D/g, ''); 
-            
-            // Finn bokreferanser fra mattebok.js
             const bokReferanser = finnRelevanteSider(rentTrinnNummer, malInfo.navn);
+            
+            // LOGIKK: Vis knappen hvis det IKKE er lesing OG det finnes referanser
+            const visBokKnapp = !erLesing && (bokReferanser && bokReferanser.trim().length > 0);
+            
             const safeBokReferanser = btoa(unescape(encodeURIComponent(bokReferanser)));
+            const kiPrompt = `Jeg er lærer og klassen trenger trening på: ${malInfo.navn}. ${malInfo.forklaring}. Lag 5 lignende oppgaver tilpasset ${rentTrinnNummer}. trinn.`;
+            const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
+            const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
 
-            let bildeOgKI = "";
-            if (o.bilde) {
-                const bildeUrl = fiksGithubLenke(o.bilde);
-                
-                // KI PROMPT
-                const kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}".\nPedagogisk forklaring: ${malInfo.forklaring}.\n\n1. Kan du lage 5 lignende oppgaver basert på bildet (${bildeUrl})?\n\nTilpass alt til ${rentTrinnNummer}. trinn.`;
-                const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
+            htmlSide3 += `
+                <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 8px 15px; border-bottom: 1px solid #eee; font-size: 0.85em; background: white;">
+                    <div style="padding-right: 15px;">
+                        <strong style="color: ${farge};">${malInfo.navn}</strong> 
+                        <span style="color: #666;">(${prosent.toFixed(1)}%)</span> — 
+                        <span style="color: #888; font-style: italic;">${malInfo.forklaring}</span>
+                    </div>
 
-                bildeOgKI = `
-                    <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
-                        <span class="bilde-container">
-                            <a href="${bildeUrl}" target="_blank" style="font-size:0.85em; color:#2980b9; text-decoration:none; border:1px solid #2980b9; padding:2px 8px; border-radius:4px;">
-                                Se oppgave 👁️
-                            </a>
-                            <img src="${bildeUrl}" class="hover-bilde" alt="Oppgavebilde">
-                        </span>
+                    <div style="display: flex; gap: 5px; flex-shrink: 0;">
+                        ${bildeUrl ? `
+                            <span class="bilde-container">
+                                <a href="${bildeUrl}" target="_blank" title="Se oppgave" style="text-decoration:none; padding: 2px 5px; border: 1px solid #ccc; border-radius:3px; background:#f9f9f9;">👁️</a>
+                                <img src="${bildeUrl}" class="hover-bilde" alt="Oppgavebilde">
+                            </span>` : ''}
                         
-                        <button type="button" 
-                            onclick="(function(btn){ 
-                                const tekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
-                                navigator.clipboard.writeText(tekst).then(() => {
-                                    btn.innerHTML = '✅ Kopiert!';
-                                    setTimeout(() => { 
-                                        window.open('https://chatgpt.com', '_blank');
-                                        btn.innerHTML = 'Lag nye oppgaver (KI) ✨';
-                                    }, 800);
-                                });
-                            })(this)" 
-                            class="btn" 
-                            style="background:#8e44ad; color:white; padding:4px 10px; font-size:0.85em; border-radius:4px; border:none; cursor:pointer;">
-                            Lag nye oppgaver (KI) ✨
-                        </button>
+                        <button onclick="(function(btn){ 
+                            const tekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
+                            navigator.clipboard.writeText(tekst).then(() => {
+                                btn.innerText = '✅';
+                                setTimeout(() => { window.open('https://chatgpt.com', '_blank'); btn.innerText = 'KI'; }, 1000);
+                            });
+                        })(this)" style="cursor:pointer; border:1px solid #8e44ad; background:white; color:#8e44ad; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:35px;">KI</button>
 
-                        <button type="button" 
-                            onclick="(function(){ 
-                                const info = decodeURIComponent(escape(window.atob('${safeBokReferanser}')));
-                                alert('Relevante sider i Multi for ${rentTrinnNummer}. trinn:\\n\\n' + info);
-                            })()" 
-                            class="btn" 
-                            style="background:#2980b9; color:white; padding:4px 10px; font-size:0.85em; border-radius:4px; border:none; cursor:pointer;">
-                            Bok-referanse 📚
-                        </button>
-                    </div>`;
-            }
-
-         // Her er den nye, smalere layouten:
-    htmlSide3 += `
-        <div style="margin-bottom: 10px; padding: 10px 15px; border-left: 4px solid #e74c3c; background: #fdf2f2; border-radius: 6px;">
-            <h4 style="margin:0; color:#c0392b; font-size: 0.95em;">
-                ${malInfo.navn} — 
-                <span style="font-weight:normal; color:#555;">${årsakTekst} (${prosent.toFixed(1)}%)</span> — 
-                <span style="font-weight:normal; color:#666; font-style: italic;">Pedagogisk fokus: ${malInfo.forklaring}</span>
-            </h4>
-            ${bildeOgKI}
-        </div>`;
-}
+                        ${visBokKnapp ? `
+                        <button onclick="alert('Relevante sider i Multi for ${rentTrinnNummer}. trinn:\\n\\n' + decodeURIComponent(escape(window.atob('${safeBokReferanser}'))))" 
+                            style="cursor:pointer; border:1px solid #2980b9; background:white; color:#2980b9; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:45px;">BOK</button>
+                        ` : ''}
+                    </div>
+                </div>`;
+        }
     });
+    // ... resten av koden din ...
     
     if (!harSvakheter) {
         htmlSide3 += `<p style="text-align:center; color:green; padding:20px;">Stabilt høyt nivå på alle områder.</p>`;
     }
 }
+
+// Lukk containeren helt til slutt
+htmlSide3 += `</div>`;
 
 // --- SIDE 4: UTVIKLING OVER TID (Oppdatert med Prøve-snitt logikk) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
