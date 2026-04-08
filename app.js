@@ -1166,13 +1166,17 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                     </div>`;
             }
 
-            htmlSide3 += `
-                <div style="margin-bottom: 15px; padding: 15px; border-left: 5px solid #e74c3c; background: #fdf2f2; border-radius: 8px; position:relative;">
-                    <h4 style="margin:0; color:#c0392b;">${malInfo.navn} — <span style="font-weight:normal; color:#555;">${årsakTekst} (${prosent.toFixed(1)}%)</span></h4>
-                    <p style="margin: 8px 0; font-size: 14px; color: #333;"><strong>Pedagogisk fokus:</strong> ${malInfo.forklaring}</p>
-                    ${bildeOgKI}
-                </div>`;
-        }
+         // Her er den nye, smalere layouten:
+    htmlSide3 += `
+        <div style="margin-bottom: 10px; padding: 10px 15px; border-left: 4px solid #e74c3c; background: #fdf2f2; border-radius: 6px;">
+            <h4 style="margin:0; color:#c0392b; font-size: 0.95em;">
+                ${malInfo.navn} — 
+                <span style="font-weight:normal; color:#555;">${årsakTekst} (${prosent.toFixed(1)}%)</span> — 
+                <span style="font-weight:normal; color:#666; font-style: italic;">Pedagogisk fokus: ${malInfo.forklaring}</span>
+            </h4>
+            ${bildeOgKI}
+        </div>`;
+}
     });
     
     if (!harSvakheter) {
