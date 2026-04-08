@@ -1101,11 +1101,12 @@ if (topper.length > 0) {
 // --- SIDE 3: ULTRA-KOMPAKT DETALJANALYSE ---
 let htmlSide3 = fellesHeader; 
 
-// 1. Åpne containeren (viktig for CSS-en)
+// 1. Åpne containeren (viktig for den isolerte CSS-en .analyse-side-3)
 htmlSide3 += `<div class="analyse-side-3">`; 
 
 htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Områder klassen skårer under 65%</h2>`;
 
+// Tabell-header
 htmlSide3 += `
     <div style="display: grid; grid-template-columns: 1fr auto; gap: 20px; padding: 10px 15px; background: #eee; font-weight: bold; border-radius: 4px; margin-bottom: 5px; font-size: 0.85em;">
         <div>OMRÅDE / PEDAGOGISK FOKUS</div>
@@ -1114,6 +1115,10 @@ htmlSide3 += `
 
 if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     let harSvakheter = false;
+    
+    // Sjekker om gjeldende mal er matematikk/regning for å styre visning av BOK-knapp
+    const erMatte = gjeldendeMalTabell.navn.toLowerCase().includes("regne") || 
+                    gjeldendeMalTabell.navn.toLowerCase().includes("matte");
     
     oppsett.oppgaver.forEach((o, i) => {
         const snitt = oppgaveSummer[i] / antall;
@@ -1131,6 +1136,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
             const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
 
+            // Rad-layout
             htmlSide3 += `
                 <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 8px 15px; border-bottom: 1px solid #eee; font-size: 0.85em; background: white;">
                     <div style="padding-right: 15px;">
@@ -1154,8 +1160,10 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                             });
                         })(this)" style="cursor:pointer; border:1px solid #8e44ad; background:white; color:#8e44ad; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:35px;">KI</button>
 
+                        ${erMatte ? `
                         <button onclick="alert('Relevante sider i Multi for ${rentTrinnNummer}. trinn:\\n\\n' + decodeURIComponent(escape(window.atob('${safeBokReferanser}'))))" 
                             style="cursor:pointer; border:1px solid #2980b9; background:white; color:#2980b9; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:45px;">BOK</button>
+                        ` : ''}
                     </div>
                 </div>`;
         }
@@ -1166,7 +1174,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     }
 }
 
-// 2. Lukk containeren HER (utenfor alle if-setninger)
+// Lukk containeren helt til slutt
 htmlSide3 += `</div>`;
 
 // --- SIDE 4: UTVIKLING OVER TID (Oppdatert med Prøve-snitt logikk) ---
