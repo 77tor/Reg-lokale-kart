@@ -1172,8 +1172,6 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
         }
     });
     // ... resten av koden din ...
-        }
-    });
     
     if (!harSvakheter) {
         htmlSide3 += `<p style="text-align:center; color:green; padding:20px;">Stabilt høyt nivå på alle områder.</p>`;
