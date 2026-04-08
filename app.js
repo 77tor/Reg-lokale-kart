@@ -1112,9 +1112,13 @@ htmlSide3 += `
         <div>OMRÅDE / PEDAGOGISK FOKUS</div>
         <div style="text-align: right;">TILTAK</div>
     </div>`;
-
 if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     let harSvakheter = false;
+    
+    // Vi henter teksten fra overskriften (fellesHeader) for å se hvilket fag det er
+    // Jeg ser på bildet ditt at det står "Analyse: Lesing" eller lignende der.
+    const headerTekst = fellesHeader.toLowerCase();
+    const erLesing = headerTekst.includes("lesing");
     
     oppsett.oppgaver.forEach((o, i) => {
         const snitt = oppgaveSummer[i] / antall;
@@ -1126,19 +1130,16 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             let farge = (o.grense !== -1 && snitt <= o.grense) ? "#c0392b" : "#d35400";
             
             const rentTrinnNummer = trinn.replace(/\D/g, ''); 
-            
-            // Hent bokreferanser
             const bokReferanser = finnRelevanteSider(rentTrinnNummer, malInfo.navn);
             
-            // LOGIKK: Vis knappen bare hvis funksjonen faktisk fant sider i boka
-            const harInnholdIBok = bokReferanser && bokReferanser.trim().length > 0;
+            // LOGIKK: Vis knappen hvis det IKKE er lesing OG det finnes referanser
+            const visBokKnapp = !erLesing && (bokReferanser && bokReferanser.trim().length > 0);
             
             const safeBokReferanser = btoa(unescape(encodeURIComponent(bokReferanser)));
             const kiPrompt = `Jeg er lærer og klassen trenger trening på: ${malInfo.navn}. ${malInfo.forklaring}. Lag 5 lignende oppgaver tilpasset ${rentTrinnNummer}. trinn.`;
             const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
             const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
 
-            // Rad-layout
             htmlSide3 += `
                 <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 8px 15px; border-bottom: 1px solid #eee; font-size: 0.85em; background: white;">
                     <div style="padding-right: 15px;">
@@ -1162,12 +1163,15 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                             });
                         })(this)" style="cursor:pointer; border:1px solid #8e44ad; background:white; color:#8e44ad; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:35px;">KI</button>
 
-                        ${harInnholdIBok ? `
+                        ${visBokKnapp ? `
                         <button onclick="alert('Relevante sider i Multi for ${rentTrinnNummer}. trinn:\\n\\n' + decodeURIComponent(escape(window.atob('${safeBokReferanser}'))))" 
                             style="cursor:pointer; border:1px solid #2980b9; background:white; color:#2980b9; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:45px;">BOK</button>
                         ` : ''}
                     </div>
                 </div>`;
+        }
+    });
+    // ... resten av koden din ...
         }
     });
     
