@@ -1116,9 +1116,9 @@ htmlSide3 += `
 if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     let harSvakheter = false;
     
-    // Sjekker om gjeldende mal er matematikk/regning for å styre visning av BOK-knapp
-    const erMatte = gjeldendeMalTabell.navn.toLowerCase().includes("regne") || 
-                    gjeldendeMalTabell.navn.toLowerCase().includes("matte");
+    // SIKKER SJEKK: Hindrer "TypeError: Cannot read properties of undefined"
+    const malNavn = (gjeldendeMalTabell && gjeldendeMalTabell.navn) ? gjeldendeMalTabell.navn.toLowerCase() : "";
+    const erMatte = malNavn.includes("regne") || malNavn.includes("matte");
     
     oppsett.oppgaver.forEach((o, i) => {
         const snitt = oppgaveSummer[i] / antall;
