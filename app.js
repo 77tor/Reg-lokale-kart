@@ -1068,9 +1068,9 @@ if (kritiskeElever.length > 0) {
 // 2. Lav mestring (Denne tabellen har bare 3 kolonner, så her fungerer col-tall utmerket)
 // RETTELSE: Bruker firebaseData[n] og den filtrerte 'elever'-listen
 let eleverUnder65 = elever.map(n => ({navn: n, sum: firebaseData[n].sum, prosent: (firebaseData[n].sum / totalMaksMulig) * 100}))
-                          .filter(e => e.prosent < 65 && e.sum > oppsett.grenseTotal);
+                          .filter(e => e.prosent < 70 && e.sum > oppsett.grenseTotal);
 
-htmlSide2 += `<h3 style="color:#e67e22; margin: 15px 0 5px 0; font-size: 1.1em; text-align:center;">Lav mestring (Total skår < 65%)</h3>`;
+htmlSide2 += `<h3 style="color:#e67e22; margin: 15px 0 5px 0; font-size: 1.1em; text-align:center;">Lav mestring (Total skår < 70%)</h3>`;
 if (eleverUnder65.length > 0) {
     htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th class="col-navn">Navn</th><th class="col-tall">Poeng</th><th class="col-tall">Prosent</th></tr></thead><tbody>`;
     eleverUnder65.sort((a, b) => a.sum - b.sum).forEach(e => {
@@ -1078,7 +1078,7 @@ if (eleverUnder65.length > 0) {
     });
     htmlSide2 += `</tbody></table>`;
 } else {
-    htmlSide2 += `<p style="text-align:center;">Ingen ytterligere elever under 65%.</p>`;
+    htmlSide2 += `<p style="text-align:center;">Ingen ytterligere elever under 70%.</p>`;
 }
 
 // 3. Høy mestring
