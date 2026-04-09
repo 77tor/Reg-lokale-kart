@@ -789,7 +789,7 @@ oppsett.oppgaver.forEach((o, i) => {
         : o.navn;
 
     container.innerHTML += `
-        <div class="oppgave-rad" style="margin-bottom:12px; ${stil} display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dotted #eee; padding-bottom: 5px;">
+        <div class="oppgave-rad" style="margin-bottom:4px; ${stil} display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dotted #eee; padding-bottom: 2px;">
             <label style="cursor: help;">
                 ${navnMedHjelp}:
             </label>
