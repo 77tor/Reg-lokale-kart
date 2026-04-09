@@ -508,37 +508,46 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 <label>Fag:</label><select id="adminFag"><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select><label>Periode:</label><select id="adminPeriode"><option value="Høst">Høst</option><option value="Vår">Vår</option></select><div style="margin-top:20px;display:flex;gap:10px;"><button class="btn btn-reg" style="flex:2" onclick="kjorAdminRapport('alle')">Vis Rapport</button><button class="btn btn-slett" style="flex:2" onclick="kjorAdminRapport('kritisk')">Kun Kritisk</button><button class="btn btn-fjern" style="flex:1" onclick="document.getElementById('modalRapport').style.display='none'">Avbryt</button></div></div></div>
 
 
-<div id="modalUtvikling" class="modal" style="display:none; z-index:2000;">
-    <div class="modal-content" style="width: 95%; max-width: 1200px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #8e44ad; padding-bottom: 10px;">
-            <h2 style="color: #8e44ad; margin: 0;">📈 Skolens utvikling over tid</h2>
-            <div class="no-print">
-                <button class="btn btn-print" onclick="printUtvikling()" style="margin-right: 10px;">Skriv ut / Lagre PDF</button>
-                <button class="btn-fjern" onclick="document.getElementById('modalUtvikling').style.display='none'">Lukk</button>
+<div id="modalUtvikling" class="modal no-print" 
+     style="display:none; position:fixed; z-index:2000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); align-items:center; justify-content:center;">
+    
+    <div class="modal-content" 
+         style="background:white; padding:25px; width:95%; max-width:1250px; border-radius:12px; max-height: 95vh; display:flex; flex-direction:column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #8e44ad; padding-bottom: 10px; margin-bottom: 10px;">
+            <h2 style="color: #8e44ad; margin: 0; font-size: 1.5em;">📈 Skolens utvikling over tid</h2>
+            <div class="no-print" style="display: flex; gap: 10px;">
+                <button class="btn btn-print" onclick="printUtvikling()">Skriv ut / Lagre PDF</button>
+                <button class="btn-fjern" style="background: #95a5a6; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer;" onclick="document.getElementById('modalUtvikling').style.display='none'">Lukk</button>
             </div>
         </div>
 
-        <div id="utviklingFilter" class="no-print" style="margin: 20px 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; background: #f0f2f5; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
-            <button class="btn" style="background:#2c3e50; color:white; min-width: 100px;" onclick="oppdaterUtviklingFilter('alle')">Alle valg</button>
-            <button class="btn" style="background:#2c3e50; color:white; min-width: 120px;" onclick="oppdaterUtviklingFilter('total')">Kun Skolen totalt</button>
-            <div style="width: 2px; background: #ccc; margin: 0 10px;"></div> 
-            <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('1')">1. trinn</button>
-            <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('2')">2. trinn</button>
-            <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('3')">3. trinn</button>
-            <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('4')">4. trinn</button>
-            <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('5')">5. trinn</button>
-            <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('6')">6. trinn</button>
-            <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('7')">7. trinn</button>
-        </div>
+        <div style="overflow-y: auto; flex-grow: 1; padding-right: 15px;">
+            
+            <div id="utviklingFilter" class="no-print" style="margin: 15px 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+                <button class="btn" style="background:#2c3e50; color:white; min-width: 100px;" onclick="oppdaterUtviklingFilter('alle')">Alle valg</button>
+                <button class="btn" style="background:#2c3e50; color:white; min-width: 120px;" onclick="oppdaterUtviklingFilter('total')">Kun Skolen totalt</button>
+                <div style="width: 2px; background: #ccc; margin: 0 5px;"></div> 
+                <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('1')">1. trinn</button>
+                <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('2')">2. trinn</button>
+                <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('3')">3. trinn</button>
+                <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('4')">4. trinn</button>
+                <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('5')">5. trinn</button>
+                <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('6')">6. trinn</button>
+                <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('7')">7. trinn</button>
+            </div>
 
-        <p class="no-print" style="text-align: center; color: #666;">Klikk på knappene over for å filtrere visningen. Skolen totalt (linje) vises alltid som referanse.</p>
-        
-        <div class="chart-container" style="position: relative; height:450px; margin-bottom: 40px;">
-            <canvas id="chartUtviklingLesing"></canvas>
-        </div>
-        <hr style="border: 0; border-top: 1px dashed #ccc; margin: 40px 0;">
-        <div class="chart-container" style="position: relative; height:450px;">
-            <canvas id="chartUtviklingRegning"></canvas>
+            <p class="no-print" style="text-align: center; color: #666; margin-bottom: 20px;">Klikk på knappene over for å filtrere visningen. Skolen totalt (linje) vises alltid som referanse.</p>
+            
+            <div class="chart-container" style="position: relative; height:400px; margin-bottom: 50px; background: white;">
+                <canvas id="chartUtviklingLesing"></canvas>
+            </div>
+            
+            <hr style="border: 0; border-top: 1px dashed #ccc; margin: 40px 0;">
+            
+            <div class="chart-container" style="position: relative; height:400px; margin-bottom: 20px; background: white;">
+                <canvas id="chartUtviklingRegning"></canvas>
+            </div>
         </div>
     </div>
 </div>
