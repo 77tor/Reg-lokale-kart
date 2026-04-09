@@ -1188,13 +1188,28 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                                 <a href="${bildeUrl}" target="_blank" style="text-decoration:none; padding: 2px 5px; border: 1px solid #ccc; border-radius:3px; background:#f9f9f9;">👁️</a>
                                 <img src="${bildeUrl}" class="hover-bilde">
                             </span>` : ''}
-                        
-                        <button onclick="(function(btn){ 
-                            navigator.clipboard.writeText(decodeURIComponent(escape(window.atob('${safePrompt}')))).then(() => {
-                                btn.innerText = '✅';
-                                setTimeout(() => { window.open('https://chatgpt.com', '_blank'); btn.innerText = 'KI'; }, 1000);
-                            });
-                        })(this)" class="no-print" style="cursor:pointer; border:1px solid #8e44ad; background:white; color:#8e44ad; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:35px;">KI</button>
+ 
+// --- OPPDATERT KI-KNAPP FOR COPILOT ---
+<button onclick="(function(btn){ 
+    const promptTekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
+    
+    // 1. Kopier til utklippstavle (som backup)
+    navigator.clipboard.writeText(promptTekst).then(() => {
+        btn.innerText = '✅';
+        
+        // 2. Formater teksten for URL (fjerner spesialtegn som ødelegger lenken)
+        const encodedPrompt = encodeURIComponent(promptTekst);
+        
+        // 3. Åpne Copilot med teksten ferdig utfylt i feltet
+        const copilotUrl = 'https://copilot.microsoft.com/?q=' + encodedPrompt;
+        
+        // Åpne i ny fane
+        window.open(copilotUrl, '_blank');
+        
+        setTimeout(() => { btn.innerText = 'KI'; }, 2000);
+    });
+})(this)" class="no-print" style="cursor:pointer; border:1px solid #8e44ad; background:white; color:#8e44ad; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:35px;">KI</button>                       
+
 
                         ${!erLesing ? `
                         <button onclick="(function(){
