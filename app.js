@@ -1198,7 +1198,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                                 <img src="${bildeUrl}" class="hover-bilde" alt="Oppgavebilde">
                             </span>` : ''}
 
-// --- KI-knappen med hover-effekt ---
+
 <button title="Ved klikk på 'KI', genereres en prompt som kan limes inn i Copilot." 
     onclick="(function(btn){ 
         const promptTekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
@@ -1215,7 +1215,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     KI
 </button>
 
-// --- BOK-knappen med hover-effekt ---
+
 ${!erLesing ? `
     <button title="Ved klikk på 'BOK', får du opp forslag til hvor en kan finne temaet i Multi" 
         onclick="(function(){
