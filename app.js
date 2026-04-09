@@ -1042,7 +1042,7 @@ htmlSide1 += `<th class="col-sum">TOTAL</th></tr></thead><tbody>
     </tr>
 
 <tr style="font-size: 1.1em; font-weight: bold;">
-        <td class="col-navn">Snitt (poeng)</td>`;
+        <td class="col-navn">Snitt for klassen (poeng)</td>`;
         oppgaveSummer.forEach(s => {
             htmlSide1 += `<td>${(s/antall).toFixed(1)}</td>`;
         });
