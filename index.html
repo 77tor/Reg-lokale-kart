@@ -391,13 +391,14 @@ td .oppgave-preview-bilde {
     position: relative; /* Viktig for posisjonering av bilde */
 }
 
+
 /* --- BILDE-PREVIEW LOGIKK --- */
 
-/* 1. STANDARD FOR TABELL (Hovedside) - Vises under kolonneoverskriften */
+/* 1. STANDARD FOR TABELL (Hovedside) */
 .hjelpe-ikon-tekst .oppgave-preview-bilde {
     display: none;
     position: absolute;
-    z-index: 99999 !important;
+    z-index: 99999;
     width: 350px;
     left: 50%;
     transform: translateX(-50%);
@@ -411,32 +412,37 @@ td .oppgave-preview-bilde {
 }
 
 /* 2. SPESIFIKK OVERSTYRING FOR MODAL (Registrering) */
-/* Her tvinger vi bildet HELT UT til venstre for den hvite boksen */
 .modal-body-scroll .oppgave-preview-bilde {
     display: none;
-    position: fixed; /* Endret fra absolute til fixed for å låse det til skjermen */
-    z-index: 9999999 !important; 
+    position: absolute; /* Går tilbake til absolute for bedre stabilitet */
+    z-index: 100000 !important; 
     width: 320px;
     height: auto;
     
-    /* Posisjonering til venstre for modalen */
-    /* Vi bruker kalkulering for å legge det rett til venstre for midten */
-    left: calc(50% - 350px - 10px); /* 50% er midten, 350px er modal-bredde, 10px er gap */
-    top: 50%;
-    transform: translateY(-50%) !important;
+    /* Flytt bildet til HØYRE side av den smale modalen */
+    /* Da slipper vi at det krasjer med kanten av nettleservinduet til venstre */
+    left: 110% !important; 
+    top: 0 !important;
+    transform: none !important;
     
     background: white;
     border: 3px solid #2d3748;
     border-radius: 10px;
-    box-shadow: -10px 10px 30px rgba(0,0,0,0.5);
+    box-shadow: 10px 10px 30px rgba(0,0,0,0.5);
     pointer-events: none;
     visibility: visible !important;
-    opacity: 1 !important;
 }
 
-/* Vis bildet ved hover i både tabell og modal */
+/* Vis ved hover */
 .hjelpe-ikon-tekst:hover .oppgave-preview-bilde {
     display: block !important;
+}
+
+/* VIKTIG: Sjekk at denne ikke klipper bildet */
+.modal-body-scroll {
+    overflow-y: auto !important;
+    overflow-x: visible !important; /* Denne MÅ være visible */
+    position: relative; 
 }
 
 /* --- STATUS OG ANDRE STILER --- */
