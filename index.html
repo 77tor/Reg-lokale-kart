@@ -136,22 +136,31 @@ tr:hover { background-color: #f1f1f1; }
     position: relative; 
     cursor: help;
     border-bottom: 1px dotted #007bff; 
-    display: inline-block;
+    display: inline-flex;
+    gap: 5px;
+    align-items: center;
     color: #333;
 }
 
 /* Grunnmuren for bildet (Ramme, skygge, z-index) */
 .oppgave-preview-bilde {
-    display: none; 
+    display: none; /* Skjult som standard */
     position: absolute;
-    z-index: 999999 !important; /* Ekstremt høy for å ligge over alt */
-    width: 320px; 
-    border: 3px solid #2d3748;
-    border-radius: 10px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    
+    /* Flytter bildet ut på venstre side av den hvite boksen */
+    right: 110%; 
+    top: 50%;
+    transform: translateY(-50%); /* Sentrerer bildet vertikalt mot raden */
+    
+    width: 300px; /* Du kan øke denne hvis du vil ha større bilde */
+    height: auto;
+    z-index: 9999; /* Sørger for at det ligger over alt annet */
+    
+    border: 2px solid #2c3e50;
+    border-radius: 8px;
     background: white;
-    padding: 2px;
-    pointer-events: none; /* Musen går "gjennom" bildet så det ikke flimrer */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    pointer-events: none; /* Gjør at bildet ikke kommer i veien for musa */
 }
 
 /* Spesifikke stiler kun for Side 3-analysen */
