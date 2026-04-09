@@ -303,40 +303,44 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 </div>
 
 
-<div id="modalSammenlign" class="modal no-print" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5);">
-    <div class="modal-content" style="background:white; margin:5% auto; padding:20px; width:80%; max-width:900px; border-radius:8px; max-height: 90vh; overflow-y: auto;">
-        <h3 style="color:#2980b9; border-bottom:1px solid #2980b9; padding-bottom:10px;">Sammenlign klasser (Trinn-oversikt)</h3>
+<div id="modalSammenlign" class="modal no-print" 
+     style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+    
+    <div class="modal-content" 
+         style="background:white; padding:20px; width:80%; max-width:900px; border-radius:8px; max-height: 95vh; display:flex; flex-direction:column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
         
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 4px;">
-            <div>
-                <label>År:</label>
-                <select id="compAar" class="form-control" style="width:100%"></select>
-            </div>
-            <div>
-                <label>Periode:</label>
-                <select id="compPeriode" class="form-control" style="width:100%"></select>
-            </div>
-            <div>
-                <label>Fag:</label>
-                <select id="compFag" class="form-control" style="width:100%"></select>
+        <h3 style="color:#2980b9; border-bottom:1px solid #2980b9; padding-bottom:10px; margin-top:0;">Sammenlign klasser (Trinn-oversikt)</h3>
+        
+        <div style="overflow-y: auto; flex-grow: 1; padding-right: 10px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 4px;">
+                <div>
+                    <label>År:</label>
+                    <select id="compAar" class="form-control" style="width:100%"></select>
+                </div>
+                <div>
+                    <label>Periode:</label>
+                    <select id="compPeriode" class="form-control" style="width:100%"></select>
+                </div>
+                <div>
+                    <label>Fag:</label>
+                    <select id="compFag" class="form-control" style="width:100%"></select>
+                </div>
+                <div>
+                    <label>Trinn:</label>
+                    <select id="compTrinn" class="form-control" style="width:100%"></select>
+                </div>
             </div>
 
-            <div>
-                <label>Trinn:</label>
-                <select id="compTrinn" class="form-control" style="width:100%"></select>
+            <button class="btn btn-analyse" style="width:100%; margin-bottom:10px;" onclick="kjorSammenligning()">Generer diagram</button>
+            <button class="btn btn-print" style="width:100%; background-color: #2980b9; margin-bottom:20px;" onclick="printSammenligningsDiagram()">Skriv ut diagram</button>
+            
+            <div id="modalChartArea" style="display:none; background:white; padding:15px; border:1px solid #ddd; border-radius:4px;">
+                <h2 id="modalChartOverskrift" style="text-align:center; font-size: 1.2em; color:#2c3e50;"></h2>
+                <canvas id="modalSammenligningsChart"></canvas>
             </div>
         </div>
-
-        <button class="btn btn-analyse" style="width:100%; margin-bottom:20px;" onclick="kjorSammenligning()">Generer diagram</button>
-        <button class="btn btn-print" style="flex: 1; background-color: #2980b9;" onclick="printSammenligningsDiagram()">Skriv ut diagram</button>
-        
-         <div id="modalChartArea" style="display:none; background:white; padding:15px; border:1px solid #ddd; border-radius:4px;">
-            <h2 id="modalChartOverskrift" style="text-align:center; font-size: 1.2em; color:#2c3e50;"></h2>
-            <canvas id="modalSammenligningsChart"></canvas>
-        </div>
-
-        <div style="margin-top:20px; text-align:right;">
-            <button class="btn btn-fjern" onclick="document.getElementById('modalSammenlign').style.display='none'">Lukk</button>
+        <div style="margin-top:20px; text-align:right; border-top: 1px solid #eee; padding-top: 10px;">
+            <button class="btn btn-fjern" style="background: #95a5a6; color: white;" onclick="document.getElementById('modalSammenlign').style.display='none'">Lukk</button>
         </div>
     </div>
 </div>
