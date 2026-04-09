@@ -128,12 +128,26 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 .is-locked .ferdigstilt-merkelapp { display: inline-block; }
 .is-locked td .btn { display: none; }
 
-/* UTSKRIFT (Beholdt din originale logikk) */
+
+/* UTSKRIFT (Beholdt din originale logikk - med fiks for linjer) */
 @media print {
+    /* Tvinger nettleseren til å tegne bakgrunner og linjer nøyaktig */
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
     @page { size: landscape; margin: 0.5cm; }
     .no-print, .btn, .modal, .header-grid, .action-bar { display: none !important; }
-    table { width: 100% !important; font-size: 8.5pt !important; }
-    th, td { border: 1px solid black !important; }
+    
+    table { 
+        width: 100% !important; 
+        font-size: 8.5pt !important; 
+        border-collapse: collapse !important; /* Sikrer at linjene møtes */
+    }
+
+    /* Tvinger svarte linjer på både overskrifter (th) og celler (td) */
+    th, td { 
+        border: 1px solid black !important; 
+    }
+
     .oppgave-preview-bilde { display: none !important; }
 }
 
