@@ -1198,21 +1198,33 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                                 <img src="${bildeUrl}" class="hover-bilde" alt="Oppgavebilde">
                             </span>` : ''}
 
-                    <button onclick="(function(btn){ 
-                        const promptTekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
-                        navigator.clipboard.writeText(promptTekst).then(() => {
-                            btn.innerText = '✅';
-                            const encodedPrompt = encodeURIComponent(promptTekst);
-                            const copilotUrl = 'https://copilot.microsoft.com/?q=' + encodedPrompt;
-                            window.open(copilotUrl, '_blank');
-                            setTimeout(() => { btn.innerText = 'KI'; }, 2000);
-                        });
-                    })(this)" class="no-print" style="cursor:pointer; border:1px solid #8e44ad; background:white; color:#8e44ad; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:35px;">KI</button>
+// --- KI-knappen med hover-effekt ---
+<button title="Ved klikk på 'KI', genereres en prompt som kan limes inn i Copilot." 
+    onclick="(function(btn){ 
+        const promptTekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
+        navigator.clipboard.writeText(promptTekst).then(() => {
+            btn.innerText = '✅';
+            const encodedPrompt = encodeURIComponent(promptTekst);
+            const copilotUrl = 'https://copilot.microsoft.com/?q=' + encodedPrompt;
+            window.open(copilotUrl, '_blank');
+            setTimeout(() => { btn.innerText = 'KI'; }, 2000);
+        });
+    })(this)" 
+    class="no-print" 
+    style="cursor:pointer; border:1px solid #8e44ad; background:white; color:#8e44ad; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:35px;">
+    KI
+</button>
 
-                    ${!erLesing ? `
-                        <button onclick="(function(){
-                            alert(decodeURIComponent(escape(window.atob('${safeBokTittel}'))) + '\\n\\n' + decodeURIComponent(escape(window.atob('${safeBokReferanser}'))));
-                        })()" class="no-print" style="cursor:pointer; border:1px solid #2980b9; background:white; color:#2980b9; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:45px;">BOK</button>
+// --- BOK-knappen med hover-effekt ---
+${!erLesing ? `
+    <button title="Ved klikk på 'BOK', får du opp forslag til hvor en kan finne temaet i Multi" 
+        onclick="(function(){
+            alert(decodeURIComponent(escape(window.atob('${safeBokTittel}'))) + '\\n\\n' + decodeURIComponent(escape(window.atob('${safeBokReferanser}'))));
+        })()" 
+        class="no-print" 
+        style="cursor:pointer; border:1px solid #2980b9; background:white; color:#2980b9; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:45px;">
+        BOK
+    </button>
                     ` : ''}
                 </div>
             </div>`;
