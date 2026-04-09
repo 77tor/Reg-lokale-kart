@@ -1189,7 +1189,6 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                                 <img src="${bildeUrl}" class="hover-bilde">
                             </span>` : ''}
  
-// --- OPPDATERT KI-KNAPP FOR COPILOT ---
 <button onclick="(function(btn){ 
     const promptTekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
     
