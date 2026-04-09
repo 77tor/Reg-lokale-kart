@@ -1113,38 +1113,58 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
         const prosent = (snitt / o.maks) * 100;
         const malInfo = gjeldendeMalTabell.oppgaver[i + 1]; 
 
-        if ((prosent < 65 || (o.grense !== -1 && snitt <= o.grense)) && malInfo) {
+if ((prosent < 65 || (o.grense !== -1 && snitt <= o.grense)) && malInfo) {
             harSvakheter = true;
             let farge = (o.grense !== -1 && snitt <= o.grense) ? "#c0392b" : "#d35400";
             const rentTrinnNummer = parseInt(trinn.replace(/\D/g, '')); 
             
-            // --- OPPDATERT LOGIKK FOR BOKSØK ---
-            let bokReferanser = finnRelevanteSider(rentTrinnNummer, malInfo.navn);
-            let bokInfoTekst = `Relevante sider i Multi for ${rentTrinnNummer}. trinn:`;
+            // --- NY LOGIKK FOR NØKKELORD-UTVIDELSE ---
+            let søkeBegreper = [malInfo.navn.toLowerCase()];
+            
+            // Hvis oppgaven heter noe med "klokk", legg til "tid" som søkeord
+            if (søkeBegreper[0].includes("klokk")) {
+                søkeBegreper.push("tid");
+            }
+            // Hvis oppgaven heter noe med "mål" eller "cm/m", legg til "måling"
+            if (søkeBegreper[0].includes("meter") || søkeBegreper[0].includes("cm")) {
+                søkeBegreper.push("måling");
+            }
+            // ------------------------------------------
 
-            // Sjekk om resultatet er "tomt" eller inneholder feilmeldingen din
-            const erTom = !bokReferanser || 
-                          bokReferanser.trim().length === 0 || 
-                          bokReferanser.includes("Fant ingen direkte treff");
+            let alleFunneReferanser = [];
+            let bokInfoTekst = "";
 
-            if (erTom) {
-                let funnetIAndre = [];
-                // Let i alle trinn fra 1 til 7 (eller 1 til egetTrinn + 1)
+            // Funksjon for å søke med alle relevante begreper
+            const hentRef = (t) => {
+                let treff = [];
+                søkeBegreper.forEach(ord => {
+                    let r = finnRelevanteSider(t, ord);
+                    if (r && !r.includes("Fant ingen direkte treff") && r.trim() !== "") {
+                        treff.push(r);
+                    }
+                });
+                return treff.length > 0 ? treff.join(", ") : null;
+            };
+
+            // 1. Søk på eget trinn først
+            let bokReferanser = hentRef(rentTrinnNummer);
+            
+            if (bokReferanser) {
+                bokInfoTekst = `Relevante sider i Multi for ${rentTrinnNummer}. trinn:`;
+            } else {
+                // 2. Fallback: Søk i alle andre trinn (1-7)
                 for (let t = 1; t <= 7; t++) {
-                    if (t === rentTrinnNummer) continue; 
-                    
-                    let ref = finnRelevanteSider(t, malInfo.navn);
-                    // Sjekk at vi faktisk fant ekte sidetall, ikke en feilmelding
-                    if (ref && ref.trim().length > 0 && !ref.includes("Fant ingen direkte treff")) {
-                        funnetIAndre.push(`${t}. trinn: ${ref}`);
+                    if (t === rentTrinnNummer) continue;
+                    let ref = hentRef(t);
+                    if (ref) {
+                        alleFunneReferanser.push(`${t}. trinn: ${ref}`);
                     }
                 }
                 
-                if (funnetIAndre.length > 0) {
-                    bokReferanser = funnetIAndre.join('\\n');
-                    bokInfoTekst = `Ingen treff på ${rentTrinnNummer}. trinn. Du kan finne stoff om dette her:`;
+                if (alleFunneReferanser.length > 0) {
+                    bokReferanser = alleFunneReferanser.join('\\n');
+                    bokInfoTekst = `Ingen direkte treff på ${rentTrinnNummer}. trinn. Sjekk disse trinnene for temaet "${søkeBegreper.join('/')}":`;
                 } else {
-                    // Hvis absolutt ingenting finnes i noen bøker
                     bokReferanser = "Fant ingen treff i Multi-serien (1-7).";
                     bokInfoTekst = "Søk i læreverk:";
                 }
