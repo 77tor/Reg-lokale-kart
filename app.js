@@ -1041,16 +1041,20 @@ htmlSide1 += `<th class="col-sum">TOTAL</th></tr></thead><tbody>
         htmlSide1 += `<td class="col-sum"><b style="color: #c0392b;">${oppsett.grenseTotal}</b></td>
     </tr>
 
-    <tr>
-        <td class="col-navn"><b>Snitt (poeng)</b></td>`;
-        oppgaveSummer.forEach(s => htmlSide1 += `<td>${(s/antall).toFixed(1)}</td>`);
-        htmlSide1 += `<td class="col-sum"><b>${(totalSumKlasse/antall).toFixed(1)}</b></td>
+<tr style="font-size: 1.1em; font-weight: bold;">
+        <td class="col-navn">Snitt (poeng)</td>`;
+        oppgaveSummer.forEach(s => {
+            htmlSide1 += `<td>${(s/antall).toFixed(1)}</td>`;
+        });
+        htmlSide1 += `<td class="col-sum">${(totalSumKlasse/antall).toFixed(1)}</td>
     </tr>
 
-    <tr>
-        <td class="col-navn"><b>I % av maks</b></td>`;
-        oppgaveSummer.forEach((s, i) => htmlSide1 += `<td>${((s/antall)/oppsett.oppgaver[i].maks*100).toFixed(0)}%</td>`);
-        htmlSide1 += `<td class="col-sum"><b>${totalKlasseSnittProsent.toFixed(0)}%</b></td>
+    <tr style="font-size: 1.1em; font-weight: bold;">
+        <td class="col-navn">I % av maks</td>`;
+        oppgaveSummer.forEach((s, i) => {
+            htmlSide1 += `<td>${((s/antall)/oppsett.oppgaver[i].maks*100).toFixed(0)}%</td>`;
+        });
+        htmlSide1 += `<td class="col-sum">${totalKlasseSnittProsent.toFixed(0)}%</td>
     </tr>
 </tbody></table>`;
 
