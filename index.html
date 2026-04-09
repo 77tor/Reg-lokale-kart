@@ -350,21 +350,22 @@ td .oppgave-preview-bilde {
     width: 100%; 
     height: 100%; 
     background: rgba(0,0,0,0.6); 
-    /* Vi bruker flex på selve bakgrunnen for å kontrollere innholdet */
-    display: none; /* Endres til 'flex' av JS */
+    display: none; /* Blir 'flex' via JS */
     justify-content: center;
-    align-items: flex-start; /* Plasserer innholdet øverst */
-    padding-top: 10px;       /* Gir en liten glippe til toppen av skjermen */
-    overflow-y: auto;        /* Gjør at man kan scrolle hvis vinduet er lite */
+    align-items: flex-start; 
+    padding-top: 5px;       /* Redusert fra 10px til 5px */
+    overflow-y: auto;        
 }
 
 .modal-content { 
     background: white; 
-    margin: 20px auto; 
-    padding: 25px; 
+    /* VIKTIG: Sett margin-top til 0 for å fjerne den ekstra avstanden */
+    margin: 0 auto;         
+    
+    padding: 15px 25px 25px 25px; /* Redusert padding i toppen fra 25px til 15px */
     border-radius: 12px; 
     width: 350px; 
-    max-height: 90vh; /* Økt litt for å utnytte plassen */
+    max-height: 95vh;      /* Økt til 95% av skjermhøyden */
     display: flex;
     flex-direction: column;
     position: relative;
