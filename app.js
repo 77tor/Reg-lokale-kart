@@ -903,6 +903,18 @@ async function genererKlasseAnalyse() {
         const trinn = document.getElementById('mTrinn').value;
         const klasse = document.getElementById('mKlasse').value;
 
+// --- NYTT: OPPDATER FAVICON HER ---
+        (function() {
+            const gamleFavicons = document.querySelectorAll("link[rel*='icon']");
+            gamleFavicons.forEach(icon => icon.parentNode.removeChild(icon));
+            const nyttFavicon = document.createElement('link');
+            nyttFavicon.rel = 'icon';
+            nyttFavicon.type = 'image/png';
+            nyttFavicon.href = 'analyse.png'; // Husk å lagre bildet med dette navnet
+            document.getElementsByTagName('head')[0].appendChild(nyttFavicon);
+        })();
+        // ----------------------------------
+
         // 2. Hent oppsettet
         const aarIMal = oppgaveStruktur[aar] ? aar : "2025-2026";
         const oppsett = oppgaveStruktur[aarIMal][fag][periode][trinn];
