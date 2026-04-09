@@ -414,23 +414,34 @@ td .oppgave-preview-bilde {
 /* 2. SPESIFIKK OVERSTYRING FOR MODAL (Registrering) */
 .modal-body-scroll .oppgave-preview-bilde {
     display: none;
-    position: absolute; /* Går tilbake til absolute for bedre stabilitet */
-    z-index: 100000 !important; 
+    position: absolute; /* Bruker absolute relativt til raden */
+    z-index: 9999999 !important; 
     width: 320px;
     height: auto;
     
-    /* Flytt bildet til HØYRE side av den smale modalen */
-    /* Da slipper vi at det krasjer med kanten av nettleservinduet til venstre */
-    left: 110% !important; 
+    /* FLYTT TIL VENSTRE: */
+    /* En negativ left-verdi drar bildet ut av boksen til venstre */
+    left: -340px !important; 
     top: 0 !important;
-    transform: none !important;
     
     background: white;
     border: 3px solid #2d3748;
     border-radius: 10px;
-    box-shadow: 10px 10px 30px rgba(0,0,0,0.5);
+    box-shadow: -10px 10px 30px rgba(0,0,0,0.5);
     pointer-events: none;
     visibility: visible !important;
+    transform: none !important;
+}
+
+/* VIKTIG: Denne må være på plass for at bildet skal synes utenfor ramma */
+.modal-content, .modal-body-scroll {
+    overflow: visible !important; 
+}
+
+/* Sørger for at raden ikke klipper bildet */
+.oppgave-rad {
+    position: relative;
+    overflow: visible !important;
 }
 
 /* Vis ved hover */
