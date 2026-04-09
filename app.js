@@ -1175,48 +1175,40 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
             const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
 
-            htmlSide3 += `
-                <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 8px 15px; border-bottom: 1px solid #eee; font-size: 0.85em; background: white;">
-                    <div style="padding-right: 15px;">
-                        <strong style="color: ${farge};">${malInfo.navn}</strong> 
-                        <span style="color: #666;">(${prosent.toFixed(1)}%)</span> — 
-                        <span style="color: #888; font-style: italic;">${malInfo.forklaring}</span>
-                    </div>
-                    <div style="display: flex; gap: 5px; flex-shrink: 0;">
-                        ${bildeUrl ? `
-                            <span class="bilde-container">
-                                <a href="${bildeUrl}" target="_blank" style="text-decoration:none; padding: 2px 5px; border: 1px solid #ccc; border-radius:3px; background:#f9f9f9;">👁️</a>
-                                <img src="${bildeUrl}" class="hover-bilde">
-                            </span>` : ''}
- 
-<button onclick="(function(btn){ 
-    const promptTekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
-    
-    // 1. Kopier til utklippstavle (som backup)
-    navigator.clipboard.writeText(promptTekst).then(() => {
-        btn.innerText = '✅';
+htmlSide3 += `
+    <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 8px 15px; border-bottom: 1px solid #eee; font-size: 0.85em; background: white;">
+        <div style="padding-right: 15px;">
+            <strong style="color: ${farge};">${malInfo.navn}</strong> 
+            <span style="color: #666;">(${prosent.toFixed(1)}%)</span> — 
+            <span style="color: #888; font-style: italic;">${malInfo.forklaring}</span>
+        </div>
         
-        // 2. Formater teksten for URL (fjerner spesialtegn som ødelegger lenken)
-        const encodedPrompt = encodeURIComponent(promptTekst);
-        
-        // 3. Åpne Copilot med teksten ferdig utfylt i feltet
-        const copilotUrl = 'https://copilot.microsoft.com/?q=' + encodedPrompt;
-        
-        // Åpne i ny fane
-        window.open(copilotUrl, '_blank');
-        
-        setTimeout(() => { btn.innerText = 'KI'; }, 2000);
-    });
-})(this)" class="no-print" style="cursor:pointer; border:1px solid #8e44ad; background:white; color:#8e44ad; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:35px;">KI</button>                       
+        <div style="display: flex; gap: 5px; flex-shrink: 0;">
+            ${bildeUrl ? `
+                <span class="bilde-container" style="position:relative;">
+                    <a href="${bildeUrl}" target="_blank" style="text-decoration:none; padding: 2px 5px; border: 1px solid #ccc; border-radius:3px; background:#f9f9f9;">👁️</a>
+                    <img src="${bildeUrl}" class="hover-bilde" style="display:none; position:absolute; right:110%; top:50%; transform:translateY(-50%); width:300px; border:2px solid #2c3e50; z-index:999;">
+                </span>` : ''}
 
+            <button onclick="(function(btn){ 
+                const promptTekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
+                navigator.clipboard.writeText(promptTekst).then(() => {
+                    btn.innerText = '✅';
+                    const encodedPrompt = encodeURIComponent(promptTekst);
+                    const copilotUrl = 'https://copilot.microsoft.com/?q=' + encodedPrompt;
+                    window.open(copilotUrl, '_blank');
+                    setTimeout(() => { btn.innerText = 'KI'; }, 2000);
+                });
+            })(this)" class="no-print" style="cursor:pointer; border:1px solid #8e44ad; background:white; color:#8e44ad; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:35px;">KI</button>
 
-                        ${!erLesing ? `
-                        <button onclick="(function(){
-                            alert(decodeURIComponent(escape(window.atob('${safeBokTittel}'))) + '\\n\\n' + decodeURIComponent(escape(window.atob('${safeBokReferanser}'))));
-                        })()" class="no-print" style="cursor:pointer; border:1px solid #2980b9; background:white; color:#2980b9; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:45px;">BOK</button>
-                        ` : ''}
-                    </div>
-                </div>`;
+            ${!erLesing ? `
+                <button onclick="(function(){
+                    alert(decodeURIComponent(escape(window.atob('${safeBokTittel}'))) + '\\n\\n' + decodeURIComponent(escape(window.atob('${safeBokReferanser}'))));
+                })()" class="no-print" style="cursor:pointer; border:1px solid #2980b9; background:white; color:#2980b9; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:45px;">BOK</button>
+            ` : ''}
+        </div>
+    </div>`;
+            
         }
     });
 }
