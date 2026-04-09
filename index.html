@@ -128,113 +128,50 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 .is-locked .ferdigstilt-merkelapp { display: inline-block; }
 .is-locked td .btn { display: none; }
 
-/* --- UTTSKRIFT-LOGIKK (OPTIMALISERT FOR STREKER OG FARGER) --- */
+/* UTSKRIFT (Beholdt din originale logikk) */
 @media print {
     @page { size: landscape; margin: 0.5cm; }
-    
-    /* 1. Tving hvit bakgrunn og fjern grå rammer */
-    body { background: white !important; margin: 0; padding: 0; width: 100%; }
-    
-    .container { 
-        box-shadow: none !important; 
-        border: none !important; 
-        background: white !important;
-        max-width: none !important;
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
+    .no-print, .btn, .modal, .header-grid, .action-bar { display: none !important; }
+    table { width: 100% !important; font-size: 8.5pt !important; }
+    th, td { border: 1px solid black !important; }
     .oppgave-preview-bilde { display: none !important; }
-    .hjelpe-ikon-tekst { border-bottom: none !important; }
-    .bilde-container { display: none; }
-
-    /* 2. Skjul alt unødvendig (beholder din logikk) */
-    .no-print, .btn, .modal, .modal-content, #loginScreen, .header-grid, 
-    .action-bar, .ny-elev-boks, #adminPanel, .chart-container, 
-    #chartContainer, .print-header img, .top-header-bar,
-    #modalElevrapport h2, #modalElevrapport h3, #modalElevrapport p { 
-        display: none !important;
-        visibility: hidden !important;
-        position: absolute !important;
-        top: -9999px !important; 
-        left: -9999px !important;
-    }
-
-    .page-break-before { page-break-before: always; break-before: page; }
-
-    /* Tving farger på utskrift */
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-
-    /* 3. LOGIKK FOR ELEVRAPPORT */
-    #utskriftRapportArea:not(:empty) {
-        display: block !important;
-        visibility: visible !important;
-    }
-    #utskriftRapportArea:not(:empty) ~ .container { display: none !important; }
-
-    /* 4. LOGIKK FOR KLASSELISTE */
-    #utskriftRapportArea:empty ~ .container {
-        display: block !important;
-        width: 100% !important;
-    }
-
-    /* 5. TABELL-STIL (FIKSET FOR STREKER I TOPPEN) */
-    table { 
-        width: 100% !important; 
-        border-collapse: collapse !important; 
-        font-size: 8.5pt !important; 
-        table-layout: auto !important;
-    }
-    
-    /* Tvinger svarte streker på både th og td */
-    th, td { 
-        border: 1px solid black !important; 
-        padding: 3px 2px !important; 
-        text-align: center;
-        overflow: visible !important;
-        white-space: normal !important;
-        background-color: transparent !important; /* Lar rad-farger skinne igjennom */
-    }
-
-    /* Spesifikk stil for overskrifter (th) så strekene vises */
-    th {
-        background-color: #f8f9fa !important;
-        color: black !important;
-    }
-
-    /* Tvinger tekst i overskrifter til å vises */
-    th small, th span {
-        display: block !important;
-        visibility: visible !important;
-        color: black !important;
-        font-size: 7pt !important;
-        line-height: 1.1 !important;
-    }
-
-    thead { display: table-header-group !important; }
-    tr { page-break-inside: avoid !important; }
-
-    /* Snitt-rad og Kritisk styling (Beholdt og forsterket) */
-    tr.snitt-rad, .snitt-rad td { background-color: #2c3e50 !important; color: white !important; }
-    .kritisk { background-color: #ffcccc !important; color: #b71c1c !important; }
-
-    /* 6. OVERSKRIFTS-KONTROLL */
-    h1, h2, h3, h4 { display: none !important; }
-
-    #printTittel, 
-    #utskriftRapportArea h1, #utskriftRapportArea h2, #utskriftRapportArea h3,
-    .analyse-content h1, .analyse-content h2, .analyse-content h3 {
-        display: block !important;
-        color: black !important;
-        text-align: center;
-        margin: 10px 0 !important;
-        font-size: 14pt !important;
-    }
-
-    .page-break { page-break-before: always; }
 }
 
+/* --- HEADER LAYOUT (Inspirert av forside.jpg) --- */
+.top-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0 15px 0;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.top-logo {
+    height: 50px;
+    width: auto;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-pill {
+    background: #f0f4f8;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    color: #2c3e50;
+    font-weight: 500;
+}
 </style>
 </head>
 <body>
