@@ -128,12 +128,34 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 .is-locked .ferdigstilt-merkelapp { display: inline-block; }
 .is-locked td .btn { display: none; }
 
-/* UTSKRIFT (Beholdt din originale logikk) */
+/* UTSKRIFT - Fikset for å fjerne grå bakgrunn og skygger */
 @media print {
+    /* 1. Tvinger hele siden til å bli hvit */
+    body { 
+        background: white !important; 
+        margin: 0 !important; 
+    }
+
+    /* 2. Fjerner skyggen og den hvite boksen rundt tabellen */
+    .container { 
+        box-shadow: none !important; 
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+    }
+
     @page { size: landscape; margin: 0.5cm; }
-    .no-print, .btn, .modal, .header-grid, .action-bar { display: none !important; }
-    table { width: 100% !important; font-size: 8.5pt !important; }
-    th, td { border: 1px solid black !important; }
+
+    /* 3. Skjuler knapper og menyer */
+    .no-print, .btn, .modal, .header-grid, .action-bar, .top-header-bar { 
+        display: none !important; 
+    }
+
+    /* 4. Tabell-oppsett */
+    table { width: 100% !important; font-size: 8.5pt !important; border-collapse: collapse !important; }
+    th, td { border: 1px solid black !important; background: white !important; }
+    
     .oppgave-preview-bilde { display: none !important; }
 }
 
