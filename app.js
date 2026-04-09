@@ -1406,7 +1406,7 @@ try {
             <html>
             <head>
                 <title>Analyse ${trinn}${klasse}</title>
-                                          <link rel="icon" type="image/png" href="analyse.png">
+                                          <link rel="icon" type="image/png" href="${window.location.origin}${window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'))}/analyse.png">
 <style>
     @page { size: A4 landscape; margin: 0; }
     body { font-family: sans-serif; background:#f0f2f5; margin:0; padding:20px; display:flex; flex-direction:column; align-items:center; }
