@@ -1193,15 +1193,15 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                             <img src="${bildeUrl}" class="hover-bilde" alt="Oppgavebilde">
                         </span>` : ''}
 
-                    ${erLesing ? `
-                    <button title="Gå til lesekurs for ${rentTrinnNummer}. trinn" 
-                        onclick="window.open('${kursUrl}', '_blank')"
-                        onmouseover="this.style.backgroundColor='#808080'; this.style.color='white';" 
-                        onmouseout="this.style.backgroundColor='white'; this.style.color='#27ae60';"
-                        class="no-print" 
-                        style="cursor:pointer; border:1px solid #27ae60; background:white; color:#27ae60; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:45px; transition: all 0.2s;">
-                        KURS
-                    </button>
+                   ${erLesing ? `
+<button title="Gå til lesekurs for ${rentTrinnNummer}. trinn" 
+    onclick="const a = document.createElement('a'); a.href='${kursUrl}'; a.target='_blank'; a.rel='noopener noreferrer'; a.click();"
+    onmouseover="this.style.backgroundColor='#808080'; this.style.color='white';" 
+    onmouseout="this.style.backgroundColor='white'; this.style.color='#27ae60';"
+    class="no-print" 
+    style="cursor:pointer; border:1px solid #27ae60; background:white; color:#27ae60; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:45px; transition: all 0.2s;">
+    KURS
+</button>
                     ` : ''}
 
                     <button title="Ved klikk på 'KI', genereres en prompt som kan limes inn i Copilot." 
