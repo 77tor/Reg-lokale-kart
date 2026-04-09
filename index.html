@@ -617,44 +617,55 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     </div>
 </div>
 
-<div id="modalKlasserapport" class="modal" style="display:none; z-index:2100;">
-    <div class="modal-content" style="width: 95%; max-width: 1100px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2980b9; padding-bottom: 10px;">
-            <h2 style="color: #2980b9;">📊 Klasserapport (Kull-utvikling)</h2>
-            <button class="btn-fjern" onclick="document.getElementById('modalKlasserapport').style.display='none'">Lukk</button>
+<div id="modalKlasserapport" class="modal no-print" 
+     style="display:none; position:fixed; z-index:2100; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); align-items:center; justify-content:center;">
+    
+    <div class="modal-content" 
+         style="background:white; padding:25px; width: 95%; max-width: 1100px; max-height: 95vh; display:flex; flex-direction:column; border-radius:12px; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2980b9; padding-bottom: 10px; margin-bottom: 10px;">
+            <h2 style="color: #2980b9; margin: 0;">📊 Klasserapport (Kull-utvikling)</h2>
+            <button class="btn-fjern" style="background: #95a5a6; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer;" onclick="document.getElementById('modalKlasserapport').style.display='none'">Lukk</button>
         </div>
 
-        <div class="no-print" style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <div>
-                <label>Fødselsår (Kull):</label>
-                <select id="selectKullAar" class="form-control"></select>
+        <div style="overflow-y: auto; flex-grow: 1; padding-right: 15px;">
+            
+            <div class="no-print" style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <div>
+                    <label style="font-weight:bold; display:block; margin-bottom:5px;">Fødselsår (Kull):</label>
+                    <select id="selectKullAar" class="form-control" style="width:100%;"></select>
+                </div>
+                <div>
+                    <label style="font-weight:bold; display:block; margin-bottom:5px;">Fag:</label>
+                    <select id="selectKullFag" class="form-control" style="width:100%;">
+                        <option value="Lesing">Lesing</option>
+                        <option value="Regning">Regning</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-weight:bold; display:block; margin-bottom:5px;">Klasse (Bokstav):</label>
+                    <select id="selectKullKlasse" class="form-control" style="width:100%;">
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                    </select>
+                </div>
+                <div style="display: flex; align-items: flex-end; gap: 10px;">
+                    <button class="btn btn-hent" onclick="genererKlasserapport()">Vis utvikling</button>
+                    <button class="btn btn-print" style="background:#2980b9;" onclick="printKlasseDiagram()">Skriv ut diagram</button>
+                    <button class="btn btn-excel" style="background:#27ae60;" onclick="printAlleKlasseResultater()">Print alle resultater</button>
+                </div>
             </div>
-            <div>
-                <label>Fag:</label>
-                <select id="selectKullFag" class="form-control">
-                    <option value="Lesing">Lesing</option>
-                    <option value="Regning">Regning</option>
-                </select>
-            </div>
-            <div>
-                <label>Klasse (Bokstav):</label>
-                <select id="selectKullKlasse" class="form-control">
-                    <option value="A">A</option>
-                    <option value="B">B</option>
-                    <option value="C">C</option>
-                    <option value="D">D</option>
-                </select>
-            </div>
-            <div style="display: flex; align-items: flex-end; gap: 10px;">
-                <button class="btn btn-hent" onclick="genererKlasserapport()">Vis utvikling</button>
-                <button class="btn btn-print" style="background:#2980b9;" onclick="printKlasseDiagram()">Skriv ut diagram</button>
-                <button class="btn btn-excel" style="background:#27ae60;" onclick="printAlleKlasseResultater()">Print alle resultater</button>
-            </div>
-        </div>
 
-        <div id="klasserapportVisning">
-            <div style="height: 400px;"><canvas id="chartKlasseUtvikling"></canvas></div>
-            <div id="klasseTabellPrint" style="margin-top: 20px;"></div>
+            <div id="klasserapportVisning">
+                <div style="height: 400px; position: relative; margin-bottom: 30px;">
+                    <canvas id="chartKlasseUtvikling"></canvas>
+                </div>
+                
+                <div id="klasseTabellPrint" style="margin-top: 20px;"></div>
+            </div>
+            
         </div>
     </div>
 </div>
