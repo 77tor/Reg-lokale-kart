@@ -1093,6 +1093,7 @@ if (topper.length > 0) {
 
 
 // --- SIDE 3: ULTRA-KOMPAKT DETALJANALYSE (Med smart boksøk på tvers av trinn) ---
+// --- SIDE 3: ULTRA-KOMPAKT DETALJANALYSE (Med tvungen nøkkelord-kobling) ---
 let htmlSide3 = fellesHeader; 
 htmlSide3 += `<div class="analyse-side-3">`; 
 htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Områder klassen skårer under kritisk grense eller under 65%</h2>`;
@@ -1113,69 +1114,59 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
         const prosent = (snitt / o.maks) * 100;
         const malInfo = gjeldendeMalTabell.oppgaver[i + 1]; 
 
-if ((prosent < 65 || (o.grense !== -1 && snitt <= o.grense)) && malInfo) {
+        if ((prosent < 65 || (o.grense !== -1 && snitt <= o.grense)) && malInfo) {
             harSvakheter = true;
             let farge = (o.grense !== -1 && snitt <= o.grense) ? "#c0392b" : "#d35400";
             const rentTrinnNummer = parseInt(trinn.replace(/\D/g, '')); 
             
-            // --- NY LOGIKK FOR NØKKELORD-UTVIDELSE ---
+            // --- FORSTERKET SØKELOGIKK ---
             let søkeBegreper = [malInfo.navn.toLowerCase()];
             
-            // Hvis oppgaven heter noe med "klokk", legg til "tid" som søkeord
-            if (søkeBegreper[0].includes("klokk")) {
-                søkeBegreper.push("tid");
-            }
-            // Hvis oppgaven heter noe med "mål" eller "cm/m", legg til "måling"
-            if (søkeBegreper[0].includes("meter") || søkeBegreper[0].includes("cm")) {
-                søkeBegreper.push("måling");
-            }
-            // ------------------------------------------
+            // Koblings-ordbok: Hvis oppgaven inneholder A, søk også etter B
+            if (søkeBegreper[0].includes("klokk")) søkeBegreper.push("tid");
+            if (søkeBegreper[0].includes("meter") || søkeBegreper[0].includes("cm")) søkeBegreper.push("måling", "lengde");
+            if (søkeBegreper[0].includes("gram") || søkeBegreper[0].includes("kg")) søkeBegreper.push("vekt", "måling");
+            if (søkeBegreper[0].includes("liter")) søkeBegreper.push("volum", "måling");
 
-            let alleFunneReferanser = [];
-            let bokInfoTekst = "";
-
-            // Funksjon for å søke med alle relevante begreper
             const hentRef = (t) => {
-                let treff = [];
+                let funnet = [];
                 søkeBegreper.forEach(ord => {
                     let r = finnRelevanteSider(t, ord);
-                    if (r && !r.includes("Fant ingen direkte treff") && r.trim() !== "") {
-                        treff.push(r);
+                    // Vi godtar bare svar som faktisk inneholder sidetall/info
+                    if (r && r.trim() !== "" && !r.includes("ingen direkte treff")) {
+                        funnet.push(r);
                     }
                 });
-                return treff.length > 0 ? treff.join(", ") : null;
+                // Fjern duplikater og returner
+                return funnet.length > 0 ? [...new Set(funnet)].join(", ") : null;
             };
 
-            // 1. Søk på eget trinn først
             let bokReferanser = hentRef(rentTrinnNummer);
-            
-            if (bokReferanser) {
-                bokInfoTekst = `Relevante sider i Multi for ${rentTrinnNummer}. trinn:`;
-            } else {
-                // 2. Fallback: Søk i alle andre trinn (1-7)
-                for (let t = 1; t <= 7; t++) {
-                    if (t === rentTrinnNummer) continue;
-                    let ref = hentRef(t);
-                    if (ref) {
-                        alleFunneReferanser.push(`${t}. trinn: ${ref}`);
-                    }
-                }
+            let bokInfoTekst = `Relevante sider i Multi for ${rentTrinnNummer}. trinn:`;
+
+            if (!bokReferanser) {
+                let alleFunneReferanser = [];
+                // Sjekk nabo-trinn (f.eks trinn under og trinn over)
+                const trinnÅSjekke = [rentTrinnNummer - 1, rentTrinnNummer - 2, rentTrinnNummer + 1].filter(t => t > 0 && t <= 7);
                 
+                trinnÅSjekke.forEach(t => {
+                    let ref = hentRef(t);
+                    if (ref) alleFunneReferanser.push(`${t}. trinn: ${ref}`);
+                });
+
                 if (alleFunneReferanser.length > 0) {
                     bokReferanser = alleFunneReferanser.join('\\n');
-                    bokInfoTekst = `Ingen direkte treff på ${rentTrinnNummer}. trinn. Sjekk disse trinnene for temaet "${søkeBegreper.join('/')}":`;
+                    bokInfoTekst = `Ingen treff på ${rentTrinnNummer}. trinn. Se her:`;
                 } else {
-                    bokReferanser = "Fant ingen treff i Multi-serien (1-7).";
-                    bokInfoTekst = "Søk i læreverk:";
+                    bokReferanser = "Fant ingen spesifikke sidetall for dette temaet i Multi 1-7.";
+                    bokInfoTekst = "Bokreferanse:";
                 }
             }
-            // ----------------------------------
 
-            const visBokKnapp = !erLesing;
+            // --- GENERER HTML ---
             const safeBokReferanser = btoa(unescape(encodeURIComponent(bokReferanser)));
             const safeBokTittel = btoa(unescape(encodeURIComponent(bokInfoTekst)));
-            
-            const kiPrompt = `Jeg er lærer og klassen trenger trening på: ${malInfo.navn}. ${malInfo.forklaring}. Lag 5 lignende oppgaver tilpasset ${rentTrinnNummer}. trinn.`;
+            const kiPrompt = `Jeg er lærer. Lag 5 oppgaver om "${malInfo.navn}" (${malInfo.forklaring}) tilpasset ${rentTrinnNummer}. trinn.`;
             const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
             const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
 
@@ -1186,38 +1177,18 @@ if ((prosent < 65 || (o.grense !== -1 && snitt <= o.grense)) && malInfo) {
                         <span style="color: #666;">(${prosent.toFixed(1)}%)</span> — 
                         <span style="color: #888; font-style: italic;">${malInfo.forklaring}</span>
                     </div>
-
                     <div style="display: flex; gap: 5px; flex-shrink: 0;">
-                        ${bildeUrl ? `
-                            <span class="bilde-container">
-                                <a href="${bildeUrl}" target="_blank" title="Se oppgave" style="text-decoration:none; padding: 2px 5px; border: 1px solid #ccc; border-radius:3px; background:#f9f9f9;">👁️</a>
-                                <img src="${bildeUrl}" class="hover-bilde" alt="Oppgavebilde">
-                            </span>` : ''}
-                        
+                        ${bildeUrl ? `<span class="bilde-container"><a href="${bildeUrl}" target="_blank" class="btn">👁️</a><img src="${bildeUrl}" class="hover-bilde"></span>` : ''}
                         <button onclick="(function(btn){ 
-                            const tekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
-                            navigator.clipboard.writeText(tekst).then(() => {
-                                btn.innerText = '✅';
-                                setTimeout(() => { window.open('https://chatgpt.com', '_blank'); btn.innerText = 'KI'; }, 1000);
+                            navigator.clipboard.writeText(decodeURIComponent(escape(window.atob('${safePrompt}')))).then(() => {
+                                btn.innerText = '✅'; setTimeout(() => { window.open('https://chatgpt.com', '_blank'); btn.innerText = 'KI'; }, 1000);
                             });
                         })(this)" class="no-print" style="cursor:pointer; border:1px solid #8e44ad; background:white; color:#8e44ad; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:35px;">KI</button>
-
-                        ${visBokKnapp ? `
-                        <button onclick="(function(){
-                            const tittel = decodeURIComponent(escape(window.atob('${safeBokTittel}')));
-                            const info = decodeURIComponent(escape(window.atob('${safeBokReferanser}')));
-                            alert(tittel + '\\n\\n' + info);
-                        })()" class="no-print"
-                            style="cursor:pointer; border:1px solid #2980b9; background:white; color:#2980b9; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:45px;">BOK</button>
-                        ` : ''}
+                        ${!erLesing ? `<button onclick="alert(decodeURIComponent(escape(window.atob('${safeBokTittel}'))) + '\\n\\n' + decodeURIComponent(escape(window.atob('${safeBokReferanser}'))))" class="no-print" style="cursor:pointer; border:1px solid #2980b9; background:white; color:#2980b9; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:45px;">BOK</button>` : ''}
                     </div>
                 </div>`;
         }
     });
-    
-    if (!harSvakheter) {
-        htmlSide3 += `<p style="text-align:center; color:green; padding:20px;">Stabilt høyt nivå på alle områder.</p>`;
-    }
 }
 htmlSide3 += `</div>`;
 
