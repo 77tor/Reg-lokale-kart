@@ -54,21 +54,45 @@ tr:hover { background-color: #f1f1f1; }
 
 /* --- MODAL SYSTEM (FIKSET) --- */
 .modal { 
-    display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; 
-    background: rgba(0,0,0,0.6); justify-content: center; align-items: flex-start; 
-    padding-top: 5px; overflow-y: auto; 
+    /* Vi bruker 'flex' for å kunne sentrere innholdet */
+    display: none; 
+    position: fixed; 
+    z-index: 1000; 
+    left: 0; 
+    top: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0,0,0,0.6); 
+    
+    /* ENDRING: Sentrerer boksen perfekt på midten av skjermen */
+    justify-content: center; 
+    align-items: center; 
+    
+    /* ENDRING: Fjerner scrolling på bakgrunnen */
+    overflow: hidden; 
 }
 
 .modal-content { 
-    background: white; margin: 0 auto; padding: 15px 25px; border-radius: 12px; 
-    width: 320px; /* Smalere boks */
-    max-height: 95vh; display: flex; flex-direction: column; position: relative; 
-    box-shadow: 0 5px 30px rgba(0,0,0,0.3); overflow: visible !important; 
+    background: white; 
+    margin: 0 auto; 
+    padding: 15px 25px; 
+    border-radius: 12px; 
+    width: 320px; 
+    
+    /* ENDRING: Sikrer at boksen aldri blir høyere enn 90% av skjermen */
+    max-height: 90vh; 
+    display: flex; 
+    flex-direction: column; 
+    box-shadow: 0 5px 30px rgba(0,0,0,0.3);
 }
 
 .modal-body-scroll { 
-    max-height: 65vh; overflow-y: auto !important; overflow-x: visible !important; 
-    padding-right: 10px; margin-bottom: 10px; flex-grow: 1; position: relative; 
+    /* ENDRING: Denne vil nå ta resten av plassen og få scrollbar ved behov */
+    overflow-y: auto !important; 
+    overflow-x: visible !important; 
+    padding-right: 10px; 
+    margin-bottom: 10px; 
+    flex-grow: 1; 
 }
 
 /* --- BILDE-PREVIEW LOGIKK (FIKSET FOR MODAL VENSTRE) --- */
