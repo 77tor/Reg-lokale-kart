@@ -1192,11 +1192,14 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                 </div>
                 
                 <div style="display: flex; gap: 5px; flex-shrink: 0;">
-                    ${bildeUrl ? `
-                        <span class="bilde-container" style="position:relative;">
-                            <a href="${bildeUrl}" target="_blank" style="text-decoration:none; padding: 2px 5px; border: 1px solid #ccc; border-radius:3px; background:#f9f9f9;">👁️</a>
-                            <img src="${bildeUrl}" class="hover-bilde" style="display:none; position:absolute; right:110%; top:50%; transform:translateY(-50%); width:300px; border:2px solid #2c3e50; z-index:999;">
-                        </span>` : ''}
+${bildeUrl ? `
+    <span class="bilde-container" 
+          style="position:relative;" 
+          onmouseover="this.querySelector('.hover-bilde').style.display='block'" 
+          onmouseout="this.querySelector('.hover-bilde').style.display='none'">
+        <a href="${bildeUrl}" target="_blank" style="text-decoration:none; padding: 2px 5px; border: 1px solid #ccc; border-radius:3px; background:#f9f9f9;">👁️</a>
+        <img src="${bildeUrl}" class="hover-bilde" style="display:none; position:absolute; right:110%; top:50%; transform:translateY(-50%); width:300px; border:2px solid #2c3e50; z-index:999; background: white;">
+    </span>` : ''}
 
                     <button onclick="(function(btn){ 
                         const promptTekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
