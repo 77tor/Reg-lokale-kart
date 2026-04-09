@@ -155,12 +155,54 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
         display: none !important; 
     }
 
-    table { width: 100% !important; font-size: 8.5pt !important; border-collapse: collapse !important; }
+/* UTSKRIFT - Denne erstatter hele din gamle @media print blokk */
+@media print {
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Fjerner grå farge fra selve siden og skygger fra boksen */
+    body { 
+        background: white !important; 
+        margin: 0 !important; 
+    }
+
+    .container { 
+        box-shadow: none !important; 
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+    }
+
+    @page { size: landscape; margin: 0.5cm; }
+
+    /* Skjuler knapper, menyer og logo */
+    .no-print, .btn, .modal, .header-grid, .action-bar, .top-header-bar { 
+        display: none !important; 
+    }
+
+    table { 
+        width: 100% !important; 
+        font-size: 8.5pt !important; 
+        border-collapse: collapse !important; 
+    }
     
-    /* 2. VIKTIG: Ikke sett 'background: white' på ALLE td, da forsvinner de røde! */
-    th, td { border: 1px solid black !important; }
-    
-    /* 3. Tving frem de røde feltene på papiret */
+    /* HER ER FIXEN: Svarte streker på alt i tabellen */
+    th, td { 
+        border: 1px solid black !important; 
+        padding: 5px !important;
+        color: black !important;
+    }
+
+    /* Grå bakgrunn på overskriftene */
+    th {
+        background-color: #f8f9fa !important;
+        font-weight: bold !important;
+    }
+
+    /* Beholder de røde varslene */
     .kritisk { 
         background-color: #ffcccc !important; 
         color: #b71c1c !important; 
