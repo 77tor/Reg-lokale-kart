@@ -130,8 +130,6 @@ tr:hover { background-color: #f1f1f1; }
 }
 
 
-
-
 .hjelpe-ikon-tekst {
     position: relative; 
     cursor: help;
@@ -395,7 +393,7 @@ td .oppgave-preview-bilde {
 
 /* --- BILDE-PREVIEW LOGIKK --- */
 
-/* Standard for tabell (hovedside) */
+/* 1. STANDARD FOR TABELL (Hovedside) - Vises under kolonneoverskriften */
 .hjelpe-ikon-tekst .oppgave-preview-bilde {
     display: none;
     position: absolute;
@@ -412,29 +410,31 @@ td .oppgave-preview-bilde {
     pointer-events: none;
 }
 
-/* Spesifikk overstyring for MODAL */
+/* 2. SPESIFIKK OVERSTYRING FOR MODAL (Registrering) */
+/* Her tvinger vi bildet HELT UT til venstre for den hvite boksen */
 .modal-body-scroll .oppgave-preview-bilde {
     display: none;
-    position: absolute;
-    z-index: 2147483647 !important; 
+    position: fixed; /* Endret fra absolute til fixed for å låse det til skjermen */
+    z-index: 9999999 !important; 
     width: 320px;
     height: auto;
+    
+    /* Posisjonering til venstre for modalen */
+    /* Vi bruker kalkulering for å legge det rett til venstre for midten */
+    left: calc(50% - 350px - 10px); /* 50% er midten, 350px er modal-bredde, 10px er gap */
+    top: 50%;
+    transform: translateY(-50%) !important;
+    
     background: white;
     border: 3px solid #2d3748;
     border-radius: 10px;
-    box-shadow: 10px 10px 30px rgba(0,0,0,0.5);
-    
-    /* Flyttet til høyre for modalen */
-    left: 105% !important; 
-    top: -40px !important;
-    transform: none !important;
-    
+    box-shadow: -10px 10px 30px rgba(0,0,0,0.5);
+    pointer-events: none;
     visibility: visible !important;
     opacity: 1 !important;
-    pointer-events: none;
 }
 
-/* Vis ved hover */
+/* Vis bildet ved hover i både tabell og modal */
 .hjelpe-ikon-tekst:hover .oppgave-preview-bilde {
     display: block !important;
 }
