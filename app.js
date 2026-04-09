@@ -1024,18 +1024,19 @@ oppsett.oppgaver.forEach((o, i) => {
 });
 htmlSide1 += `<th class="col-sum">TOTAL</th></tr></thead><tbody>
     
-    <tr>
-        <td class="col-navn"><b>Maks poeng</b></td>`;
-        oppsett.oppgaver.forEach(o => htmlSide1 += `<td>${o.maks}</td>`);
-        htmlSide1 += `<td class="col-sum"><b>${totalMaksMulig}</b></td>
+    <tr style="background-color: #ebf9f1;">
+        <td class="col-navn"><b style="color: #1e8449;">Maks poeng</b></td>`;
+        oppsett.oppgaver.forEach(o => {
+            htmlSide1 += `<td style="color: #1e8449; font-weight: bold;">${o.maks}</td>`;
+        });
+        htmlSide1 += `<td class="col-sum"><b style="color: #1e8449;">${totalMaksMulig}</b></td>
     </tr>
 
     <tr style="background-color: #fff5f5;">
         <td class="col-navn"><b style="color: #c0392b;">Kritisk grense</b></td>`;
         oppsett.oppgaver.forEach(o => {
-            // Viser grensen hvis den ikke er -1
             const grenseVisning = o.grense !== -1 ? o.grense : '-';
-            htmlSide1 += `<td style="color: #c0392b;">${grenseVisning}</td>`;
+            htmlSide1 += `<td style="color: #c0392b; font-weight: bold;">${grenseVisning}</td>`;
         });
         htmlSide1 += `<td class="col-sum"><b style="color: #c0392b;">${oppsett.grenseTotal}</b></td>
     </tr>
