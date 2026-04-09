@@ -903,17 +903,7 @@ async function genererKlasseAnalyse() {
         const trinn = document.getElementById('mTrinn').value;
         const klasse = document.getElementById('mKlasse').value;
 
-// --- NYTT: OPPDATER FAVICON HER ---
-        (function() {
-            const gamleFavicons = document.querySelectorAll("link[rel*='icon']");
-            gamleFavicons.forEach(icon => icon.parentNode.removeChild(icon));
-            const nyttFavicon = document.createElement('link');
-            nyttFavicon.rel = 'icon';
-            nyttFavicon.type = 'image/png';
-            nyttFavicon.href = 'analyse.png'; // Husk å lagre bildet med dette navnet
-            document.getElementsByTagName('head')[0].appendChild(nyttFavicon);
-        })();
-        // ----------------------------------
+
 
         // 2. Hent oppsettet
         const aarIMal = oppgaveStruktur[aar] ? aar : "2025-2026";
@@ -1416,6 +1406,7 @@ try {
             <html>
             <head>
                 <title>Analyse ${trinn}${klasse}</title>
+                                          <link rel="icon" type="image/png" href="analyse.png">
 <style>
     @page { size: A4 landscape; margin: 0; }
     body { font-family: sans-serif; background:#f0f2f5; margin:0; padding:20px; display:flex; flex-direction:column; align-items:center; }
