@@ -1217,7 +1217,6 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
 </button>
 
 ${!erLesing ? `
-    // --- BOK-KNAPP ---
     <button title="Ved klikk på 'BOK', får du opp forslag til hvor en kan finne temaet i Multi" 
         onclick="(function(){
             alert(decodeURIComponent(escape(window.atob('${safeBokTittel}'))) + '\\n\\n' + decodeURIComponent(escape(window.atob('${safeBokReferanser}'))));
