@@ -44,75 +44,6 @@ tr:hover { background-color: #f1f1f1; }
 
 /* --- HOVER-LOGIKK FOR BILDER (TABELL OG MODAL) --- */
 
-/* Beholderen for ikonet og bildet */
-    .bilde-container {
-        position: relative;
-        display: inline-block;
-    }
-
-    /* Selve bildet som skal skjules */
-    .hover-bilde {
-        display: none;
-        position: absolute;
-        right: 110%; /* Viser bildet til venstre for knappen */
-        top: 50%;
-        transform: translateY(-50%);
-        z-index: 1000;
-        max-width: 300px; /* Juster størrelsen etter ønske */
-        border: 2px solid #333;
-        border-radius: 8px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        background: white;
-    }
-
-    /* Vis bildet når man hoovrer over beholderen */
-    .bilde-container:hover .hover-bilde {
-        display: block;
-    }
-
-
-/* Spesifikke hover-farger for hver knappetype */
-
-/* Registrer (Grønn) */
-.btn-reg:hover { background-color: #219150 !important; }
-
-/* Nullstill (Oransje) */
-.btn-nullstill:hover { background-color: #d35400 !important; }
-
-/* Edit / Admin (Blå) */
-.btn-edit:hover, .btn-admin:hover { background-color: #1c638e !important; }
-
-/* Slett / Logg ut (Rød) */
-.btn-slett:hover, .btn-danger:hover, .btn-logout:hover { background-color: #c0392b !important; }
-
-/* Fjern (Grå) */
-.btn-fjern:hover { background-color: #7f8c8d !important; }
-
-/* Lås (Mørk oransje) */
-.btn-lock:hover { background-color: #a04000 !important; }
-
-/* --- Action Bar Knapper (Store) --- */
-
-/* Print (Lys blå) */
-.btn-print:hover { background-color: #008ae6 !important; }
-
-/* Analyse (Lilla) */
-.btn-analyse:hover { background-color: #732d91 !important; }
-
-/* Excel (Grønn) */
-.btn-excel:hover { background-color: #185935 !important; }
-
-/* Hent alt (Grå) */
-.btn-hent-alt:hover { background-color: #808080 !important; }
-
-/* Legg disse til i listen din over hover-farger */
-.btn-ki:hover { background-color: #808080 !important; color: white !important; }
-.btn-bok:hover { background-color: #808080 !important; color: white !important;}
-
-
-
-
-
 .hjelpe-ikon-tekst {
     position: relative; 
     cursor: help;
@@ -426,7 +357,6 @@ td .oppgave-preview-bilde {
     body { background: white; margin: 0; padding: 0; width: 100%; }
     .oppgave-preview-bilde { display: none !important; }
     .hjelpe-ikon-tekst { border-bottom: none !important; }
-    .bilde-container { display: none; }
     /* 2. Skjul alt unødvendig */
     .no-print, .btn, .modal, .modal-content, #loginScreen, .header-grid, 
     .action-bar, .ny-elev-boks, #adminPanel, .chart-container, 
