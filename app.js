@@ -1092,21 +1092,22 @@ if (topper.length > 0) {
 }
 
 
-// --- SIDE 3: ULTRA-KOMPAKT DETALJANALYSE (Komplett og optimalisert) ---
+// --- SIDE 3: ULTRA-KOMPAKT DETALJANALYSE (Korrigerte referanser) ---
 let htmlSide3 = fellesHeader; 
 htmlSide3 += `<div class="analyse-side-3">`; 
 
 htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Områder klassen skårer under kritisk grense eller under 65%</h2>`;
 
-// Tabell-header
 htmlSide3 += `
     <div style="display: grid; grid-template-columns: 1fr auto; gap: 20px; padding: 10px 15px; background: #eee; font-weight: bold; border-radius: 4px; margin-bottom: 5px; font-size: 0.85em;">
         <div>OMRÅDE / PEDAGOGISK FOKUS</div>
         <div style="text-align: right;">TILTAK</div>
     </div>`;
 
+// 1. Deklarer variabelen her oppe så den er tilgjengelig i hele skopet
+let harSvakheter = false;
+
 if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
-    let harSvakheter = false;
     const headerTekst = fellesHeader.toLowerCase();
     const erLesing = headerTekst.includes("lesing");
     
@@ -1116,15 +1117,14 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
         const malInfo = gjeldendeMalTabell.oppgaver[i + 1]; 
 
         if ((prosent < 65 || (o.grense !== -1 && snitt <= o.grense)) && malInfo) {
-            harSvakheter = true;
+            harSvakheter = true; // Denne blir nå satt til true hvis vi finner noe
             let farge = (o.grense !== -1 && snitt <= o.grense) ? "#c0392b" : "#d35400";
             const rentTrinnNummer = parseInt(trinn.replace(/\D/g, '')); 
             
-            // --- EKSTREMT ROBUST SØKELOGIKK ---
+            // --- SØKELOGIKK ---
             let oppgaveNavn = malInfo.navn.toLowerCase();
             let søkeBegreper = [oppgaveNavn];
 
-            // Mapping for å treffe titler i mattebok.js (Multi)
             if (oppgaveNavn.includes("klokk") || oppgaveNavn.includes("tid")) {
                 søkeBegreper.push("Tid", "tid", "Halve timer", "Dager og måneder", "Klokkeslett");
             }
@@ -1140,7 +1140,6 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
 
             const hentRef = (t) => {
                 let funnet = [];
-                // Vi kjører søk på alle varianter av begrepene
                 søkeBegreper.forEach(ord => {
                     let r = finnRelevanteSider(t, ord);
                     if (r && r.trim() !== "" && !r.toLowerCase().includes("ingen direkte treff")) {
@@ -1150,32 +1149,29 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                 return funnet.length > 0 ? [...new Set(funnet)].join(", ") : null;
             };
 
-            // Gjennomfør søk: Eget trinn først, så nabo-trinn
             let bokReferanser = hentRef(rentTrinnNummer);
             let bokInfoTekst = `Relevante sider i Multi for ${rentTrinnNummer}. trinn:`;
 
             if (!bokReferanser) {
                 let alleFunneReferanser = [];
-                // Sjekker trinnene 1 til 7
                 for (let t = 1; t <= 7; t++) {
                     if (t === rentTrinnNummer) continue;
                     let ref = hentRef(t);
                     if (ref) alleFunneReferanser.push(`${t}. trinn: ${ref}`);
                 }
-
                 if (alleFunneReferanser.length > 0) {
                     bokReferanser = alleFunneReferanser.join('\\n');
                     bokInfoTekst = `Ingen treff på ${rentTrinnNummer}. trinn. Du finner temaet her:`;
                 } else {
-                    bokReferanser = "Fant ingen spesifikke sidetall i Multi 1-7. Prøv generelt søk på temaet.";
+                    bokReferanser = "Fant ingen spesifikke sidetall i Multi 1-7.";
                     bokInfoTekst = "Boksøk:";
                 }
             }
 
-            // --- GENERER HTML-RAD ---
+            // HTML-rad generering
             const safeBokReferanser = btoa(unescape(encodeURIComponent(bokReferanser)));
             const safeBokTittel = btoa(unescape(encodeURIComponent(bokInfoTekst)));
-            const kiPrompt = `Jeg er lærer og klassen min trenger trening på: ${malInfo.navn}. ${malInfo.forklaring}. Lag 5 lignende oppgaver tilpasset ${rentTrinnNummer}. trinn.`;
+            const kiPrompt = `Jeg er lærer. Lag 5 oppgaver om: ${malInfo.navn}. ${malInfo.forklaring} tilpasset ${rentTrinnNummer}. trinn.`;
             const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
             const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
 
@@ -1188,14 +1184,13 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                     </div>
                     <div style="display: flex; gap: 5px; flex-shrink: 0;">
                         ${bildeUrl ? `
-                            <span class="bilde-container" style="position:relative;">
+                            <span class="bilde-container">
                                 <a href="${bildeUrl}" target="_blank" style="text-decoration:none; padding: 2px 5px; border: 1px solid #ccc; border-radius:3px; background:#f9f9f9;">👁️</a>
-                                <img src="${bildeUrl}" class="hover-bilde" style="display:none; position:absolute; right:110%; top:50%; transform:translateY(-50%); width:300px; border:2px solid #2c3e50; z-index:999;">
+                                <img src="${bildeUrl}" class="hover-bilde">
                             </span>` : ''}
                         
                         <button onclick="(function(btn){ 
-                            const tekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
-                            navigator.clipboard.writeText(tekst).then(() => {
+                            navigator.clipboard.writeText(decodeURIComponent(escape(window.atob('${safePrompt}')))).then(() => {
                                 btn.innerText = '✅';
                                 setTimeout(() => { window.open('https://chatgpt.com', '_blank'); btn.innerText = 'KI'; }, 1000);
                             });
@@ -1203,9 +1198,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
 
                         ${!erLesing ? `
                         <button onclick="(function(){
-                            const tittel = decodeURIComponent(escape(window.atob('${safeBokTittel}')));
-                            const info = decodeURIComponent(escape(window.atob('${safeBokReferanser}')));
-                            alert(tittel + '\\n\\n' + info);
+                            alert(decodeURIComponent(escape(window.atob('${safeBokTittel}'))) + '\\n\\n' + decodeURIComponent(escape(window.atob('${safeBokReferanser}'))));
                         })()" class="no-print" style="cursor:pointer; border:1px solid #2980b9; background:white; color:#2980b9; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:45px;">BOK</button>
                         ` : ''}
                     </div>
@@ -1214,6 +1207,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     });
 }
 
+// 2. Nå kan vi trygt sjekke harSvakheter her
 if (!harSvakheter) {
     htmlSide3 += `<p style="text-align:center; color:green; padding:20px;">Stabilt høyt nivå på alle områder.</p>`;
 }
