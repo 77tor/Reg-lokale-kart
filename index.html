@@ -111,6 +111,48 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     th, td { border: 1px solid black !important; }
     .oppgave-preview-bilde { display: none !important; }
 }
+
+.top-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0; /* Litt luft over og under */
+    border-bottom: 1px solid #eee;
+    margin-bottom: 20px;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.top-logo {
+    height: 45px; /* Logoen blir nå mer som et ikon enn en stor plakat */
+    width: auto;
+}
+
+.title-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-info-mini {
+    font-size: 0.85em;
+    color: #666;
+}
+
+.header-right {
+    display: flex;
+    gap: 8px;
+}
+
+/* Små justeringer for at topp-knappene ikke skal ta for mye vertikal plass */
+.header-right .btn {
+    height: 35px !important;
+    padding: 0 15px;
+    font-size: 0.85em;
+}
 </style>
 </head>
 <body>
@@ -121,22 +163,22 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 </div>
 
 <div class="container no-print" id="mainContent" style="display: none;">
-    <div class="print-header" style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
-        <img src="kart_02.png" alt="Logo" class="no-print" style="height: 60px; width: auto;">
-        <h1 id="printTittel" class="no-print" style="margin: 0;"></h1>
+<div class="top-header-bar no-print">
+    <div class="header-left">
+        <img src="kart_02.png" alt="Logo" class="top-logo">
+        <div class="title-group">
+            <h1 id="printTittel"></h1>
+            <div class="user-info-mini">
+                👤 <span id="userInfo"></span>
+            </div>
+        </div>
     </div>
 
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;" class="no-print">
-        <div>
-            <h2 style="margin: 0; font-size: 1.1em; color: #2c3e50;">
-                👤 Innlogget som: <span id="userInfo" style="font-weight: bold; color: #2980b9;"></span>
-            </h2>
-        </div>
-        <div>
-            <button class="btn btn-print" onclick="sjekkAdminKode()">Admin</button>
-            <button class="btn btn-logout" onclick="logout()">Logg ut</button>
-        </div>
+    <div class="header-right">
+        <button class="btn btn-admin" onclick="sjekkAdminKode()">Admin</button>
+        <button class="btn btn-logout" onclick="logout()">Logg ut</button>
     </div>
+</div>
 
 
 <div id="adminPanel" class="no-print" style="display: none; background: #f8f9fa; border: 2px solid #2980b9; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
