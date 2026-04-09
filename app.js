@@ -1092,7 +1092,7 @@ if (topper.length > 0) {
 }
 
 
-// --- SIDE 3: ULTRA-KOMPAKT DETALJANALYSE (Korrigerte referanser) ---
+// --- SIDE 3: ULTRA-KOMPAKT DETALJANALYSE (Med bilde-støtte i KI-prompt) ---
 let htmlSide3 = fellesHeader; 
 htmlSide3 += `<div class="analyse-side-3">`; 
 
@@ -1104,7 +1104,6 @@ htmlSide3 += `
         <div style="text-align: right;">TILTAK</div>
     </div>`;
 
-// 1. Deklarer variabelen her oppe så den er tilgjengelig i hele skopet
 let harSvakheter = false;
 
 if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
@@ -1117,7 +1116,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
         const malInfo = gjeldendeMalTabell.oppgaver[i + 1]; 
 
         if ((prosent < 65 || (o.grense !== -1 && snitt <= o.grense)) && malInfo) {
-            harSvakheter = true; // Denne blir nå satt til true hvis vi finner noe
+            harSvakheter = true; 
             let farge = (o.grense !== -1 && snitt <= o.grense) ? "#c0392b" : "#d35400";
             const rentTrinnNummer = parseInt(trinn.replace(/\D/g, '')); 
             
@@ -1168,52 +1167,59 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                 }
             }
 
-            // HTML-rad generering
+            // --- KI PROMPT MED BILDE-STØTTE ---
+            const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
+            
+            // Her bygger vi prompten dynamisk basert på om bilde eksisterer
+            let kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}".\nPedagogisk forklaring: ${malInfo.forklaring}.\n\n`;
+            if (bildeUrl) {
+                kiPrompt += `1. Kan du se på dette bildet av den opprinnelige oppgaven: ${bildeUrl}\n2. Lag 5 lignende oppgaver basert på stilen og innholdet i bildet.\n\n`;
+            } else {
+                kiPrompt += `Lag 5 varierte oppgaver som trener dette målet.\n\n`;
+            }
+            kiPrompt += `Tilpass alt til ${rentTrinnNummer}. trinn.`;
+
+            const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
             const safeBokReferanser = btoa(unescape(encodeURIComponent(bokReferanser)));
             const safeBokTittel = btoa(unescape(encodeURIComponent(bokInfoTekst)));
-            const kiPrompt = `Jeg er lærer. Lag 5 oppgaver om: ${malInfo.navn}. ${malInfo.forklaring} tilpasset ${rentTrinnNummer}. trinn.`;
-            const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
-            const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
 
-htmlSide3 += `
-    <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 8px 15px; border-bottom: 1px solid #eee; font-size: 0.85em; background: white;">
-        <div style="padding-right: 15px;">
-            <strong style="color: ${farge};">${malInfo.navn}</strong> 
-            <span style="color: #666;">(${prosent.toFixed(1)}%)</span> — 
-            <span style="color: #888; font-style: italic;">${malInfo.forklaring}</span>
-        </div>
-        
-        <div style="display: flex; gap: 5px; flex-shrink: 0;">
-            ${bildeUrl ? `
-                <span class="bilde-container" style="position:relative;">
-                    <a href="${bildeUrl}" target="_blank" style="text-decoration:none; padding: 2px 5px; border: 1px solid #ccc; border-radius:3px; background:#f9f9f9;">👁️</a>
-                    <img src="${bildeUrl}" class="hover-bilde" style="display:none; position:absolute; right:110%; top:50%; transform:translateY(-50%); width:300px; border:2px solid #2c3e50; z-index:999;">
-                </span>` : ''}
+            htmlSide3 += `
+            <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 8px 15px; border-bottom: 1px solid #eee; font-size: 0.85em; background: white;">
+                <div style="padding-right: 15px;">
+                    <strong style="color: ${farge};">${malInfo.navn}</strong> 
+                    <span style="color: #666;">(${prosent.toFixed(1)}%)</span> — 
+                    <span style="color: #888; font-style: italic;">${malInfo.forklaring}</span>
+                </div>
+                
+                <div style="display: flex; gap: 5px; flex-shrink: 0;">
+                    ${bildeUrl ? `
+                        <span class="bilde-container" style="position:relative;">
+                            <a href="${bildeUrl}" target="_blank" style="text-decoration:none; padding: 2px 5px; border: 1px solid #ccc; border-radius:3px; background:#f9f9f9;">👁️</a>
+                            <img src="${bildeUrl}" class="hover-bilde" style="display:none; position:absolute; right:110%; top:50%; transform:translateY(-50%); width:300px; border:2px solid #2c3e50; z-index:999;">
+                        </span>` : ''}
 
-            <button onclick="(function(btn){ 
-                const promptTekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
-                navigator.clipboard.writeText(promptTekst).then(() => {
-                    btn.innerText = '✅';
-                    const encodedPrompt = encodeURIComponent(promptTekst);
-                    const copilotUrl = 'https://copilot.microsoft.com/?q=' + encodedPrompt;
-                    window.open(copilotUrl, '_blank');
-                    setTimeout(() => { btn.innerText = 'KI'; }, 2000);
-                });
-            })(this)" class="no-print" style="cursor:pointer; border:1px solid #8e44ad; background:white; color:#8e44ad; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:35px;">KI</button>
+                    <button onclick="(function(btn){ 
+                        const promptTekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
+                        navigator.clipboard.writeText(promptTekst).then(() => {
+                            btn.innerText = '✅';
+                            const encodedPrompt = encodeURIComponent(promptTekst);
+                            const copilotUrl = 'https://copilot.microsoft.com/?q=' + encodedPrompt;
+                            window.open(copilotUrl, '_blank');
+                            setTimeout(() => { btn.innerText = 'KI'; }, 2000);
+                        });
+                    })(this)" class="no-print" style="cursor:pointer; border:1px solid #8e44ad; background:white; color:#8e44ad; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:35px;">KI</button>
 
-            ${!erLesing ? `
-                <button onclick="(function(){
-                    alert(decodeURIComponent(escape(window.atob('${safeBokTittel}'))) + '\\n\\n' + decodeURIComponent(escape(window.atob('${safeBokReferanser}'))));
-                })()" class="no-print" style="cursor:pointer; border:1px solid #2980b9; background:white; color:#2980b9; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:45px;">BOK</button>
-            ` : ''}
-        </div>
-    </div>`;
-            
+                    ${!erLesing ? `
+                        <button onclick="(function(){
+                            alert(decodeURIComponent(escape(window.atob('${safeBokTittel}'))) + '\\n\\n' + decodeURIComponent(escape(window.atob('${safeBokReferanser}'))));
+                        })()" class="no-print" style="cursor:pointer; border:1px solid #2980b9; background:white; color:#2980b9; border-radius:3px; padding: 2px 5px; font-weight:bold; min-width:45px;">BOK</button>
+                    ` : ''}
+                </div>
+            </div>`;
         }
     });
 }
 
-// 2. Nå kan vi trygt sjekke harSvakheter her
 if (!harSvakheter) {
     htmlSide3 += `<p style="text-align:center; color:green; padding:20px;">Stabilt høyt nivå på alle områder.</p>`;
 }
