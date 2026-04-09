@@ -3067,18 +3067,35 @@ function startLyttere() {
 
 
 function slettElev(navn) {
-    // Vi legger til \n for ny linje og et varseltrekan-ikon (⚠️)
-    const melding = `Vil du slette ${navn} fra denne prøven?\n\n` + 
-                   `⚠️ Husk at elever som ikke har gjennomført, ikke skal slettes, ` +
-                   `men settes som "Ikke gjennomført" i registreringsskjemaet.`;
-
-    if (confirm(melding)) {
-        db.ref(hentSti(navn)).update({ slettet: true }).then(() => {
-            tegnTabell(); // Tvinger tabellen til å tegne på nytt
-        });
-    }
+    Swal.fire({
+        title: `Vil du slette ${navn}?`,
+        html: `Er du sikker på at du vil slette denne eleven fra prøven?<br><br>` +
+              `<div style="background-color: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; border: 1px solid #ffeeba;">` +
+              `⚠️ <strong>Husk:</strong> Elever som ikke har gjennomført, men som fortsatt går i klassen,  <strong>ikke</strong> slettes, ` +
+              `men settes som "Ikke gjennomført" i registreringsskjemaet.` +
+              `</div>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33', // Rød farge for sletting
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ja, slett eleven',
+        cancelButtonText: 'Avbryt'
+    }).then((result) => {
+        // result.isConfirmed er sann hvis brukeren trykket på "Ja"
+        if (result.isConfirmed) {
+            db.ref(hentSti(navn)).update({ slettet: true }).then(() => {
+                tegnTabell();
+                
+                // Valgfritt: Vis en liten bekreftelse på at det er gjort
+                Swal.fire(
+                    'Slettet!',
+                    `${navn} er fjernet fra listen.`,
+                    'success'
+                );
+            });
+        }
+    });
 }
-
 function gjenopprettElev(navn) {
     db.ref(hentSti(navn)).update({ slettet: false }).then(() => {
         tegnTabell(); // Tvinger tabellen til å tegne på nytt
