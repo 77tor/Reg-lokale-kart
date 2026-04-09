@@ -3067,7 +3067,12 @@ function startLyttere() {
 
 
 function slettElev(navn) {
-    if (confirm(`Vil du slette ${navn} fra denne prøven?`)) {
+    // Vi legger til \n for ny linje og et varseltrekan-ikon (⚠️)
+    const melding = `Vil du slette ${navn} fra denne prøven?\n\n` + 
+                   `⚠️ Husk at elever som ikke har gjennomført, ikke skal slettes, ` +
+                   `men settes som "Ikke gjennomført" i registreringsskjemaet.`;
+
+    if (confirm(melding)) {
         db.ref(hentSti(navn)).update({ slettet: true }).then(() => {
             tegnTabell(); // Tvinger tabellen til å tegne på nytt
         });
