@@ -128,70 +128,12 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 .is-locked .ferdigstilt-merkelapp { display: inline-block; }
 .is-locked td .btn { display: none; }
 
-/* UTSKRIFT - Fikset for å fjerne grå bakgrunn og skygger */
+/* UTSKRIFT (Beholdt din originale logikk) */
 @media print {
-    /* 1. Tvinger nettleseren til å faktisk skrive ut farger */
-    * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-
-    body { 
-        background: white !important; 
-        margin: 0 !important; 
-    }
-
-    .container { 
-        box-shadow: none !important; 
-        border: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        max-width: 100% !important;
-    }
-
     @page { size: landscape; margin: 0.5cm; }
-
-    .no-print, .btn, .modal, .header-grid, .action-bar, .top-header-bar { 
-        display: none !important; 
-    }
-
-@media print {
-    /* 1. Tvinger nettleseren til å faktisk skrive ut farger */
-    * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-
-    body { 
-        background: white !important; 
-        margin: 0 !important; 
-    }
-
-    .container { 
-        box-shadow: none !important; 
-        border: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        max-width: 100% !important;
-    }
-
-    @page { size: landscape; margin: 0.5cm; }
-
-    .no-print, .btn, .modal, .header-grid, .action-bar, .top-header-bar { 
-        display: none !important; 
-    }
-
-    table { width: 100% !important; font-size: 8.5pt !important; border-collapse: collapse !important; }
-    
-    /* 2. VIKTIG: Ikke sett 'background: white' på ALLE td, da forsvinner de røde! */
+    .no-print, .btn, .modal, .header-grid, .action-bar { display: none !important; }
+    table { width: 100% !important; font-size: 8.5pt !important; }
     th, td { border: 1px solid black !important; }
-    
-    /* 3. Tving frem de røde feltene på papiret */
-    .kritisk { 
-        background-color: #ffcccc !important; 
-        color: #b71c1c !important; 
-    }
-
     .oppgave-preview-bilde { display: none !important; }
 }
 
