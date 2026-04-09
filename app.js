@@ -1322,7 +1322,7 @@ try {
                         
                         if (eSum <= aOppsett.grenseTotal) {
                             klasseKritiske++;
-                        } else if (eProsent < 65) {
+                        } else if (eProsent < 70) {
                             klasseLavMestring++;
                         }
                     }
