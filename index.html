@@ -15,28 +15,87 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
     <style>
 
-/* --- DIN OPPRINNELIGE GRUNNSTIL --- */
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; margin: 0; background: #f0f2f5; color: #333; }
-.container { max-width: 1400px; margin: 20px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+/* --- 1. GRUNNLEGGENDE STIL & TOPP-PLASSERING --- */
+body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+    line-height: 1.6; margin: 0; background: #f0f2f5; color: #333; 
+}
+
+.container { 
+    max-width: 1400px; 
+    margin: 5px auto 20px auto; /* Redusert topp-margin fra 20px til 5px */
+    padding: 10px 20px 20px 20px; /* Redusert topp-padding */
+    background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+}
+
 #loginScreen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f0f2f5; }
 
-/* HEADER OG FILTER */
+/* --- 2. NY SMAL HEADER LAYOUT --- */
+.top-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0 10px 0; /* Minimal luft i toppen */
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Litt tettere mellom logo og tekst */
+}
+
+.top-logo {
+    height: 45px; /* Justert ned fra 50px for å spare vertikal plass */
+    width: auto;
+    display: block;
+}
+
+.header-left h1 {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 1.2em; /* Gitt en fast størrelse for kontroll */
+    color: #2c3e50;
+    line-height: 1;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-pill {
+    background: #f0f4f8;
+    padding: 4px 12px; /* Smalere pille */
+    border-radius: 20px;
+    font-size: 0.85em;
+    color: #2c3e50;
+    font-weight: 500;
+    height: fit-content;
+}
+
+/* Tvinger knappene i headeren til å være mer kompakte */
+.header-right .btn {
+    height: 32px !important;
+    padding: 0 12px;
+    font-size: 0.8em;
+}
+
+/* --- 3. FILTER OG TABELL --- */
 .header-grid { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; background: #e9ecef; padding: 15px; border-radius: 8px; align-items: flex-end; }
-.header-grid > div { flex: 1; min-width: 140px; }
 .header-grid label { display: block; font-size: 0.85em; margin-bottom: 5px; font-weight: bold; color: #4a5568; }
-.action-bar { display: flex; gap: 10px; margin-bottom: 20px; }
 select, input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
 
-/* TABELL-CSS */
 table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em; }
 th, td { border: 1px solid #dee2e6; padding: 8px; text-align: center; }
 th { background: #f8f9fa; position: sticky; top: 0; z-index: 10; overflow: visible !important; }
 tr:hover { background-color: #f1f1f1; }
 
-/* --- KNAPPE-STILER (Alle dine kategorier bevart) --- */
+/* --- 4. KNAPPE-STYLER --- */
 .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 0.85em; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
 .btn:hover { filter: brightness(90%); box-shadow: 0 2px 4px rgba(0,0,0,0.15); }
-
 .btn-reg { background: #27ae60; color: white; }
 .btn-nullstill { background: #e67e22; color: white; }
 .btn-edit, .btn-admin { background: #2980b9; color: white; }
@@ -45,13 +104,8 @@ tr:hover { background-color: #f1f1f1; }
 .btn-print { background-color: #26A8FF; color: white; }
 .btn-analyse { background-color: #8e44ad; color: white; }
 .btn-excel { background-color: #1f7244; color: white; }
-.btn-hent-alt { background-color: #A0A0A0; color: white; }
-.btn-ki { background-color: white !important; color: #8e44ad !important; }
-.btn-ki:hover { background-color: #808080 !important; color: white !important; }
-.btn-bok { background-color: white !important; color: #2980b9 !important; }
-.btn-bok:hover { background-color: #808080 !important; color: white !important; }
 
-/* --- MODAL SYSTEM (FIKSET) --- */
+/* --- 5. MODAL & BILDE-PREVIEW FIX --- */
 .modal { 
     display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; 
     background: rgba(0,0,0,0.6); justify-content: center; align-items: flex-start; 
@@ -60,8 +114,7 @@ tr:hover { background-color: #f1f1f1; }
 
 .modal-content { 
     background: white; margin: 0 auto; padding: 15px 25px; border-radius: 12px; 
-    width: 320px; /* Smalere boks */
-    max-height: 95vh; display: flex; flex-direction: column; position: relative; 
+    width: 320px; max-height: 95vh; display: flex; flex-direction: column; position: relative; 
     box-shadow: 0 5px 30px rgba(0,0,0,0.3); overflow: visible !important; 
 }
 
@@ -70,82 +123,44 @@ tr:hover { background-color: #f1f1f1; }
     padding-right: 10px; margin-bottom: 10px; flex-grow: 1; position: relative; 
 }
 
-/* --- BILDE-PREVIEW LOGIKK (FIKSET FOR MODAL VENSTRE) --- */
 .hjelpe-ikon-tekst { position: relative; cursor: help; border-bottom: 1px dotted #007bff; display: inline-flex; gap: 5px; align-items: center; color: #333; }
 
+/* Preview-bilder */
 .oppgave-preview-bilde {
-    display: none; position: absolute; z-index: 99999; width: 320px; height: auto; 
+    display: none; position: absolute; z-index: 99999; width: 350px; height: auto; 
     background: white; border: 3px solid #2d3748; border-radius: 10px; 
     box-shadow: 0 10px 30px rgba(0,0,0,0.5); pointer-events: none;
 }
 
-/* Plassering i tabell */
+/* Plassering i tabell (Hovedside) */
 th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: translateX(-50%); top: 100%; margin-top: 10px; }
 
-/* Plassering i modal (Tvinges til VENSTRE med fixed) */
+/* Plassering i modal (Tvinges til VENSTRE for den hvite boksen) */
 .modal-body-scroll .oppgave-preview-bilde {
     position: fixed; 
-    left: calc(50% - 320px - 180px) !important; /* Flytter bildet helt til venstre for modalen */
-    top: 50% !important; transform: translateY(-50%) !important;
+    /* Regner ut midten minus halve modal-bredden minus bilde-bredden */
+    left: calc(50% - 160px - 370px) !important; 
+    top: 50% !important; 
+    transform: translateY(-50%) !important;
 }
 
 .hjelpe-ikon-tekst:hover .oppgave-preview-bilde { display: block !important; }
 
-/* --- ANALYSE SIDE 3 OG SPESIFIKKE FIXES --- */
+/* --- 6. ANALYSE & STATUS --- */
 .analyse-side-3 .bilde-container { position: relative; display: inline-block; }
 .analyse-side-3 .bilde-container:hover .hover-bilde { display: block !important; }
 .hover-bilde { display: none; position: absolute; right: 110%; top: 50%; transform: translateY(-50%); z-index: 1000; width: 300px; border: 2px solid #333; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); background: white; }
 
-/* STATUS-STILER */
 .kritisk { background-color: #ffcccc !important; color: #b71c1c !important; font-weight: bold !important; }
 .snitt-rad { background-color: #2c3e50 !important; color: white !important; font-weight: bold !important; }
-.ferdigstilt-merkelapp { display: none; color: #2c3e50; font-weight: bold; background: #ecf0f1; padding: 4px 10px; border-radius: 4px; border: 1px solid #bdc3c7; }
-.is-locked .ferdigstilt-merkelapp { display: inline-block; }
-.is-locked td .btn { display: none; }
 
-/* UTSKRIFT (Beholdt din originale logikk) */
+/* --- 7. UTSKRIFT --- */
 @media print {
     @page { size: landscape; margin: 0.5cm; }
-    .no-print, .btn, .modal, .header-grid, .action-bar { display: none !important; }
+    .no-print, .btn, .modal, .header-grid, .action-bar, .top-header-bar { display: none !important; }
     table { width: 100% !important; font-size: 8.5pt !important; }
     th, td { border: 1px solid black !important; }
     .oppgave-preview-bilde { display: none !important; }
-}
-
-/* --- HEADER LAYOUT (Inspirert av forside.jpg) --- */
-.top-header-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 0;
-    margin-bottom: 20px;
-    border-bottom: 1px solid #eee;
-}
-
-.header-left {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-}
-
-.top-logo {
-    height: 50px;
-    width: auto;
-}
-
-.header-right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.user-pill {
-    background: #f0f4f8;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.9em;
-    color: #2c3e50;
-    font-weight: 500;
 }
 </style>
 </head>
