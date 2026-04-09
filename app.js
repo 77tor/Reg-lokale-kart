@@ -1118,7 +1118,7 @@ if (topper.length > 0) {
 let htmlSide3 = fellesHeader; 
 htmlSide3 += `<div class="analyse-side-3">`; 
 
-htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Områder klassen skårer under kritisk grense eller under 65%</h2>`;
+htmlSide3 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Områder klassen skårer under kritisk grense eller under 70%</h2>`;
 
 htmlSide3 += `
     <div style="display: grid; grid-template-columns: 1fr auto; gap: 20px; padding: 10px 15px; background: #eee; font-weight: bold; border-radius: 4px; margin-bottom: 5px; font-size: 0.85em;">
@@ -1137,7 +1137,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
         const prosent = (snitt / o.maks) * 100;
         const malInfo = gjeldendeMalTabell.oppgaver[i + 1]; 
 
-        if ((prosent < 65 || (o.grense !== -1 && snitt <= o.grense)) && malInfo) {
+        if ((prosent < 70 || (o.grense !== -1 && snitt <= o.grense)) && malInfo) {
             harSvakheter = true; 
             let farge = (o.grense !== -1 && snitt <= o.grense) ? "#c0392b" : "#d35400";
             const rentTrinnNummer = parseInt(trinn.replace(/\D/g, '')); 
