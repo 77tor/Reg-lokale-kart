@@ -1050,84 +1050,101 @@ async function genererGjennomfoeringsData() {
 function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, statuser, alleLogger) {
     fantData = true;
 
-    let fulltKlasseNavn = trinn && !klasse.includes(trinn) ? trinn + klasse : klasse;
+    // 1. Sørg for at klasse blir f.eks. "5B"
+    let fulltKlasseNavn = klasse;
+    if (trinn && !klasse.includes(trinn)) {
+        fulltKlasseNavn = trinn + klasse;
+    }
 
-    // --- 1. HENT DATA FOR BEREGNING ---
+    // 2. Hent lærerdata
+    const laerer = finnKontaktlaererForKlasse(fulltKlasseNavn, aar);
+    const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
+    const laererEpost = laerer ? laerer.epost : "";
+
+// 3. Beregn statistikk (Gjennomført og Snitt i %)
     const eleverKeys = Object.keys(eleverObjekt);
     const totaltAntallElever = eleverKeys.length;
     
     let antallGjennomfoert = 0;
-    let sumOppnaaddPoeng = 0;
-    let maksMuligPoengForKlassen = 0;
+    let totalOppnåddPoengsum = 0;
+    let maksPoengForPrøven = 0;
+
+    // Finn maks poeng for denne spesifikke prøven (henter fra første elev som har det lagret)
+    for (let id in eleverObjekt) {
+        if (eleverObjekt[id].maksPoeng) {
+            maksPoengForPrøven = parseFloat(eleverObjekt[id].maksPoeng);
+            break; 
+        }
+    }
 
     eleverKeys.forEach(id => {
-        const data = eleverObjekt[id];
-        // Vi regner kun med elever som har en registrert sum (har fullført)
-        if (data && data.sum !== undefined && data.sum !== "") {
+        const elevData = eleverObjekt[id];
+        // Vi teller kun elever som har en registrert sum (poeng)
+        if (elevData && elevData.sum !== undefined && elevData.sum !== null && elevData.sum !== "") {
             antallGjennomfoert++;
-            
-            const poeng = parseFloat(data.sum) || 0;
-            const maks = parseFloat(data.maksPoeng) || 0;
-
-            sumOppnaaddPoeng += poeng;
-            maksMuligPoengForKlassen += maks;
+            totalOppnåddPoengsum += parseFloat(elevData.sum) || 0;
         }
     });
 
-    // --- 2. BEREGN SNITT I PROSENT ---
-    // Dette tilsvarer "X % av maks" som du ser i analysedelen
-    let snittProsentVisning = "0%";
-    if (maksMuligPoengForKlassen > 0) {
-        const prosent = (sumOppnaaddPoeng / maksMuligPoengForKlassen) * 100;
-        snittProsentVisning = Math.round(prosent) + "%"; 
+    // Beregn snitt i prosent: (Gjennomsnittspoeng / Maks poeng) * 100
+    let snittVisning = "0%";
+    if (antallGjennomfoert > 0 && maksPoengForPrøven > 0) {
+        const snittPoeng = totalOppnåddPoengsum / antallGjennomfoert;
+        const prosent = (snittPoeng / maksPoengForPrøven) * 100;
+        snittVisning = prosent.toFixed(1) + "%";
+    } else if (antallGjennomfoert > 0 && maksPoengForPrøven === 0) {
+        // Fallback hvis maksPoeng mangler: Vis gjennomsnittlig sum direkte
+        snittVisning = (totalOppnåddPoengsum / antallGjennomfoert).toFixed(1);
     }
 
     const gjennomfoertVisning = `${antallGjennomfoert} / ${totaltAntallElever}`;
 
-    // --- 3. STATUS OG LÆRER ---
-    const laerer = finnKontaktlaererForKlasse(fulltKlasseNavn, aar);
-    const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
-    
+    // 4. Status-definisjon
     const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
     const erLaast = statusObj.laast || false;
     const statusTekst = erLaast 
         ? "<span style='color:green; font-weight:bold;'>✅ Ferdig</span>" 
         : "<span style='color:red; font-weight:bold;'>⚠️ Pågår</span>";
 
-    // --- 4. BYGG TABELLRAD (Fullstendig oversikt) ---
+    // --- TABELL 1: FULLSTENDIG OVERSIKT ---
+    // Her inkluderer vi både Prøve, Periode, År OG Klasse tydelig
     htmlTotal += `<tr>
         <td style="text-align:left;">${fag} - ${periode} ${aar}</td>
         <td><b>${fulltKlasseNavn}</b></td>
         <td>${laererNavn}</td>
         <td>${gjennomfoertVisning}</td>
-        <td style="font-weight:bold; color: #2c3e50;">${snittProsentVisning}</td>
+        <td style="font-weight:bold;">${snittVisning}</td>
         <td>${statusTekst}</td>
     </tr>`;
 
-    // --- 5. BYGG TABELLRAD (Purrelista) ---
+    // --- TABELL 2: IKKE FERDIGSTILTE (Purrelista) ---
     if (!erLaast) {
         harApne = true;
-        const stisti = `${aar}/${fag}/${periode}/${trinn}/${klasse}`;
-        const proeveNavnFullt = `${fag} (${fulltKlasseNavn}) - ${periode} ${aar}`;
         const sideUrl = window.location.origin + window.location.pathname;
+        const stisti = `${aar}/${fag}/${periode}/${trinn}/${klasse}`;
+        
+        // Lag et komplett navn for e-posten og visningen i purrelista
+        const proeveNavnFullt = `${fag} (${fulltKlasseNavn}) - ${periode} ${aar}`;
 
         const loggForDenne = alleLogger[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
-        const loggHtml = Object.values(loggForDenne).length > 0 
-            ? `<ul style="font-size:0.7em; color:gray; list-style:none; padding:0; margin:5px 0;">
-                ${Object.values(loggForDenne).map(tid => `<li>Sist sendt: ${tid}</li>`).join('')}
-               </ul>` 
-            : "";
+        const loggListe = Object.values(loggForDenne).map(tid => `<li>${tid}</li>`).join('');
+        const loggHtml = loggListe ? `<ul style="margin:5px 0 0 0; padding:0; list-size:none; font-size:0.7em; color:#555; line-height:1.2; border-top: 1px dashed #ccc; padding-top: 3px;"><b>Sendt:</b>${loggListe}</ul>` : "";
 
         htmlIkkeFerdig += `<tr>
             <td style="text-align:left;"><b>${fag} (${fulltKlasseNavn})</b><br><small>${periode} ${aar}</small></td>
             <td>${laererNavn}</td>
             <td style="text-align:center;">
-                ${laerer ? `
-                <button onclick="sendEpostViaEmailJS('${laerer.navn}', '${laerer.epost}', '${proeveNavnFullt}', '${sideUrl}', '${stisti}')" class="btn-purr">
-                    📧 Send purring
-                </button>${loggHtml}` : "Mangler e-post"}
+                ${laererEpost ? 
+                    `<button onclick="sendEpostViaEmailJS('${laererNavn}', '${laererEpost}', '${proeveNavnFullt}', '${sideUrl}', '${stisti}')" 
+                             class="btn" 
+                             style="background-color:#27ae60; color:white; padding:5px 10px; font-size:0.8em; border:none; border-radius:4px; cursor:pointer;">
+                       📧 Send purring
+                    </button>
+                    ${loggHtml}` : 
+                    `<span style="color:gray; font-style:italic; font-size:0.8em;">Mangler e-post</span>`
+                }
             </td>
-        </tr>`;
+</tr>`;
     } // Lukker: if (!erLaast)
 } // Lukker: function behandleKlasseData
 } // Lukker: try-blokken i genererGjennomfoeringsData
