@@ -1,4 +1,4 @@
-const ansatteData = {
+window.ansatteData = {
 
     "2025-2026": [
         { navn: "Siril Bergum", epost: "siril.bergum@kristiansand.kommune.no", paloggingsmail: "93siril@ikrs.no", kontaktlaerer: "", trinn: [] },

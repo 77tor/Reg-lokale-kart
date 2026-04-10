@@ -1,4 +1,4 @@
-let elevRegister = {
+window.elevRegister = {
 
    
  // 1. TRINN (Startet 2026)

@@ -935,28 +935,20 @@ function finnKontaktlaererForKlasse(klasseNavn, aar) {
 
 // --- HENTE ANTALL ELEVER ---
 function hentAntallEleverIRegister(klasseNavn, aar) {
-    if (typeof elevRegister === 'undefined') {
-        console.warn("elevRegister er ikke definert. Sjekk elever.js");
-        return 0;
-    }
+    const register = window.elevRegister; // Henter fra window
+    if (!register) return 0;
 
     let teller = 0;
-    // Sørger for at vi kun bruker f.eks 2024 fra "2024-2025"
+    // Trekker ut "2025" fra "2025-2026"
     const sokeAar = parseInt(aar.toString().substring(0, 4));
 
-    for (let elevNavn in elevRegister) {
-        const info = elevRegister[elevNavn];
-        const startAar = parseInt(info.startAar);
-        const startTrinn = parseInt(info.startTrinn);
-        const sluttAar = parseInt(info.sluttAar);
-        
-        if (sokeAar >= startAar && sokeAar <= sluttAar) {
-            const innevaerendeTrinn = (sokeAar - startAar) + startTrinn;
-            const fulltNavnFraRegister = innevaerendeTrinn + info.startKlasse; 
+    for (let elevNavn in register) {
+        const info = register[elevNavn];
+        const innevaerendeTrinn = (sokeAar - info.startAar) + info.startTrinn;
+        const fulltNavnFraRegister = innevaerendeTrinn + info.startKlasse; 
 
-            if (fulltNavnFraRegister === klasseNavn) {
-                teller++;
-            }
+        if (fulltNavnFraRegister === klasseNavn && sokeAar >= info.startAar && sokeAar <= info.sluttAar) {
+            teller++;
         }
     }
     return teller;
