@@ -1032,6 +1032,9 @@ async function genererGjennomfoeringsData() {
 
                 let råPoeng = node.sum !== undefined ? node.sum : node.totalPoeng;
                 if (råPoeng === undefined && node.resultat) råPoeng = node.resultat.sum;
+if (fulltKlasseNavn === "1A") {
+    console.log(`Elev i 1A har verdien: "${råPoeng}"`);
+}
 
                 let råMaks = node.maksPoeng;
                 if (råMaks === undefined && node.resultat) råMaks = node.resultat.maksPoeng;
