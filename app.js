@@ -1041,18 +1041,37 @@ async function genererGjennomfoeringsData() {
             <td>${statusTekst}</td>
         </tr>`;
 
-        if (!erLaast) {
+if (!erLaast) {
             harApne = true;
-            const emne = encodeURIComponent(`Mangler ferdigstilling: ${fulltProeveNavn}`);
-            const melding = encodeURIComponent(`Hei ${laererNavn}.\n\nDet mangler fortsatt noe i registreringen av kartleggingsprøven: ${fulltProeveNavn}.\n\nSjekk at alle resultater er registrert, og at prøven er satt til "Ferdigstilt".`);
+
+            // URL til bildet ditt på GitHub (Raw-versjon så det vises direkte i nettleseren)
+            const bildeUrl = "https://raw.githubusercontent.com/77tor/Reg-lokale-kart/main/kart_02.png";
+            // URL til selve registreringssiden din
+            const sideUrl = window.location.origin + window.location.pathname;
+
+            const emne = encodeURIComponent(`Mangler registrering/ferdigstilling av prøven: ${fulltProeveNavn}`);
+            
+            // Konstruerer meldingen med ryddige linjeskift
+            const melding = encodeURIComponent(
+                `Hei ${laererNavn}.\n\n` +
+                `Det mangler fortsatt noe i registreringen av kartleggingsprøven: ${fulltProeveNavn}.\n\n` +
+                `Sjekk at alle resultater er registrert, og at prøven er satt til "Ferdigstilt".\n\n` +
+                `Se instruksjon her: ${bildeUrl}\n\n` +
+                `Logg inn på registreringssiden her: ${sideUrl}\n\n` +
+                `Med vennlig hilsen\nAdministrasjonen`
+            );
 
             htmlIkkeFerdig += `<tr>
                 <td style="text-align:left;">${fulltProeveNavn}</td>
                 <td>${laererNavn}</td>
                 <td style="text-align:center;">
                     ${laererEpost ? 
-                        `<a href="mailto:${laererEpost}?subject=${emne}&body=${melding}" class="btn" style="background-color:#3498db; color:white; padding:5px 10px; font-size:0.8em; text-decoration:none; border-radius:4px;">📧 Send melding</a>` : 
-                        `<span style="color:gray; font-style:italic; font-size:0.8em;">Mangler e-post</span>`}
+                        `<a href="mailto:${laererEpost}?subject=${emne}&body=${melding}" 
+                           class="btn" style="background-color:#3498db; color:white; padding:5px 10px; font-size:0.8em; text-decoration:none; border-radius:4px;">
+                           📧 Send melding
+                        </a>` : 
+                        `<span style="color:gray; font-style:italic; font-size:0.8em;">Mangler e-post</span>`
+                    }
                 </td>
             </tr>`;
         }
