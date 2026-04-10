@@ -1157,7 +1157,7 @@ htmlIkkeFerdig += `<tr>
     const feilVisning = document.getElementById('ikkeFerdigstilteListe');
     if (feilVisning) {
         feilVisning.innerHTML = "<p style='color:red;'>Feil ved henting: " + error.message + "</p>";
-    }
+    
   }
 } // Lukker async function genererGjennomfoeringsData
       
