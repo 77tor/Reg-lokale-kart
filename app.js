@@ -898,6 +898,21 @@ function finnRelevanteSider(rentTrinnNummer, oppgaveNavn) {
 }
 
 
+
+//  --- ÅPNE GJENNOMFØRINGSMODAL ---
+function aapneGjennomfoeringModal() {
+    console.log("Åpner gjennomføringsmodal...");
+    // Vis modalen
+    const modal = document.getElementById('modalGjennomfoering');
+    if (modal) {
+        modal.style.display = 'flex';
+        // Start henting av data
+        genererGjennomfoeringsData();
+    } else {
+        console.error("Fant ikke modalGjennomfoering i HTML");
+    }
+}
+
 // --- GJENNOMFØRINGSMODUL ---
 async function genererGjennomfoeringsData() {
     const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
@@ -1008,7 +1023,6 @@ async function genererGjennomfoeringsData() {
         ikkeFerdigDiv.innerHTML = "<p style='color:red;'>Feil ved henting: " + error.message + "</p>";
     }
 }
-
 
 
 
