@@ -1153,7 +1153,7 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
 } // Lukker: function behandleKlasseData
 
 // --- HER ER FIKSEN FOR SYNTAX ERROR ---
-    } catch (error) {
+     catch (error) {
         console.error("Feil i gjennomføringsmodul:", error);
         const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
         if (ikkeFerdigDiv) {
