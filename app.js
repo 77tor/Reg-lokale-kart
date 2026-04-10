@@ -1151,7 +1151,7 @@ htmlIkkeFerdig += `<tr>
       } // Lukker if (!erLaast)
     } // Lukker function behandleKlasseData
   } // Lukker try-blokken
-
+} // Lukker async function genererGjennomfoeringsData
       
 
 
