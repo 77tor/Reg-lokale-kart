@@ -1147,11 +1147,12 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
                         class="btn" style="background-color:#27ae60; color:white; border:none; padding:5px; cursor:pointer; border-radius:4px;">
                     📧 Send purring
                 </button>${loggHtml}` : "Mangler e-post"}
-            </td>
+         </td>
         </tr>`;
-     } // Lukker: if (!erLaast)
+    } // Lukker: if (!erLaast)
 } // Lukker: function behandleKlasseData
-    // --- HER MANGLER SLUTTEN PÅ TRY/CATCH I DIN KODE: ---
+
+// --- HER ER FIKSEN FOR SYNTAX ERROR ---
     } catch (error) {
         console.error("Feil i gjennomføringsmodul:", error);
         const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
