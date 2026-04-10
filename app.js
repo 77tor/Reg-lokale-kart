@@ -1015,30 +1015,82 @@ async function genererGjennomfoeringsData() {
         const statuser = statusSnapshot.val() || {};
         const kartlegging = kartleggingSnapshot.val() || {};
 
-        // 1. Overskrift for "Ikke ferdigstilte prøver" (Purrelista)
-        htmlIkkeFerdig = `<table class="admin-table">
-            <thead>
-                <tr>
-                    <th style="text-align:left;">Prøve</th>
-                    <th>Kontaktlærer</th>
-                    <th>Status/Logg</th>
-                </tr>
-            </thead>
-            <tbody>`;
-        
-        // 2. Overskrift for "Fullstendig oversikt per klasse" (De 5 kolonnene dine)
-        htmlTotal = `<table class="admin-table">
-            <thead>
-<tr>
-            <th style="text-align:left;">Prøve</th>
-            <th>Klasse</th> <th>Kontaktlærer</th>
-            <th>Gjennomført</th>
-            <th>Snitt (%)</th>
-            <th>Status</th>
-        </tr>
-            </thead>
-            <tbody>`;
+        // --- DEFINER HJELPEFUNKSJONEN INNI TRY (FØR LØKKENE) ---
+        function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, statuser, alleLogger) {
+            fantData = true;
 
+            let fulltKlasseNavn = klasse;
+            if (trinn && !klasse.includes(trinn)) {
+                fulltKlasseNavn = trinn + klasse;
+            }
+
+            const totaltAntallElever = hentAntallEleverIRegister(fulltKlasseNavn, aar);
+            const eleverKeys = Object.keys(eleverObjekt);
+            
+            let antallGjennomfoert = 0;
+            let sumOppnaaddPoeng = 0;
+            let maksMuligPoengForKlassen = 0;
+
+            eleverKeys.forEach(id => {
+                const data = eleverObjekt[id];
+                if (data && data.sum !== undefined && data.sum !== null && data.sum !== "") {
+                    antallGjennomfoert++;
+                    sumOppnaaddPoeng += parseFloat(data.sum) || 0;
+                    maksMuligPoengForKlassen += parseFloat(data.maksPoeng) || 0;
+                }
+            });
+
+            const gjennomfoertVisning = `${antallGjennomfoert} / ${totaltAntallElever}`;
+            let snittVisning = "0%"; 
+            if (maksMuligPoengForKlassen > 0) {
+                snittVisning = Math.round((sumOppnaaddPoeng / maksMuligPoengForKlassen) * 100) + "%";
+            }
+
+            const laerer = finnKontaktlaererForKlasse(fulltKlasseNavn, aar);
+            const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
+            const laererEpost = laerer ? laerer.epost : "";
+
+            const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
+            const erLaast = statusObj.laast || false;
+            const statusTekst = erLaast 
+                ? "<span style='color:green; font-weight:bold;'>✅ Ferdig</span>" 
+                : "<span style='color:red; font-weight:bold;'>⚠️ Pågår</span>";
+
+            htmlTotal += `<tr>
+                <td style="text-align:left;">${fag} - ${periode} ${aar}</td>
+                <td><b>${fulltKlasseNavn}</b></td>
+                <td>${laererNavn}</td>
+                <td>${gjennomfoertVisning}</td>
+                <td style="font-weight:bold;">${snittVisning}</td>
+                <td>${statusTekst}</td>
+            </tr>`;
+
+            if (!erLaast) {
+                harApne = true;
+                const stisti = `${aar}/${fag}/${periode}/${trinn}/${klasse}`;
+                const proeveNavnFullt = `${fag} (${fulltKlasseNavn}) - ${periode} ${aar}`;
+                const sideUrl = window.location.origin + window.location.pathname;
+                const loggForDenne = alleLogger[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
+                const loggHtml = Object.values(loggForDenne).length > 0 
+                    ? `<ul style="font-size:0.7em; color:gray; list-style:none; padding:0; margin:5px 0;">
+                        ${Object.values(loggForDenne).map(tid => `<li>Sist sendt: ${tid}</li>`).join('')}
+                       </ul>` : "";
+
+                htmlIkkeFerdig += `<tr>
+                    <td style="text-align:left;"><b>${fag} (${fulltKlasseNavn})</b><br><small>${periode} ${aar}</small></td>
+                    <td>${laererNavn}</td>
+                    <td style="text-align:center;">
+                        ${laererEpost ? `<button onclick="sendEpostViaEmailJS('${laererNavn}', '${laererEpost}', '${proeveNavnFullt}', '${sideUrl}', '${stisti}')" class="btn" style="background-color:#27ae60; color:white; border:none; padding:5px; cursor:pointer; border-radius:4px;">📧 Send purring</button>${loggHtml}` : "Mangler e-post"}
+                    </td>
+                </tr>`;
+            }
+        } // Slutt behandleKlasseData
+
+        // --- 1. OVERSRIFTER ---
+        htmlIkkeFerdig = `<table class="admin-table"><thead><tr><th style="text-align:left;">Prøve</th><th>Kontaktlærer</th><th>Status/Logg</th></tr></thead><tbody>`;
+        htmlTotal = `<table class="admin-table"><thead><tr><th style="text-align:left;">Prøve</th><th>Klasse</th><th>Kontaktlærer</th><th>Gjennomført</th><th>Snitt (%)</th><th>Status</th></tr></thead><tbody>`;
+
+        // --- 2. KJØR LØKKENE ---
         for (let aar in kartlegging) {
             for (let fag in kartlegging[aar]) {
                 for (let periode in kartlegging[aar][fag]) {
@@ -1060,7 +1112,7 @@ async function genererGjennomfoeringsData() {
             }
         }
 
-        // 3. Tegn resultatet
+// --- 3. TEGN RESULTATET ---
         if (!fantData) {
             ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Ingen data funnet.</p>";
             totalTabellDiv.innerHTML = "";
@@ -1076,93 +1128,8 @@ async function genererGjennomfoeringsData() {
         console.error("Feil i gjennomføringsmodul:", error);
         ikkeFerdigDiv.innerHTML = "<p style='color:red;'>Feil ved henting: " + error.message + "</p>";
     }
+} // <--- Dette er den SISTE krøllparentesen i hele denne modulen.
 
-    // ---- 4. BEHANDLE KLASSEDATA----
-function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, statuser, alleLogger) {
-    fantData = true;
-
-    // 1. Definer klassenavn (f.eks "1A")
-    let fulltKlasseNavn = klasse;
-    if (trinn && !klasse.includes(trinn)) {
-        fulltKlasseNavn = trinn + klasse;
-    }
-
-    // 2. Hent totalen fra registeret (Fasiten) og de som har gjort det (Firebase)
-    const totaltAntallElever = hentAntallEleverIRegister(fulltKlasseNavn, aar);
-    const eleverKeys = Object.keys(eleverObjekt);
-    
-    let antallGjennomfoert = 0;
-    let sumOppnaaddPoeng = 0;
-    let maksMuligPoengForKlassen = 0;
-
-    eleverKeys.forEach(id => {
-        const data = eleverObjekt[id];
-        // Teller kun de som har en registrert poengsum
-        if (data && data.sum !== undefined && data.sum !== null && data.sum !== "") {
-            antallGjennomfoert++;
-            sumOppnaaddPoeng += parseFloat(data.sum) || 0;
-            maksMuligPoengForKlassen += parseFloat(data.maksPoeng) || 0;
-        }
-    });
-
-    // 3. Definer variablene for visning (Dette fikser ReferenceError)
-    const gjennomfoertVisning = `${antallGjennomfoert} / ${totaltAntallElever}`;
-    
-    // Snitt-beregning (Hvis du vil ha prosent med en gang)
-    let snittVisning = "0%"; 
-    if (maksMuligPoengForKlassen > 0) {
-        let prosent = (sumOppnaaddPoeng / maksMuligPoengForKlassen) * 100;
-        snittVisning = Math.round(prosent) + "%";
-    }
-
-    // 4. Lærer og Status
-    const laerer = finnKontaktlaererForKlasse(fulltKlasseNavn, aar);
-    const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
-    const laererEpost = laerer ? laerer.epost : "";
-
-    const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
-    const erLaast = statusObj.laast || false;
-    const statusTekst = erLaast 
-        ? "<span style='color:green; font-weight:bold;'>✅ Ferdig</span>" 
-        : "<span style='color:red; font-weight:bold;'>⚠️ Pågår</span>";
-
-    // 5. Bygg tabellraden for Fullstendig oversikt
-    htmlTotal += `<tr>
-        <td style="text-align:left;">${fag} - ${periode} ${aar}</td>
-        <td><b>${fulltKlasseNavn}</b></td>
-        <td>${laererNavn}</td>
-        <td>${gjennomfoertVisning}</td>
-        <td style="font-weight:bold;">${snittVisning}</td>
-        <td>${statusTekst}</td>
-    </tr>`;
-
-    // 6. Bygg tabellraden for Purrelista
-    if (!erLaast) {
-        harApne = true;
-        const stisti = `${aar}/${fag}/${periode}/${trinn}/${klasse}`;
-        const proeveNavnFullt = `${fag} (${fulltKlasseNavn}) - ${periode} ${aar}`;
-        const sideUrl = window.location.origin + window.location.pathname;
-
-        const loggForDenne = alleLogger[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
-        const loggHtml = Object.values(loggForDenne).length > 0 
-            ? `<ul style="font-size:0.7em; color:gray; list-style:none; padding:0; margin:5px 0;">
-                ${Object.values(loggForDenne).map(tid => `<li>Sist sendt: ${tid}</li>`).join('')}
-               </ul>` 
-            : "";
-htmlIkkeFerdig += `<tr>
-            <td style="text-align:left;"><b>${fag} (${fulltKlasseNavn})</b><br><small>${periode} ${aar}</small></td>
-            <td>${laererNavn}</td>
-            <td style="text-align:center;">
-                ${laererEpost ? `
-                <button onclick="sendEpostViaEmailJS('${laererNavn}', '${laererEpost}', '${proeveNavnFullt}', '${sideUrl}', '${stisti}')" 
-                        class="btn" style="background-color:#27ae60; color:white; border:none; padding:5px; cursor:pointer; border-radius:4px;">
-                    📧 Send purring
-                </button>${loggHtml}` : "Mangler e-post"}
-            </td>
-        </tr>`;
-      } // Lukker if (!erLaast)
-    } // Lukker function behandleKlasseData
-  } // Lukker try-blokken
 
       
 // --- KOMBINERT ANALYSE-KODE (Rettet versjon med alle sjekker) ---
