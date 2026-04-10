@@ -913,38 +913,39 @@ function aapneGjennomfoeringModal() {
 
 // --- HJELPEFUNKSJON FOR Å FINNE LÆRER ---
 function finnKontaktlaererForKlasse(klasseNavn, aar) {
-    // Finn nøkkelen i objektet som starter med årstallet fra Firebase (f.eks. "2024")
-    const skoleaarKey = Object.keys(ansatteData).find(key => key.startsWith(aar));
-    
-    if (!skoleaarKey) {
-        console.warn("Fant ikke ansattliste for skoleår som starter på: " + aar);
-        return null;
+    // Sjekk om variabelen eksisterer
+    if (typeof ansatteData === 'undefined') {
+        console.warn("ansatteData er ikke definert. Sjekk ansatte.js");
+        return { navn: "Data mangler", epost: "" };
     }
+
+    // Tar "2024" ut fra f.eks "2024-2025"
+    const rentAar = aar.toString().substring(0, 4);
+    
+    // Finn riktig skoleår i ansatteData (f.eks "2024-2025")
+    const skoleaarKey = Object.keys(ansatteData).find(key => key.startsWith(rentAar));
+    
+    if (!skoleaarKey) return { navn: "Ingen liste for " + rentAar, epost: "" };
 
     const liste = ansatteData[skoleaarKey];
     const funnet = liste.find(a => a.kontaktlaerer === klasseNavn);
 
-    if (funnet) {
-        return {
-            navn: funnet.navn,
-            epost: funnet.epost
-        };
-    }
-    return null;
+    return funnet ? { navn: funnet.navn, epost: funnet.epost } : { navn: "Ikke tildelt", epost: "" };
 }
 
 // --- HENTE ANTALL ELEVER ---
 function hentAntallEleverIRegister(klasseNavn, aar) {
-    let teller = 0;
-    
-    // VIKTIG: Hent kun ut de første 4 siffrene (f.eks "2024" fra "2024/2025")
-    const sokeAar = parseInt(aar.toString().substring(0, 4));
+    if (typeof elevRegister === 'undefined') {
+        console.warn("elevRegister er ikke definert. Sjekk elever.js");
+        return 0;
+    }
 
-    if (isNaN(sokeAar)) return 0;
+    let teller = 0;
+    // Sørger for at vi kun bruker f.eks 2024 fra "2024-2025"
+    const sokeAar = parseInt(aar.toString().substring(0, 4));
 
     for (let elevNavn in elevRegister) {
         const info = elevRegister[elevNavn];
-        
         const startAar = parseInt(info.startAar);
         const startTrinn = parseInt(info.startTrinn);
         const sluttAar = parseInt(info.sluttAar);
