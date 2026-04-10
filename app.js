@@ -936,6 +936,29 @@ function finnKontaktlaererForKlasse(klasseNavn) {
     return null;
 }
 
+
+function sendEpostViaEmailJS(laererNavn, laererEpost, proeveNavn) {
+    const params = {
+        laererNavn: laererNavn,
+        laererEpost: laererEpost,
+        proeveNavn: proeveNavn,
+        // Denne henter adressen til nettsiden du står på akkurat nå:
+        sideUrl: window.location.origin + window.location.pathname 
+    };
+
+    const serviceID = "service_paj6cqb";
+    const templateID = "template_2foprtm";
+
+    emailjs.send(serviceID, templateID, params)
+        .then(() => {
+            alert("✅ E-post sendt med klikkbart bilde!");
+        })
+        .catch((err) => {
+            console.error("EmailJS Feil:", err);
+            alert("❌ Feil ved sending.");
+        });
+}
+
 // --- GJENNOMFØRINGSMODUL ---
 async function genererGjennomfoeringsData() {
     const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
@@ -1044,39 +1067,26 @@ async function genererGjennomfoeringsData() {
 if (!erLaast) {
             harApne = true;
 
-            // URL til bildet ditt på GitHub (Raw-versjon så det vises direkte i nettleseren)
-            const bildeUrl = "https://raw.githubusercontent.com/77tor/Reg-lokale-kart/main/kart_02.png";
-            // URL til selve registreringssiden din
+            // URL til selve registreringssiden din (brukes for det klikkbare bildet)
             const sideUrl = window.location.origin + window.location.pathname;
-
-            const emne = encodeURIComponent(`Mangler registrering/ferdigstilling av prøven: ${fulltProeveNavn}`);
-            
-            // Konstruerer meldingen med ryddige linjeskift
-            const melding = encodeURIComponent(
-                `Hei ${laererNavn}.\n\n` +
-                `Det mangler fortsatt noe i registreringen av kartleggingsprøven: ${fulltProeveNavn}.\n\n` +
-                `Sjekk at alle resultater er registrert, og at prøven er satt til "Ferdigstilt".\n\n` +
-                `Se instruksjon her: ${bildeUrl}\n\n` +
-                `Logg inn på registreringssiden her: ${sideUrl}\n\n` +
-                `Med vennlig hilsen\nAdministrasjonen`
-            );
 
             htmlIkkeFerdig += `<tr>
                 <td style="text-align:left;">${fulltProeveNavn}</td>
                 <td>${laererNavn}</td>
                 <td style="text-align:center;">
                     ${laererEpost ? 
-                        `<a href="mailto:${laererEpost}?subject=${emne}&body=${melding}" 
-                           class="btn" style="background-color:#3498db; color:white; padding:5px 10px; font-size:0.8em; text-decoration:none; border-radius:4px;">
-                           📧 Send melding
-                        </a>` : 
-                        `<span style="color:gray; font-style:italic; font-size:0.8em;">Mangler e-post</span>`
+                        `<button onclick="sendEpostViaEmailJS('${laererNavn}', '${laererEpost}', '${fulltProeveNavn}', '${sideUrl}')" 
+                                 class="btn" 
+                                 style="background-color:#27ae60; color:white; padding:5px 10px; font-size:0.8em; border:none; border-radius:4px; cursor:pointer;">
+                           📧 Send automatisk
+                        </button>` : 
+`<span style="color:gray; font-style:italic; font-size:0.8em;">Mangler e-post</span>`
                     }
                 </td>
             </tr>`;
-        }
-    }
- }
+        } // Lukker: if (!erLaast)
+    } // Lukker: function behandleKlasseData
+} // Lukker: async function genererGjennomfoeringsData
 
 // --- KOMBINERT ANALYSE-KODE (Rettet versjon med alle sjekker) ---
 async function genererKlasseAnalyse() {
