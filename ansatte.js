@@ -86,3 +86,4 @@ const ansatteData = {
         { navn: "Rune Heggland", epost: "rune.heggland@kristiansand.kommune.no", paloggingsmail: "88rune@ikrs.no", kontaktlaerer: "", trinn: [7] },
         { navn: "Arild Røyseland", epost: "arild.royseland@kristiansand.kommune.no", paloggingsmail: "72arild@ikrs.no", kontaktlaerer: "", trinn: [7] }
     ]
+};
