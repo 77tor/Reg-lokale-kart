@@ -936,38 +936,30 @@ function finnKontaktlaererForKlasse(klasseNavn, aar) {
 // --- HENTE ANTALL ELEVER ---
 function hentAntallEleverIRegister(klasseNavn, aar) {
     const register = window.elevRegister;
-    if (!register) {
-        console.error("Registeret mangler!");
-        return 0;
-    }
+    if (!register) return 0;
 
     let teller = 0;
-    // Tvinger årstall til å bli et rent tall (f.eks. 2024)
+    // Henter ut f.eks 2024 fra "2024-2025"
     const sokeAar = parseInt(aar.toString().substring(0, 4));
-
-    if (isNaN(sokeAar)) {
-        console.warn("Ugyldig årstall mottatt:", aar);
-        return 0;
-    }
 
     for (let elevNavn in register) {
         const info = register[elevNavn];
         
-        // Beregn trinn basert på differanse i år
+        // 1. Beregn hvilket trinn eleven er på i det valgte året
         const innevaerendeTrinn = (sokeAar - info.startAar) + info.startTrinn;
+        
+        // 2. Sett sammen trinn og bokstav (f.eks. "7" + "D" = "7D")
         const fulltNavnFraRegister = innevaerendeTrinn + info.startKlasse; 
 
-        // Sjekk om eleven går på skolen i det søkte året, og om klassen matcher
-        if (sokeAar >= info.startAar && sokeAar <= info.sluttAar) {
-            if (fulltNavnFraRegister === klasseNavn) {
+        // 3. SJEKK: 
+        // a) Matcher klassenavnet (f.eks "7D" === "7D")?
+        // b) Er søkeåret innenfor elevens tid på skolen?
+        if (fulltNavnFraRegister === klasseNavn) {
+            if (sokeAar >= info.startAar && sokeAar <= info.sluttAar) {
                 teller++;
             }
         }
     }
-
-    // DEBUG: Hvis du ser 0 i tabellen, sjekk F12-konsollen for denne linjen:
-    // console.log(`Søkte etter ${klasseNavn} i ${sokeAar}. Fant: ${teller}`);
-    
     return teller;
 }
 
