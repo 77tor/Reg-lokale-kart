@@ -2,7 +2,7 @@ const ansatte = [
     { navn: "Siril Bergum", epost: "siril.bergum@kristiansand.kommune.no", paloggingsmail: "93siril@ikrs.no", kontaktlaerer: "", trinn: [] },
     { navn: "Christine Sørli", epost: "christine.sorli2@kristiansand.kommune.no", paloggingsmail: "94christine1@ikrs.no", kontaktlaerer: "", trinn: [] },
     { navn: "Janne Braadland", epost: "janne.braadland@kristiansand.kommune.no", paloggingsmail: "72janne@ikrs.no", kontaktlaerer: "adm", trinn: [] },
-    { navn: "Tor Skarprud", epost: "tor.skarprud@kristiansand.kommune.no", paloggingsmail: "77tor@ikrs.no", kontaktlaerer: "adm", trinn: [] },
+    { navn: "Tor Skarprud", epost: "tor.skarprud@kristiansand.kommune.no", paloggingsmail: "77tor@ikrs.no", kontaktlaerer: "1B", trinn: [] },
     { navn: "Thomas Dyrdahl", epost: "thomas.dyrdahl@kristiansand.kommune.no", paloggingsmail: "75thomas@ikrs.no", kontaktlaerer: "adm", trinn: [] },
     { navn: "Geir Andre Birkeland", epost: "geir.andre.birkeland@kristiansand.kommune.no", paloggingsmail: "71geir2@ikrs.no", kontaktlaerer: "1A", trinn: [1] },
     { navn: "Åse Reidun Svaland Kregnes", epost: "ase.reidun.svaland.kregnes@kristiansand.kommune.no", paloggingsmail: "67ase2@ikrs.no", kontaktlaerer: "1B", trinn: [1] },
