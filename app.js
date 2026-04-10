@@ -730,6 +730,34 @@ function oppdaterLoggDiagram(type) {
         btn.style.color = 'white';
     });
 }
+// --- GJENNOMFØRINGSMODUL ---
+function aapneGjennomfoeringModal() {
+    document.getElementById('modalGjennomfoering').style.display = 'flex';
+    genererGjennomfoeringsData();
+}
+
+function genererGjennomfoeringsData() {
+    // 1. Hent alle lagrede prøver fra databasen din (f.eks. fra localStorage eller Firebase)
+    // Her antar vi at 'alleData' inneholder alle lagrede objekter.
+    
+    let htmlIkkeFerdig = `<table style="width:100%; font-size:0.9em;">
+        <tr style="background:#fef5e7;"><th>Klasse</th><th>Fag</th><th>Periode</th><th>Registrert av</th><th>Sist endret</th></tr>`;
+    
+    let htmlTotal = `<table>
+        <thead>
+            <tr><th>Prøve</th><th>Klasse</th><th>Gjennomført</th><th>Gjenstår</th><th>Snitt %</th><th>Status</th></tr>
+        </thead><tbody>`;
+
+    // EKSEMPEL-LOOP (Må tilpasses dine variabelnavn)
+    // database.forEach(proeve => { ... });
+
+    // Tips for å se hvem som er innlogget: 
+    // Hvis du lagrer brukernavn i hvert prøve-objekt når læreren trykker "Lagre", 
+    // kan du vise det her. f.eks: proeve.sistEndretAv
+    
+    document.getElementById('ikkeFerdigstilteListe').innerHTML = htmlIkkeFerdig + "</table>";
+    document.getElementById('gjennomfoeringTabellContainer').innerHTML = htmlTotal + "</tbody></table>";
+}
 
 
 // --- 3. FUNKSJON FOR SØKING I TABELLEN ---

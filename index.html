@@ -130,7 +130,6 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 
 
 /* UTSKRIFT (Beholdt din originale logikk - med fiks for linjer) */
-/* UTSKRIFT (Fikset for linjer i overskrift) */
 @media print {
     /* 1. Tvinger farger og linjer */
     * { 
@@ -277,11 +276,14 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     <p style="font-size:0.8em;color:#666; margin-top: 10px;">Rapporter for enkeltelever eller hele klasser over tid.</p>
 </div>
 
-        <div style="border-right: 1px solid #dee2e6; padding-right: 10px;">
-            <h4 class="no-print">Systemlogg</h4>
-            <button class="btn btn-admin" style="width:100%; background-color: #34495e;" onclick="aapneLoggModal()">Vis innlogginger</button>
-            <p style="font-size:0.8em; color: black; margin-top: 10px;">Se hvem som har brukt systemet og når.</p>
-        </div>
+<div style="border-right: 1px solid #dee2e6; padding-right: 10px;">
+    <h4 class="no-print">Systemlogg</h4>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button class="btn btn-admin" style="width:100%; background-color: #34495e;" onclick="aapneLoggModal()">Vis innlogginger</button>
+        <button class="btn" style="width:100%; background-color: #2c3e50; color: white;" onclick="aapneGjennomfoeringModal()">Gjennomføring</button>
+    </div>
+    <p style="font-size:0.8em; color: black; margin-top: 10px;">Se status på prøver og loggføring.</p>
+</div>
 
         <div>
             <h4 class="no-print" style="color: #e74c3c;">Slett elever</h4>
@@ -345,6 +347,26 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     </div>
 </div>
 
+
+<div id="modalGjennomfoering" class="modal no-print" style="display:none; position:fixed; z-index:2200; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); align-items:center; justify-content:center;">
+    <div class="modal-content" style="background:white; padding:25px; width: 95%; max-width: 1200px; max-height: 90vh; display:flex; flex-direction:column; border-radius:12px;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c3e50; padding-bottom: 10px; margin-bottom: 15px;">
+            <h2 style="color: #2c3e50; margin: 0;">📋 Status på gjennomføring</h2>
+            <button class="btn-fjern" style="background: #95a5a6; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer;" onclick="document.getElementById('modalGjennomfoering').style.display='none'">Lukk</button>
+        </div>
+
+        <div style="overflow-y: auto; flex-grow: 1; padding-right: 10px;">
+            <h4 style="color: #e67e22;">⚠️ Ikke ferdigstilte prøver</h4>
+            <div id="ikkeFerdigstilteListe" style="margin-bottom: 30px;">
+                </div>
+
+            <h4 style="color: #2980b9;">📊 Fullstendig oversikt per klasse</h4>
+            <div id="gjennomfoeringTabellContainer">
+                </div>
+        </div>
+    </div>
+</div>
 
 <div id="modalTotalEksport" class="modal">
     <div class="modal-content" style="width: 350px;">
