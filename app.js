@@ -958,13 +958,15 @@ async function genererGjennomfoeringsData() {
                         const førsteBarnKey = Object.keys(objekt)[0];
                         const erTrinnNivå = objekt[førsteBarnKey] && typeof objekt[førsteBarnKey] === 'object' && !objekt[førsteBarnKey].hasOwnProperty('sum');
 
-                        if (erTrinnNivå) {
-                            for (let klasseNavn in objekt) {
-                                behandleKlasseData(aar, fag, periode, nøkkel, klasseNavn, objekt[klasseNavn]);
-                            }
-                        } else {
-                            behandleKlasseData(aar, fag, periode, nøkkel.replace(/\D/g,''), nøkkel, objekt);
-                        }
+if (erTrinnNivå) {
+    for (let klasseNavn in objekt) {
+        // Legg til statuser her -> 
+        behandleKlasseData(aar, fag, periode, nøkkel, klasseNavn, objekt[klasseNavn], statuser);
+    }
+} else {
+    // Legg til statuser her -> 
+    behandleKlasseData(aar, fag, periode, nøkkel.replace(/\D/g,''), nøkkel, objekt, statuser);
+}
                     });
                 }
             }
@@ -987,10 +989,10 @@ async function genererGjennomfoeringsData() {
     }
 
     // --- INNER FUNKSJON behandleKlasseData ---
-    function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt) {
-        fantData = true;
-        const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
-        const erLaast = statusObj.laast || false;
+function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, statuser) {
+    fantData = true;
+const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
+    const erLaast = statusObj.laast || false;
         
         const laerer = finnKontaktlaererForKlasse(klasse);
         const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
