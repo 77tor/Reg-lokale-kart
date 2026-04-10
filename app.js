@@ -1012,99 +1012,101 @@ async function genererGjennomfoeringsData() {
         const statuser = statusSnapshot.val() || {};
         const kartlegging = kartleggingSnapshot.val() || {};
 
-        // --- DEFINER HJELPEFUNKSJONEN (Slik du hadde den) ---
-        function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, statuser, alleLogger) {
-            fantData = true;
-            let fulltKlasseNavn = klasse;
-            if (trinn && !klasse.includes(trinn)) {
-                fulltKlasseNavn = trinn + klasse;
+// --- DEFINER HJELPEFUNKSJONEN ---
+function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, statuser, alleLogger) {
+    fantData = true;
+    let fulltKlasseNavn = klasse;
+    if (trinn && !klasse.includes(trinn)) {
+        fulltKlasseNavn = trinn + klasse;
+    }
+
+    const totaltAntallElever = hentAntallEleverIRegister(fulltKlasseNavn.trim().toUpperCase(), aar);
+    if (!eleverObjekt) return; 
+
+    // VIKTIG: Nullstill tellere for hver eneste klasse/fag-kombinasjon
+    let antallGjennomfoert = 0;
+    let sumOppnaaddPoeng = 0;
+    let maksMuligPoengForKlassen = 0;
+
+    Object.entries(eleverObjekt).forEach(([id, node]) => {
+        if (id === "laast" || id === "ferdigstilt" || typeof node !== 'object') return;
+
+        // --- SPESIFIKK FAG-SJEKK ---
+        // Vi prøver først å finne poeng som tilhører det spesifikke faget (f.eks node.Regning.sum)
+        // Hvis ikke det finnes, faller vi tilbake på node.sum (men dette er ofte synderen ved 140%)
+        let dataNode = node[fag] ? node[fag] : node; 
+        
+        let råPoeng = dataNode.sum !== undefined ? dataNode.sum : dataNode.totalPoeng;
+        if (råPoeng === undefined && dataNode.resultat) råPoeng = dataNode.resultat.sum;
+
+        let råMaks = dataNode.maksPoeng;
+        if (råMaks === undefined && dataNode.resultat) råMaks = dataNode.resultat.maksPoeng;
+
+        // Dørvakt: Ignorer tomme verdier, 0, og tekst-statuser
+        const harFaktiskDeltatt = (
+            råPoeng !== undefined && 
+            råPoeng !== null && 
+            råPoeng !== "" && 
+            råPoeng !== "undefined" && 
+            råPoeng !== "Ikke gjennomført" &&
+            råPoeng !== "0" &&
+            råPoeng !== 0
+        );
+
+        if (harFaktiskDeltatt) {
+            const p = parseFloat(råPoeng);
+            const m = parseFloat(råMaks);
+
+            if (!isNaN(p)) {
+                antallGjennomfoert++;
+                sumOppnaaddPoeng += p;
+                
+                // Bruk faktisk maksPoeng fra dataene, eller 30 som nødløsning
+                maksMuligPoengForKlassen += (!isNaN(m) && m > 0) ? m : 30; 
             }
+        }
+    });
 
-            const totaltAntallElever = hentAntallEleverIRegister(fulltKlasseNavn.trim().toUpperCase(), aar);
-            if (!eleverObjekt) return; 
+    // --- RESTEN AV DIN KODE FOR HTML-GENERERING ---
+    const gjennomfoertVisning = `${antallGjennomfoert} / ${totaltAntallElever}`;
+    let snittVisning = "0%"; 
+    if (maksMuligPoengForKlassen > 0) {
+        snittVisning = Math.round((sumOppnaaddPoeng / maksMuligPoengForKlassen) * 100) + "%";
+    }
 
-            let antallGjennomfoert = 0;
-            let sumOppnaaddPoeng = 0;
-            let maksMuligPoengForKlassen = 0;
+    const laerer = finnKontaktlaererForKlasse(fulltKlasseNavn, aar);
+    const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
+    const laererEpost = laerer ? laerer.epost : "";
+    const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
+    const erLaast = statusObj.laast || false;
+    const statusTekst = erLaast ? "<span style='color:green; font-weight:bold;'>✅ Ferdig</span>" : "<span style='color:red; font-weight:bold;'>⚠️ Pågår</span>";
 
-            Object.entries(eleverObjekt).forEach(([id, node]) => {
-                // 1. Hopp over metadata
-                if (id === "laast" || id === "ferdigstilt" || typeof node !== 'object') return;
+    htmlTotal += `<tr>
+        <td style="text-align:left;">${fag} - ${periode} ${aar}</td>
+        <td><b>${fulltKlasseNavn}</b></td>
+        <td>${laererNavn}</td>
+        <td>${gjennomfoertVisning}</td>
+        <td style="font-weight:bold;">${snittVisning}</td>
+        <td>${statusTekst}</td>
+    </tr>`;
 
-                // 2. Hent poengsummen
-                let råPoeng = node.sum !== undefined ? node.sum : node.totalPoeng;
-                if (råPoeng === undefined && node.resultat) råPoeng = node.resultat.sum;
+    if (!erLaast) {
+        harApne = true;
+        const stisti = `${aar}/${fag}/${periode}/${trinn}/${klasse}`;
+        const proeveNavnFullt = `${fag} (${fulltKlasseNavn}) - ${periode} ${aar}`;
+        const sideUrl = window.location.origin + window.location.pathname;
+        const loggForDenne = alleLogger[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
+        const loggHtml = Object.values(loggForDenne).length > 0 ? `<ul style="font-size:0.7em; color:gray; list-style:none; padding:0; margin:5px 0;">${Object.values(loggForDenne).map(tid => `<li>Sist sendt: ${tid}</li>`).join('')}</ul>` : "";
 
-                // 3. STRENGERE SJEKK: 
-                // Vi teller kun eleven hvis verdien ikke er tom, ikke er "undefined" og IKKE er "0".
-                // (Hvis en elev faktisk har fått 0 poeng på en prøve, vil de ofte ha en 'maksPoeng' registrert)
-                const harFaktiskDeltatt = (
-                    råPoeng !== undefined && 
-                    råPoeng !== null && 
-                    råPoeng !== "" && 
-                    råPoeng !== "undefined" && 
-                    råPoeng !== "Ikke gjennomført" &&
-                    råPoeng !== "0" &&
-                    råPoeng !== 0
-                );
-
-                if (harFaktiskDeltatt) {
-                    const p = parseFloat(råPoeng);
-                    
-                    // Finn maksPoeng
-                    let råMaks = node.maksPoeng;
-                    if (råMaks === undefined && node.resultat) råMaks = node.resultat.maksPoeng;
-                    const m = parseFloat(råMaks);
-
-                    if (!isNaN(p)) {
-                        antallGjennomfoert++;
-                        sumOppnaaddPoeng += p;
-                        
-                        // Bruk 30 som standard hvis maksPoeng mangler
-                        maksMuligPoengForKlassen += (!isNaN(m) && m > 0) ? m : 30; 
-                    }
-                }
-            });
-
-            const gjennomfoertVisning = `${antallGjennomfoert} / ${totaltAntallElever}`;
-            let snittVisning = "0%"; 
-            if (maksMuligPoengForKlassen > 0) {
-                snittVisning = Math.round((sumOppnaaddPoeng / maksMuligPoengForKlassen) * 100) + "%";
-            }
-
-            const laerer = finnKontaktlaererForKlasse(fulltKlasseNavn, aar);
-            const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
-            const laererEpost = laerer ? laerer.epost : "";
-            const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
-            const erLaast = statusObj.laast || false;
-            const statusTekst = erLaast ? "<span style='color:green; font-weight:bold;'>✅ Ferdig</span>" : "<span style='color:red; font-weight:bold;'>⚠️ Pågår</span>";
-
-            htmlTotal += `<tr>
-                <td style="text-align:left;">${fag} - ${periode} ${aar}</td>
-                <td><b>${fulltKlasseNavn}</b></td>
-                <td>${laererNavn}</td>
-                <td>${gjennomfoertVisning}</td>
-                <td style="font-weight:bold;">${snittVisning}</td>
-                <td>${statusTekst}</td>
-            </tr>`;
-
-            if (!erLaast) {
-                harApne = true;
-                const stisti = `${aar}/${fag}/${periode}/${trinn}/${klasse}`;
-                const proeveNavnFullt = `${fag} (${fulltKlasseNavn}) - ${periode} ${aar}`;
-                const sideUrl = window.location.origin + window.location.pathname;
-                const loggForDenne = alleLogger[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
-                const loggHtml = Object.values(loggForDenne).length > 0 ? `<ul style="font-size:0.7em; color:gray; list-style:none; padding:0; margin:5px 0;">${Object.values(loggForDenne).map(tid => `<li>Sist sendt: ${tid}</li>`).join('')}</ul>` : "";
-
-                htmlIkkeFerdig += `<tr>
-                    <td style="text-align:left;"><b>${fag} (${fulltKlasseNavn})</b><br><small>${periode} ${aar}</small></td>
-                    <td>${laererNavn}</td>
-                    <td style="text-align:center;">
-                        ${laererEpost ? `<button onclick="sendEpostViaEmailJS('${laererNavn}', '${laererEpost}', '${proeveNavnFullt}', '${sideUrl}', '${stisti}')" class="btn" style="background-color:#27ae60; color:white; border:none; padding:5px; cursor:pointer; border-radius:4px;">📧 Send purring</button>${loggHtml}` : "Mangler e-post"}
-                    </td>
-                </tr>`;
-            }
-        } // Slutt behandleKlasseData
+        htmlIkkeFerdig += `<tr>
+            <td style="text-align:left;"><b>${fag} (${fulltKlasseNavn})</b><br><small>${periode} ${aar}</small></td>
+            <td>${laererNavn}</td>
+            <td style="text-align:center;">
+                ${laererEpost ? `<button onclick="sendEpostViaEmailJS('${laererNavn}', '${laererEpost}', '${proeveNavnFullt}', '${sideUrl}', '${stisti}')" class="btn" style="background-color:#27ae60; color:white; border:none; padding:5px; cursor:pointer; border-radius:4px;">📧 Send purring</button>${loggHtml}` : "Mangler e-post"}
+            </td>
+        </tr>`;
+    }
+}
 
         // --- 1. OVERSRIFTER ---
         htmlIkkeFerdig = `<table class="admin-table"><thead><tr><th style="text-align:left;">Prøve</th><th>Kontaktlærer</th><th>Status/Logg</th></tr></thead><tbody>`;
