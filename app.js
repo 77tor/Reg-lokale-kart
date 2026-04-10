@@ -1152,13 +1152,20 @@ htmlIkkeFerdig += `<tr>
     } // Lukker function behandleKlasseData
 
   } // Lukker try-blokken
-  catch (error) {
+catch (error) {
     console.error("Feil i gjennomføringsmodul:", error);
     const feilVisning = document.getElementById('ikkeFerdigstilteListe');
+
     if (feilVisning) {
-        feilVisning.innerHTML = "<p style='color:red;'>Feil ved henting: " + error.message + "</p>";
-    
-  }
+        // Bruker innerHTML for strukturen, men pass på innholdet
+        feilVisning.innerHTML = `<p style="color: red; font-weight: bold;">
+            Feil ved henting: <span id="error-text"></span>
+        </p>`;
+        
+        // Setter selve feilmeldingen som ren tekst for sikkerhet
+        feilVisning.querySelector('#error-text').textContent = error.message;
+    }
+}
 } // Lukker async function genererGjennomfoeringsData
       
 
