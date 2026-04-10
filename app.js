@@ -899,14 +899,12 @@ function finnRelevanteSider(rentTrinnNummer, oppgaveNavn) {
 
 
 
-//  --- ÅPNE GJENNOMFØRINGSMODAL ---
+// --- ÅPNE GJENNOMFØRINGSMODAL ---
 function aapneGjennomfoeringModal() {
     console.log("Åpner gjennomføringsmodal...");
-    // Vis modalen
     const modal = document.getElementById('modalGjennomfoering');
     if (modal) {
         modal.style.display = 'flex';
-        // Start henting av data
         genererGjennomfoeringsData();
     } else {
         console.error("Fant ikke modalGjennomfoering i HTML");
@@ -916,8 +914,6 @@ function aapneGjennomfoeringModal() {
 // --- HJELPEFUNKSJON FOR Å FINNE LÆRER ---
 function finnKontaktlaererForKlasse(klasseNavn) {
     if (!klasseNavn || typeof ansatteListe === 'undefined') return null;
-    
-    // Vi prøver å finne en ansatt som har denne klassen i sin liste
     return ansatteListe.find(a => 
         a.klasser && a.klasser.includes(klasseNavn)
     );
@@ -931,22 +927,21 @@ async function genererGjennomfoeringsData() {
     ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Henter data fra databasen...</p>";
     
     try {
-        // Henter rådata fra Firebase
         const statusSnapshot = await db.ref('status').once('value');
         const kartleggingSnapshot = await db.ref('kartlegging').once('value');
         
         const statuser = statusSnapshot.val() || {};
         const kartlegging = kartleggingSnapshot.val() || {};
 
-let htmlIkkeFerdig = `<table class="admin-table">
-    <thead>
-        <tr>
-            <th style="text-align:left;">Prøve</th>
-            <th>Kontaktlærer</th>
-            <th>Send melding</th>
-        </tr>
-    </thead>
-    <tbody>`;
+        let htmlIkkeFerdig = `<table class="admin-table">
+            <thead>
+                <tr>
+                    <th style="text-align:left;">Prøve</th>
+                    <th>Kontaktlærer</th>
+                    <th>Send melding</th>
+                </tr>
+            </thead>
+            <tbody>`;
         
         let htmlTotal = `<table class="admin-table">
             <thead><tr><th>År/Periode</th><th>Klasse</th><th>Fag</th><th>Elever</th><th>Status</th></tr></thead><tbody>`;
@@ -954,30 +949,20 @@ let htmlIkkeFerdig = `<table class="admin-table">
         let fantData = false;
         let harApne = false;
 
-        // --- DYNAMISK LOOPING ---
-        // Vi går gjennom År -> Fag -> Periode
         for (let aar in kartlegging) {
             for (let fag in kartlegging[aar]) {
                 for (let periode in kartlegging[aar][fag]) {
-                    
                     let nivå = kartlegging[aar][fag][periode];
-
-                    // Denne funksjonen går gjennom resten av treet uansett om det er Trinn/Klasse eller bare Klasse
                     Object.keys(nivå).forEach(nøkkel => {
                         let objekt = nivå[nøkkel];
-
-                        // Sjekk om dette er en KLASSE (inneholder elever) eller et TRINN (inneholder klasser)
-                        // Vi antar det er en klasse hvis et av barna i objektet har et felt 'sum' eller 'oppgaver'
                         const førsteBarnKey = Object.keys(objekt)[0];
                         const erTrinnNivå = objekt[førsteBarnKey] && typeof objekt[førsteBarnKey] === 'object' && !objekt[førsteBarnKey].hasOwnProperty('sum');
 
                         if (erTrinnNivå) {
-                            // Det var et trinn-nivå (f.eks "1"), gå dypere til klassene (f.eks "1A")
                             for (let klasseNavn in objekt) {
                                 behandleKlasseData(aar, fag, periode, nøkkel, klasseNavn, objekt[klasseNavn]);
                             }
                         } else {
-                            // Det var klassen direkte (f.eks "1A")
                             behandleKlasseData(aar, fag, periode, nøkkel.replace(/\D/g,''), nøkkel, objekt);
                         }
                     });
@@ -985,61 +970,61 @@ let htmlIkkeFerdig = `<table class="admin-table">
             }
         }
 
-function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt) {
-    fantData = true;
-    
-    // Finn status fra Firebase
-    const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
-    const erLaast = statusObj.laast || false;
-    
-    // Finn lærer fra ansatte.js
-    const laerer = finnKontaktlaererForKlasse(klasse);
-    const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
-    const laererEpost = laerer ? laerer.epost : "";
+        // --- HER MANGLER DET KODE FOR Å LUKKE TABELLENE OG OPPDATERE HTML ---
+        if (!fantData) {
+            ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Ingen data funnet.</p>";
+        } else {
+            if (!harApne) {
+                htmlIkkeFerdig += `<tr><td colspan="3" style="text-align:center; padding:20px; color:green;">Alle prøver er ferdigstilt! 🎉</td></tr>`;
+            }
+            ikkeFerdigDiv.innerHTML = htmlIkkeFerdig + "</tbody></table>";
+            totalTabellDiv.innerHTML = htmlTotal + "</tbody></table>";
+        }
 
-    const antallElever = Object.keys(eleverObjekt).length;
-    const statusTekst = erLaast ? "<span style='color:green; font-weight:bold;'>✅ Ferdig</span>" : "<span style='color:red; font-weight:bold;'>⚠️ Åpen</span>";
-
-    // Lager det fulle navnet slik du ønsket det
-    const fulltProeveNavn = `${fag} - ${klasse} - ${periode} ${aar}`;
-
-    // Total-tabell (den nederste) beholder vi som den er
-    htmlTotal += `<tr>
-        <td>${aar} ${periode}</td>
-        <td><b>${klasse}</b></td>
-        <td>${fag}</td>
-        <td>${antallElever}</td>
-        <td>${statusTekst}</td>
-    </tr>`;
-
-    // Varsel-tabell (den øverste) - Her legger vi inn de nye kravene dine
-    if (!erLaast) {
-        harApne = true;
-
-        // Klargjør teksten til e-posten
-        const emne = encodeURIComponent(`Mangler ferdigstilling: ${fulltProeveNavn}`);
-        const melding = encodeURIComponent(
-            `Hei.\n\n` +
-            `Det mangler fortsatt noe i registreringen av kartleggingsprøven: ${fulltProeveNavn}.\n\n` +
-            `Sjekk at alle resultater er registrert, og at prøven er satt til "Ferdigstilt".`
-        );
-
-        htmlIkkeFerdig += `<tr>
-            <td style="text-align:left;">${fulltProeveNavn}</td>
-            <td>${laererNavn}</td>
-            <td style="text-align:center;">
-                ${laererEpost ? 
-                    `<a href="mailto:${laererEpost}?subject=${emne}&body=${melding}" 
-                       class="btn" style="background-color:#3498db; color:white; padding:5px 10px; font-size:0.8em; text-decoration:none; border-radius:4px;">
-                       📧 Send melding
-                    </a>` : 
-                    `<span style="color:gray; font-style:italic; font-size:0.8em;">Mangler e-post</span>`
-                }
-            </td>
-        </tr>`;
+    } catch (error) {
+        console.error("Feil i gjennomføringsmodul:", error);
+        ikkeFerdigDiv.innerHTML = "<p style='color:red;'>Feil ved henting: " + error.message + "</p>";
     }
-}
 
+    // --- INNER FUNKSJON behandleKlasseData ---
+    function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt) {
+        fantData = true;
+        const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
+        const erLaast = statusObj.laast || false;
+        
+        const laerer = finnKontaktlaererForKlasse(klasse);
+        const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
+        const laererEpost = laerer ? laerer.epost : "";
+
+        const antallElever = Object.keys(eleverObjekt).length;
+        const statusTekst = erLaast ? "<span style='color:green; font-weight:bold;'>✅ Ferdig</span>" : "<span style='color:red; font-weight:bold;'>⚠️ Åpen</span>";
+        const fulltProeveNavn = `${fag} - ${klasse} - ${periode} ${aar}`;
+
+        htmlTotal += `<tr>
+            <td>${aar} ${periode}</td>
+            <td><b>${klasse}</b></td>
+            <td>${fag}</td>
+            <td>${antallElever}</td>
+            <td>${statusTekst}</td>
+        </tr>`;
+
+        if (!erLaast) {
+            harApne = true;
+            const emne = encodeURIComponent(`Mangler ferdigstilling: ${fulltProeveNavn}`);
+            const melding = encodeURIComponent(`Hei.\n\nDet mangler fortsatt noe i registreringen av kartleggingsprøven: ${fulltProeveNavn}.\n\nSjekk at alle resultater er registrert, og at prøven er satt til "Ferdigstilt".`);
+
+            htmlIkkeFerdig += `<tr>
+                <td style="text-align:left;">${fulltProeveNavn}</td>
+                <td>${laererNavn}</td>
+                <td style="text-align:center;">
+                    ${laererEpost ? 
+                        `<a href="mailto:${laererEpost}?subject=${emne}&body=${melding}" class="btn" style="background-color:#3498db; color:white; padding:5px 10px; font-size:0.8em; text-decoration:none; border-radius:4px;">📧 Send melding</a>` : 
+                        `<span style="color:gray; font-style:italic; font-size:0.8em;">Mangler e-post</span>`}
+                </td>
+            </tr>`;
+        }
+    }
+} // <--- DENNE LUKKER NÅ HELE genererGjennomfoeringsData()
 
 // --- KOMBINERT ANALYSE-KODE (Rettet versjon med alle sjekker) ---
 async function genererKlasseAnalyse() {
