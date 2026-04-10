@@ -1028,25 +1028,39 @@ async function genererGjennomfoeringsData() {
             let maksMuligPoengForKlassen = 0;
 
             Object.entries(eleverObjekt).forEach(([id, node]) => {
+                // 1. Hopp over metadata
                 if (id === "laast" || id === "ferdigstilt" || typeof node !== 'object') return;
 
+                // 2. Hent poengsummen
                 let råPoeng = node.sum !== undefined ? node.sum : node.totalPoeng;
                 if (råPoeng === undefined && node.resultat) råPoeng = node.resultat.sum;
-if (fulltKlasseNavn === "1A") {
-    console.log(`Elev i 1A har verdien: "${råPoeng}"`);
-}
 
-                let råMaks = node.maksPoeng;
-                if (råMaks === undefined && node.resultat) råMaks = node.resultat.maksPoeng;
+                // 3. STRENGERE SJEKK: 
+                // Vi teller kun eleven hvis verdien ikke er tom, ikke er "undefined" og IKKE er "0".
+                // (Hvis en elev faktisk har fått 0 poeng på en prøve, vil de ofte ha en 'maksPoeng' registrert)
+                const harFaktiskDeltatt = (
+                    råPoeng !== undefined && 
+                    råPoeng !== null && 
+                    råPoeng !== "" && 
+                    råPoeng !== "undefined" && 
+                    råPoeng !== "Ikke gjennomført" &&
+                    råPoeng !== "0" &&
+                    råPoeng !== 0
+                );
 
-                const erGyldigResultat = råPoeng !== undefined && råPoeng !== null && råPoeng !== "" && råPoeng !== "Ikke gjennomført";
-
-                if (erGyldigResultat) {
+                if (harFaktiskDeltatt) {
                     const p = parseFloat(råPoeng);
+                    
+                    // Finn maksPoeng
+                    let råMaks = node.maksPoeng;
+                    if (råMaks === undefined && node.resultat) råMaks = node.resultat.maksPoeng;
                     const m = parseFloat(råMaks);
+
                     if (!isNaN(p)) {
                         antallGjennomfoert++;
                         sumOppnaaddPoeng += p;
+                        
+                        // Bruk 30 som standard hvis maksPoeng mangler
                         maksMuligPoengForKlassen += (!isNaN(m) && m > 0) ? m : 30; 
                     }
                 }
