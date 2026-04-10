@@ -1061,23 +1061,41 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
     const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
     const laererEpost = laerer ? laerer.epost : "";
 
-    // 3. Beregn statistikk (Gjennomført og Snitt)
+// 3. Beregn statistikk (Gjennomført og Snitt i %)
     const eleverKeys = Object.keys(eleverObjekt);
     const totaltAntallElever = eleverKeys.length;
+    
     let antallGjennomfoert = 0;
-    let totalSumPoeng = 0;
+    let totalOppnåddPoengsum = 0;
+    let maksPoengForPrøven = 0;
+
+    // Finn maks poeng for denne spesifikke prøven (henter fra første elev som har det lagret)
+    for (let id in eleverObjekt) {
+        if (eleverObjekt[id].maksPoeng) {
+            maksPoengForPrøven = parseFloat(eleverObjekt[id].maksPoeng);
+            break; 
+        }
+    }
 
     eleverKeys.forEach(id => {
         const elevData = eleverObjekt[id];
+        // Vi teller kun elever som har en registrert sum (poeng)
         if (elevData && elevData.sum !== undefined && elevData.sum !== null && elevData.sum !== "") {
             antallGjennomfoert++;
-            totalSumPoeng += parseFloat(elevData.sum) || 0;
+            totalOppnåddPoengsum += parseFloat(elevData.sum) || 0;
         }
     });
 
-    const snittVisning = antallGjennomfoert > 0 
-        ? (totalSumPoeng / antallGjennomfoert).toFixed(1) + "%" 
-        : "0%";
+    // Beregn snitt i prosent: (Gjennomsnittspoeng / Maks poeng) * 100
+    let snittVisning = "0%";
+    if (antallGjennomfoert > 0 && maksPoengForPrøven > 0) {
+        const snittPoeng = totalOppnåddPoengsum / antallGjennomfoert;
+        const prosent = (snittPoeng / maksPoengForPrøven) * 100;
+        snittVisning = prosent.toFixed(1) + "%";
+    } else if (antallGjennomfoert > 0 && maksPoengForPrøven === 0) {
+        // Fallback hvis maksPoeng mangler: Vis gjennomsnittlig sum direkte
+        snittVisning = (totalOppnåddPoengsum / antallGjennomfoert).toFixed(1);
+    }
 
     const gjennomfoertVisning = `${antallGjennomfoert} / ${totaltAntallElever}`;
 
