@@ -937,21 +937,28 @@ function finnKontaktlaererForKlasse(klasseNavn) {
 }
 
 
-function sendEpostViaEmailJS(laererNavn, laererEpost, proeveNavn) {
+function sendEpostViaEmailJS(laererNavn, laererEpost, proeveNavn, sideUrl, stisti) {
     const params = {
         laererNavn: laererNavn,
         laererEpost: laererEpost,
         proeveNavn: proeveNavn,
-        // Denne henter adressen til nettsiden du står på akkurat nå:
-        sideUrl: window.location.origin + window.location.pathname 
+        sideUrl: sideUrl
     };
 
-    const serviceID = "service_paj6cqb";
-    const templateID = "template_2foprtm";
-
-    emailjs.send(serviceID, templateID, params)
+    emailjs.send("service_paj6cqb", "template_2foprtm", params)
         .then(() => {
-            alert("✅ E-post sendt med klikkbart bilde!");
+            // Lagre logg i Firebase
+            const nå = new Date();
+            const tidsstempel = nå.toLocaleString('no-NO', { 
+                day: '2-digit', month: '2-digit', year: '2-digit', 
+                hour: '2-digit', minute: '2-digit' 
+            });
+
+            // Vi pusher en ny logg-oppføring til denne spesifikke prøven
+            db.ref('purrelogg/' + stisti).push(tidsstempel);
+
+            alert("✅ E-post sendt!\nLogg er oppdatert.");
+            genererGjennomfoeringsData(); // Oppdaterer tabellen så loggen vises med en gang
         })
         .catch((err) => {
             console.error("EmailJS Feil:", err);
@@ -975,7 +982,8 @@ async function genererGjennomfoeringsData() {
     try {
         const statusSnapshot = await db.ref('status').once('value');
         const kartleggingSnapshot = await db.ref('kartlegging').once('value');
-        
+        const loggSnapshot = await db.ref('purrelogg').once('value');
+   const alleLogger = loggSnapshot.val() || {};
         const statuser = statusSnapshot.val() || {};
         const kartlegging = kartleggingSnapshot.val() || {};
 
@@ -993,7 +1001,7 @@ async function genererGjennomfoeringsData() {
         htmlTotal = `<table class="admin-table">
             <thead><tr><th>År/Periode</th><th>Klasse</th><th>Fag</th><th>Elever</th><th>Status</th></tr></thead><tbody>`;
 
-        for (let aar in kartlegging) {
+for (let aar in kartlegging) {
             for (let fag in kartlegging[aar]) {
                 for (let periode in kartlegging[aar][fag]) {
                     let nivå = kartlegging[aar][fag][periode];
@@ -1004,11 +1012,12 @@ async function genererGjennomfoeringsData() {
 
                         if (erTrinnNivå) {
                             for (let klasseNavn in objekt) {
-                                // Husk å sende med statuser her som vi fikset sist
-                                behandleKlasseData(aar, fag, periode, nøkkel, klasseNavn, objekt[klasseNavn], statuser);
+                                // LAGT TIL alleLogger HER:
+                                behandleKlasseData(aar, fag, periode, nøkkel, klasseNavn, objekt[klasseNavn], statuser, alleLogger);
                             }
                         } else {
-                            behandleKlasseData(aar, fag, periode, nøkkel.replace(/\D/g,''), nøkkel, objekt, statuser);
+                            // LAGT TIL alleLogger HER:
+                            behandleKlasseData(aar, fag, periode, nøkkel.replace(/\D/g,''), nøkkel, objekt, statuser, alleLogger);
                         }
                     });
                 }
@@ -1031,62 +1040,68 @@ async function genererGjennomfoeringsData() {
         ikkeFerdigDiv.innerHTML = "<p style='color:red;'>Feil ved henting: " + error.message + "</p>";
     }
 
-// 4. DEN INDRE FUNKSJONEN
-    function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, statuser) {
-        fantData = true;
+// 4. DEN INDRE FUNKSJONEN - Lagt til alleLogger i parentesen her:
+function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, statuser, alleLogger) {
+    fantData = true;
 
-        // --- VIKTIG JUSTERING HER ---
-        // Sørger for at fulltKlasseNavn blir f.eks. "5B" selv om klasse bare er "B"
-        let fulltKlasseNavn = klasse;
-        if (trinn && !klasse.includes(trinn)) {
-            fulltKlasseNavn = trinn + klasse;
-        }
+    // Sørger for at fulltKlasseNavn blir f.eks. "5B" selv om klasse bare er "B"
+    let fulltKlasseNavn = klasse;
+    if (trinn && !klasse.includes(trinn)) {
+        fulltKlasseNavn = trinn + klasse;
+    }
 
-        const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
-        const erLaast = statusObj.laast || false;
+    const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
+    const erLaast = statusObj.laast || false;
+    
+    const laerer = finnKontaktlaererForKlasse(fulltKlasseNavn);
+    const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
+    const laererEpost = laerer ? laerer.epost : "";
+
+    const antallElever = Object.keys(eleverObjekt).length;
+    const statusTekst = erLaast ? "<span style='color:green; font-weight:bold;'>✅ Ferdig</span>" : "<span style='color:red; font-weight:bold;'>⚠️ Åpen</span>";
+    
+    const fulltProeveNavn = `${fag} - ${fulltKlasseNavn} - ${periode} ${aar}`;
+
+    htmlTotal += `<tr>
+        <td>${aar} ${periode}</td>
+        <td><b>${fulltKlasseNavn}</b></td>
+        <td>${fag}</td>
+        <td>${antallElever}</td>
+        <td>${statusTekst}</td>
+    </tr>`;
+
+    if (!erLaast) {
+        harApne = true;
+        const sideUrl = window.location.origin + window.location.pathname;
+
+        // Lag en unik streng for å identifisere denne prøven i loggen
+        const stisti = `${aar}/${fag}/${periode}/${trinn}/${klasse}`;
         
-        // Søker etter lærer med det fulle navnet (f.eks "5B")
-        const laerer = finnKontaktlaererForKlasse(fulltKlasseNavn);
-        const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
-        const laererEpost = laerer ? laerer.epost : "";
+        // Hent loggen for denne prøven
+        const loggForDenne = alleLogger[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
+        const loggListe = Object.values(loggForDenne).map(tid => `<li>${tid}</li>`).join('');
+        const loggHtml = loggListe ? `<ul style="margin:5px 0 0 0; padding:0; list-style:none; font-size:0.7em; color:#555; line-height:1.2; border-top: 1px dashed #ccc; padding-top: 3px;"><b>Sendt:</b>${loggListe}</ul>` : "";
 
-        const antallElever = Object.keys(eleverObjekt).length;
-        const statusTekst = erLaast ? "<span style='color:green; font-weight:bold;'>✅ Ferdig</span>" : "<span style='color:red; font-weight:bold;'>⚠️ Åpen</span>";
-        
-        // Bruker fulltKlasseNavn i overskriften
-        const fulltProeveNavn = `${fag} - ${fulltKlasseNavn} - ${periode} ${aar}`;
-
-        htmlTotal += `<tr>
-            <td>${aar} ${periode}</td>
-            <td><b>${fulltKlasseNavn}</b></td>
-            <td>${fag}</td>
-            <td>${antallElever}</td>
-            <td>${statusTekst}</td>
+        htmlIkkeFerdig += `<tr>
+            <td style="text-align:left;">${fulltProeveNavn}</td>
+            <td>${laererNavn}</td>
+            <td style="text-align:center;">
+                ${laererEpost ? 
+                    `<button onclick="sendEpostViaEmailJS('${laererNavn}', '${laererEpost}', '${fulltProeveNavn}', '${sideUrl}', '${stisti}')" 
+                             class="btn" 
+                             style="background-color:#27ae60; color:white; padding:5px 10px; font-size:0.8em; border:none; border-radius:4px; cursor:pointer;">
+                       📧 Send automatisk
+                    </button>
+                    ${loggHtml}` : 
+                    `<span style="color:gray; font-style:italic; font-size:0.8em;">Mangler e-post</span>`
+                }
+            </td>
         </tr>`;
-
-if (!erLaast) {
-            harApne = true;
-
-            // URL til selve registreringssiden din (brukes for det klikkbare bildet)
-            const sideUrl = window.location.origin + window.location.pathname;
-
-            htmlIkkeFerdig += `<tr>
-                <td style="text-align:left;">${fulltProeveNavn}</td>
-                <td>${laererNavn}</td>
-                <td style="text-align:center;">
-                    ${laererEpost ? 
-                        `<button onclick="sendEpostViaEmailJS('${laererNavn}', '${laererEpost}', '${fulltProeveNavn}', '${sideUrl}')" 
-                                 class="btn" 
-                                 style="background-color:#27ae60; color:white; padding:5px 10px; font-size:0.8em; border:none; border-radius:4px; cursor:pointer;">
-                           📧 Send automatisk
-                        </button>` : 
-`<span style="color:gray; font-style:italic; font-size:0.8em;">Mangler e-post</span>`
-                    }
-                </td>
-            </tr>`;
         } // Lukker: if (!erLaast)
     } // Lukker: function behandleKlasseData
 } // Lukker: async function genererGjennomfoeringsData
+
+
 
 // --- KOMBINERT ANALYSE-KODE (Rettet versjon med alle sjekker) ---
 async function genererKlasseAnalyse() {
