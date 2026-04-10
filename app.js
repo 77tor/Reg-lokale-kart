@@ -913,10 +913,27 @@ function aapneGjennomfoeringModal() {
 
 // --- HJELPEFUNKSJON FOR Å FINNE LÆRER ---
 function finnKontaktlaererForKlasse(klasseNavn) {
-    if (!klasseNavn || typeof ansatteListe === 'undefined') return null;
-    return ansatteListe.find(a => 
-        a.klasser && a.klasser.includes(klasseNavn)
+    // Sjekker om listen din heter 'ansatte' eller 'ansatteListe'
+    const liste = (typeof ansatte !== 'undefined') ? ansatte : (typeof ansatteListe !== 'undefined' ? ansatteListe : null);
+    
+    if (!klasseNavn || !liste) {
+        console.warn("Finner ikke ansatt-listen. Sjekk at ansatte.js er lastet.");
+        return null;
+    }
+    
+    // Vi leter i feltet 'kontaktlaerer' etter f.eks. "1B"
+    const funnet = liste.find(a => 
+        a.kontaktlaerer === klasseNavn
     );
+
+    if (funnet) {
+        return {
+            navn: funnet.navn,
+            epost: funnet.epost
+        };
+    }
+
+    return null;
 }
 
 // --- GJENNOMFØRINGSMODUL ---
@@ -991,24 +1008,34 @@ async function genererGjennomfoeringsData() {
         ikkeFerdigDiv.innerHTML = "<p style='color:red;'>Feil ved henting: " + error.message + "</p>";
     }
 
-    // 4. DEN INDRE FUNKSJONEN (Nå ser den htmlTotal og htmlIkkeFerdig)
+// 4. DEN INDRE FUNKSJONEN
     function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, statuser) {
         fantData = true;
+
+        // --- VIKTIG JUSTERING HER ---
+        // Sørger for at fulltKlasseNavn blir f.eks. "5B" selv om klasse bare er "B"
+        let fulltKlasseNavn = klasse;
+        if (trinn && !klasse.includes(trinn)) {
+            fulltKlasseNavn = trinn + klasse;
+        }
+
         const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
         const erLaast = statusObj.laast || false;
         
-        const laerer = finnKontaktlaererForKlasse(klasse);
+        // Søker etter lærer med det fulle navnet (f.eks "5B")
+        const laerer = finnKontaktlaererForKlasse(fulltKlasseNavn);
         const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
         const laererEpost = laerer ? laerer.epost : "";
 
         const antallElever = Object.keys(eleverObjekt).length;
         const statusTekst = erLaast ? "<span style='color:green; font-weight:bold;'>✅ Ferdig</span>" : "<span style='color:red; font-weight:bold;'>⚠️ Åpen</span>";
-        const fulltProeveNavn = `${fag} - ${klasse} - ${periode} ${aar}`;
+        
+        // Bruker fulltKlasseNavn i overskriften
+        const fulltProeveNavn = `${fag} - ${fulltKlasseNavn} - ${periode} ${aar}`;
 
-        // Legger til i variabelen som er definert utenfor
         htmlTotal += `<tr>
             <td>${aar} ${periode}</td>
-            <td><b>${klasse}</b></td>
+            <td><b>${fulltKlasseNavn}</b></td>
             <td>${fag}</td>
             <td>${antallElever}</td>
             <td>${statusTekst}</td>
@@ -1017,7 +1044,7 @@ async function genererGjennomfoeringsData() {
         if (!erLaast) {
             harApne = true;
             const emne = encodeURIComponent(`Mangler ferdigstilling: ${fulltProeveNavn}`);
-            const melding = encodeURIComponent(`Hei.\n\nDet mangler fortsatt noe i registreringen av kartleggingsprøven: ${fulltProeveNavn}.\n\nSjekk at alle resultater er registrert, og at prøven er satt til "Ferdigstilt".`);
+            const melding = encodeURIComponent(`Hei ${laererNavn}.\n\nDet mangler fortsatt noe i registreringen av kartleggingsprøven: ${fulltProeveNavn}.\n\nSjekk at alle resultater er registrert, og at prøven er satt til "Ferdigstilt".`);
 
             htmlIkkeFerdig += `<tr>
                 <td style="text-align:left;">${fulltProeveNavn}</td>
@@ -1030,7 +1057,6 @@ async function genererGjennomfoeringsData() {
             </tr>`;
         }
     }
-}
 
 // --- KOMBINERT ANALYSE-KODE (Rettet versjon med alle sjekker) ---
 async function genererKlasseAnalyse() {
