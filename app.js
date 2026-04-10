@@ -1057,6 +1057,7 @@ async function genererGjennomfoeringsData() {
             </tr>`;
         }
     }
+ }
 
 // --- KOMBINERT ANALYSE-KODE (Rettet versjon med alle sjekker) ---
 async function genererKlasseAnalyse() {
