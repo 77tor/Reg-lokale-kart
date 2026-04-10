@@ -933,6 +933,25 @@ function finnKontaktlaererForKlasse(klasseNavn, aar) {
     return null;
 }
 
+// --- HENTE ANTALL ELEVER ---
+function hentAntallEleverIRegister(klasseNavn, aar) {
+    let teller = 0;
+    const sokeAar = parseInt(aar);
+
+    for (let elevNavn in elevRegister) {
+        const info = elevRegister[elevNavn];
+        
+        // Beregn hvilket trinn eleven går på i det aktuelle året
+        const innevaerendeTrinn = (sokeAar - info.startAar) + info.startTrinn;
+        const elevKlasse = info.startKlasse; // Antar de beholder bokstaven sin
+        const fulltNavn = innevaerendeTrinn + elevKlasse;
+
+        if (fulltNavn === klasseNavn && sokeAar >= info.startAar && sokeAar <= info.sluttAar) {
+            teller++;
+        }
+    }
+    return teller;
+}
 
 function sendEpostViaEmailJS(laererNavn, laererEpost, proeveNavn, sideUrl, stisti) {
     const params = {
@@ -942,6 +961,7 @@ function sendEpostViaEmailJS(laererNavn, laererEpost, proeveNavn, sideUrl, stist
         sideUrl: sideUrl
     };
 
+// --- EMAILJS SOM  ---
     emailjs.send("service_paj6cqb", "template_2foprtm", params)
         .then(() => {
             // Lagre logg i Firebase
@@ -1061,43 +1081,26 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
     const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
     const laererEpost = laerer ? laerer.epost : "";
 
-// 3. Beregn statistikk (Gjennomført og Snitt i %)
-    const eleverKeys = Object.keys(eleverObjekt);
-    const totaltAntallElever = eleverKeys.length;
-    
-    let antallGjennomfoert = 0;
-    let totalOppnåddPoengsum = 0;
-    let maksPoengForPrøven = 0;
+// --- 3. Beregn statistikk (Gjennomført) ---
 
-    // Finn maks poeng for denne spesifikke prøven (henter fra første elev som har det lagret)
-    for (let id in eleverObjekt) {
-        if (eleverObjekt[id].maksPoeng) {
-            maksPoengForPrøven = parseFloat(eleverObjekt[id].maksPoeng);
-            break; 
-        }
+// A: Finn totalt antall som SKAL ha tatt prøven fra elevRegister
+const totaltAntallElever = hentAntallEleverIRegister(fulltKlasseNavn, aar);
+
+// B: Finn antall som FAKTISK har resultater i Firebase
+let antallGjennomfoert = 0;
+let totalOppnåddPoengsum = 0;
+
+Object.keys(eleverObjekt).forEach(id => {
+    const elevData = eleverObjekt[id];
+    // Vi teller kun elever som har en registrert sum (poeng)
+    if (elevData && elevData.sum !== undefined && elevData.sum !== null && elevData.sum !== "") {
+        antallGjennomfoert++;
+        totalOppnåddPoengsum += parseFloat(elevData.sum) || 0;
     }
+});
 
-    eleverKeys.forEach(id => {
-        const elevData = eleverObjekt[id];
-        // Vi teller kun elever som har en registrert sum (poeng)
-        if (elevData && elevData.sum !== undefined && elevData.sum !== null && elevData.sum !== "") {
-            antallGjennomfoert++;
-            totalOppnåddPoengsum += parseFloat(elevData.sum) || 0;
-        }
-    });
-
-    // Beregn snitt i prosent: (Gjennomsnittspoeng / Maks poeng) * 100
-    let snittVisning = "0%";
-    if (antallGjennomfoert > 0 && maksPoengForPrøven > 0) {
-        const snittPoeng = totalOppnåddPoengsum / antallGjennomfoert;
-        const prosent = (snittPoeng / maksPoengForPrøven) * 100;
-        snittVisning = prosent.toFixed(1) + "%";
-    } else if (antallGjennomfoert > 0 && maksPoengForPrøven === 0) {
-        // Fallback hvis maksPoeng mangler: Vis gjennomsnittlig sum direkte
-        snittVisning = (totalOppnåddPoengsum / antallGjennomfoert).toFixed(1);
-    }
-
-    const gjennomfoertVisning = `${antallGjennomfoert} / ${totaltAntallElever}`;
+// Nå får du f.eks. "15 / 19"
+const gjennomfoertVisning = `${antallGjennomfoert} / ${totaltAntallElever}`;
 
     // 4. Status-definisjon
     const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
