@@ -1060,24 +1060,32 @@ async function genererGjennomfoeringsData() {
         const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
         const laererEpost = laerer ? laerer.epost : "";
 
-        // Beregn statistikk for klassen
-        const eleverKeys = Object.keys(eleverObjekt);
-        const totaltAntallElever = eleverKeys.length;
-        let antallGjennomfoert = 0;
-        let totalSumProsent = 0;
+// --- Beregn statistikk for klassen ---
+const eleverKeys = Object.keys(eleverObjekt);
+const totaltAntallElever = eleverKeys.length; // Antall elever i klassen (fra databasen)
 
-        eleverKeys.forEach(id => {
-            const data = eleverObjekt[id];
-            // Vi teller eleven som "gjennomført" hvis de har en sum (poeng/prosent)
-            if (data && data.sum !== undefined && data.sum !== "") {
-                antallGjennomfoert++;
-                totalSumProsent += parseFloat(data.sum) || 0;
-            }
-        });
+let antallGjennomfoert = 0;
+let totalSumPoeng = 0;
 
-        const snittProsent = antallGjennomfoert > 0 
-            ? (totalSumProsent / antallGjennomfoert).toFixed(1) + "%" 
-            : "0%";
+eleverKeys.forEach(id => {
+    const elevData = eleverObjekt[id];
+    
+    // Sjekker om eleven har gjennomført (har en registrert sum/poeng)
+    // Vi sjekker for både undefined, null og tom streng
+    if (elevData && elevData.sum !== undefined && elevData.sum !== null && elevData.sum !== "") {
+        antallGjennomfoert++;
+        totalSumPoeng += parseFloat(elevData.sum) || 0;
+    }
+});
+
+// Beregn snitt (Poengsum / antall som har tatt prøven)
+// Vi runder av til én desimal
+const snittVisning = antallGjennomfoert > 0 
+    ? (totalSumPoeng / antallGjennomfoert).toFixed(1) + "%" 
+    : "0%";
+
+// Kolonnen "Gjennomført" viser nå f.eks. "22 / 26"
+const gjennomfoertVisning = `${antallGjennomfoert} / ${totaltAntallElever}`;
 
         const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
         const erLaast = statusObj.laast || false;
@@ -1089,13 +1097,13 @@ async function genererGjennomfoeringsData() {
         const fulltProeveNavn = `${fag} - ${periode} ${aar}`;
 
         // BYGG TABELL 1: FULLSTENDIG OVERSIKT (Den store tabellen)
-        htmlTotal += `<tr>
-            <td style="text-align:left;"><b>${fulltProeveNavn}</b></td>
-            <td>${laererNavn}</td>
-            <td>${antallGjennomfoert} / ${totaltAntallElever}</td>
-            <td style="font-weight:bold;">${snittProsent}</td>
-            <td>${statusTekst}</td>
-        </tr>`;
+htmlTotal += `<tr>
+    <td style="text-align:left;"><b>${fulltProeveNavn}</b></td>
+    <td>${laererNavn}</td>
+    <td>${gjennomfoertVisning}</td>
+    <td style="font-weight:bold;">${snittVisning}</td>
+    <td>${statusTekst}</td>
+</tr>`;
 
         // BYGG TABELL 2: KUN IKKE FERDIGSTILTE (Purrelista)
         if (!erLaast) {
