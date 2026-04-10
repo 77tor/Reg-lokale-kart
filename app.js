@@ -1137,8 +1137,7 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
                 ${Object.values(loggForDenne).map(tid => `<li>Sist sendt: ${tid}</li>`).join('')}
                </ul>` 
             : "";
-
-      htmlIkkeFerdig += `<tr>
+htmlIkkeFerdig += `<tr>
             <td style="text-align:left;"><b>${fag} (${fulltKlasseNavn})</b><br><small>${periode} ${aar}</small></td>
             <td>${laererNavn}</td>
             <td style="text-align:center;">
@@ -1149,19 +1148,19 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
                 </button>${loggHtml}` : "Mangler e-post"}
             </td>
         </tr>`;
-    } // Lukker: if (!erLaast)
-} // Lukker: function behandleKlasseData (som ligger inni try)
+      } // Lukker if (!erLaast)
+    } // Lukker function behandleKlasseData
 
-// --- HER ER DEN VIKTIGE REKKEFØLGEN ---
-    } // <--- DENNE MANGLER HOS DEG: Lukker try-blokken
-    catch (error) {
-        console.error("Feil i gjennomføringsmodul:", error);
-        const feilVisning = document.getElementById('ikkeFerdigstilteListe');
-        if (feilVisning) {
-            feilVisning.innerHTML = "<p style='color:red;'>Feil ved henting: " + error.message + "</p>";
-        }
+  } // Lukker try-blokken
+  catch (error) {
+    console.error("Feil i gjennomføringsmodul:", error);
+    const feilVisning = document.getElementById('ikkeFerdigstilteListe');
+    if (feilVisning) {
+        feilVisning.innerHTML = "<p style='color:red;'>Feil ved henting: " + error.message + "</p>";
     }
-} // Lukker: async function genererGjennomfoeringsData
+  }
+} // Lukker async function genererGjennomfoeringsData
+      
 
 
 // --- KOMBINERT ANALYSE-KODE (Rettet versjon med alle sjekker) ---
