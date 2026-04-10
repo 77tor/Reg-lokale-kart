@@ -935,22 +935,39 @@ function finnKontaktlaererForKlasse(klasseNavn, aar) {
 
 // --- HENTE ANTALL ELEVER ---
 function hentAntallEleverIRegister(klasseNavn, aar) {
-    const register = window.elevRegister; // Henter fra window
-    if (!register) return 0;
+    const register = window.elevRegister;
+    if (!register) {
+        console.error("Registeret mangler!");
+        return 0;
+    }
 
     let teller = 0;
-    // Trekker ut "2025" fra "2025-2026"
+    // Tvinger årstall til å bli et rent tall (f.eks. 2024)
     const sokeAar = parseInt(aar.toString().substring(0, 4));
+
+    if (isNaN(sokeAar)) {
+        console.warn("Ugyldig årstall mottatt:", aar);
+        return 0;
+    }
 
     for (let elevNavn in register) {
         const info = register[elevNavn];
+        
+        // Beregn trinn basert på differanse i år
         const innevaerendeTrinn = (sokeAar - info.startAar) + info.startTrinn;
         const fulltNavnFraRegister = innevaerendeTrinn + info.startKlasse; 
 
-        if (fulltNavnFraRegister === klasseNavn && sokeAar >= info.startAar && sokeAar <= info.sluttAar) {
-            teller++;
+        // Sjekk om eleven går på skolen i det søkte året, og om klassen matcher
+        if (sokeAar >= info.startAar && sokeAar <= info.sluttAar) {
+            if (fulltNavnFraRegister === klasseNavn) {
+                teller++;
+            }
         }
     }
+
+    // DEBUG: Hvis du ser 0 i tabellen, sjekk F12-konsollen for denne linjen:
+    // console.log(`Søkte etter ${klasseNavn} i ${sokeAar}. Fant: ${teller}`);
+    
     return teller;
 }
 
