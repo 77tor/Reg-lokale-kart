@@ -1138,7 +1138,7 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
                </ul>` 
             : "";
 
-        htmlIkkeFerdig += `<tr>
+      htmlIkkeFerdig += `<tr>
             <td style="text-align:left;"><b>${fag} (${fulltKlasseNavn})</b><br><small>${periode} ${aar}</small></td>
             <td>${laererNavn}</td>
             <td style="text-align:center;">
@@ -1147,17 +1147,18 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
                         class="btn" style="background-color:#27ae60; color:white; border:none; padding:5px; cursor:pointer; border-radius:4px;">
                     📧 Send purring
                 </button>${loggHtml}` : "Mangler e-post"}
-         </td>
+            </td>
         </tr>`;
     } // Lukker: if (!erLaast)
-} // Lukker: function behandleKlasseData
+} // Lukker: function behandleKlasseData (som ligger inni try)
 
-// --- HER ER FIKSEN FOR SYNTAX ERROR ---
-     catch (error) {
+// --- HER ER DEN VIKTIGE REKKEFØLGEN ---
+    } // <--- DENNE MANGLER HOS DEG: Lukker try-blokken
+    catch (error) {
         console.error("Feil i gjennomføringsmodul:", error);
-        const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
-        if (ikkeFerdigDiv) {
-            ikkeFerdigDiv.innerHTML = "<p style='color:red;'>Feil ved henting: " + error.message + "</p>";
+        const feilVisning = document.getElementById('ikkeFerdigstilteListe');
+        if (feilVisning) {
+            feilVisning.innerHTML = "<p style='color:red;'>Feil ved henting: " + error.message + "</p>";
         }
     }
 } // Lukker: async function genererGjennomfoeringsData
