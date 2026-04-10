@@ -913,6 +913,16 @@ function aapneGjennomfoeringModal() {
     }
 }
 
+// --- HJELPEFUNKSJON FOR Å FINNE LÆRER ---
+function finnKontaktlaererForKlasse(klasseNavn) {
+    if (!klasseNavn || typeof ansatteListe === 'undefined') return null;
+    
+    // Vi prøver å finne en ansatt som har denne klassen i sin liste
+    return ansatteListe.find(a => 
+        a.klasser && a.klasser.includes(klasseNavn)
+    );
+}
+
 // --- GJENNOMFØRINGSMODUL ---
 async function genererGjennomfoeringsData() {
     const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
