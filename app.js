@@ -938,8 +938,15 @@ async function genererGjennomfoeringsData() {
         const statuser = statusSnapshot.val() || {};
         const kartlegging = kartleggingSnapshot.val() || {};
 
-        let htmlIkkeFerdig = `<table class="admin-table">
-            <thead><tr><th>Klasse</th><th>Fag</th><th>Periode</th><th>Kontaktlærer</th><th>E-post</th></tr></thead><tbody>`;
+let htmlIkkeFerdig = `<table class="admin-table">
+    <thead>
+        <tr>
+            <th style="text-align:left;">Prøve</th>
+            <th>Kontaktlærer</th>
+            <th>Send melding</th>
+        </tr>
+    </thead>
+    <tbody>`;
         
         let htmlTotal = `<table class="admin-table">
             <thead><tr><th>År/Periode</th><th>Klasse</th><th>Fag</th><th>Elever</th><th>Status</th></tr></thead><tbody>`;
@@ -978,62 +985,60 @@ async function genererGjennomfoeringsData() {
             }
         }
 
-        function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt) {
-            fantData = true;
-            
-            // Finn status basert på din spesifikke Firebase-sti
-            const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
-            const erLaast = statusObj.laast || false;
-            
-            // Finn info fra ansatte.js
-            const laerer = finnKontaktlaererForKlasse(klasse);
-            const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
-            const laererEpost = laerer ? laerer.epost : "";
+function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt) {
+    fantData = true;
+    
+    // Finn status fra Firebase
+    const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
+    const erLaast = statusObj.laast || false;
+    
+    // Finn lærer fra ansatte.js
+    const laerer = finnKontaktlaererForKlasse(klasse);
+    const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
+    const laererEpost = laerer ? laerer.epost : "";
 
-            const antallElever = Object.keys(eleverObjekt).length;
-            const statusTekst = erLaast ? "<span style='color:green; font-weight:bold;'>✅ Ferdig</span>" : "<span style='color:red; font-weight:bold;'>⚠️ Åpen</span>";
+    const antallElever = Object.keys(eleverObjekt).length;
+    const statusTekst = erLaast ? "<span style='color:green; font-weight:bold;'>✅ Ferdig</span>" : "<span style='color:red; font-weight:bold;'>⚠️ Åpen</span>";
 
-            // Total-tabell
-            htmlTotal += `<tr>
-                <td>${aar} ${periode}</td>
-                <td><b>${klasse}</b></td>
-                <td>${fag}</td>
-                <td>${antallElever}</td>
-                <td>${statusTekst}</td>
-            </tr>`;
+    // Lager det fulle navnet slik du ønsket det
+    const fulltProeveNavn = `${fag} - ${klasse} - ${periode} ${aar}`;
 
-            // Varsel-tabell
-            if (!erLaast) {
-                harApne = true;
-                htmlIkkeFerdig += `<tr>
-                    <td><b>${klasse}</b></td>
-                    <td>${fag}</td>
-                    <td>${periode}</td>
-                    <td>${laererNavn}</td>
-                    <td><a href="mailto:${laererEpost}?subject=Oppfølging kartlegging ${klasse}">${laererEpost}</a></td>
-                </tr>`;
-            }
-        }
+    // Total-tabell (den nederste) beholder vi som den er
+    htmlTotal += `<tr>
+        <td>${aar} ${periode}</td>
+        <td><b>${klasse}</b></td>
+        <td>${fag}</td>
+        <td>${antallElever}</td>
+        <td>${statusTekst}</td>
+    </tr>`;
 
-        if (!fantData) {
-            ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Ingen data funnet i kartleggings-mappen.</p>";
-            totalTabellDiv.innerHTML = "";
-            return;
-        }
+    // Varsel-tabell (den øverste) - Her legger vi inn de nye kravene dine
+    if (!erLaast) {
+        harApne = true;
 
-        if (!harApne) {
-            htmlIkkeFerdig += `<tr><td colspan="5" style="text-align:center; padding:20px; color:green;">Alle prøver er ferdigstilt! 🎉</td></tr>`;
-        }
+        // Klargjør teksten til e-posten
+        const emne = encodeURIComponent(`Mangler ferdigstilling: ${fulltProeveNavn}`);
+        const melding = encodeURIComponent(
+            `Hei.\n\n` +
+            `Det mangler fortsatt noe i registreringen av kartleggingsprøven: ${fulltProeveNavn}.\n\n` +
+            `Sjekk at alle resultater er registrert, og at prøven er satt til "Ferdigstilt".`
+        );
 
-        ikkeFerdigDiv.innerHTML = htmlIkkeFerdig + "</tbody></table>";
-        totalTabellDiv.innerHTML = htmlTotal + "</tbody></table>";
-
-    } catch (error) {
-        console.error("Feil i gjennomføringsmodul:", error);
-        ikkeFerdigDiv.innerHTML = "<p style='color:red;'>Feil ved henting: " + error.message + "</p>";
+        htmlIkkeFerdig += `<tr>
+            <td style="text-align:left;">${fulltProeveNavn}</td>
+            <td>${laererNavn}</td>
+            <td style="text-align:center;">
+                ${laererEpost ? 
+                    `<a href="mailto:${laererEpost}?subject=${emne}&body=${melding}" 
+                       class="btn" style="background-color:#3498db; color:white; padding:5px 10px; font-size:0.8em; text-decoration:none; border-radius:4px;">
+                       📧 Send melding
+                    </a>` : 
+                    `<span style="color:gray; font-style:italic; font-size:0.8em;">Mangler e-post</span>`
+                }
+            </td>
+        </tr>`;
     }
 }
-
 
 
 // --- KOMBINERT ANALYSE-KODE (Rettet versjon med alle sjekker) ---
