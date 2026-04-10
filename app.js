@@ -734,116 +734,6 @@ function oppdaterLoggDiagram(type) {
         btn.style.color = 'white';
     });
 }
-// --- GJENNOMFØRINGSMODUL ---
-async function genererGjennomfoeringsData() {
-    const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
-    const totalTabellDiv = document.getElementById('gjennomfoeringTabellContainer');
-    
-    ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Henter data fra databasen...</p>";
-    
-    try {
-        // Henter rådata fra Firebase
-        const statusSnapshot = await db.ref('status').once('value');
-        const kartleggingSnapshot = await db.ref('kartlegging').once('value');
-        
-        const statuser = statusSnapshot.val() || {};
-        const kartlegging = kartleggingSnapshot.val() || {};
-
-        let htmlIkkeFerdig = `<table class="admin-table">
-            <thead><tr><th>Klasse</th><th>Fag</th><th>Periode</th><th>Kontaktlærer</th><th>E-post</th></tr></thead><tbody>`;
-        
-        let htmlTotal = `<table class="admin-table">
-            <thead><tr><th>År/Periode</th><th>Klasse</th><th>Fag</th><th>Elever</th><th>Status</th></tr></thead><tbody>`;
-
-        let fantData = false;
-        let harApne = false;
-
-        // --- DYNAMISK LOOPING ---
-        // Vi går gjennom År -> Fag -> Periode
-        for (let aar in kartlegging) {
-            for (let fag in kartlegging[aar]) {
-                for (let periode in kartlegging[aar][fag]) {
-                    
-                    let nivå = kartlegging[aar][fag][periode];
-
-                    // Denne funksjonen går gjennom resten av treet uansett om det er Trinn/Klasse eller bare Klasse
-                    Object.keys(nivå).forEach(nøkkel => {
-                        let objekt = nivå[nøkkel];
-
-                        // Sjekk om dette er en KLASSE (inneholder elever) eller et TRINN (inneholder klasser)
-                        // Vi antar det er en klasse hvis et av barna i objektet har et felt 'sum' eller 'oppgaver'
-                        const førsteBarnKey = Object.keys(objekt)[0];
-                        const erTrinnNivå = objekt[førsteBarnKey] && typeof objekt[førsteBarnKey] === 'object' && !objekt[førsteBarnKey].hasOwnProperty('sum');
-
-                        if (erTrinnNivå) {
-                            // Det var et trinn-nivå (f.eks "1"), gå dypere til klassene (f.eks "1A")
-                            for (let klasseNavn in objekt) {
-                                behandleKlasseData(aar, fag, periode, nøkkel, klasseNavn, objekt[klasseNavn]);
-                            }
-                        } else {
-                            // Det var klassen direkte (f.eks "1A")
-                            behandleKlasseData(aar, fag, periode, nøkkel.replace(/\D/g,''), nøkkel, objekt);
-                        }
-                    });
-                }
-            }
-        }
-
-        function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt) {
-            fantData = true;
-            
-            // Finn status basert på din spesifikke Firebase-sti
-            const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
-            const erLaast = statusObj.laast || false;
-            
-            // Finn info fra ansatte.js
-            const laerer = finnKontaktlaererForKlasse(klasse);
-            const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
-            const laererEpost = laerer ? laerer.epost : "";
-
-            const antallElever = Object.keys(eleverObjekt).length;
-            const statusTekst = erLaast ? "<span style='color:green; font-weight:bold;'>✅ Ferdig</span>" : "<span style='color:red; font-weight:bold;'>⚠️ Åpen</span>";
-
-            // Total-tabell
-            htmlTotal += `<tr>
-                <td>${aar} ${periode}</td>
-                <td><b>${klasse}</b></td>
-                <td>${fag}</td>
-                <td>${antallElever}</td>
-                <td>${statusTekst}</td>
-            </tr>`;
-
-            // Varsel-tabell
-            if (!erLaast) {
-                harApne = true;
-                htmlIkkeFerdig += `<tr>
-                    <td><b>${klasse}</b></td>
-                    <td>${fag}</td>
-                    <td>${periode}</td>
-                    <td>${laererNavn}</td>
-                    <td><a href="mailto:${laererEpost}?subject=Oppfølging kartlegging ${klasse}">${laererEpost}</a></td>
-                </tr>`;
-            }
-        }
-
-        if (!fantData) {
-            ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Ingen data funnet i kartleggings-mappen.</p>";
-            totalTabellDiv.innerHTML = "";
-            return;
-        }
-
-        if (!harApne) {
-            htmlIkkeFerdig += `<tr><td colspan="5" style="text-align:center; padding:20px; color:green;">Alle prøver er ferdigstilt! 🎉</td></tr>`;
-        }
-
-        ikkeFerdigDiv.innerHTML = htmlIkkeFerdig + "</tbody></table>";
-        totalTabellDiv.innerHTML = htmlTotal + "</tbody></table>";
-
-    } catch (error) {
-        console.error("Feil i gjennomføringsmodul:", error);
-        ikkeFerdigDiv.innerHTML = "<p style='color:red;'>Feil ved henting: " + error.message + "</p>";
-    }
-}
 
 
 // --- 3. FUNKSJON FOR SØKING I TABELLEN ---
@@ -1006,6 +896,121 @@ function finnRelevanteSider(rentTrinnNummer, oppgaveNavn) {
 
     return funn.length > 0 ? funn.join("\n") : "Fant ingen direkte treff i innholdsfortegnelsen.";
 }
+
+
+// --- GJENNOMFØRINGSMODUL ---
+async function genererGjennomfoeringsData() {
+    const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
+    const totalTabellDiv = document.getElementById('gjennomfoeringTabellContainer');
+    
+    ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Henter data fra databasen...</p>";
+    
+    try {
+        // Henter rådata fra Firebase
+        const statusSnapshot = await db.ref('status').once('value');
+        const kartleggingSnapshot = await db.ref('kartlegging').once('value');
+        
+        const statuser = statusSnapshot.val() || {};
+        const kartlegging = kartleggingSnapshot.val() || {};
+
+        let htmlIkkeFerdig = `<table class="admin-table">
+            <thead><tr><th>Klasse</th><th>Fag</th><th>Periode</th><th>Kontaktlærer</th><th>E-post</th></tr></thead><tbody>`;
+        
+        let htmlTotal = `<table class="admin-table">
+            <thead><tr><th>År/Periode</th><th>Klasse</th><th>Fag</th><th>Elever</th><th>Status</th></tr></thead><tbody>`;
+
+        let fantData = false;
+        let harApne = false;
+
+        // --- DYNAMISK LOOPING ---
+        // Vi går gjennom År -> Fag -> Periode
+        for (let aar in kartlegging) {
+            for (let fag in kartlegging[aar]) {
+                for (let periode in kartlegging[aar][fag]) {
+                    
+                    let nivå = kartlegging[aar][fag][periode];
+
+                    // Denne funksjonen går gjennom resten av treet uansett om det er Trinn/Klasse eller bare Klasse
+                    Object.keys(nivå).forEach(nøkkel => {
+                        let objekt = nivå[nøkkel];
+
+                        // Sjekk om dette er en KLASSE (inneholder elever) eller et TRINN (inneholder klasser)
+                        // Vi antar det er en klasse hvis et av barna i objektet har et felt 'sum' eller 'oppgaver'
+                        const førsteBarnKey = Object.keys(objekt)[0];
+                        const erTrinnNivå = objekt[førsteBarnKey] && typeof objekt[førsteBarnKey] === 'object' && !objekt[førsteBarnKey].hasOwnProperty('sum');
+
+                        if (erTrinnNivå) {
+                            // Det var et trinn-nivå (f.eks "1"), gå dypere til klassene (f.eks "1A")
+                            for (let klasseNavn in objekt) {
+                                behandleKlasseData(aar, fag, periode, nøkkel, klasseNavn, objekt[klasseNavn]);
+                            }
+                        } else {
+                            // Det var klassen direkte (f.eks "1A")
+                            behandleKlasseData(aar, fag, periode, nøkkel.replace(/\D/g,''), nøkkel, objekt);
+                        }
+                    });
+                }
+            }
+        }
+
+        function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt) {
+            fantData = true;
+            
+            // Finn status basert på din spesifikke Firebase-sti
+            const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
+            const erLaast = statusObj.laast || false;
+            
+            // Finn info fra ansatte.js
+            const laerer = finnKontaktlaererForKlasse(klasse);
+            const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
+            const laererEpost = laerer ? laerer.epost : "";
+
+            const antallElever = Object.keys(eleverObjekt).length;
+            const statusTekst = erLaast ? "<span style='color:green; font-weight:bold;'>✅ Ferdig</span>" : "<span style='color:red; font-weight:bold;'>⚠️ Åpen</span>";
+
+            // Total-tabell
+            htmlTotal += `<tr>
+                <td>${aar} ${periode}</td>
+                <td><b>${klasse}</b></td>
+                <td>${fag}</td>
+                <td>${antallElever}</td>
+                <td>${statusTekst}</td>
+            </tr>`;
+
+            // Varsel-tabell
+            if (!erLaast) {
+                harApne = true;
+                htmlIkkeFerdig += `<tr>
+                    <td><b>${klasse}</b></td>
+                    <td>${fag}</td>
+                    <td>${periode}</td>
+                    <td>${laererNavn}</td>
+                    <td><a href="mailto:${laererEpost}?subject=Oppfølging kartlegging ${klasse}">${laererEpost}</a></td>
+                </tr>`;
+            }
+        }
+
+        if (!fantData) {
+            ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Ingen data funnet i kartleggings-mappen.</p>";
+            totalTabellDiv.innerHTML = "";
+            return;
+        }
+
+        if (!harApne) {
+            htmlIkkeFerdig += `<tr><td colspan="5" style="text-align:center; padding:20px; color:green;">Alle prøver er ferdigstilt! 🎉</td></tr>`;
+        }
+
+        ikkeFerdigDiv.innerHTML = htmlIkkeFerdig + "</tbody></table>";
+        totalTabellDiv.innerHTML = htmlTotal + "</tbody></table>";
+
+    } catch (error) {
+        console.error("Feil i gjennomføringsmodul:", error);
+        ikkeFerdigDiv.innerHTML = "<p style='color:red;'>Feil ved henting: " + error.message + "</p>";
+    }
+}
+
+
+
 
 // --- KOMBINERT ANALYSE-KODE (Rettet versjon med alle sjekker) ---
 async function genererKlasseAnalyse() {
