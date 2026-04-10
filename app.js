@@ -936,27 +936,23 @@ function finnKontaktlaererForKlasse(klasseNavn, aar) {
 // --- HENTE ANTALL ELEVER ---
 function hentAntallEleverIRegister(klasseNavn, aar) {
     let teller = 0;
-    const sokeAar = parseInt(aar);
+    
+    // VIKTIG: Hent kun ut de første 4 siffrene (f.eks "2024" fra "2024/2025")
+    const sokeAar = parseInt(aar.toString().substring(0, 4));
+
+    if (isNaN(sokeAar)) return 0;
 
     for (let elevNavn in elevRegister) {
         const info = elevRegister[elevNavn];
         
-        // Hent startverdier fra elever.js
         const startAar = parseInt(info.startAar);
         const startTrinn = parseInt(info.startTrinn);
         const sluttAar = parseInt(info.sluttAar);
         
-        // 1. Sjekk om eleven i det hele tatt gikk på skolen i det valgte året
         if (sokeAar >= startAar && sokeAar <= sluttAar) {
-            
-            // 2. Beregn hvilket trinn eleven var på i sokeAar
-            // Formel: (Året vi sjekker - Året de startet) + Trinnet de startet på
             const innevaerendeTrinn = (sokeAar - startAar) + startTrinn;
-            
-            // 3. Sett sammen trinn og bokstav (f.eks. "2" + "B" = "2B")
             const fulltNavnFraRegister = innevaerendeTrinn + info.startKlasse; 
 
-            // 4. Sjekk om dette matcher klassen vi leter etter
             if (fulltNavnFraRegister === klasseNavn) {
                 teller++;
             }
