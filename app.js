@@ -924,6 +924,12 @@ async function genererGjennomfoeringsData() {
     const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
     const totalTabellDiv = document.getElementById('gjennomfoeringTabellContainer');
     
+    // 1. DEFINER VARIABLENE HER (Utenfor try, så alle ser dem)
+    let htmlIkkeFerdig = ""; 
+    let htmlTotal = "";
+    let fantData = false;
+    let harApne = false;
+
     ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Henter data fra databasen...</p>";
     
     try {
@@ -933,7 +939,8 @@ async function genererGjennomfoeringsData() {
         const statuser = statusSnapshot.val() || {};
         const kartlegging = kartleggingSnapshot.val() || {};
 
-        let htmlIkkeFerdig = `<table class="admin-table">
+        // 2. GI DEM STARTVERDI (Overskriftene)
+        htmlIkkeFerdig = `<table class="admin-table">
             <thead>
                 <tr>
                     <th style="text-align:left;">Prøve</th>
@@ -943,11 +950,8 @@ async function genererGjennomfoeringsData() {
             </thead>
             <tbody>`;
         
-        let htmlTotal = `<table class="admin-table">
+        htmlTotal = `<table class="admin-table">
             <thead><tr><th>År/Periode</th><th>Klasse</th><th>Fag</th><th>Elever</th><th>Status</th></tr></thead><tbody>`;
-
-        let fantData = false;
-        let harApne = false;
 
         for (let aar in kartlegging) {
             for (let fag in kartlegging[aar]) {
@@ -958,21 +962,20 @@ async function genererGjennomfoeringsData() {
                         const førsteBarnKey = Object.keys(objekt)[0];
                         const erTrinnNivå = objekt[førsteBarnKey] && typeof objekt[førsteBarnKey] === 'object' && !objekt[førsteBarnKey].hasOwnProperty('sum');
 
-if (erTrinnNivå) {
-    for (let klasseNavn in objekt) {
-        // Legg til statuser her -> 
-        behandleKlasseData(aar, fag, periode, nøkkel, klasseNavn, objekt[klasseNavn], statuser);
-    }
-} else {
-    // Legg til statuser her -> 
-    behandleKlasseData(aar, fag, periode, nøkkel.replace(/\D/g,''), nøkkel, objekt, statuser);
-}
+                        if (erTrinnNivå) {
+                            for (let klasseNavn in objekt) {
+                                // Husk å sende med statuser her som vi fikset sist
+                                behandleKlasseData(aar, fag, periode, nøkkel, klasseNavn, objekt[klasseNavn], statuser);
+                            }
+                        } else {
+                            behandleKlasseData(aar, fag, periode, nøkkel.replace(/\D/g,''), nøkkel, objekt, statuser);
+                        }
                     });
                 }
             }
         }
 
-        // --- HER MANGLER DET KODE FOR Å LUKKE TABELLENE OG OPPDATERE HTML ---
+        // 3. TEGN RESULTATET
         if (!fantData) {
             ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Ingen data funnet.</p>";
         } else {
@@ -988,11 +991,11 @@ if (erTrinnNivå) {
         ikkeFerdigDiv.innerHTML = "<p style='color:red;'>Feil ved henting: " + error.message + "</p>";
     }
 
-    // --- INNER FUNKSJON behandleKlasseData ---
-function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, statuser) {
-    fantData = true;
-const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
-    const erLaast = statusObj.laast || false;
+    // 4. DEN INDRE FUNKSJONEN (Nå ser den htmlTotal og htmlIkkeFerdig)
+    function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, statuser) {
+        fantData = true;
+        const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
+        const erLaast = statusObj.laast || false;
         
         const laerer = finnKontaktlaererForKlasse(klasse);
         const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
@@ -1002,6 +1005,7 @@ const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
         const statusTekst = erLaast ? "<span style='color:green; font-weight:bold;'>✅ Ferdig</span>" : "<span style='color:red; font-weight:bold;'>⚠️ Åpen</span>";
         const fulltProeveNavn = `${fag} - ${klasse} - ${periode} ${aar}`;
 
+        // Legger til i variabelen som er definert utenfor
         htmlTotal += `<tr>
             <td>${aar} ${periode}</td>
             <td><b>${klasse}</b></td>
@@ -1026,7 +1030,7 @@ const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
             </tr>`;
         }
     }
-} // <--- DENNE LUKKER NÅ HELE genererGjennomfoeringsData()
+}
 
 // --- KOMBINERT ANALYSE-KODE (Rettet versjon med alle sjekker) ---
 async function genererKlasseAnalyse() {
