@@ -3176,7 +3176,25 @@ async function genererFullElevrapport(navn) {
             return;
         }
 
-        funnetData.sort((a, b) => a.aar.localeCompare(b.aar) || b.periode.localeCompare(a.periode));
+  funnetData.sort((a, b) => {
+    // 1. Sorter på år (stigende: 2024, 2025...)
+    if (a.aar !== b.aar) {
+        return a.aar.localeCompare(b.aar);
+    }
+
+    // 2. Sorter på periode (Høst skal før Vår i samme år)
+    // Vi gir Høst verdi 0 og Vår verdi 1 for å tvinge rekkefølgen
+    const periodeVekt = { "Høst": 0, "Vår": 1 };
+    const vektA = periodeVekt[a.periode] ?? 99;
+    const vektB = periodeVekt[b.periode] ?? 99;
+
+    if (vektA !== vektB) {
+        return vektA - vektB;
+    }
+
+    // 3. Sorter på fag alfabetisk (Lesing før Regning)
+    return a.fag.localeCompare(b.fag);
+});
 
         // --- KOMPAKT STIL START ---
         let html = `
