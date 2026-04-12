@@ -3205,75 +3205,80 @@ async function genererFullElevrapport(navn) {
                 <hr style="border:0; border-top:1px solid #2980b9; margin: 10px 0;">
         `;
 
+// --- ELEVRAPPORT MED KRITISK GRENSE-KOLONNE ---
 funnetData.forEach(d => {
-        const o = d.oppsett;
-        const res = d.resultat;
-        const maksTotal = o.oppgaver.reduce((sum, op) => sum + op.maks, 0);
+    const o = d.oppsett;
+    const res = d.resultat;
+    const maksTotal = o.oppgaver.reduce((sum, op) => sum + op.maks, 0);
 
-        // Hent mal-data for dette faget/trinnet/perioden fra analyseMaler.js
-        const malForDenne = analyseMaler[d.fag]?.[d.trinn]?.[d.periode]?.oppgaver || {};
-
-        html += `
-            <div style="margin-bottom: 20px; page-break-inside: avoid;">
-                <h3 style="background:#2980b9; color:white; padding:6px 10px; border-radius:4px; margin-bottom:5px; font-size: 16px;">
-                    ${d.fag} - ${d.periode} ${d.aar} (${d.trinn}. trinn)
-                </h3>
-                <table style="width:100%; border-collapse: collapse; margin-bottom:5px; font-size: 13px;">
-                    <thead>
-                        <tr style="background:#ecf0f1; text-align:left;">
-                            <th style="padding:4px 8px; border:1px solid #bdc3c7;">Oppgave</th>
-                            <th style="padding:4px 8px; border:1px solid #bdc3c7; width:60px; text-align:center;">Score</th>
-                            <th style="padding:4px 8px; border:1px solid #bdc3c7; width:50px; text-align:center;">Maks</th>
-                            <th style="padding:4px 8px; border:1px solid #bdc3c7; width:140px;">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-
-o.oppgaver.forEach((oppg, i) => {
-    const poeng = res.oppgaver[i] || 0;
-    
-    // Sjekk om det faktisk er satt en grense for denne oppgaven
-    const harGrense = oppg.grense !== undefined && oppg.grense !== null && oppg.grense !== -1;
-    const kritisk = harGrense && poeng <= oppg.grense;
-
-    // Definer hva som skal stå i status-cellen
-    let statusTekst = "";
-    if (harGrense) {
-        statusTekst = kritisk ? 'Under kritisk grense' : 'OK';
-    } else {
-        statusTekst = "-"; // Vis en nøytral strek hvis grense ikke finnes
-    }
-
-    const oppgaveNummer = (i + 1).toString();
-    const visningsNavn = malForDenne[oppgaveNummer]?.navn || oppg.navn; 
+    const malForDenne = analyseMaler[d.fag]?.[d.trinn]?.[d.periode]?.oppgaver || {};
 
     html += `
-        <tr>
-            <td style="padding:4px 8px; border:1px solid #bdc3c7;">
-                <span style="font-weight:bold; color:#7f8c8d; font-size:0.85em;">O${oppgaveNummer}:</span> ${visningsNavn}
-            </td>
-            <td style="padding:4px 8px; border:1px solid #bdc3c7; font-weight:bold; text-align:center;">${poeng}</td>
-            <td style="padding:4px 8px; border:1px solid #bdc3c7; text-align:center;">${oppg.maks}</td>
-            <td style="padding:4px 8px; border:1px solid #bdc3c7; color:${kritisk ? '#e74c3c' : '#7f8c8d'}; font-weight:${kritisk ? 'bold' : 'normal'}; font-size: 11px;">
-                ${statusTekst}
-            </td>
-        </tr>`;
+        <div style="margin-bottom: 20px; page-break-inside: avoid;">
+            <h3 style="background:#2980b9; color:white; padding:6px 10px; border-radius:4px; margin-bottom:5px; font-size: 16px;">
+                ${d.fag} - ${d.periode} ${d.aar} (${d.trinn}. trinn)
+            </h3>
+            <table style="width:100%; border-collapse: collapse; margin-bottom:5px; font-size: 13px;">
+                <thead>
+                    <tr style="background:#ecf0f1; text-align:left;">
+                        <th style="padding:4px 8px; border:1px solid #bdc3c7;">Oppgave</th>
+                        <th style="padding:4px 8px; border:1px solid #bdc3c7; width:60px; text-align:center;">Score</th>
+                        <th style="padding:4px 8px; border:1px solid #bdc3c7; width:60px; text-align:center;">Grense</th>
+                        <th style="padding:4px 8px; border:1px solid #bdc3c7; width:50px; text-align:center;">Maks</th>
+                        <th style="padding:4px 8px; border:1px solid #bdc3c7; width:130px;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+    o.oppgaver.forEach((oppg, i) => {
+        const poeng = res.oppgaver[i] || 0;
+        
+        // Sjekk om det er definert en grense (ikke -1)
+        const harGrense = oppg.grense !== undefined && oppg.grense !== null && oppg.grense !== -1;
+        const kritisk = harGrense && poeng <= oppg.grense;
+
+        let statusTekst = harGrense ? (kritisk ? 'Under grense' : 'OK') : '-';
+        let grenseVisning = harGrense ? oppg.grense : "-";
+
+        const oppgaveNummer = (i + 1).toString();
+        const visningsNavn = malForDenne[oppgaveNummer]?.navn || oppg.navn; 
+
+        html += `
+            <tr>
+                <td style="padding:4px 8px; border:1px solid #bdc3c7;">
+                    <span style="font-weight:bold; color:#7f8c8d; font-size:0.85em;">O${oppgaveNummer}:</span> ${visningsNavn}
+                </td>
+                <td style="padding:4px 8px; border:1px solid #bdc3c7; font-weight:bold; text-align:center; background:${kritisk ? '#fdf2f2' : 'transparent'};">
+                    ${poeng}
+                </td>
+                <td style="padding:4px 8px; border:1px solid #bdc3c7; text-align:center; color:#666;">
+                    ${grenseVisning}
+                </td>
+                <td style="padding:4px 8px; border:1px solid #bdc3c7; text-align:center;">
+                    ${oppg.maks}
+                </td>
+                <td style="padding:4px 8px; border:1px solid #bdc3c7; color:${kritisk ? '#e74c3c' : '#7f8c8d'}; font-weight:${kritisk ? 'bold' : 'normal'}; font-size: 11px;">
+                    ${statusTekst}
+                </td>
+            </tr>`;
+    });
+
+    const totalKritisk = res.sum <= o.grenseTotal;
+    html += `
+                <tr style="background:#f9f9f9; font-weight:bold;">
+                    <td style="padding:6px 8px; border:1px solid #bdc3c7;">TOTAL POENSUM</td>
+                    <td style="padding:6px 8px; border:1px solid #bdc3c7; font-size:1.1em; text-align:center; background:${totalKritisk ? '#fdf2f2' : 'transparent'};">${res.sum}</td>
+                    <td style="padding:6px 8px; border:1px solid #bdc3c7; text-align:center; color:#666;">${o.grenseTotal}</td>
+                    <td style="padding:6px 8px; border:1px solid #bdc3c7; text-align:center;">${maksTotal}</td>
+                    <td style="padding:6px 8px; border:1px solid #bdc3c7; color:${totalKritisk ? '#e74c3c' : '#27ae60'}; font-size: 11px;">
+                        ${totalKritisk ? 'UNDER TOTALGRENSE' : 'OK'}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <p style="font-size:0.8em; color:#7f8c8d; margin: 0;">Registrert dato: ${new Date(res.dato).toLocaleDateString('nb-NO')}</p>
+    </div>`;
 });
-            const totalKritisk = res.sum <= o.grenseTotal;
-            html += `
-                        <tr style="background:#f9f9f9; font-weight:bold;">
-                            <td style="padding:6px 8px; border:1px solid #bdc3c7;">TOTAL POENSUM</td>
-                            <td style="padding:6px 8px; border:1px solid #bdc3c7; font-size:1.1em; text-align:center;">${res.sum}</td>
-                            <td style="padding:6px 8px; border:1px solid #bdc3c7; text-align:center;">${maksTotal}</td>
-                            <td style="padding:6px 8px; border:1px solid #bdc3c7; color:${totalKritisk ? '#e74c3c' : '#27ae60'}; font-size: 11px;">
-                                ${totalKritisk ? 'UNDER TOTALGRENSE' : 'OK'}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                <p style="font-size:0.8em; color:#7f8c8d; margin: 0;">Registrert dato: ${new Date(res.dato).toLocaleDateString('nb-NO')}</p>
-            </div>`;
-        });
 
         html += `</div>`;
         utskriftArea.innerHTML = html;
