@@ -3156,8 +3156,6 @@ async function genererFullElevrapport(navn) {
                     for (let trinn in alleData[aar][fag][periode]) {
                         for (let klasse in alleData[aar][fag][periode][trinn]) {
                             const e = alleData[aar][fag][periode][trinn][klasse][navn];
-                            
-                            // Vi tar med prøven hvis den eksisterer og ikke er slettet
                             if (e && !e.slettet) {
                                 funnetData.push({
                                     aar, fag, periode, trinn, klasse,
@@ -3176,10 +3174,18 @@ async function genererFullElevrapport(navn) {
             return;
         }
 
+        // --- FORBEDRET SORTERING (SKOLELØP 1-7) ---
         funnetData.sort((a, b) => {
-            if (a.aar !== b.aar) return a.aar.localeCompare(b.aar);
+            // 1. Sorter på trinn først (1, 2, 3...)
+            if (a.trinn !== b.trinn) return a.trinn - b.trinn;
+            
+            // 2. Sorter på periode (Høst før Vår)
             const periodeVekt = { "Høst": 0, "Vår": 1 };
-            if (periodeVekt[a.periode] !== periodeVekt[b.periode]) return periodeVekt[a.periode] - periodeVekt[b.periode];
+            const vektA = periodeVekt[a.periode] ?? 99;
+            const vektB = periodeVekt[b.periode] ?? 99;
+            if (vektA !== vektB) return vektA - vektB;
+            
+            // 3. Sorter på fag
             return a.fag.localeCompare(b.fag);
         });
 
@@ -3206,12 +3212,13 @@ async function genererFullElevrapport(navn) {
         funnetData.forEach(d => {
             const res = d.resultat;
             const o = d.oppsett;
+            if(!o) return; // Sikkerhet
+
             const erGjennomfort = res.oppgaver && res.oppgaver.length > 0;
-            
             let poengSum = "-", prosent = "-", status = "Ikke utført", statusFarge = "#7f8c8d";
+            const maksTotal = o.oppgaver.reduce((sum, op) => sum + op.maks, 0);
 
             if (erGjennomfort) {
-                const maksTotal = o.oppgaver.reduce((sum, op) => sum + op.maks, 0);
                 poengSum = res.sum;
                 prosent = Math.round((res.sum / maksTotal) * 100) + "%";
                 const underGrense = res.sum <= o.grenseTotal;
@@ -3221,14 +3228,12 @@ async function genererFullElevrapport(navn) {
 
             html += `
                 <tr>
-                    <td style="border: 1px solid #000; padding: 2px 5px; font-weight: bold;">${d.fag} - ${d.trinn}${d.klasse} - ${d.periode} ${d.aar}</td>
+                    <td style="border: 1px solid #000; padding: 2px 5px; font-weight: bold;">${d.fag}-${d.trinn}${d.klasse}-${d.periode} ${d.aar}</td>
                     <td style="border: 1px solid #000; padding: 2px 5px; text-align: center;">${poengSum}</td>
-                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center; color: #666;">${o.grenseTotal}</td>
-                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center;">${o.oppgaver.reduce((s, op) => s + op.maks, 0)}</td>
+                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center;">${o.grenseTotal}</td>
+                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center;">${maksTotal}</td>
                     <td style="border: 1px solid #000; padding: 2px 5px; text-align: center;">${prosent}</td>
-                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center; font-weight: bold; color: ${statusFarge}; font-size: 10px;">
-                        ${status}
-                    </td>
+                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center; font-weight: bold; color: ${statusFarge}; font-size: 10px;">${status}</td>
                 </tr>`;
         });
 
@@ -3236,10 +3241,11 @@ async function genererFullElevrapport(navn) {
                  <div style="page-break-after: always;"></div>
                  <h3 style="text-transform: uppercase; font-size: 14px; border-bottom: 1px solid #333; padding-bottom: 3px; margin-bottom: 15px;">Del 2: Detaljerte resultater</h3>`;
 
-// --- DEL 2: DETALJERTE RESULTATER (inkludert ikke gjennomførte) ---
         funnetData.forEach(d => {
             const res = d.resultat;
             const o = d.oppsett;
+            if (!o) return;
+
             const erGjennomfort = res.oppgaver && res.oppgaver.length > 0;
             const malForDenne = analyseMaler[d.fag]?.[d.trinn]?.[d.periode]?.oppgaver || {};
             const erRegning = d.fag === "Regning";
@@ -3254,7 +3260,6 @@ async function genererFullElevrapport(navn) {
                             <tr style="background: #fff;">
                                 <th style="border: 1px solid #000; padding: 3px; width: 90px; text-align: left; font-size: 10px;">Oppgave:</th>`;
             
-            // Bygg header-raden
             o.oppgaver.forEach((oppg, i) => {
                 const nr = (i + 1).toString();
                 const overskrift = erRegning ? "O" + nr : (malForDenne[nr]?.navn || oppg.navn);
@@ -3265,7 +3270,6 @@ async function genererFullElevrapport(navn) {
                         <tbody><tr><td style="border: 1px solid #000; padding: 4px; font-size: 10px;">Poeng:</td>`;
 
             if (erGjennomfort) {
-                // Fyll ut poeng som vanlig
                 o.oppgaver.forEach((oppg, i) => {
                     const poeng = res.oppgaver[i] || 0;
                     const kritisk = oppg.grense !== -1 && poeng <= oppg.grense;
@@ -3273,15 +3277,11 @@ async function genererFullElevrapport(navn) {
                 });
                 html += `<td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold; font-size: 11px; background: #f9f9f9;">${res.sum}</td>`;
             } else {
-                // Vis "IKKE GJENNOMFØRT" over alle kolonnene
-                html += `<td colspan="${o.oppgaver.length + 1}" style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold; font-size: 10px; color: #7f8c8d; background: #fafafa; letter-spacing: 2px;">
-                            IKKE GJENNOMFØRT
-                         </td>`;
+                html += `<td colspan="${o.oppgaver.length + 1}" style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold; font-size: 10px; color: #7f8c8d; background: #fafafa; letter-spacing: 2px;">IKKE GJENNOMFØRT</td>`;
             }
 
             html += `</tr></tbody></table>`;
 
-            // Forklaringstekst (Legend) for regneoppgaver vises uansett om den er tatt eller ikke
             if (erRegning) {
                 html += `<div style="display: flex; flex-wrap: wrap; margin-top: 3px; gap: 6px;">`;
                 o.oppgaver.forEach((oppg, i) => {
@@ -3293,9 +3293,10 @@ async function genererFullElevrapport(navn) {
             }
             html += `</div>`;
         });
+
         html += `</div>`;
         utskriftArea.innerHTML = html;
-        setTimeout(() => { window.print(); }, 500);
+        setTimeout(() => { window.print(); }, 700); // Litt lengre delay for å sikre rendering
         window.onafterprint = function() { utskriftArea.innerHTML = ""; };
 
     } catch (error) {
