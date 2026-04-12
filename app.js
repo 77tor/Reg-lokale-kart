@@ -3202,12 +3202,13 @@ async function genererFullElevrapport(navn) {
                     </thead>
                     <tbody>`;
 
-        funnetData.forEach(d => {
-            const res = d.resultat;
-            const o = d.oppsett;
-            if(!o) return;
-            const erGjennomfort = res.oppgaver && res.oppgaver.length > 0;
-            let poengSum = "-", prosent = "-", status = "Ikke utført", statusFarge = "#7f8c8d";
+funnetData.forEach(d => {
+    const res = d.resultat;
+    const o = d.oppsett;
+    if(!o) return;
+
+    const erGjennomfort = res.oppgaver && res.oppgaver.length > 0 && res.ikkeGjennomfort !== true;
+    let poengSum = "-", prosent = "-", status = "Ikke utført", statusFarge = "#7f8c8d";
             const maksTotal = o.oppgaver.reduce((sum, op) => sum + op.maks, 0);
 
             if (erGjennomfort) {
@@ -3234,20 +3235,15 @@ async function genererFullElevrapport(navn) {
         // --- DEL 2: DETALJER MED SIDESKIFT PER TRINN ---
         let forrigeTrinn = null;
 
-        funnetData.forEach(d => {
-            const res = d.resultat;
-            const o = d.oppsett;
-            if (!o) return;
+     funnetData.forEach(d => {
+    const res = d.resultat;
+    const o = d.oppsett;
+    if (!o) return;
 
-            // Legg inn sideskift hvis vi bytter trinn (og det ikke er den første prøven i Del 2)
-            let stilSideskift = "";
-            if (forrigeTrinn !== null && forrigeTrinn !== d.trinn) {
-                stilSideskift = "page-break-before: always; padding-top: 20px;";
-            }
-            forrigeTrinn = d.trinn;
-
-            const erGjennomfort = res.oppgaver && res.oppgaver.length > 0;
-            const malForDenne = analyseMaler[d.fag]?.[d.trinn]?.[d.periode]?.oppgaver || {};
+    // ENDRET: Bruker samme sjekk her for å trigge "IKKE GJENNOMFØRT"-boksen
+    const erGjennomfort = res.oppgaver && res.oppgaver.length > 0 && res.ikkeGjennomfort !== true;
+    
+    const malForDenne = analyseMaler[d.fag]?.[d.trinn]?.[d.periode]?.oppgaver || {};
             const erRegning = d.fag === "Regning";
 
             html += `
