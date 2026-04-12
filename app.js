@@ -3156,7 +3156,9 @@ async function genererFullElevrapport(navn) {
                     for (let trinn in alleData[aar][fag][periode]) {
                         for (let klasse in alleData[aar][fag][periode][trinn]) {
                             const e = alleData[aar][fag][periode][trinn][klasse][navn];
-                            if (e && e.oppgaver && !e.slettet) {
+                            
+                            // Vi tar med prøven hvis den eksisterer og ikke er slettet
+                            if (e && !e.slettet) {
                                 funnetData.push({
                                     aar, fag, periode, trinn, klasse,
                                     resultat: e,
@@ -3170,7 +3172,7 @@ async function genererFullElevrapport(navn) {
         }
 
         if (funnetData.length === 0) {
-            alert("Fant ingen lagrede resultater for " + navn);
+            alert("Fant ingen data for " + navn);
             return;
         }
 
@@ -3185,10 +3187,9 @@ async function genererFullElevrapport(navn) {
             <div style="padding: 5px 15px; font-family: Arial, sans-serif; line-height: 1.1;">
                 <h1 style="text-align:center; margin-bottom:2px; font-size: 20px; text-transform: uppercase;">ELEVRAPPORT</h1>
                 <h2 style="text-align:center; margin-top:0; color:#34495e; font-size: 16px;">${navn}</h2>
-                
                 <hr style="border:0; border-top:1px solid #333; margin: 10px 0;">
 
-                <h3 style="text-transform: uppercase; font-size: 12px; border-bottom: 1px solid #333; padding-bottom: 2px; margin-bottom: 5px;">Del 1: Historisk oversikt (1.-7. trinn)</h3>
+                <h3 style="text-transform: uppercase; font-size: 12px; border-bottom: 1px solid #333; padding-bottom: 2px; margin-bottom: 5px;">Del 1: Historisk oversikt</h3>
                 <table style="width:100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">
                     <thead>
                         <tr style="background: #f2f2f2;">
@@ -3197,37 +3198,50 @@ async function genererFullElevrapport(navn) {
                             <th style="border: 1px solid #000; padding: 3px 5px; text-align: center; width: 50px;">Grense</th>
                             <th style="border: 1px solid #000; padding: 3px 5px; text-align: center; width: 50px;">Maks</th>
                             <th style="border: 1px solid #000; padding: 3px 5px; text-align: center; width: 45px;">%</th>
-                            <th style="border: 1px solid #000; padding: 3px 5px; text-align: center; width: 60px;">Status</th>
+                            <th style="border: 1px solid #000; padding: 3px 5px; text-align: center; width: 70px;">Status</th>
                         </tr>
                     </thead>
                     <tbody>`;
 
         funnetData.forEach(d => {
-            const maksTotal = d.oppsett.oppgaver.reduce((sum, op) => sum + op.maks, 0);
-            const prosent = Math.round((d.resultat.sum / maksTotal) * 100);
-            const underGrense = d.resultat.sum <= d.oppsett.grenseTotal;
+            const res = d.resultat;
+            const o = d.oppsett;
+            const erGjennomfort = res.oppgaver && res.oppgaver.length > 0;
             
+            let poengSum = "-", prosent = "-", status = "Ikke utført", statusFarge = "#7f8c8d";
+
+            if (erGjennomfort) {
+                const maksTotal = o.oppgaver.reduce((sum, op) => sum + op.maks, 0);
+                poengSum = res.sum;
+                prosent = Math.round((res.sum / maksTotal) * 100) + "%";
+                const underGrense = res.sum <= o.grenseTotal;
+                status = underGrense ? "Under" : "Over";
+                statusFarge = underGrense ? "red" : "green";
+            }
+
             html += `
                 <tr>
                     <td style="border: 1px solid #000; padding: 2px 5px; font-weight: bold;">${d.fag} - ${d.trinn}${d.klasse} - ${d.periode} ${d.aar}</td>
-                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center;">${d.resultat.sum}</td>
-                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center; color: #666;">${d.oppsett.grenseTotal}</td>
-                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center;">${maksTotal}</td>
-                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center;">${prosent}%</td>
-                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center; font-weight: bold; color: ${underGrense ? 'red' : 'green'}; font-size: 10px;">
-                        ${underGrense ? 'Under' : 'Over'}
+                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center;">${poengSum}</td>
+                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center; color: #666;">${o.grenseTotal}</td>
+                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center;">${o.oppgaver.reduce((s, op) => s + op.maks, 0)}</td>
+                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center;">${prosent}</td>
+                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center; font-weight: bold; color: ${statusFarge}; font-size: 10px;">
+                        ${status}
                     </td>
                 </tr>`;
         });
 
         html += `</tbody></table>
                  <div style="page-break-after: always;"></div>
-
                  <h3 style="text-transform: uppercase; font-size: 14px; border-bottom: 1px solid #333; padding-bottom: 3px; margin-bottom: 15px;">Del 2: Detaljerte resultater</h3>`;
 
         funnetData.forEach(d => {
-            const o = d.oppsett;
             const res = d.resultat;
+            const erGjennomfort = res.oppgaver && res.oppgaver.length > 0;
+            if (!erGjennomfort) return; // Vi hopper over detaljvisning for prøver som ikke er tatt
+
+            const o = d.oppsett;
             const malForDenne = analyseMaler[d.fag]?.[d.trinn]?.[d.periode]?.oppgaver || {};
             const erRegning = d.fag === "Regning";
 
@@ -3272,7 +3286,6 @@ async function genererFullElevrapport(navn) {
 
         html += `</div>`;
         utskriftArea.innerHTML = html;
-
         setTimeout(() => { window.print(); }, 500);
         window.onafterprint = function() { utskriftArea.innerHTML = ""; };
 
