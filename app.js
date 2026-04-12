@@ -3229,28 +3229,36 @@ funnetData.forEach(d => {
                     </thead>
                     <tbody>`;
 
-        o.oppgaver.forEach((oppg, i) => {
-            const poeng = res.oppgaver[i] || 0;
-            const kritisk = oppg.grense !== -1 && poeng <= oppg.grense;
+o.oppgaver.forEach((oppg, i) => {
+    const poeng = res.oppgaver[i] || 0;
+    
+    // Sjekk om det faktisk er satt en grense for denne oppgaven
+    const harGrense = oppg.grense !== undefined && oppg.grense !== null && oppg.grense !== -1;
+    const kritisk = harGrense && poeng <= oppg.grense;
 
-            // --- NY LOGIKK FOR NAVN ---
-            // Vi sjekker om oppgave-indeksen (i+1) finnes i analyseMaler
-            const oppgaveNummer = (i + 1).toString();
-            const visningsNavn = malForDenne[oppgaveNummer]?.navn || oppg.navn; 
-            // ---------------------------
+    // Definer hva som skal stå i status-cellen
+    let statusTekst = "";
+    if (harGrense) {
+        statusTekst = kritisk ? 'Under kritisk grense' : 'OK';
+    } else {
+        statusTekst = "-"; // Vis en nøytral strek hvis grense ikke finnes
+    }
 
-            html += `
-                <tr>
-                    <td style="padding:4px 8px; border:1px solid #bdc3c7;">
-                        <span style="font-weight:bold; color:#7f8c8d; font-size:0.85em;">O${oppgaveNummer}:</span> ${visningsNavn}
-                    </td>
-                    <td style="padding:4px 8px; border:1px solid #bdc3c7; font-weight:bold; text-align:center;">${poeng}</td>
-                    <td style="padding:4px 8px; border:1px solid #bdc3c7; text-align:center;">${oppg.maks}</td>
-                    <td style="padding:4px 8px; border:1px solid #bdc3c7; color:${kritisk ? '#e74c3c' : '#27ae60'}; font-weight:bold; font-size: 11px;">
-                        ${kritisk ? 'Under kritisk grense' : 'OK'}
-                    </td>
-                </tr>`;
-        });
+    const oppgaveNummer = (i + 1).toString();
+    const visningsNavn = malForDenne[oppgaveNummer]?.navn || oppg.navn; 
+
+    html += `
+        <tr>
+            <td style="padding:4px 8px; border:1px solid #bdc3c7;">
+                <span style="font-weight:bold; color:#7f8c8d; font-size:0.85em;">O${oppgaveNummer}:</span> ${visningsNavn}
+            </td>
+            <td style="padding:4px 8px; border:1px solid #bdc3c7; font-weight:bold; text-align:center;">${poeng}</td>
+            <td style="padding:4px 8px; border:1px solid #bdc3c7; text-align:center;">${oppg.maks}</td>
+            <td style="padding:4px 8px; border:1px solid #bdc3c7; color:${kritisk ? '#e74c3c' : '#7f8c8d'}; font-weight:${kritisk ? 'bold' : 'normal'}; font-size: 11px;">
+                ${statusTekst}
+            </td>
+        </tr>`;
+});
             const totalKritisk = res.sum <= o.grenseTotal;
             html += `
                         <tr style="background:#f9f9f9; font-weight:bold;">
