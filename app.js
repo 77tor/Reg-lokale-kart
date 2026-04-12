@@ -3239,17 +3239,16 @@ async function genererFullElevrapport(navn) {
                     <table style="width:100%; border-collapse: collapse; table-layout: fixed;">
                         <thead>
                             <tr style="background: #fff;">
-                                <th style="border: 1px solid #000; padding: 4px; width: 120px; text-align: left; font-size: 11px;">Oppgave:</th>`;
+                                <th style="border: 1px solid #000; padding: 4px; width: 100px; text-align: left; font-size: 11px;">Oppgave:</th>`;
             
             o.oppgaver.forEach((oppg, i) => {
                 const nr = (i + 1).toString();
-                // Hvis regning: Vis kun "O1", ellers vis navn
+                // Viser nå bare navnet/nummeret uten (maks X) under
                 const overskrift = erRegning ? "O" + nr : (malForDenne[nr]?.navn || oppg.navn);
                 
                 html += `
-                    <th style="border: 1px solid #000; padding: 4px; font-size: 9px; text-align: center; overflow: hidden;">
-                        ${overskrift}<br>
-                        <span style="font-weight: normal; font-size: 8px;">(${oppg.maks})</span>
+                    <th style="border: 1px solid #000; padding: 4px; font-size: 9px; text-align: center; overflow: hidden; vertical-align: middle;">
+                        ${overskrift}
                     </th>`;
             });
 
@@ -3280,9 +3279,8 @@ async function genererFullElevrapport(navn) {
                         </tbody>
                     </table>`;
 
-            // Hvis det er regning, legger vi til en liten tegnforklaring under tabellen siden vi bare brukte numre
             if (erRegning) {
-                html += `<div style="display: flex; flex-wrap: wrap; margin-top: 5px; gap: 5px;">`;
+                html += `<div style="display: flex; flex-wrap: wrap; margin-top: 5px; gap: 8px;">`;
                 o.oppgaver.forEach((oppg, i) => {
                     const nr = (i + 1).toString();
                     const navn = malForDenne[nr]?.navn || oppg.navn;
