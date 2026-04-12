@@ -780,32 +780,39 @@ function visModal(navn) {
         checkBoks.checked = erIkkeGjennomfort;
     }
 
-// 2. Lag oppgavefeltene
-oppsett.oppgaver.forEach((o, i) => {
-    const stil = erIkkeGjennomfort ? 'opacity:0.3;' : '';
-    const deaktivert = erIkkeGjennomfort ? 'disabled' : '';
+    // 2. Lag oppgavefeltene
+    oppsett.oppgaver.forEach((o, i) => {
+        const poeng = eksisterende[i] !== undefined ? eksisterende[i] : "";
+        const deaktivert = erIkkeGjennomfort ? 'disabled' : '';
+        
+        // --- NY LOGIKK FOR FARGE ---
+        // Sjekker om poeng er under eller lik grensen (kun hvis grense ikke er -1)
+        const erUnderGrense = (o.grense !== -1 && poeng !== "" && poeng <= o.grense);
+        const fargeStil = erUnderGrense ? 'background-color: #ffdce0; border: 1px solid red;' : '';
+        const opacityStil = erIkkeGjennomfort ? 'opacity:0.3;' : '';
 
-    // Her gjør vi selve navnet til en "hjelpe-ikon"-trigger hvis bilde finnes
-    const navnMedHjelp = o.bilde 
-        ? `<span class="hjelpe-ikon-tekst">${o.navn} ℹ️
-             <img src="${o.bilde}" class="oppgave-preview-bilde">
-           </span>` 
-        : o.navn;
+        const navnMedHjelp = o.bilde 
+            ? `<span class="hjelpe-ikon-tekst">${o.navn} ℹ️
+                 <img src="${o.bilde}" class="oppgave-preview-bilde">
+               </span>` 
+            : o.navn;
 
-    container.innerHTML += `
-        <div class="oppgave-rad" style="margin-bottom:4px; ${stil} display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dotted #eee; padding-bottom: 2px;">
-            <label style="cursor: help;">
-                ${navnMedHjelp}:
-            </label>
-            <input type="number" class="oppg-input" data-index="${i}" min="0" max="${o.maks}" 
-            value="${eksisterende[i] !== undefined ? eksisterende[i] : ""}" 
-            ${deaktivert} style="width:65px; padding: 5px; text-align: center;">
-        </div>`;
-});
+        container.innerHTML += `
+            <div class="oppgave-rad" style="margin-bottom:4px; ${opacityStil} display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dotted #eee; padding-bottom: 2px;">
+                <label style="cursor: help;">
+                    ${navnMedHjelp}:
+                </label>
+                <input type="number" class="oppg-input" data-index="${i}" min="0" max="${o.maks}" 
+                value="${poeng}" 
+                ${deaktivert} 
+                style="width:65px; padding: 5px; text-align: center; ${fargeStil}"
+                oninput="validerInputGrense(this, ${o.grense})">
+            </div>`;
+    });
 
     document.getElementById('modal').style.display = 'block';
 
-    // 3. Sett fokus på første feltet hvis det ikke er låst
+    // 3. Sett fokus på første feltet
     setTimeout(() => {
         const førsteInput = container.querySelector('.oppg-input');
         if (førsteInput && !erIkkeGjennomfort) {
@@ -813,6 +820,28 @@ oppsett.oppgaver.forEach((o, i) => {
             førsteInput.select();
         }
     }, 100);
+}
+
+// --- HJELPEFUNKSJON FOR SANNTIDS-VALIDERING ---
+function validerInputGrense(input, grense) {
+    const verdi = input.value;
+    
+    // Hvis feltet er tomt, fjern farge
+    if (verdi === "") {
+        input.style.backgroundColor = "";
+        input.style.border = "1px solid #ccc";
+        return;
+    }
+
+    const poeng = parseInt(verdi);
+    // Hvis grensen er aktiv (-1 betyr ingen grense) og poeng er under/lik grense
+    if (grense !== -1 && poeng <= grense) {
+        input.style.backgroundColor = "#ffdce0"; // Lys rød
+        input.style.border = "1px solid red";
+    } else {
+        input.style.backgroundColor = ""; // Standard hvit
+        input.style.border = "1px solid #ccc";
+    }
 }
 
 function lukkModal() { 
