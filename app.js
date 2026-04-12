@@ -3150,7 +3150,6 @@ async function genererFullElevrapport(navn) {
         const alleData = snap.val() || {};
         let funnetData = [];
 
-        // Hent alle resultater for eleven
         for (let aar in alleData) {
             for (let fag in alleData[aar]) {
                 for (let periode in alleData[aar][fag]) {
@@ -3175,7 +3174,6 @@ async function genererFullElevrapport(navn) {
             return;
         }
 
-        // Sortering: Kronologisk
         funnetData.sort((a, b) => {
             if (a.aar !== b.aar) return a.aar.localeCompare(b.aar);
             const periodeVekt = { "Høst": 0, "Vår": 1 };
@@ -3184,21 +3182,22 @@ async function genererFullElevrapport(navn) {
         });
 
         let html = `
-            <div style="padding: 20px; font-family: Arial, sans-serif;">
-                <h1 style="text-align:center; margin-bottom:5px;">ELEVRAPPORT</h1>
-                <h2 style="text-align:center; margin-top:0; color:#34495e;">${navn}</h2>
-                <hr style="border:1px solid #ccc; margin: 20px 0;">
+            <div style="padding: 10px; font-family: Arial, sans-serif;">
+                <h1 style="text-align:center; margin-bottom:5px; font-size: 22px;">ELEVRAPPORT</h1>
+                <h2 style="text-align:center; margin-top:0; color:#34495e; font-size: 18px;">${navn}</h2>
+                
+                <hr style="border:1px solid #333; margin: 15px 0;">
 
-                <h3 style="text-transform: uppercase; font-size: 16px; border-bottom: 2px solid #333; padding-bottom: 5px;">Del 1: Oversikt over prøver</h3>
-                <table style="width:100%; border-collapse: collapse; margin-bottom: 50px;">
+                <h3 style="text-transform: uppercase; font-size: 14px; border-bottom: 1px solid #333; padding-bottom: 3px;">Del 1: Oversikt over prøver</h3>
+                <table style="width:100%; border-collapse: collapse; margin-bottom: 30px; font-size: 12px;">
                     <thead>
                         <tr style="background: #f2f2f2;">
-                            <th style="border: 1px solid #000; padding: 8px; text-align: left;">Prøve</th>
-                            <th style="border: 1px solid #000; padding: 8px; text-align: center;">Poengsum</th>
-                            <th style="border: 1px solid #000; padding: 8px; text-align: center;">Kritisk grense</th>
-                            <th style="border: 1px solid #000; padding: 8px; text-align: center;">Total (Maks)</th>
-                            <th style="border: 1px solid #000; padding: 8px; text-align: center;">Mestring %</th>
-                            <th style="border: 1px solid #000; padding: 8px; text-align: center;">Status</th>
+                            <th style="border: 1px solid #000; padding: 6px; text-align: left;">Prøve</th>
+                            <th style="border: 1px solid #000; padding: 6px; text-align: center; width: 60px;">Poeng</th>
+                            <th style="border: 1px solid #000; padding: 6px; text-align: center; width: 60px;">Grense</th>
+                            <th style="border: 1px solid #000; padding: 6px; text-align: center; width: 60px;">Maks</th>
+                            <th style="border: 1px solid #000; padding: 6px; text-align: center; width: 60px;">%</th>
+                            <th style="border: 1px solid #000; padding: 6px; text-align: center; width: 70px;">Status</th>
                         </tr>
                     </thead>
                     <tbody>`;
@@ -3210,12 +3209,12 @@ async function genererFullElevrapport(navn) {
             
             html += `
                 <tr>
-                    <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">${d.fag}-${d.trinn}${d.klasse}-${d.periode} ${d.aar}</td>
-                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">${d.resultat.sum}</td>
-                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">${d.oppsett.grenseTotal}</td>
-                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">${maksTotal}</td>
-                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">${prosent}%</td>
-                    <td style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold; color: ${underGrense ? 'red' : 'green'};">
+                    <td style="border: 1px solid #000; padding: 6px; font-weight: bold;">${d.fag}-${d.trinn}${d.klasse}-${d.periode} ${d.aar}</td>
+                    <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold;">${d.resultat.sum}</td>
+                    <td style="border: 1px solid #000; padding: 6px; text-align: center; color: #666;">${d.oppsett.grenseTotal}</td>
+                    <td style="border: 1px solid #000; padding: 6px; text-align: center;">${maksTotal}</td>
+                    <td style="border: 1px solid #000; padding: 6px; text-align: center;">${prosent}%</td>
+                    <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; color: ${underGrense ? 'red' : 'green'};">
                         ${underGrense ? 'Under' : 'Over'}
                     </td>
                 </tr>`;
@@ -3224,69 +3223,75 @@ async function genererFullElevrapport(navn) {
         html += `</tbody></table>
                  <div style="page-break-after: always;"></div>
 
-                 <h3 style="text-transform: uppercase; font-size: 16px; border-bottom: 2px solid #333; padding-bottom: 5px; margin-bottom: 20px;">Del 2: Detaljerte resultater</h3>`;
+                 <h3 style="text-transform: uppercase; font-size: 14px; border-bottom: 1px solid #333; padding-bottom: 3px; margin-bottom: 15px;">Del 2: Detaljerte resultater</h3>`;
 
         funnetData.forEach(d => {
             const o = d.oppsett;
             const res = d.resultat;
             const malForDenne = analyseMaler[d.fag]?.[d.trinn]?.[d.periode]?.oppgaver || {};
+            const erRegning = d.fag === "Regning";
 
             html += `
-                <div style="margin-bottom: 40px; page-break-inside: avoid;">
-                    <div style="text-align: center; font-weight: bold; font-size: 14px; margin-bottom: 5px; text-transform: uppercase;">
+                <div style="margin-bottom: 30px; page-break-inside: avoid;">
+                    <div style="background: #eee; padding: 5px; font-weight: bold; font-size: 12px; border: 1px solid #000; border-bottom: none; text-align: center; text-transform: uppercase;">
                         ${d.fag} | ${d.trinn}${d.klasse} | ${d.periode} ${d.aar}
                     </div>
                     <table style="width:100%; border-collapse: collapse; table-layout: fixed;">
                         <thead>
                             <tr style="background: #fff;">
-                                <th style="border: 1px solid #000; padding: 5px; width: 150px; text-align: left; font-size: 12px;">Elevnavn</th>`;
+                                <th style="border: 1px solid #000; padding: 4px; width: 120px; text-align: left; font-size: 11px;">Oppgave:</th>`;
             
-            // Lag kolonner for hver oppgave (Slik som i bildet ditt)
             o.oppgaver.forEach((oppg, i) => {
-                const oppgaveNummer = (i + 1).toString();
-                const visningsNavn = malForDenne[oppgaveNummer]?.navn || oppg.navn;
+                const nr = (i + 1).toString();
+                // Hvis regning: Vis kun "O1", ellers vis navn
+                const overskrift = erRegning ? "O" + nr : (malForDenne[nr]?.navn || oppg.navn);
+                
                 html += `
-                    <th style="border: 1px solid #000; padding: 5px; font-size: 10px; text-align: center;">
-                        ${visningsNavn}<br>
-                        <span style="font-weight: normal; font-size: 9px;">(maks ${oppg.maks})</span>
+                    <th style="border: 1px solid #000; padding: 4px; font-size: 9px; text-align: center; overflow: hidden;">
+                        ${overskrift}<br>
+                        <span style="font-weight: normal; font-size: 8px;">(${oppg.maks})</span>
                     </th>`;
             });
 
             html += `
-                                <th style="border: 1px solid #000; padding: 5px; width: 60px; text-align: center; font-size: 12px;">SUM</th>
+                                <th style="border: 1px solid #000; padding: 4px; width: 45px; text-align: center; font-size: 11px;">SUM</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td style="border: 1px solid #000; padding: 8px; font-weight: bold; font-size: 12px;">${navn}</td>`;
+                                <td style="border: 1px solid #000; padding: 6px; font-size: 11px;">Poeng:</td>`;
 
-            // Fyll ut poeng for hver oppgave
             o.oppgaver.forEach((oppg, i) => {
                 const poeng = res.oppgaver[i] || 0;
-                const harGrense = oppg.grense !== -1;
-                const kritisk = harGrense && poeng <= oppg.grense;
+                const kritisk = oppg.grense !== -1 && poeng <= oppg.grense;
                 
                 html += `
-                    <td style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold; font-size: 13px; 
-                               background: ${kritisk ? '#f8d7da' : 'transparent'}; 
-                               color: ${kritisk ? '#721c24' : 'black'};">
+                    <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; font-size: 12px; 
+                               background: ${kritisk ? '#ffdce0' : 'transparent'};">
                         ${poeng}
                     </td>`;
             });
 
-            const totalUnder = res.sum <= o.grenseTotal;
             html += `
-                                <td style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold; font-size: 13px;
-                                           background: ${totalUnder ? '#f8d7da' : '#f8f9fa'};">
+                                <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; font-size: 12px; background: #f9f9f9;">
                                     ${res.sum}
                                 </td>
                             </tr>
                         </tbody>
-                    </table>
-                    <div style="font-size: 10px; margin-top: 5px; color: #555;">
-                        Status: ${totalUnder ? 'Under kritisk grense' : 'Tilfredsstillende resultat'}
-                    </div>
-                </div>`;
+                    </table>`;
+
+            // Hvis det er regning, legger vi til en liten tegnforklaring under tabellen siden vi bare brukte numre
+            if (erRegning) {
+                html += `<div style="display: flex; flex-wrap: wrap; margin-top: 5px; gap: 5px;">`;
+                o.oppgaver.forEach((oppg, i) => {
+                    const nr = (i + 1).toString();
+                    const navn = malForDenne[nr]?.navn || oppg.navn;
+                    html += `<span style="font-size: 8px; color: #555;"><strong>O${nr}:</strong> ${navn}</span> `;
+                });
+                html += `</div>`;
+            }
+
+            html += `</div>`;
         });
 
         html += `</div>`;
@@ -3296,8 +3301,7 @@ async function genererFullElevrapport(navn) {
         window.onafterprint = function() { utskriftArea.innerHTML = ""; };
 
     } catch (error) {
-        console.error("Feil ved generering av rapport:", error);
-        alert("En feil oppstod. Se konsollen for detaljer.");
+        console.error("Feil:", error);
     }
 }
 
