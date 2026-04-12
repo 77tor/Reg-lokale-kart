@@ -3150,6 +3150,7 @@ async function genererFullElevrapport(navn) {
         const alleData = snap.val() || {};
         let funnetData = [];
 
+        // Hent alle resultater for eleven
         for (let aar in alleData) {
             for (let fag in alleData[aar]) {
                 for (let periode in alleData[aar][fag]) {
@@ -3174,125 +3175,118 @@ async function genererFullElevrapport(navn) {
             return;
         }
 
-        // Sortering: År -> Periode (Høst før Vår) -> Fag
+        // Sortering: Kronologisk
         funnetData.sort((a, b) => {
             if (a.aar !== b.aar) return a.aar.localeCompare(b.aar);
             const periodeVekt = { "Høst": 0, "Vår": 1 };
-            const vektA = periodeVekt[a.periode] ?? 99;
-            const vektB = periodeVekt[b.periode] ?? 99;
-            if (vektA !== vektB) return vektA - vektB;
+            if (periodeVekt[a.periode] !== periodeVekt[b.periode]) return periodeVekt[a.periode] - periodeVekt[b.periode];
             return a.fag.localeCompare(b.fag);
         });
 
-        // --- START HTML-BYGGING ---
         let html = `
-            <div style="padding: 10px 20px; font-family: Arial, sans-serif;">
-                <h1 style="text-align:center; color:#2c3e50; margin-bottom:2px; font-size: 26px; text-transform: uppercase; letter-spacing: 2px;">Elevrapport</h1>
-                <h2 style="text-align:center; margin:0; font-size: 22px; color: #34495e;">${navn}</h2>
-                <p style="text-align:center; color:#7f8c8d; font-size: 12px; margin: 10px 0;">Utskriftsdato: ${new Date().toLocaleDateString('nb-NO')}</p>
-                
-                <hr style="border:0; border-top:3px solid #2980b9; margin: 20px 0;">
+            <div style="padding: 20px; font-family: Arial, sans-serif;">
+                <h1 style="text-align:center; margin-bottom:5px;">ELEVRAPPORT</h1>
+                <h2 style="text-align:center; margin-top:0; color:#34495e;">${navn}</h2>
+                <hr style="border:1px solid #ccc; margin: 20px 0;">
 
-                <div style="margin-bottom: 40px;">
-                    <h3 style="background: #ecf0f1; padding: 10px; border-left: 5px solid #2980b9; color:#2c3e50;">Del 1: Historisk oversikt</h3>
-                    <table style="width:100%; border-collapse: collapse; font-size: 13px; margin-top: 10px;">
-                        <thead>
-                            <tr style="background:#2980b9; color: white; text-align:left;">
-                                <th style="padding:10px; border:1px solid #2980b9;">Prøveperiode</th>
-                                <th style="padding:10px; border:1px solid #2980b9; text-align:center;">Score</th>
-                                <th style="padding:10px; border:1px solid #2980b9; text-align:center;">Kritisk grense</th>
-                                <th style="padding:10px; border:1px solid #2980b9; text-align:center;">Maks</th>
-                                <th style="padding:10px; border:1px solid #2980b9; text-align:center;">Mestring %</th>
-                                <th style="padding:10px; border:1px solid #2980b9; text-align:center;">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
+                <h3 style="text-transform: uppercase; font-size: 16px; border-bottom: 2px solid #333; padding-bottom: 5px;">Del 1: Oversikt over prøver</h3>
+                <table style="width:100%; border-collapse: collapse; margin-bottom: 50px;">
+                    <thead>
+                        <tr style="background: #f2f2f2;">
+                            <th style="border: 1px solid #000; padding: 8px; text-align: left;">Prøve</th>
+                            <th style="border: 1px solid #000; padding: 8px; text-align: center;">Poengsum</th>
+                            <th style="border: 1px solid #000; padding: 8px; text-align: center;">Kritisk grense</th>
+                            <th style="border: 1px solid #000; padding: 8px; text-align: center;">Total (Maks)</th>
+                            <th style="border: 1px solid #000; padding: 8px; text-align: center;">Mestring %</th>
+                            <th style="border: 1px solid #000; padding: 8px; text-align: center;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
 
         funnetData.forEach(d => {
-            const o = d.oppsett;
-            const res = d.resultat;
-            const maksTotal = o.oppgaver.reduce((sum, op) => sum + op.maks, 0);
-            const prosent = Math.round((res.sum / maksTotal) * 100);
-            const underGrense = res.sum <= o.grenseTotal;
-
+            const maksTotal = d.oppsett.oppgaver.reduce((sum, op) => sum + op.maks, 0);
+            const prosent = Math.round((d.resultat.sum / maksTotal) * 100);
+            const underGrense = d.resultat.sum <= d.oppsett.grenseTotal;
+            
             html += `
-                <tr style="background: white;">
-                    <td style="padding:10px; border:1px solid #ddd; font-weight:bold;">${d.fag} - ${d.periode} ${d.aar} (${d.trinn}${d.klasse})</td>
-                    <td style="padding:10px; border:1px solid #ddd; text-align:center; font-weight:bold;">${res.sum}</td>
-                    <td style="padding:10px; border:1px solid #ddd; text-align:center; color:#e74c3c;">${o.grenseTotal}</td>
-                    <td style="padding:10px; border:1px solid #ddd; text-align:center;">${maksTotal}</td>
-                    <td style="padding:10px; border:1px solid #ddd; text-align:center;">${prosent}%</td>
-                    <td style="padding:10px; border:1px solid #ddd; text-align:center; font-weight:bold; color:${underGrense ? '#e74c3c' : '#27ae60'}; text-transform: uppercase; font-size: 11px;">
+                <tr>
+                    <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">${d.fag}-${d.trinn}${d.klasse}-${d.periode} ${d.aar}</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">${d.resultat.sum}</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">${d.oppsett.grenseTotal}</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">${maksTotal}</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">${prosent}%</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold; color: ${underGrense ? 'red' : 'green'};">
                         ${underGrense ? 'Under' : 'Over'}
                     </td>
                 </tr>`;
         });
 
-        html += `</tbody></table></div>
+        html += `</tbody></table>
                  <div style="page-break-after: always;"></div>
 
-                 <h3 style="background: #ecf0f1; padding: 10px; border-left: 5px solid #27ae60; color:#2c3e50; margin-bottom: 20px;">Del 2: Detaljert gjennomgang per prøve</h3>`;
+                 <h3 style="text-transform: uppercase; font-size: 16px; border-bottom: 2px solid #333; padding-bottom: 5px; margin-bottom: 20px;">Del 2: Detaljerte resultater</h3>`;
 
         funnetData.forEach(d => {
             const o = d.oppsett;
             const res = d.resultat;
-            const maksTotal = o.oppgaver.reduce((sum, op) => sum + op.maks, 0);
             const malForDenne = analyseMaler[d.fag]?.[d.trinn]?.[d.periode]?.oppgaver || {};
 
             html += `
-                <div style="margin-bottom: 40px; page-break-inside: avoid; border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: #fff;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #34495e; padding-bottom: 5px; margin-bottom: 15px;">
-                        <h4 style="margin: 0; font-size: 18px; color: #2c3e50;">${d.fag} - ${d.periode} ${d.aar}</h4>
-                        <span style="font-weight: bold; background: #34495e; color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px;">Trinn: ${d.trinn}${d.klasse}</span>
+                <div style="margin-bottom: 40px; page-break-inside: avoid;">
+                    <div style="text-align: center; font-weight: bold; font-size: 14px; margin-bottom: 5px; text-transform: uppercase;">
+                        ${d.fag} | ${d.trinn}${d.klasse} | ${d.periode} ${d.aar}
                     </div>
-
-                    <table style="width:100%; border-collapse: collapse; font-size: 13px;">
+                    <table style="width:100%; border-collapse: collapse; table-layout: fixed;">
                         <thead>
-                            <tr style="background:#f9f9f9; text-align:left;">
-                                <th style="padding:8px; border-bottom: 2px solid #ddd;">Oppgavebeskrivelse</th>
-                                <th style="padding:8px; border-bottom: 2px solid #ddd; width:60px; text-align:center;">Score</th>
-                                <th style="padding:8px; border-bottom: 2px solid #ddd; width:60px; text-align:center;">Grense</th>
-                                <th style="padding:8px; border-bottom: 2px solid #ddd; width:50px; text-align:center;">Maks</th>
+                            <tr style="background: #fff;">
+                                <th style="border: 1px solid #000; padding: 5px; width: 150px; text-align: left; font-size: 12px;">Elevnavn</th>`;
+            
+            // Lag kolonner for hver oppgave (Slik som i bildet ditt)
+            o.oppgaver.forEach((oppg, i) => {
+                const oppgaveNummer = (i + 1).toString();
+                const visningsNavn = malForDenne[oppgaveNummer]?.navn || oppg.navn;
+                html += `
+                    <th style="border: 1px solid #000; padding: 5px; font-size: 10px; text-align: center;">
+                        ${visningsNavn}<br>
+                        <span style="font-weight: normal; font-size: 9px;">(maks ${oppg.maks})</span>
+                    </th>`;
+            });
+
+            html += `
+                                <th style="border: 1px solid #000; padding: 5px; width: 60px; text-align: center; font-size: 12px;">SUM</th>
                             </tr>
                         </thead>
-                        <tbody>`;
+                        <tbody>
+                            <tr>
+                                <td style="border: 1px solid #000; padding: 8px; font-weight: bold; font-size: 12px;">${navn}</td>`;
 
+            // Fyll ut poeng for hver oppgave
             o.oppgaver.forEach((oppg, i) => {
                 const poeng = res.oppgaver[i] || 0;
                 const harGrense = oppg.grense !== -1;
                 const kritisk = harGrense && poeng <= oppg.grense;
-                const oppgaveNummer = (i + 1).toString();
-                const malOppg = malForDenne[oppgaveNummer] || {};
-                const visningsNavn = malOppg.navn || oppg.navn;
-                const forklaring = malOppg.forklaring || "";
-
+                
                 html += `
-                    <tr style="background: ${i % 2 === 0 ? '#fff' : '#fcfcfc'};">
-                        <td style="padding:8px; border-bottom: 1px solid #eee;">
-                            <div style="font-weight:bold; color: #34495e;">O${oppgaveNummer}: ${visningsNavn}</div>
-                            ${forklaring ? `<div style="font-size: 11px; color: #7f8c8d; font-style: italic; margin-top: 2px;">${forklaring}</div>` : ''}
-                        </td>
-                        <td style="padding:8px; border-bottom: 1px solid #eee; text-align:center; font-weight:bold; ${kritisk ? 'color: #e74c3c; background: #fff5f5;' : ''}">${poeng}</td>
-                        <td style="padding:8px; border-bottom: 1px solid #eee; text-align:center; color:#7f8c8d;">${harGrense ? oppg.grense : '-'}</td>
-                        <td style="padding:8px; border-bottom: 1px solid #eee; text-align:center;">${oppg.maks}</td>
-                    </tr>`;
+                    <td style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold; font-size: 13px; 
+                               background: ${kritisk ? '#f8d7da' : 'transparent'}; 
+                               color: ${kritisk ? '#721c24' : 'black'};">
+                        ${poeng}
+                    </td>`;
             });
 
-            const totalKritisk = res.sum <= o.grenseTotal;
+            const totalUnder = res.sum <= o.grenseTotal;
             html += `
-                        <tr style="background:#f4f7f8; font-weight:bold;">
-                            <td style="padding:10px; border-top: 2px solid #34495e;">TOTAL POENSUM</td>
-                            <td style="padding:10px; border-top: 2px solid #34495e; text-align:center; font-size: 15px; ${totalKritisk ? 'color: #e74c3c;' : 'color: #27ae60;'}">${res.sum}</td>
-                            <td style="padding:10px; border-top: 20x solid #34495e; text-align:center; color: #7f8c8d;">${o.grenseTotal}</td>
-                            <td style="padding:10px; border-top: 2px solid #34495e; text-align:center;">${maksTotal}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div style="margin-top: 10px; font-size: 11px; color: #95a5a6; display: flex; justify-content: space-between;">
-                    <span>Registrert: ${new Date(res.dato).toLocaleDateString('nb-NO')}</span>
-                    <span>Status: ${totalKritisk ? 'UNDER TOTALGRENSE' : 'TILFREDSSTILLENDE'}</span>
-                </div>
-            </div>`;
+                                <td style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold; font-size: 13px;
+                                           background: ${totalUnder ? '#f8d7da' : '#f8f9fa'};">
+                                    ${res.sum}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div style="font-size: 10px; margin-top: 5px; color: #555;">
+                        Status: ${totalUnder ? 'Under kritisk grense' : 'Tilfredsstillende resultat'}
+                    </div>
+                </div>`;
         });
 
         html += `</div>`;
@@ -3302,8 +3296,8 @@ async function genererFullElevrapport(navn) {
         window.onafterprint = function() { utskriftArea.innerHTML = ""; };
 
     } catch (error) {
-        console.error("Feil:", error);
-        alert("Kunne ikke generere rapport.");
+        console.error("Feil ved generering av rapport:", error);
+        alert("En feil oppstod. Se konsollen for detaljer.");
     }
 }
 
