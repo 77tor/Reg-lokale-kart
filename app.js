@@ -2717,7 +2717,7 @@ function aapneElevrapportValg() {
         const e = elevRegister[navn];
         const div = document.createElement('div');
         div.className = "elev-valg-rad";
-        div.style.padding = "10px";
+        div.style.padding = "5px 10px";
         div.style.cursor = "pointer";
         div.style.borderBottom = "1px solid #eee";
 
