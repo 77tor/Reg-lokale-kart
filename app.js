@@ -3205,41 +3205,52 @@ async function genererFullElevrapport(navn) {
                 <hr style="border:0; border-top:1px solid #2980b9; margin: 10px 0;">
         `;
 
-        funnetData.forEach(d => {
-            const o = d.oppsett;
-            const res = d.resultat;
-            const maksTotal = o.oppgaver.reduce((sum, op) => sum + op.maks, 0);
+funnetData.forEach(d => {
+        const o = d.oppsett;
+        const res = d.resultat;
+        const maksTotal = o.oppgaver.reduce((sum, op) => sum + op.maks, 0);
+
+        // Hent mal-data for dette faget/trinnet/perioden fra analyseMaler.js
+        const malForDenne = analyseMaler[d.fag]?.[d.trinn]?.[d.periode]?.oppgaver || {};
+
+        html += `
+            <div style="margin-bottom: 20px; page-break-inside: avoid;">
+                <h3 style="background:#2980b9; color:white; padding:6px 10px; border-radius:4px; margin-bottom:5px; font-size: 16px;">
+                    ${d.fag} - ${d.periode} ${d.aar} (${d.trinn}. trinn)
+                </h3>
+                <table style="width:100%; border-collapse: collapse; margin-bottom:5px; font-size: 13px;">
+                    <thead>
+                        <tr style="background:#ecf0f1; text-align:left;">
+                            <th style="padding:4px 8px; border:1px solid #bdc3c7;">Oppgave</th>
+                            <th style="padding:4px 8px; border:1px solid #bdc3c7; width:60px; text-align:center;">Score</th>
+                            <th style="padding:4px 8px; border:1px solid #bdc3c7; width:50px; text-align:center;">Maks</th>
+                            <th style="padding:4px 8px; border:1px solid #bdc3c7; width:140px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+        o.oppgaver.forEach((oppg, i) => {
+            const poeng = res.oppgaver[i] || 0;
+            const kritisk = oppg.grense !== -1 && poeng <= oppg.grense;
+
+            // --- NY LOGIKK FOR NAVN ---
+            // Vi sjekker om oppgave-indeksen (i+1) finnes i analyseMaler
+            const oppgaveNummer = (i + 1).toString();
+            const visningsNavn = malForDenne[oppgaveNummer]?.navn || oppg.navn; 
+            // ---------------------------
 
             html += `
-                <div style="margin-bottom: 20px; page-break-inside: avoid;">
-                    <h3 style="background:#2980b9; color:white; padding:6px 10px; border-radius:4px; margin-bottom:5px; font-size: 16px;">
-                        ${d.fag} - ${d.periode} ${d.aar} (${d.trinn}. trinn)
-                    </h3>
-                    <table style="width:100%; border-collapse: collapse; margin-bottom:5px; font-size: 13px;">
-                        <thead>
-                            <tr style="background:#ecf0f1; text-align:left;">
-                                <th style="padding:4px 8px; border:1px solid #bdc3c7;">Oppgave</th>
-                                <th style="padding:4px 8px; border:1px solid #bdc3c7; width:60px;">Score</th>
-                                <th style="padding:4px 8px; border:1px solid #bdc3c7; width:50px;">Maks</th>
-                                <th style="padding:4px 8px; border:1px solid #bdc3c7; width:140px;">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
-
-            o.oppgaver.forEach((oppg, i) => {
-                const poeng = res.oppgaver[i] || 0;
-                const kritisk = oppg.grense !== -1 && poeng <= oppg.grense;
-                html += `
-                    <tr>
-                        <td style="padding:4px 8px; border:1px solid #bdc3c7;">${oppg.navn}</td>
-                        <td style="padding:4px 8px; border:1px solid #bdc3c7; font-weight:bold; text-align:center;">${poeng}</td>
-                        <td style="padding:4px 8px; border:1px solid #bdc3c7; text-align:center;">${oppg.maks}</td>
-                        <td style="padding:4px 8px; border:1px solid #bdc3c7; color:${kritisk ? '#e74c3c' : '#27ae60'}; font-weight:bold; font-size: 11px;">
-                            ${kritisk ? 'Under kritisk grense' : 'OK'}
-                        </td>
-                    </tr>`;
-            });
-
+                <tr>
+                    <td style="padding:4px 8px; border:1px solid #bdc3c7;">
+                        <span style="font-weight:bold; color:#7f8c8d; font-size:0.85em;">O${oppgaveNummer}:</span> ${visningsNavn}
+                    </td>
+                    <td style="padding:4px 8px; border:1px solid #bdc3c7; font-weight:bold; text-align:center;">${poeng}</td>
+                    <td style="padding:4px 8px; border:1px solid #bdc3c7; text-align:center;">${oppg.maks}</td>
+                    <td style="padding:4px 8px; border:1px solid #bdc3c7; color:${kritisk ? '#e74c3c' : '#27ae60'}; font-weight:bold; font-size: 11px;">
+                        ${kritisk ? 'Under kritisk grense' : 'OK'}
+                    </td>
+                </tr>`;
+        });
             const totalKritisk = res.sum <= o.grenseTotal;
             html += `
                         <tr style="background:#f9f9f9; font-weight:bold;">
