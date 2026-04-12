@@ -3174,18 +3174,11 @@ async function genererFullElevrapport(navn) {
             return;
         }
 
-        // --- FORBEDRET SORTERING (SKOLELØP 1-7) ---
+        // Sortering: Trinn -> Periode -> Fag
         funnetData.sort((a, b) => {
-            // 1. Sorter på trinn først (1, 2, 3...)
             if (a.trinn !== b.trinn) return a.trinn - b.trinn;
-            
-            // 2. Sorter på periode (Høst før Vår)
             const periodeVekt = { "Høst": 0, "Vår": 1 };
-            const vektA = periodeVekt[a.periode] ?? 99;
-            const vektB = periodeVekt[b.periode] ?? 99;
-            if (vektA !== vektB) return vektA - vektB;
-            
-            // 3. Sorter på fag
+            if (periodeVekt[a.periode] !== periodeVekt[b.periode]) return periodeVekt[a.periode] - periodeVekt[b.periode];
             return a.fag.localeCompare(b.fag);
         });
 
@@ -3212,8 +3205,7 @@ async function genererFullElevrapport(navn) {
         funnetData.forEach(d => {
             const res = d.resultat;
             const o = d.oppsett;
-            if(!o) return; // Sikkerhet
-
+            if(!o) return;
             const erGjennomfort = res.oppgaver && res.oppgaver.length > 0;
             let poengSum = "-", prosent = "-", status = "Ikke utført", statusFarge = "#7f8c8d";
             const maksTotal = o.oppgaver.reduce((sum, op) => sum + op.maks, 0);
@@ -3226,33 +3218,44 @@ async function genererFullElevrapport(navn) {
                 statusFarge = underGrense ? "red" : "green";
             }
 
-            html += `
-                <tr>
-                    <td style="border: 1px solid #000; padding: 2px 5px; font-weight: bold;">${d.fag}-${d.trinn}${d.klasse}-${d.periode} ${d.aar}</td>
-                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center;">${poengSum}</td>
-                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center;">${o.grenseTotal}</td>
-                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center;">${maksTotal}</td>
-                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center;">${prosent}</td>
-                    <td style="border: 1px solid #000; padding: 2px 5px; text-align: center; font-weight: bold; color: ${statusFarge}; font-size: 10px;">${status}</td>
-                </tr>`;
+            html += `<tr>
+                        <td style="border: 1px solid #000; padding: 2px 5px; font-weight: bold;">${d.fag}-${d.trinn}${d.klasse}-${d.periode} ${d.aar}</td>
+                        <td style="border: 1px solid #000; padding: 2px 5px; text-align: center;">${poengSum}</td>
+                        <td style="border: 1px solid #000; padding: 2px 5px; text-align: center;">${o.grenseTotal}</td>
+                        <td style="border: 1px solid #000; padding: 2px 5px; text-align: center;">${maksTotal}</td>
+                        <td style="border: 1px solid #000; padding: 2px 5px; text-align: center;">${prosent}</td>
+                        <td style="border: 1px solid #000; padding: 2px 5px; text-align: center; font-weight: bold; color: ${statusFarge}; font-size: 10px;">${status}</td>
+                    </tr>`;
         });
 
         html += `</tbody></table>
-                 <div style="page-break-after: always;"></div>
-                 <h3 style="text-transform: uppercase; font-size: 14px; border-bottom: 1px solid #333; padding-bottom: 3px; margin-bottom: 15px;">Del 2: Detaljerte resultater</h3>`;
+                 <div style="page-break-after: always;"></div>`;
+
+        // --- DEL 2: DETALJER MED SIDESKIFT PER TRINN ---
+        let forrigeTrinn = null;
 
         funnetData.forEach(d => {
             const res = d.resultat;
             const o = d.oppsett;
             if (!o) return;
 
+            // Legg inn sideskift hvis vi bytter trinn (og det ikke er den første prøven i Del 2)
+            let stilSideskift = "";
+            if (forrigeTrinn !== null && forrigeTrinn !== d.trinn) {
+                stilSideskift = "page-break-before: always; padding-top: 20px;";
+            }
+            forrigeTrinn = d.trinn;
+
             const erGjennomfort = res.oppgaver && res.oppgaver.length > 0;
             const malForDenne = analyseMaler[d.fag]?.[d.trinn]?.[d.periode]?.oppgaver || {};
             const erRegning = d.fag === "Regning";
 
             html += `
-                <div style="margin-bottom: 25px; page-break-inside: avoid;">
-                    <div style="background: #eee; padding: 4px; font-weight: bold; font-size: 11px; border: 1px solid #000; border-bottom: none; text-align: center; text-transform: uppercase;">
+                <div style="margin-bottom: 40px; ${stilSideskift}">
+                    <h3 style="text-transform: uppercase; font-size: 13px; border-bottom: 2px solid #333; padding-bottom: 3px; margin-bottom: 10px;">
+                        DETALJER: ${d.trinn}. TRINN - ${d.fag} (${d.periode} ${d.aar})
+                    </h3>
+                    <div style="background: #eee; padding: 4px; font-weight: bold; font-size: 11px; border: 1px solid #000; border-bottom: none; text-align: center;">
                         ${d.fag} | ${d.trinn}${d.klasse} | ${d.periode} ${d.aar}
                     </div>
                     <table style="width:100%; border-collapse: collapse; table-layout: fixed;">
@@ -3296,7 +3299,7 @@ async function genererFullElevrapport(navn) {
 
         html += `</div>`;
         utskriftArea.innerHTML = html;
-        setTimeout(() => { window.print(); }, 700); // Litt lengre delay for å sikre rendering
+        setTimeout(() => { window.print(); }, 800);
         window.onafterprint = function() { utskriftArea.innerHTML = ""; };
 
     } catch (error) {
