@@ -3140,6 +3140,16 @@ function fullforImport() {
 }
 
 // ELEVRAPPORT
+// Hjelpefunksjon for å hente riktig mal basert på år
+function hentOppsettSpesifikk(aar, fag, periode, trinn) {
+    const malAar = oppgaveStruktur[aar] ? aar : "2025-2026";
+    try {
+        return oppgaveStruktur[malAar][fag][periode][trinn];
+    } catch (e) {
+        return null;
+    }
+}
+
 async function genererFullElevrapport(navn) {
     const utskriftArea = document.getElementById('utskriftRapportArea');
     utskriftArea.innerHTML = "<h2 class='no-print' style='text-align:center; padding:50px;'>Genererer rapport for " + navn + "...</h2>";
@@ -3171,6 +3181,7 @@ async function genererFullElevrapport(navn) {
 
         if (funnetData.length === 0) {
             alert("Fant ingen data for " + navn);
+            utskriftArea.innerHTML = "";
             return;
         }
 
@@ -3202,13 +3213,13 @@ async function genererFullElevrapport(navn) {
                     </thead>
                     <tbody>`;
 
-funnetData.forEach(d => {
-    const res = d.resultat;
-    const o = d.oppsett;
-    if(!o) return;
+        funnetData.forEach(d => {
+            const res = d.resultat;
+            const o = d.oppsett;
+            if(!o) return;
 
-    const erGjennomfort = res.oppgaver && res.oppgaver.length > 0 && res.ikkeGjennomfort !== true;
-    let poengSum = "-", prosent = "-", status = "Ikke utført", statusFarge = "#7f8c8d";
+            const erGjennomfort = res.oppgaver && res.oppgaver.length > 0 && res.ikkeGjennomfort !== true;
+            let poengSum = "-", prosent = "-", status = "Ikke utført", statusFarge = "#7f8c8d";
             const maksTotal = o.oppgaver.reduce((sum, op) => sum + op.maks, 0);
 
             if (erGjennomfort) {
@@ -3235,15 +3246,20 @@ funnetData.forEach(d => {
         // --- DEL 2: DETALJER MED SIDESKIFT PER TRINN ---
         let forrigeTrinn = null;
 
-     funnetData.forEach(d => {
-    const res = d.resultat;
-    const o = d.oppsett;
-    if (!o) return;
+        funnetData.forEach(d => {
+            const res = d.resultat;
+            const o = d.oppsett;
+            if (!o) return;
 
-    // ENDRET: Bruker samme sjekk her for å trigge "IKKE GJENNOMFØRT"-boksen
-    const erGjennomfort = res.oppgaver && res.oppgaver.length > 0 && res.ikkeGjennomfort !== true;
-    
-    const malForDenne = analyseMaler[d.fag]?.[d.trinn]?.[d.periode]?.oppgaver || {};
+            // FIX: Beregn sideskift
+            let stilSideskift = "";
+            if (forrigeTrinn !== null && forrigeTrinn !== d.trinn) {
+                stilSideskift = "page-break-before: always; padding-top: 20px;";
+            }
+            forrigeTrinn = d.trinn; // Husk dette trinnet til neste runde i loopen
+
+            const erGjennomfort = res.oppgaver && res.oppgaver.length > 0 && res.ikkeGjennomfort !== true;
+            const malForDenne = analyseMaler[d.fag]?.[d.trinn]?.[d.periode]?.oppgaver || {};
             const erRegning = d.fag === "Regning";
 
             html += `
