@@ -3139,26 +3139,18 @@ function fullforImport() {
     });
 }
 
-
-
-
-
-
 // Henter ALT fra Firebase og bygger utskriftssiden
 async function genererFullElevrapport(navn) {
     const utskriftArea = document.getElementById('utskriftRapportArea');
-    // Legg til class='no-print' på denne vente-teksten
-utskriftArea.innerHTML = "<h2 class='no-print' style='text-align:center; padding:50px;'>Genererer rapport for " + navn + "...</h2>";
+    utskriftArea.innerHTML = "<h2 class='no-print' style='text-align:center; padding:50px;'>Genererer rapport for " + navn + "...</h2>";
     document.getElementById('modalElevrapport').style.display = 'none';
 
     try {
-
         const snap = await db.ref(`kartlegging`).once('value');
         const alleData = snap.val() || {};
         
         let funnetData = [];
 
-        // Vi må bla gjennom hele treet for å finne denne eleven
         for (let aar in alleData) {
             for (let fag in alleData[aar]) {
                 for (let periode in alleData[aar][fag]) {
@@ -3184,15 +3176,15 @@ utskriftArea.innerHTML = "<h2 class='no-print' style='text-align:center; padding
             return;
         }
 
-        // Sorterer etter år og periode (høst før vår)
         funnetData.sort((a, b) => a.aar.localeCompare(b.aar) || b.periode.localeCompare(a.periode));
 
+        // --- KOMPAKT STIL START ---
         let html = `
-            <div style="padding: 20px; font-family: Arial, sans-serif;">
-                <h1 style="text-align:center; color:#2c3e50; margin-bottom:5px;">ELEVRAPPORT</h1>
-                <h2 style="text-align:center; margin-top:0;">${navn}</h2>
-                <p style="text-align:center; color:#666;">Utskriftsdato: ${new Date().toLocaleDateString('nb-NO')}</p>
-                <hr style="border:1px solid #2980b9; margin: 20px 0;">
+            <div style="padding: 10px 20px; font-family: Arial, sans-serif; line-height: 1.2;">
+                <h1 style="text-align:center; color:#2c3e50; margin-bottom:2px; font-size: 22px;">ELEVRAPPORT</h1>
+                <h2 style="text-align:center; margin:0; font-size: 18px;">${navn}</h2>
+                <p style="text-align:center; color:#666; font-size: 12px; margin: 2px 0;">Utskriftsdato: ${new Date().toLocaleDateString('nb-NO')}</p>
+                <hr style="border:0; border-top:1px solid #2980b9; margin: 10px 0;">
         `;
 
         funnetData.forEach(d => {
@@ -3201,17 +3193,17 @@ utskriftArea.innerHTML = "<h2 class='no-print' style='text-align:center; padding
             const maksTotal = o.oppgaver.reduce((sum, op) => sum + op.maks, 0);
 
             html += `
-                <div style="margin-bottom: 40px; page-break-inside: avoid;">
-                    <h3 style="background:#2980b9; color:white; padding:10px; border-radius:4px; margin-bottom:10px;">
+                <div style="margin-bottom: 20px; page-break-inside: avoid;">
+                    <h3 style="background:#2980b9; color:white; padding:6px 10px; border-radius:4px; margin-bottom:5px; font-size: 16px;">
                         ${d.fag} - ${d.periode} ${d.aar} (${d.trinn}. trinn)
                     </h3>
-                    <table style="width:100%; border-collapse: collapse; margin-bottom:10px;">
+                    <table style="width:100%; border-collapse: collapse; margin-bottom:5px; font-size: 13px;">
                         <thead>
                             <tr style="background:#ecf0f1; text-align:left;">
-                                <th style="padding:10px; border:1px solid #bdc3c7;">Oppgave</th>
-                                <th style="padding:10px; border:1px solid #bdc3c7;">Resultat</th>
-                                <th style="padding:10px; border:1px solid #bdc3c7;">Maks</th>
-                                <th style="padding:10px; border:1px solid #bdc3c7;">Status</th>
+                                <th style="padding:4px 8px; border:1px solid #bdc3c7;">Oppgave</th>
+                                <th style="padding:4px 8px; border:1px solid #bdc3c7; width:60px;">Score</th>
+                                <th style="padding:4px 8px; border:1px solid #bdc3c7; width:50px;">Maks</th>
+                                <th style="padding:4px 8px; border:1px solid #bdc3c7; width:140px;">Status</th>
                             </tr>
                         </thead>
                         <tbody>`;
@@ -3221,10 +3213,10 @@ utskriftArea.innerHTML = "<h2 class='no-print' style='text-align:center; padding
                 const kritisk = oppg.grense !== -1 && poeng <= oppg.grense;
                 html += `
                     <tr>
-                        <td style="padding:8px; border:1px solid #bdc3c7;">${oppg.navn}</td>
-                        <td style="padding:8px; border:1px solid #bdc3c7; font-weight:bold;">${poeng}</td>
-                        <td style="padding:8px; border:1px solid #bdc3c7;">${oppg.maks}</td>
-                        <td style="padding:8px; border:1px solid #bdc3c7; color:${kritisk ? '#e74c3c' : '#27ae60'}; font-weight:bold;">
+                        <td style="padding:4px 8px; border:1px solid #bdc3c7;">${oppg.navn}</td>
+                        <td style="padding:4px 8px; border:1px solid #bdc3c7; font-weight:bold; text-align:center;">${poeng}</td>
+                        <td style="padding:4px 8px; border:1px solid #bdc3c7; text-align:center;">${oppg.maks}</td>
+                        <td style="padding:4px 8px; border:1px solid #bdc3c7; color:${kritisk ? '#e74c3c' : '#27ae60'}; font-weight:bold; font-size: 11px;">
                             ${kritisk ? 'Under kritisk grense' : 'OK'}
                         </td>
                     </tr>`;
@@ -3233,39 +3225,35 @@ utskriftArea.innerHTML = "<h2 class='no-print' style='text-align:center; padding
             const totalKritisk = res.sum <= o.grenseTotal;
             html += `
                         <tr style="background:#f9f9f9; font-weight:bold;">
-                            <td style="padding:10px; border:1px solid #bdc3c7;">TOTAL POENSUM</td>
-                            <td style="padding:10px; border:1px solid #bdc3c7; font-size:1.1em;">${res.sum}</td>
-                            <td style="padding:10px; border:1px solid #bdc3c7;">${maksTotal}</td>
-                            <td style="padding:10px; border:1px solid #bdc3c7; color:${totalKritisk ? '#e74c3c' : '#27ae60'};">
+                            <td style="padding:6px 8px; border:1px solid #bdc3c7;">TOTAL POENSUM</td>
+                            <td style="padding:6px 8px; border:1px solid #bdc3c7; font-size:1.1em; text-align:center;">${res.sum}</td>
+                            <td style="padding:6px 8px; border:1px solid #bdc3c7; text-align:center;">${maksTotal}</td>
+                            <td style="padding:6px 8px; border:1px solid #bdc3c7; color:${totalKritisk ? '#e74c3c' : '#27ae60'}; font-size: 11px;">
                                 ${totalKritisk ? 'UNDER TOTALGRENSE' : 'OK'}
                             </td>
                         </tr>
                     </tbody>
                 </table>
-                <p style="font-size:0.9em; color:#7f8c8d;">Registrert dato: ${new Date(res.dato).toLocaleDateString('nb-NO')}</p>
+                <p style="font-size:0.8em; color:#7f8c8d; margin: 0;">Registrert dato: ${new Date(res.dato).toLocaleDateString('nb-NO')}</p>
             </div>`;
         });
 
-       html += `</div>`;
+        html += `</div>`;
         utskriftArea.innerHTML = html;
 
-        // Gi nettleseren tid til å tegne HTML før print-dialogen kommer
         setTimeout(() => { 
             window.print(); 
         }, 500);
 
-        // NYTT: Tømmer rapportområdet etter at print-vinduet lukkes 
-        // slik at vanlig klasseliste-utskrift fungerer etterpå.
         window.onafterprint = function() {
             utskriftArea.innerHTML = "";
-            console.log("Rapportområde tømt etter utskrift.");
         };
 
     } catch (error) {
         console.error("Feil ved generering av rapport:", error);
         alert("Kunne ikke hente data fra databasen.");
     }
-} 
+}
 
 
 function leggTilNyElev() {
