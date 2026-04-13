@@ -2386,24 +2386,35 @@ async function aapneKlasserapportModal() {
     const kullSelect = document.getElementById('selectKullAar');
     kullSelect.innerHTML = '';
     
-    // Generer fødselsår (f.eks. siste 13 år til 5 år siden)
-    const currentYear = new Date().getFullYear();
-    
-    for(let i = currentYear - 13; i <= currentYear - 5; i++) {
-        const fødtAar = i;
-        const skoleStartAar = i + 6; // Standard skolestart er det året de fyller 6
+    // 1. Finn alle unike start-år fra elevRegisteret
+    let unikeStartAar = new Set();
+    for (let id in window.elevRegister) {
+        const startAar = parseInt(window.elevRegister[id].startAar);
+        if (startAar) {
+            unikeStartAar.add(startAar);
+        }
+    }
+
+    // 2. Gjør om til en liste og sorter (nyeste år nederst)
+    let sorterteAar = Array.from(unikeStartAar).sort((a, b) => a - b);
+
+    // 3. Generer valgmuligheter basert på faktiske data
+    sorterteAar.forEach(skoleStartAar => {
+        const fødtAar = skoleStartAar - 6; // Regner ut fødselsår (6 år før skolestart)
         
         let opt = document.createElement('option');
-        opt.value = fødtAar; 
+        opt.value = fødtAar; // Vi beholder fødselsår som verdi slik at logikken din ellers fungerer
         
-        // Setter teksten til formatet: "Født i 2018 / Skolestart 2024"
+        // Teksten slik du ønsket den:
         opt.text = `Født i ${fødtAar} / Skolestart ${skoleStartAar}`;
         
         kullSelect.appendChild(opt);
-    }
+    });
     
-    // Sett det nyeste kullet (nederst i lista) som valgt som standard
-    kullSelect.selectedIndex = kullSelect.options.length - 1;
+    // Velg det siste (nyeste) året som standard
+    if (kullSelect.options.length > 0) {
+        kullSelect.selectedIndex = kullSelect.options.length - 1;
+    }
 
     document.getElementById('modalKlasserapport').style.display = 'block';
 }
