@@ -2381,6 +2381,9 @@ function printSammenligningsDiagram() {
 
 
 // --- KLASSERAPPORT --
+let klasseChart = null; // <--- DENNE MÅ STÅ HER (UTENFOR FUNKSJONENE)
+let lagretKullData = [];
+
 async function genererKlasserapport() {
     const fodaar = parseInt(document.getElementById('selectKullAar').value);
     const fag = document.getElementById('selectKullFag').value;
