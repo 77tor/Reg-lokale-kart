@@ -1373,6 +1373,9 @@ htmlSide1 += `
     </table>
 </div>`;
 
+// Overskrift 2 - Nå også som h2, sentrert og med litt luft over
+htmlSide1 += `<h2 style="text-align:center; color:#2c3e50; margin-top:30px;">Refleksjonsspørsmål</h2>`;
+
 // Sjekkliste og Refleksjon
 htmlSide1 += `
 <div style="margin-top: 25px; display: flex; gap: 20px; border-top: 1px solid #eee; padding-top: 15px;">
