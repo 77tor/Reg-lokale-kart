@@ -1583,14 +1583,14 @@ try {
         const fData = alleData[aKey][fag];
         if (!fData) continue;
 
-        const histAarStart = parseInt(aKey.split('-')[0]); // Eks: 2024
-        const histAarSlutt = parseInt(aKey.split('-')[1]); // Eks: 2025
+        const histAarStart = parseInt(aKey.split('-')[0]);
+        const histAarSlutt = parseInt(aKey.split('-')[1]); // Henter ut 2025 fra "2024-2025"
         const aarDiff = naaAarStart - histAarStart;
         const historiskTrinn = (naaTrinnTall - aarDiff).toString();
 
         if (parseInt(historiskTrinn) < 1) continue;
 
-        // Sorter perioder så Høst kommer før Vår
+        // Sorter perioder så Høst kommer før Vår i historikken
         const perioder = Object.keys(fData).sort((a, b) => a.localeCompare(b));
 
         for (const pKey of perioder) {
@@ -1612,10 +1612,11 @@ try {
 
             Object.keys(trinnData).forEach(kNavn => {
                 const kData = trinnData[kNavn];
+                
                 Object.keys(kData).forEach(n => {
                     const elevResultat = kData[n];
                     
-                    // --- FILTER: Tell kun elever med faktisk resultat ---
+                    // --- ENDRING 1: Tell kun elever som har gjennomført og ikke er slettet ---
                     if (elevResultat.slettet || elevResultat.ikkeGjennomfort || elevResultat.sum === undefined) {
                         return; 
                     }
@@ -1629,6 +1630,7 @@ try {
                     if (kNavn === klasse) {
                         klasseSum += eSum;
                         klasseAntall++;
+                        
                         if (eSum <= aOppsett.grenseTotal) {
                             klasseKritiske++;
                         } else if (eProsent < 70) {
@@ -1639,14 +1641,12 @@ try {
             });
 
             if (klasseAntall > 0) {
-                // --- KORREKT ÅRSTALL-LOGIKK ---
-                // Bruker startåret for Høst (24) og sluttåret for Vår (25)
-                const visningsAar = pKey === "Høst" 
-                    ? histAarStart.toString().slice(-2) 
-                    : histAarSlutt.toString().slice(-2);
+                // --- ENDRING 2: Korrekt årstall (Høst 24, Vår 25 osv.) ---
+                const korrektAar = pKey === "Høst" ? histAarStart : histAarSlutt;
+                const visningsLabel = `${pKey} ${korrektAar.toString().slice(-2)}`;
 
                 historikkRader.push({ 
-                    visning: `${pKey} ${visningsAar}`, 
+                    visning: visningsLabel, 
                     tittel: `${historiskTrinn}${klasse}`,
                     klasseProsent: ((klasseSum / klasseAntall) / aMaks) * 100,
                     proveProsent: ((totalProveSum / totalProveAntall) / aMaks) * 100,
@@ -1658,7 +1658,6 @@ try {
         }
     }
     
-    // Sorterer historikken kronologisk før tegning
     historikkRader.sort((a,b) => a.sort.localeCompare(b.sort));
 
     if (historikkRader.length > 0) {
@@ -1686,10 +1685,10 @@ try {
         htmlSide4 += `<table><thead><tr><th>Periode</th><th>Trinn</th><th>Klasse (%)</th><th>Prøve (%)</th><th>Diff.</th><th>Lav</th><th>Kritisk</th></tr></thead><tbody>`;
 
         historikkRader.forEach(r => {
-            const erNaa = r.visning === `${pKey} ${visningsAar}`; // Enkel sjekk for markering
+            const aktiv = r.visning === `${periode} ${pKey === "Høst" ? naaAarStart.toString().slice(-2) : (naaAarStart+1).toString().slice(-2)}` ? 'style="background:#e8f4fd; font-weight:bold;"' : '';
             const diff = r.klasseProsent - r.proveProsent;
             htmlSide4 += `
-                <tr>
+                <tr ${aktiv}>
                     <td>${r.visning}</td>
                     <td>${r.tittel}</td>
                     <td>${r.klasseProsent.toFixed(1)}%</td>
@@ -1715,6 +1714,7 @@ try {
         htmlSide4 += `<div style="margin-top:20px; display: flex; gap: 15px;"><div style="flex: 1; padding:12px; border-left:5px solid #3498db; background:#f9f9f9;"><h4 style="margin:0 0 5px 0;">Intern utvikling</h4><p style="margin:0; font-size:13px;">${utviklingTekst}</p></div><div style="flex: 1; padding:12px; border-left:5px solid #2c3e50; background:#f9f9f9;"><h4 style="margin:0 0 5px 0;">Mot prøvesnitt</h4><p style="margin:0; font-size:13px;">${sammenligningTekst}</p></div></div>`;
     }
 } catch(err) { console.error(err); }
+
 // --- SIDE 4 FERDIG ---
 
 
