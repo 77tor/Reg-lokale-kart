@@ -2386,13 +2386,25 @@ async function aapneKlasserapportModal() {
     const kullSelect = document.getElementById('selectKullAar');
     kullSelect.innerHTML = '';
     
-    // Generer fødselsår (f.eks. siste 10 år)
+    // Generer fødselsår (f.eks. siste 13 år til 5 år siden)
     const currentYear = new Date().getFullYear();
+    
     for(let i = currentYear - 13; i <= currentYear - 5; i++) {
+        const fødtAar = i;
+        const skoleStartAar = i + 6; // Standard skolestart er det året de fyller 6
+        
         let opt = document.createElement('option');
-        opt.value = i; opt.text = `Født i ${i}`;
+        opt.value = fødtAar; 
+        
+        // Setter teksten til formatet: "Født i 2018 / Skolestart 2024"
+        opt.text = `Født i ${fødtAar} / Skolestart ${skoleStartAar}`;
+        
         kullSelect.appendChild(opt);
     }
+    
+    // Sett det nyeste kullet (nederst i lista) som valgt som standard
+    kullSelect.selectedIndex = kullSelect.options.length - 1;
+
     document.getElementById('modalKlasserapport').style.display = 'block';
 }
 
@@ -2555,7 +2567,8 @@ function printKlasseDiagram() {
     if (!canvas) return;
 
     // Hent info for overskrift
-    const kull = document.getElementById('selectKullAar').value;
+    const select = document.getElementById('selectKullAar');
+    const kull = select.options[select.selectedIndex].text; // Henter teksten i stedet for verdien
     const fag = document.getElementById('selectKullFag').value;
     const klasse = document.getElementById('selectKullKlasse').value;
 
