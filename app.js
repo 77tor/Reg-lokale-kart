@@ -1282,39 +1282,40 @@ elever.forEach(navn => {
 
 
 // --- SIDE 1: HOVEDANALYSE OG TABELL ---
+// --- SIDE 1: HOVEDANALYSE OG TABELL ---
 let htmlSide1 = fellesHeader;
 
 htmlSide1 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Klassens resultater</h2>`;
 
 htmlSide1 += `
-<div style="margin-top: 15px;">
+<div style="margin-top: 25px;">
     <table style="table-layout: fixed; width: 100%; border-collapse: collapse;">
         <thead>
             <tr style="background: none;">
-                <td style="border: none; width: 100px;"></td> `;
+                <td style="border: none; width: 100px;"></td>`;
 
 // Lag søylene for hver oppgave
 oppsett.oppgaver.forEach((o, i) => {
     const snitt = oppgaveSummer[i] / antall;
     const prosent = (snitt / o.maks) * 100;
     
-    // Her beregner vi grensen. Hvis grense er -1 (mangler), setter vi den til 0 for å unngå feil, 
-    // men vanligvis har disse prøvene en verdi.
-    const grenseVerdi = (o.grense && o.grense !== -1) ? o.grense : 0;
+    // Håndter grenseverdi for å sikre at rød strek tegnes
+    const grenseVerdi = (o.grense !== undefined && o.grense !== -1) ? o.grense : 0;
     const grenseProsent = (grenseVerdi / o.maks) * 100;
 
     htmlSide1 += `
-        <td style="border: none; vertical-align: bottom; height: 120px; padding: 0;">
+        <td style="border: none; vertical-align: bottom; height: 130px; padding: 0;">
             <div style="position: relative; width: 100%; height: 100px;">
+                
+                <div style="position: absolute; top: -25px; left: 0; right: 0; text-align: center; font-size: 11px; font-weight: bold; color: #2c3e50;">
+                    ${prosent.toFixed(0)}%
+                </div>
+
                 <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 35px; height: 100%; background: #f9f9f9; border-radius: 2px 2px 0 0; z-index: 0;"></div>
                 
-                <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 35px; height: ${prosent}%; background: #3498db; border-radius: 2px 2px 0 0; z-index: 1;">
-                    <span style="position: absolute; top: -20px; left: -10px; right: -10px; text-align: center; font-size: 10px; font-weight: bold; color: #2c3e50; white-space: nowrap;">${prosent.toFixed(0)}%</span>
-                </div>
+                <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 35px; height: ${prosent}%; background: #3498db; border-radius: 2px 2px 0 0; z-index: 1;"></div>
                 
-                ${grenseVerdi >= 0 ? `
-                    <div style="position: absolute; bottom: ${grenseProsent}%; left: 50%; transform: translateX(-50%); width: 45px; border-bottom: 2px dashed #e74c3c; z-index: 10 !important; pointer-events: none;"></div>
-                ` : ''}
+                <div style="position: absolute; bottom: ${grenseProsent}%; left: 50%; transform: translateX(-50%); width: 45px; border-bottom: 2px dashed #e74c3c; z-index: 5;"></div>
             </div>
         </td>`;
 });
@@ -1324,13 +1325,15 @@ const totalGrenseProsent = (oppsett.grenseTotal / totalMaksMulig) * 100;
 htmlSide1 += `
                 <td style="border: none; vertical-align: bottom; padding: 0;">
                     <div style="position: relative; width: 100%; height: 100px;">
+                        <div style="position: absolute; top: -25px; left: 0; right: 0; text-align: center; font-size: 11px; font-weight: bold; color: #2c3e50;">
+                            ${totalKlasseSnittProsent.toFixed(0)}%
+                        </div>
+
                         <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 40px; height: 100%; background: #eee; border-radius: 2px 2px 0 0; z-index: 0; border: 1px solid #ddd;"></div>
                         
-                        <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 40px; height: ${totalKlasseSnittProsent}%; background: #2c3e50; border-radius: 2px 2px 0 0; z-index: 1;">
-                             <span style="position: absolute; top: -20px; left: -10px; right: -10px; text-align: center; font-size: 10px; font-weight: bold; color: #2c3e50; white-space: nowrap;">${totalKlasseSnittProsent.toFixed(0)}%</span>
-                        </div>
+                        <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 40px; height: ${totalKlasseSnittProsent}%; background: #2c3e50; border-radius: 2px 2px 0 0; z-index: 1;"></div>
                         
-                        <div style="position: absolute; bottom: ${totalGrenseProsent}%; left: 50%; transform: translateX(-50%); width: 50px; border-bottom: 2px solid #e74c3c; z-index: 2;"></div>
+                        <div style="position: absolute; bottom: ${totalGrenseProsent}%; left: 50%; transform: translateX(-50%); width: 50px; border-bottom: 2px solid #e74c3c; z-index: 5;"></div>
                     </div>
                 </td>
             </tr>
