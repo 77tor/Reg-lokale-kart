@@ -1568,15 +1568,14 @@ if (!harSvakheter) {
 htmlSide3 += `</div>`;
 
 
-// --- SIDE 4: UTVIKLING OVER TID (Tydeligere linjer 50-100%) ---
-// --- SIDE 4: UTVIKLING OVER TID (Korrigerte år/trinn-logikk) ---
+
+// --- SIDE 4: UTVIKLING OVER TID (Korrigerte snitt-beregninger) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
 try {
     const histSnap = await db.ref(`kartlegging`).once('value');
     const alleData = histSnap.val() || {};
     let historikkRader = [];
 
-    // Finn nåværende trinn som et tall (f.eks. "2" -> 2)
     const naaTrinnTall = parseInt(trinn);
     const naaAarStart = parseInt(aar.split('-')[0]);
 
@@ -1585,19 +1584,18 @@ try {
         const fData = alleData[aKey][fag];
         if (!fData) continue;
 
-        // BEREGN TRINN FOR DETTE HISTORISKE ÅRET
-        // Eks: Hvis vi er i 2025 (2. trinn) og ser på data fra 2024, må vi se på 1. trinn.
         const histAarStart = parseInt(aKey.split('-')[0]);
         const aarDiff = naaAarStart - histAarStart;
         const historiskTrinn = (naaTrinnTall - aarDiff).toString();
 
-        // Hopp over hvis klassen ikke eksisterte ennå (trinn < 1)
         if (parseInt(historiskTrinn) < 1) continue;
 
-        for (const pKey of Object.keys(fData)) {
+        // Sorter perioder så Høst kommer før Vår i historikken
+   const perioder = Object.keys(fData).sort((a, b) => a.localeCompare(b));
+
+        for (const pKey of perioder) {
             if (aKey === aar && pKey === "Vår" && periode === "Høst") continue;
             
-            // Bruk det beregnede historiske trinnet her
             const trinnData = fData[pKey][historiskTrinn];
             if (!trinnData) continue;
 
@@ -1605,31 +1603,37 @@ try {
             if (!aOppsett) continue;
             const aMaks = aOppsett.oppgaver.reduce((s, o) => s + (o.maks || 0), 0);
 
-            let klasseSum = 0; let klasseAntall = 0; 
-            let klasseKritiske = 0; let klasseLavMestring = 0; 
-            let totalProveSum = 0; let totalProveAntall = 0; 
+            let klasseSum = 0; 
+            let klasseAntall = 0; 
+            let klasseKritiske = 0; 
+            let klasseLavMestring = 0; 
+            let totalProveSum = 0; 
+            let totalProveAntall = 0; 
 
             Object.keys(trinnData).forEach(kNavn => {
                 const kData = trinnData[kNavn];
-                const kElever = Object.keys(kData).filter(n => {
-                    const e = elevRegister[n];
-                    if (!e) return false; 
-                    // Sjekker at eleven faktisk tilhører registeret og ikke er slettet
-                    return kData[n].oppgaver && !kData[n].slettet;
-                });
                 
-                kElever.forEach(n => {
-                    const eSum = kData[n].sum || 0;
+                Object.keys(kData).forEach(n => {
+                    const elevResultat = kData[n];
+                    
+                    // --- VIKTIG FILTER: Tell kun elever som har gjennomført og ikke er slettet ---
+                    if (elevResultat.slettet || elevResultat.ikkeGjennomfort || elevResultat.sum === undefined) {
+                        return; // Hopper over denne eleven i snittberegningen
+                    }
+
+                    const eSum = elevResultat.sum || 0;
                     const eProsent = (eSum / aMaks) * 100;
                     
-                    // Samle data for ALLE klasser på det trinnet det året for snitt-linjen
+                    // Data for trinnsnitt (alle klasser)
                     totalProveSum += eSum;
                     totalProveAntall++;
 
-                    // Velg ut KUN den spesifikke klassen (f.eks "A")
+                    // Data for den spesifikke klassen (f.eks "A")
                     if (kNavn === klasse) {
                         klasseSum += eSum;
                         klasseAntall++;
+                        
+                        // Kritiske grenser
                         if (eSum <= aOppsett.grenseTotal) {
                             klasseKritiske++;
                         } else if (eProsent < 70) {
@@ -1639,10 +1643,11 @@ try {
                 });
             });
 
+            // Legg kun til rader hvis det faktisk finnes gjennomførte prøver
             if (klasseAntall > 0) {
                 historikkRader.push({ 
-                    visning: `${pKey} ${aKey}`, 
-                    tittel: `${historiskTrinn}${klasse}`, // Viser f.eks "1A" i tabellen
+                    visning: `${pKey} ${aKey.slice(-2)}`, 
+                    tittel: `${historiskTrinn}${klasse}`,
                     klasseProsent: ((klasseSum / klasseAntall) / aMaks) * 100,
                     proveProsent: ((totalProveSum / totalProveAntall) / aMaks) * 100,
                     kritiske: klasseKritiske, 
@@ -1652,6 +1657,9 @@ try {
             }
         }
     }
+    
+    // Sortering og tegning av diagram/tabell fortsetter som før...
+    // (Resten av koden for SVG og tabell-generering)
     
     historikkRader.sort((a,b) => a.sort.localeCompare(b.sort));
 
