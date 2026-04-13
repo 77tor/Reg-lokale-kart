@@ -769,78 +769,74 @@ function visModal(navn) {
     const container = document.getElementById('oppgaveFelter');
     container.innerHTML = "";
     
-    // Hent lagret data for denne eleven
     const d = lagredeResultater[navn] || {};
     const eksisterende = d.oppgaver || [];
     const erIkkeGjennomfort = d.ikkeGjennomfort === true;
 
-    // 1. Oppdater checkboxen basert på lagret data
-    const checkBoks = document.getElementById('ikkeGjennomfort');
-    if (checkBoks) {
-        checkBoks.checked = erIkkeGjennomfort;
-    }
-
-    // 2. Lag oppgavefeltene
     oppsett.oppgaver.forEach((o, i) => {
         const poeng = eksisterende[i] !== undefined ? eksisterende[i] : "";
         const deaktivert = erIkkeGjennomfort ? 'disabled' : '';
         
-        // --- NY LOGIKK FOR FARGE ---
-        // Sjekker om poeng er under eller lik grensen (kun hvis grense ikke er -1)
+        // Sjekk initial farge hvis data finnes
         const erUnderGrense = (o.grense !== -1 && poeng !== "" && poeng <= o.grense);
         const fargeStil = erUnderGrense ? 'background-color: #ffdce0; border: 1px solid red;' : '';
-        const opacityStil = erIkkeGjennomfort ? 'opacity:0.3;' : '';
-
-        const navnMedHjelp = o.bilde 
-            ? `<span class="hjelpe-ikon-tekst">${o.navn} ℹ️
-                 <img src="${o.bilde}" class="oppgave-preview-bilde">
-               </span>` 
-            : o.navn;
 
         container.innerHTML += `
-            <div class="oppgave-rad" style="margin-bottom:4px; ${opacityStil} display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dotted #eee; padding-bottom: 2px;">
-                <label style="cursor: help;">
-                    ${navnMedHjelp}:
-                </label>
-                <input type="number" class="oppg-input" data-index="${i}" min="0" max="${o.maks}" 
-                value="${poeng}" 
-                ${deaktivert} 
-                style="width:65px; padding: 5px; text-align: center; ${fargeStil}"
-                oninput="validerInputGrense(this, ${o.grense})">
+            <div class="oppgave-rad" style="margin-bottom:8px; display: flex; flex-direction: column; border-bottom: 1px dotted #eee; padding-bottom: 5px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label style="font-size: 13px;">${o.navn} <small>(maks ${o.maks})</small>:</label>
+                    <input type="number" 
+                        class="oppg-input" 
+                        data-index="${i}" 
+                        min="0" 
+                        max="${o.maks}" 
+                        value="${poeng}" 
+                        ${deaktivert} 
+                        style="width:65px; padding: 5px; text-align: center; ${fargeStil}"
+                        oninput="validerInputPoeng(this, ${o.grense}, ${o.maks})">
+                </div>
+                <div id="error-${i}" class="input-error-msg"></div>
             </div>`;
     });
 
     document.getElementById('modal').style.display = 'block';
-
-    // 3. Sett fokus på første feltet
-    setTimeout(() => {
-        const førsteInput = container.querySelector('.oppg-input');
-        if (førsteInput && !erIkkeGjennomfort) {
-            førsteInput.focus();
-            førsteInput.select();
-        }
-    }, 100);
 }
 
-// --- HJELPEFUNKSJON FOR SANNTIDS-VALIDERING ---
-function validerInputGrense(input, grense) {
+function validerInputPoeng(input, grense, maks) {
     const verdi = input.value;
-    
-    // Hvis feltet er tomt, fjern farge
-    if (verdi === "") {
-        input.style.backgroundColor = "";
-        input.style.border = "1px solid #ccc";
+    const poeng = parseInt(verdi);
+    const errorDiv = document.getElementById(`error-${input.dataset.index}`);
+    const lagreKnapp = document.getElementById('lagreKnapp'); // Antar knappen din heter dette
+
+    // Nullstill feilmelding og stil
+    errorDiv.innerText = "";
+    input.classList.remove('input-invalid');
+    input.style.backgroundColor = "";
+    input.style.border = "1px solid #ccc";
+
+    if (verdi === "") return;
+
+    // 1. Sjekk om poeng er høyere enn maks
+    if (poeng > maks) {
+        input.classList.add('input-invalid');
+        errorDiv.innerText = `⚠️ Kan ikke være mer enn ${maks}`;
+        // Deaktiver lagre-knappen så man ikke kan lagre feil
+        if(lagreKnapp) lagreKnapp.disabled = true;
         return;
     }
 
-    const poeng = parseInt(verdi);
-    // Hvis grensen er aktiv (-1 betyr ingen grense) og poeng er under/lik grense
+    // 2. Hvis poeng er OK, sjekk om alle andre felter også er OK før vi re-aktiverer lagring
+    const alleInputs = document.querySelectorAll('.oppg-input');
+    let harFeil = false;
+    alleInputs.forEach(inp => {
+        if(parseInt(inp.value) > parseInt(inp.max)) harFeil = true;
+    });
+    if(lagreKnapp) lagreKnapp.disabled = harFeil;
+
+    // 3. Farge-logikk for kritisk grense (hvis poeng er gyldig)
     if (grense !== -1 && poeng <= grense) {
-        input.style.backgroundColor = "#ffdce0"; // Lys rød
+        input.style.backgroundColor = "#ffdce0";
         input.style.border = "1px solid red";
-    } else {
-        input.style.backgroundColor = ""; // Standard hvit
-        input.style.border = "1px solid #ccc";
     }
 }
 
