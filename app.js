@@ -1590,35 +1590,29 @@ try {
 
             let klasseSum = 0; let klasseAntall = 0; 
             let klasseKritiske = 0; let klasseLavMestring = 0; 
-            let totalProveSum = 0; let totalProveAntall = 0; // Samler data for alle klasser
+            let totalProveSum = 0; let totalProveAntall = 0; 
 
             const historiskStartAar = parseInt(aKey.split('-')[0]);
 
             Object.keys(trinnData).forEach(kNavn => {
                 const kData = trinnData[kNavn];
-                
                 const kElever = Object.keys(kData).filter(n => {
                     const e = elevRegister[n];
                     if (!e) return false; 
-
                     const harBegynt = historiskStartAar >= parseInt(e.startAar);
                     const harIkkeSluttet = !e.sluttAar || historiskStartAar <= parseInt(e.sluttAar);
-                    
                     return kData[n].oppgaver && !kData[n].slettet && harBegynt && harIkkeSluttet;
                 });
                 
                 kElever.forEach(n => {
                     const eSum = kData[n].sum || 0;
                     const eProsent = (eSum / aMaks) * 100;
-                    
-                    // Legger til i totalsnittet for denne prøven (alle klasser)
                     totalProveSum += eSum;
                     totalProveAntall++;
 
                     if (kNavn === klasse) {
                         klasseSum += eSum;
                         klasseAntall++;
-                        
                         if (eSum <= aOppsett.grenseTotal) {
                             klasseKritiske++;
                         } else if (eProsent < 70) {
@@ -1632,7 +1626,7 @@ try {
                 historikkRader.push({ 
                     visning: `${pKey} ${aKey}`, 
                     klasseProsent: ((klasseSum / klasseAntall) / aMaks) * 100,
-                    proveProsent: ((totalProveSum / totalProveAntall) / aMaks) * 100, // Snitt av alle i alle klasser
+                    proveProsent: ((totalProveSum / totalProveAntall) / aMaks) * 100,
                     kritiske: klasseKritiske, 
                     lavMestring: klasseLavMestring,
                     sort: aKey + (pKey === "Høst" ? "1" : "2")
@@ -1644,36 +1638,38 @@ try {
     historikkRader.sort((a,b) => a.sort.localeCompare(b.sort));
 
     if (historikkRader.length > 0) {
-        htmlSide4 += `
-            <table>
-                <thead>
-                    <tr>
-                        <th>Periode</th>
-                        <th>Klasse (%)</th>
-                        <th>Prøve (%)</th>
-                        <th>Diff.</th>
-                        <th>Lav mestring</th>
-                        <th>Under kritisk grense</th>
-                    </tr>
-                </thead>
-                <tbody>`;
+        // --- NYTT: GENERERER SØYLEDIAGRAM HER ---
+        htmlSide4 += `<div class="chart-container" style="height: 180px; margin-bottom: 40px; border-bottom: 2px solid #ccc;">`;
+        htmlSide4 += `<div style="width: 50px;"></div>`; // Luft på venstre side
+
+        historikkRader.forEach(r => {
+            const erAktiv = r.visning === `${periode} ${aar}`;
+            const barFarge = erAktiv ? "#3498db" : "#bdc3c7"; // Blå for valgt periode, grå for historikk
+            
+            htmlSide4 += `
+                <div class="bar-wrapper">
+                    <div class="bar-value" style="font-size: 10px;">${r.klasseProsent.toFixed(0)}%</div>
+                    <div class="bar-track" style="width: 40px; height: 120px;">
+                        <div class="bar-fill" style="height: ${r.klasseProsent}%; background: ${barFarge};"></div>
+                        <div class="target-line" style="bottom: ${r.proveProsent}%; border-top: 2px solid #333; opacity: 0.6;" title="Prøvesnitt: ${r.proveProsent.toFixed(1)}%"></div>
+                    </div>
+                    <div class="bar-label" style="font-size: 9px; white-space: nowrap;">${r.visning}</div>
+                </div>`;
+        });
+        htmlSide4 += `</div>`;
+        // --- SLUTT PÅ SØYLEDIAGRAM ---
+
+        // Tabellen starter under diagrammet
+        htmlSide4 += `<table><thead><tr><th>Periode</th><th>Klasse (%)</th><th>Prøve (%)</th><th>Diff.</th><th>Lav mestring</th><th>Under kritisk grense</th></tr></thead><tbody>`;
 
         historikkRader.forEach(r => {
             const aktiv = r.visning === `${periode} ${aar}` ? 'style="background:#e8f4fd; font-weight:bold;"' : '';
             const diff = r.klasseProsent - r.proveProsent;
-            
-            htmlSide4 += `
-                <tr ${aktiv}>
-                    <td>${r.visning}</td>
-                    <td>${r.klasseProsent.toFixed(1)}%</td>
-                    <td style="color:#666;">${r.proveProsent.toFixed(1)}%</td>
-                    <td style="color:${diff >= 0 ? 'green':'red'}; font-weight:bold;">${diff >= 0 ? '+':''}${diff.toFixed(1)}%</td>
-                    <td>${r.lavMestring}</td>
-                    <td style="${r.kritiske > 0 ? 'color:red; font-weight:bold;' : ''}">${r.kritiske}</td>
-                </tr>`;
+            htmlSide4 += `<tr ${aktiv}><td>${r.visning}</td><td>${r.klasseProsent.toFixed(1)}%</td><td style="color:#666;">${r.proveProsent.toFixed(1)}%</td><td style="color:${diff >= 0 ? 'green':'red'}; font-weight:bold;">${diff >= 0 ? '+':''}${diff.toFixed(1)}%</td><td>${r.lavMestring}</td><td style="${r.kritiske > 0 ? 'color:red; font-weight:bold;' : ''}">${r.kritiske}</td></tr>`;
         });
         htmlSide4 += `</tbody></table>`;
 
+        // Resten av logikken for tekst-boksene (Intern utvikling / Mot prøvesnitt)
         const siste = historikkRader[historikkRader.length - 1];
         let utviklingTekst = "Første måling.";
         let utviklingFarge = "#2980b9";
@@ -1710,6 +1706,7 @@ try {
     htmlSide4 += `<p>Kunne ikke laste historikk.</p>`;
 }
 // --- SIDE 4 FERDIG ---
+
 
 // --- GENERER ENDELIG HTML ---
         const win = window.open('', '_blank');
