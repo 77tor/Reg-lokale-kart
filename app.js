@@ -1317,10 +1317,8 @@ htmlSide1 += `
         <div class="bar-label"><b>TOTAL</b></div>
     </div></div>`;
 
-// Overskrift 2 - Nå også som h2, sentrert og med litt luft over
-htmlSide1 += `<h2 style="text-align:center; color:#2c3e50; margin-top:30px;">Klassens resultater</h2>`;
-
-htmlSide1 += `<table><thead><tr><th class="col-navn">Oppgave</th>`;
+// Tabellen starter nå direkte etter diagram-containeren (ingen mellomliggende overskrift)
+htmlSide1 += `<div style="margin-top: 10px;"><table><thead><tr><th class="col-navn">Oppgave</th>`;
 oppsett.oppgaver.forEach((o, i) => {
     let visningsNavn = (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) 
         ? gjeldendeMalTabell.oppgaver[i + 1].navn : o.navn;
@@ -1360,14 +1358,14 @@ htmlSide1 += `<th class="col-sum">TOTAL</th></tr></thead><tbody>
         });
         htmlSide1 += `<td class="col-sum">${totalKlasseSnittProsent.toFixed(0)}%</td>
     </tr>
-</tbody></table>`;
+</tbody></table></div>`;
 
-// NYTT: Sjekkliste og Refleksjon i to kolonner under tabellen
+// Sjekkliste og Refleksjon i to kolonner
 htmlSide1 += `
-<div style="margin-top: 35px; display: flex; gap: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+<div style="margin-top: 30px; display: flex; gap: 30px; border-top: 2px solid #eee; padding-top: 20px;">
     <div style="flex: 1;">
-        <h3 style="color: #2c3e50; font-size: 16px; margin-top: 0;">Sjekkliste etter prøven</h3>
-        <ul style="list-style: none; padding: 0; font-size: 12.5px; line-height: 1.5; color: #444;">
+        <h3 style="color: #2c3e50; font-size: 16px; margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 5px;">Sjekkliste etter prøven</h3>
+        <ul style="list-style: none; padding: 0; font-size: 12px; line-height: 1.4; color: #444;">
             <li style="margin-bottom: 8px;"><b>✓</b> se nærmere på resultatene til elever som skårer under eller like over bekymringsgrensen</li>
             <li style="margin-bottom: 8px;"><b>✓</b> vurdere hva de klarer / ikke klarer på de enkelte prøvene/oppgavene</li>
             <li style="margin-bottom: 8px;"><b>✓</b> se resultatene i sammenheng med annen informasjon om eleven, blant annet observasjoner gjort under prøven</li>
@@ -1375,8 +1373,8 @@ htmlSide1 += `
         </ul>
     </div>
     <div style="flex: 1;">
-        <h3 style="color: #2c3e50; font-size: 16px; margin-top: 0;">Spørsmål til refleksjon og diskusjon</h3>
-        <ul style="list-style: none; padding: 0; font-size: 12.5px; line-height: 1.5; color: #444;">
+        <h3 style="color: #2c3e50; font-size: 16px; margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 5px;">Spørsmål til refleksjon og diskusjon</h3>
+        <ul style="list-style: none; padding: 0; font-size: 12px; line-height: 1.4; color: #444;">
             <li style="margin-bottom: 6px;"><b>✓</b> Er resultatet som forventet?</li>
             <li style="margin-bottom: 6px;"><b>✓</b> Ser vi mønstre/tendenser i resultatene på trinnet?</li>
             <li style="margin-bottom: 6px;"><b>✓</b> Har vi annen informasjon som bekrefter eller avkrefter resultatene fra kartleggingsprøven?</li>
