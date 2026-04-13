@@ -1291,7 +1291,7 @@ htmlSide1 += `
     <table style="table-layout: fixed; width: 100%; border-collapse: collapse;">
         <thead>
             <tr style="background: none;">
-                <td style="border: none; width: 100px;"></td> `;
+                <td style="border: none; width: 100px;"></td>`;
 
 // Lag søylene for hver oppgave
 oppsett.oppgaver.forEach((o, i) => {
@@ -1305,7 +1305,7 @@ oppsett.oppgaver.forEach((o, i) => {
                 <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 35px; height: 100%; background: #f9f9f9; border-radius: 2px 2px 0 0; z-index: 0;"></div>
                 
                 <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 35px; height: ${prosent}%; background: #3498db; border-radius: 2px 2px 0 0; z-index: 1;">
-                    <span style="position: absolute; top: -18px; left: 0; right: 0; text-align: center; font-size: 10px; font-weight: bold; color: #2c3e50;">${prosent.toFixed(0)}%</span>
+                    <span style="position: absolute; top: -20px; left: -10px; right: -10px; text-align: center; font-size: 10px; font-weight: bold; color: #2c3e50; white-space: nowrap;">${prosent.toFixed(0)}%</span>
                 </div>
                 
                 ${o.grense !== -1 ? `
@@ -1323,82 +1323,14 @@ htmlSide1 += `
                         <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 40px; height: 100%; background: #eee; border-radius: 2px 2px 0 0; z-index: 0; border: 1px solid #ddd;"></div>
                         
                         <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 40px; height: ${totalKlasseSnittProsent}%; background: #2c3e50; border-radius: 2px 2px 0 0; z-index: 1;">
-                             <span style="position: absolute; top: -18px; left: 0; right: 0; text-align: center; font-size: 10px; font-weight: bold; color: #2c3e50;">${totalKlasseSnittProsent.toFixed(0)}%</span>
+                             <span style="position: absolute; top: -20px; left: -10px; right: -10px; text-align: center; font-size: 10px; font-weight: bold; color: #2c3e50; white-space: nowrap;">${totalKlasseSnittProsent.toFixed(0)}%</span>
                         </div>
                         
                         <div style="position: absolute; bottom: ${totalGrenseProsent}%; left: 50%; transform: translateX(-50%); width: 50px; border-bottom: 2px solid #e74c3c; z-index: 2;"></div>
                     </div>
                 </td>
             </tr>
-            
-            <tr>
-                <th class="col-navn" style="width: 100px;">Oppgave</th>`;
-                oppsett.oppgaver.forEach((o, i) => {
-                    let visningsNavn = (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) 
-                        ? gjeldendeMalTabell.oppgaver[i + 1].navn : o.navn;
-                    htmlSide1 += `<th>${visningsNavn}</th>`;
-                });
-                htmlSide1 += `<th class="col-sum">TOTAL</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr style="background-color: #ebf9f1;">
-                <td class="col-navn"><b>Maks poengsum</b></td>`;
-                oppsett.oppgaver.forEach(o => {
-                    htmlSide1 += `<td>${o.maks}</td>`;
-                });
-                htmlSide1 += `<td class="col-sum"><b>${totalMaksMulig}</b></td>
-            </tr>
-            <tr style="background-color: #fff5f5;">
-                <td class="col-navn"><b>Kritisk grense</b></td>`;
-                oppsett.oppgaver.forEach(o => {
-                    htmlSide1 += `<td>${o.grense !== -1 ? o.grense : '-'}</td>`;
-                });
-                htmlSide1 += `<td class="col-sum"><b>${oppsett.grenseTotal}</b></td>
-            </tr>
-            <tr style="font-weight: bold;">
-                <td class="col-navn">Snitt for klassen</td>`;
-                oppgaveSummer.forEach(s => {
-                    htmlSide1 += `<td>${(s/antall).toFixed(1)}</td>`;
-                });
-                htmlSide1 += `<td class="col-sum">${(totalSumKlasse/antall).toFixed(1)}</td>
-            </tr>
-            <tr style="font-weight: bold;">
-                <td class="col-navn">I % av maks</td>`;
-                oppgaveSummer.forEach((s, i) => {
-                    htmlSide1 += `<td>${((s/antall)/oppsett.oppgaver[i].maks*100).toFixed(0)}%</td>`;
-                });
-                htmlSide1 += `<td class="col-sum">${totalKlasseSnittProsent.toFixed(0)}%</td>
-            </tr>
-        </tbody>
-    </table>
-</div>`;
-
-// Overskrift 2
-htmlSide1 += `<h2 style="text-align:center; color:#2c3e50; margin-top:30px;">Refleksjonsspørsmål</h2>`;
-
-// Sjekkliste og Refleksjon
-htmlSide1 += `
-<div style="margin-top: 25px; display: flex; gap: 20px; border-top: 1px solid #eee; padding-top: 15px;">
-    <div style="flex: 1; background: #fcfcfc; padding: 10px; border-radius: 4px;">
-        <h3 style="color: #2c3e50; font-size: 14px; margin: 0 0 10px 0;">Sjekkliste etter prøven</h3>
-        <ul style="list-style: none; padding: 0; font-size: 11px; line-height: 1.4; color: #444;">
-            <li style="margin-bottom: 5px;"><b>✓</b> se nærmere på resultatene til elever under eller like over grensen</li>
-            <li style="margin-bottom: 5px;"><b>✓</b> vurdere hva de klarer / ikke klarer på de enkelte oppgavene</li>
-            <li style="margin-bottom: 5px;"><b>✓</b> se resultatene i sammenheng med observasjoner gjort under prøven</li>
-            <li style="margin-bottom: 5px;"><b>✓</b> gi tilbakemelding til elever og foreldre om videre oppfølging</li>
-        </ul>
-    </div>
-    <div style="flex: 1; background: #fcfcfc; padding: 10px; border-radius: 4px;">
-        <h3 style="color: #2c3e50; font-size: 14px; margin: 0 0 10px 0;">Spørsmål til refleksjon</h3>
-        <ul style="list-style: none; padding: 0; font-size: 11px; line-height: 1.4; color: #444;">
-            <li style="margin-bottom: 4px;"><b>✓</b> Er resultatet som forventet?</li>
-            <li style="margin-bottom: 4px;"><b>✓</b> Ser vi mønstre eller tendenser i resultatene?</li>
-            <li style="margin-bottom: 4px;"><b>✓</b> Hvilke konsekvenser får dette for videre arbeid?</li>
-            <li style="margin-bottom: 4px;"><b>✓</b> Hvilke tiltak iverksettes for de under eller rett over kritisk grense?</li>
-        </ul>
-    </div>
-</div>`;
+            `;
 // --- SLUTT PÅ SIDE 1
  
 // --- SIDE 2: ELEVOVERSIKT (Optimalisert for mange oppgaver) ---
