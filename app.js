@@ -2501,7 +2501,32 @@ async function genererKlasserapport() {
         `<p style="color:green; font-weight:bold;">✅ Fant data for ${lagretKullData.length} prøveperioder. Klar for utskrift!</p>`;
 }
 
+async function aapneKlasserapportModal() {
+    const kullSelect = document.getElementById('selectKullAar');
+    if (!kullSelect) return;
+    kullSelect.innerHTML = '';
+    
+    let unikeKull = new Set();
+    for (let id in window.elevRegister) {
+        const e = window.elevRegister[id];
+        const faktiskSkolestart = parseInt(e.startAar) - (parseInt(e.startTrinn) - 1);
+        if (faktiskSkolestart) unikeKull.add(faktiskSkolestart);
+    }
 
+    let sorterteStartAar = Array.from(unikeKull).sort((a, b) => a - b);
+    sorterteStartAar.forEach(skoleStartAar => {
+        const fødtAar = skoleStartAar - 6;
+        let opt = document.createElement('option');
+        opt.value = fødtAar; 
+        opt.text = `Født i ${fødtAar} / Skolestart ${skoleStartAar}`;
+        kullSelect.appendChild(opt);
+    });
+
+    if (kullSelect.options.length > 0) {
+        kullSelect.selectedIndex = kullSelect.options.length - 1;
+    }
+    document.getElementById('modalKlasserapport').style.display = 'block';
+}
 
 function tegnKlasseChart(dataPoints) {
     const ctx = document.getElementById('chartKlasseUtvikling').getContext('2d');
