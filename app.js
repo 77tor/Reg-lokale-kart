@@ -1285,7 +1285,7 @@ elever.forEach(navn => {
 let htmlSide1 = fellesHeader;
 // Overskrift 1 - Nå som h2 og sentrert
 htmlSide1 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Gjennomsnittlig skår per oppgave (%)</h2>`;
-htmlSide1 += `<div class="chart-container">`;
+htmlSide1 += `<div class="chart-container" style="margin-bottom: 0; padding-bottom: 5px;">`; // Redusert bunnmargin på diagrammet
 
 // Viktig: Denne tomme div-en lager avstand på venstre side slik at første søyle ikke klistrer seg til kanten
 htmlSide1 += `<div style="width: 50px;"></div>`; 
@@ -1317,8 +1317,8 @@ htmlSide1 += `
         <div class="bar-label"><b>TOTAL</b></div>
     </div></div>`;
 
-// Tabellen starter nå direkte etter diagram-containeren (ingen mellomliggende overskrift)
-htmlSide1 += `<div style="margin-top: 10px;"><table><thead><tr><th class="col-navn">Oppgave</th>`;
+// Tabellen starter nå umiddelbart etter diagrammet med minimal avstand
+htmlSide1 += `<div style="margin-top: 0;"><table><thead><tr><th class="col-navn">Oppgave</th>`;
 oppsett.oppgaver.forEach((o, i) => {
     let visningsNavn = (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) 
         ? gjeldendeMalTabell.oppgaver[i + 1].navn : o.navn;
