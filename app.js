@@ -1282,6 +1282,7 @@ elever.forEach(navn => {
 
 
 // --- SIDE 1: HOVEDANALYSE OG TABELL ---
+// --- SIDE 1: HOVEDANALYSE OG TABELL ---
 let htmlSide1 = fellesHeader;
 
 htmlSide1 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Klassens resultater</h2>`;
