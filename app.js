@@ -1282,14 +1282,12 @@ elever.forEach(navn => {
 
 
 // --- SIDE 1: HOVEDANALYSE OG TABELL ---
-// --- SIDE 1: HOVEDANALYSE OG TABELL ---
 let htmlSide1 = fellesHeader;
 
 htmlSide1 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Klassens resultater</h2>`;
 
 htmlSide1 += `
-<div style="margin-top: 25px;">
-    <table style="table-layout: fixed; width: 100%; border-collapse: collapse;">
+<div style="margin-top: 40px;"> <table style="table-layout: fixed; width: 100%; border-collapse: collapse;">
         <thead>
             <tr style="background: none;">
                 <td style="border: none; width: 100px;"></td>`;
@@ -1299,23 +1297,22 @@ oppsett.oppgaver.forEach((o, i) => {
     const snitt = oppgaveSummer[i] / antall;
     const prosent = (snitt / o.maks) * 100;
     
-    // Håndter grenseverdi for å sikre at rød strek tegnes
-    const grenseVerdi = (o.grense !== undefined && o.grense !== -1) ? o.grense : 0;
-    const grenseProsent = (grenseVerdi / o.maks) * 100;
+    // Beregn grense i prosent av oppgavens maks-poeng
+    const grensePoeng = (o.grense !== undefined && o.grense !== -1) ? o.grense : 0;
+    const grenseProsent = (grensePoeng / o.maks) * 100;
 
     htmlSide1 += `
-        <td style="border: none; vertical-align: bottom; height: 130px; padding: 0;">
-            <div style="position: relative; width: 100%; height: 100px;">
-                
-                <div style="position: absolute; top: -25px; left: 0; right: 0; text-align: center; font-size: 11px; font-weight: bold; color: #2c3e50;">
-                    ${prosent.toFixed(0)}%
-                </div>
+        <td style="border: none; vertical-align: bottom; height: 100px; padding: 0; position: relative;">
+            <div style="position: absolute; top: -25px; left: 0; right: 0; text-align: center; font-size: 11px; font-weight: bold; color: #2c3e50; z-index: 10;">
+                ${prosent.toFixed(0)}%
+            </div>
 
-                <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 35px; height: 100%; background: #f9f9f9; border-radius: 2px 2px 0 0; z-index: 0;"></div>
+            <div style="position: relative; width: 100%; height: 100px; display: flex; align-items: flex-end; justify-content: center;">
+                <div style="position: absolute; bottom: 0; width: 35px; height: 100%; background: #f9f9f9; border-radius: 2px 2px 0 0; z-index: 0;"></div>
                 
-                <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 35px; height: ${prosent}%; background: #3498db; border-radius: 2px 2px 0 0; z-index: 1;"></div>
+                <div style="position: relative; width: 35px; height: ${prosent}%; background: #3498db; border-radius: 2px 2px 0 0; z-index: 1;"></div>
                 
-                <div style="position: absolute; bottom: ${grenseProsent}%; left: 50%; transform: translateX(-50%); width: 45px; border-bottom: 2px dashed #e74c3c; z-index: 5;"></div>
+                <div style="position: absolute; bottom: ${grenseProsent}%; left: 50%; transform: translateX(-50%); width: 45px; border-bottom: 2px dashed #e74c3c !important; z-index: 20 !important;"></div>
             </div>
         </td>`;
 });
@@ -1323,29 +1320,29 @@ oppsett.oppgaver.forEach((o, i) => {
 // Søyle for TOTAL
 const totalGrenseProsent = (oppsett.grenseTotal / totalMaksMulig) * 100;
 htmlSide1 += `
-                <td style="border: none; vertical-align: bottom; padding: 0;">
-                    <div style="position: relative; width: 100%; height: 100px;">
-                        <div style="position: absolute; top: -25px; left: 0; right: 0; text-align: center; font-size: 11px; font-weight: bold; color: #2c3e50;">
-                            ${totalKlasseSnittProsent.toFixed(0)}%
-                        </div>
+                <td style="border: none; vertical-align: bottom; height: 100px; padding: 0; position: relative;">
+                    <div style="position: absolute; top: -25px; left: 0; right: 0; text-align: center; font-size: 11px; font-weight: bold; color: #2c3e50; z-index: 10;">
+                        ${totalKlasseSnittProsent.toFixed(0)}%
+                    </div>
 
-                        <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 40px; height: 100%; background: #eee; border-radius: 2px 2px 0 0; z-index: 0; border: 1px solid #ddd;"></div>
+                    <div style="position: relative; width: 100%; height: 100px; display: flex; align-items: flex-end; justify-content: center;">
+                        <div style="position: absolute; bottom: 0; width: 40px; height: 100%; background: #eee; border-radius: 2px 2px 0 0; z-index: 0; border: 1px solid #ddd;"></div>
                         
-                        <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 40px; height: ${totalKlasseSnittProsent}%; background: #2c3e50; border-radius: 2px 2px 0 0; z-index: 1;"></div>
+                        <div style="position: relative; width: 40px; height: ${totalKlasseSnittProsent}%; background: #2c3e50; border-radius: 2px 2px 0 0; z-index: 1;"></div>
                         
-                        <div style="position: absolute; bottom: ${totalGrenseProsent}%; left: 50%; transform: translateX(-50%); width: 50px; border-bottom: 2px solid #e74c3c; z-index: 5;"></div>
+                        <div style="position: absolute; bottom: ${totalGrenseProsent}%; left: 50%; transform: translateX(-50%); width: 50px; border-bottom: 2px solid #e74c3c !important; z-index: 20 !important;"></div>
                     </div>
                 </td>
             </tr>
             
             <tr>
-                <th class="col-navn" style="width: 100px;">Oppgave</th>`;
+                <th class="col-navn" style="width: 100px; padding-top: 10px;">Oppgave</th>`;
                 oppsett.oppgaver.forEach((o, i) => {
                     let visningsNavn = (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) 
                         ? gjeldendeMalTabell.oppgaver[i + 1].navn : o.navn;
-                    htmlSide1 += `<th>${visningsNavn}</th>`;
+                    htmlSide1 += `<th style="padding-top: 10px;">${visningsNavn}</th>`;
                 });
-                htmlSide1 += `<th class="col-sum">TOTAL</th>
+                htmlSide1 += `<th class="col-sum" style="padding-top: 10px;">TOTAL</th>
             </tr>
         </thead>
         <tbody>
