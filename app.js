@@ -3273,80 +3273,87 @@ async function genererFullElevrapport(navn) {
                  <div style="page-break-after: always;"></div>`;
 
         // --- DEL 2: DETALJER MED SIDESKIFT PER TRINN ---
-        let forrigeTrinn = null;
+let forrigeTrinn = null;
 
-        funnetData.forEach(d => {
-            const res = d.resultat;
-            const o = d.oppsett;
-            if (!o) return;
+funnetData.forEach(d => {
+    const res = d.resultat;
+    const o = d.oppsett;
+    if (!o) return;
 
-            // FIX: Beregn sideskift
-            let stilSideskift = "";
-            if (forrigeTrinn !== null && forrigeTrinn !== d.trinn) {
-                stilSideskift = "page-break-before: always; padding-top: 20px;";
-            }
-            forrigeTrinn = d.trinn; // Husk dette trinnet til neste runde i loopen
-
-            const erGjennomfort = res.oppgaver && res.oppgaver.length > 0 && res.ikkeGjennomfort !== true;
-            const malForDenne = analyseMaler[d.fag]?.[d.trinn]?.[d.periode]?.oppgaver || {};
-            const erRegning = d.fag === "Regning";
-
-            html += `
-                <div style="margin-bottom: 40px; ${stilSideskift}">
-                    <h3 style="text-transform: uppercase; font-size: 13px; border-bottom: 2px solid #333; padding-bottom: 3px; margin-bottom: 10px;">
-                        DETALJER: ${d.trinn}. TRINN - ${d.fag} (${d.periode} ${d.aar})
-                    </h3>
-                    <div style="background: #eee; padding: 4px; font-weight: bold; font-size: 11px; border: 1px solid #000; border-bottom: none; text-align: center;">
-                        ${d.fag} | ${d.trinn}${d.klasse} | ${d.periode} ${d.aar}
-                    </div>
-                    <table style="width:100%; border-collapse: collapse; table-layout: fixed;">
-                        <thead>
-                            <tr style="background: #fff;">
-                                <th style="border: 1px solid #000; padding: 3px; width: 90px; text-align: left; font-size: 10px;">Oppgave:</th>`;
-            
-            o.oppgaver.forEach((oppg, i) => {
-                const nr = (i + 1).toString();
-                const overskrift = erRegning ? "O" + nr : (malForDenne[nr]?.navn || oppg.navn);
-                html += `<th style="border: 1px solid #000; padding: 3px; font-size: 8px; text-align: center;">${overskrift}</th>`;
-            });
-
-            html += `<th style="border: 1px solid #000; padding: 3px; width: 40px; text-align: center; font-size: 10px;">SUM</th></tr></thead>
-                        <tbody><tr><td style="border: 1px solid #000; padding: 4px; font-size: 10px;">Poeng:</td>`;
-
-            if (erGjennomfort) {
-                o.oppgaver.forEach((oppg, i) => {
-                    const poeng = res.oppgaver[i] || 0;
-                    const kritisk = oppg.grense !== -1 && poeng <= oppg.grense;
-                    html += `<td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold; font-size: 11px; background: ${kritisk ? '#ffdce0' : 'transparent'};">${poeng}</td>`;
-                });
-                html += `<td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold; font-size: 11px; background: #f9f9f9;">${res.sum}</td>`;
-            } else {
-                html += `<td colspan="${o.oppgaver.length + 1}" style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold; font-size: 10px; color: #7f8c8d; background: #fafafa; letter-spacing: 2px;">IKKE GJENNOMFØRT</td>`;
-            }
-
-            html += `</tr></tbody></table>`;
-
-            if (erRegning) {
-                html += `<div style="display: flex; flex-wrap: wrap; margin-top: 3px; gap: 6px;">`;
-                o.oppgaver.forEach((oppg, i) => {
-                    const nr = (i + 1).toString();
-                    const navn = malForDenne[nr]?.navn || oppg.navn;
-                    html += `<span style="font-size: 7px; color: #555;"><strong>O${nr}:</strong> ${navn}</span> `;
-                });
-                html += `</div>`;
-            }
-            html += `</div>`;
-        });
-
-        html += `</div>`;
-        utskriftArea.innerHTML = html;
-        setTimeout(() => { window.print(); }, 800);
-        window.onafterprint = function() { utskriftArea.innerHTML = ""; };
-
-    } catch (error) {
-        console.error("Feil:", error);
+    let stilSideskift = "";
+    if (forrigeTrinn !== null && forrigeTrinn !== d.trinn) {
+        stilSideskift = "page-break-before: always; padding-top: 20px;";
     }
-}
+    forrigeTrinn = d.trinn;
+
+    const erGjennomfort = res.oppgaver && res.oppgaver.length > 0 && res.ikkeGjennomfort !== true;
+    const malForDenne = analyseMaler[d.fag]?.[d.trinn]?.[d.periode]?.oppgaver || {};
+    const erRegning = d.fag === "Regning";
+    
+    // Beregn maks totalt for denne spesifikke prøven
+    const maksTotal = o.oppgaver.reduce((sum, op) => sum + op.maks, 0);
+
+    html += `
+        <div style="margin-bottom: 40px; ${stilSideskift}">
+            <h3 style="text-transform: uppercase; font-size: 13px; border-bottom: 2px solid #333; padding-bottom: 3px; margin-bottom: 10px;">
+                DETALJER: ${d.trinn}. TRINN - ${d.fag} (${d.periode} ${d.aar})
+            </h3>
+            <div style="background: #eee; padding: 4px; font-weight: bold; font-size: 11px; border: 1px solid #000; border-bottom: none; text-align: center;">
+                ${d.fag} | ${d.trinn}${d.klasse} | ${d.periode} ${d.aar}
+            </div>
+            <table style="width:100%; border-collapse: collapse; table-layout: fixed;">
+                <thead>
+                    <tr style="background: #fff;">
+                        <th style="border: 1px solid #000; padding: 3px; width: 80px; text-align: left; font-size: 10px;">Oppgave:</th>`;
+    
+    // Oppgave-overskrifter
+    o.oppgaver.forEach((oppg, i) => {
+        const nr = (i + 1).toString();
+        const overskrift = erRegning ? "O" + nr : (malForDenne[nr]?.navn || oppg.navn);
+        html += `<th style="border: 1px solid #000; padding: 3px; font-size: 8px; text-align: center;">${overskrift}</th>`;
+    });
+
+    // NYE KOLONNER I THEAD: Grense og Maks
+    html += `
+                <th style="border: 1px solid #000; padding: 3px; width: 35px; text-align: center; font-size: 10px;">SUM</th>
+                <th style="border: 1px solid #000; padding: 3px; width: 45px; text-align: center; font-size: 10px;">Grense</th>
+                <th style="border: 1px solid #000; padding: 3px; width: 35px; text-align: center; font-size: 10px;">Maks</th>
+            </tr></thead>
+            <tbody><tr><td style="border: 1px solid #000; padding: 4px; font-size: 10px;">Poeng:</td>`;
+
+    if (erGjennomfort) {
+        // Enkelt-oppgaver
+        o.oppgaver.forEach((oppg, i) => {
+            const poeng = res.oppgaver[i] || 0;
+            const kritisk = oppg.grense !== -1 && poeng <= oppg.grense;
+            html += `<td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold; font-size: 11px; background: ${kritisk ? '#ffdce0' : 'transparent'};">${poeng}</td>`;
+        });
+        
+        // NYE DATA I TBODY: Sum, Grense og Maks
+        const sumKritisk = res.sum <= o.grenseTotal;
+        html += `
+            <td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold; font-size: 11px; background: ${sumKritisk ? '#ffdce0' : '#f9f9f9'};">${res.sum}</td>
+            <td style="border: 1px solid #000; padding: 4px; text-align: center; font-size: 10px;">${o.grenseTotal}</td>
+            <td style="border: 1px solid #000; padding: 4px; text-align: center; font-size: 10px;">${maksTotal}</td>`;
+    } else {
+        // Hvis ikke gjennomført, må colspan økes med 2 (for Grense og Maks)
+        html += `<td colspan="${o.oppgaver.length + 3}" style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold; font-size: 10px; color: #7f8c8d; background: #fafafa; letter-spacing: 2px;">IKKE GJENNOMFØRT</td>`;
+    }
+
+    html += `</tr></tbody></table>`;
+
+    // Signatur/Forklaring for regning
+    if (erRegning) {
+        html += `<div style="display: flex; flex-wrap: wrap; margin-top: 3px; gap: 6px;">`;
+        o.oppgaver.forEach((oppg, i) => {
+            const nr = (i + 1).toString();
+            const navn = malForDenne[nr]?.navn || oppg.navn;
+            html += `<span style="font-size: 7px; color: #555;"><strong>O${nr}:</strong> ${navn}</span> `;
+        });
+        html += `</div>`;
+    }
+    html += `</div>`;
+});
 
 
 function leggTilNyElev() {
