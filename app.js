@@ -1567,8 +1567,8 @@ if (!harSvakheter) {
 
 htmlSide3 += `</div>`;
 
-// --- SIDE 4: UTVIKLING OVER TID (Oppdatert med Prøve-snitt logikk) ---
-// --- SIDE 4: UTVIKLING OVER TID (Linjediagram med din opprinnelige logikk) ---
+
+// --- SIDE 4: UTVIKLING OVER TID (Linjediagram uten bunn-varsel) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
 try {
     const histSnap = await db.ref(`kartlegging`).once('value');
@@ -1639,7 +1639,7 @@ try {
     historikkRader.sort((a,b) => a.sort.localeCompare(b.sort));
 
     if (historikkRader.length > 0) {
-        // --- NYTT: LINJEDIAGRAM (SVG) ---
+        // --- LINJEDIAGRAM (SVG) ---
         const w = 750; 
         const h = 100; 
         const pad = 40;
@@ -1666,7 +1666,7 @@ try {
             <div style="font-size:10px; color:#666; margin-top:5px;">Blå linje: Klasse | Stiplet grå: Prøvesnitt</div>
         </div>`;
 
-        // --- DIN OPPRINNELIGE TABELL-KODE ---
+        // --- TABELL ---
         htmlSide4 += `
             <table>
                 <thead>
@@ -1697,7 +1697,7 @@ try {
         });
         htmlSide4 += `</tbody></table>`;
 
-        // --- DIN OPPRINNELIGE LOGIKK FOR TEKST-BOKSER ---
+        // --- TEKST-BOKSER ---
         const siste = historikkRader[historikkRader.length - 1];
         let utviklingTekst = "Første måling.";
         let utviklingFarge = "#2980b9";
@@ -1722,10 +1722,6 @@ try {
                     <h4 style="margin:0 0 5px 0;">Mot prøvesnitt</h4><p style="margin:0; font-size:13px;">${sammenligningTekst}</p>
                 </div>
             </div>`;
-
-        if (siste.kritiske > 0 && siste.visning === `${periode} ${aar}`) {
-            htmlSide4 += `<div style="margin-top:15px; padding:10px; background:#fff5f5; border:1px solid #feb2b2; border-radius:5px; text-align:center; color:#c53030; font-size:13px;">⚠️ <b>OBS:</b> Det er ${siste.kritiske} elever under kritisk grense i denne perioden.</div>`;
-        }
     } else {
         htmlSide4 += `<p style="text-align:center;">Ingen historikk funnet.</p>`;
     }
