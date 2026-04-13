@@ -3354,6 +3354,17 @@ funnetData.forEach(d => {
     }
     html += `</div>`;
 });
+html += `</div>`; // Avslutter hovedcontaineren
+
+    // SETT INN I HTML OG VIS UTKRIFT
+    utskriftArea.innerHTML = html;
+
+    } catch (error) {
+        console.error("Feil ved generering av rapport:", error);
+        utskriftArea.innerHTML = "<p style='color:red;'>Det oppstod en feil under generering av rapporten.</p>";
+    }
+} // Avslutter async function genererFullElevrapport
+
 
 
 function leggTilNyElev() {
