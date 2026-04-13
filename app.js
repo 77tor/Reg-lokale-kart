@@ -1568,7 +1568,6 @@ if (!harSvakheter) {
 htmlSide3 += `</div>`;
 
 
-
 // --- SIDE 4: UTVIKLING OVER TID (Korrigerte snitt-beregninger) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
 try {
@@ -1585,13 +1584,14 @@ try {
         if (!fData) continue;
 
         const histAarStart = parseInt(aKey.split('-')[0]);
+        const histAarSlutt = parseInt(aKey.split('-')[1]); // Lagt til for å hente sluttår (f.eks 2025)
         const aarDiff = naaAarStart - histAarStart;
         const historiskTrinn = (naaTrinnTall - aarDiff).toString();
 
         if (parseInt(historiskTrinn) < 1) continue;
 
         // Sorter perioder så Høst kommer før Vår i historikken
-   const perioder = Object.keys(fData).sort((a, b) => a.localeCompare(b));
+        const perioder = Object.keys(fData).sort((a, b) => a.localeCompare(b));
 
         for (const pKey of perioder) {
             if (aKey === aar && pKey === "Vår" && periode === "Høst") continue;
@@ -1645,8 +1645,11 @@ try {
 
             // Legg kun til rader hvis det faktisk finnes gjennomførte prøver
             if (klasseAntall > 0) {
+                // ENDRING: Bruker startår for Høst og sluttår for Vår
+                const korrektAar = pKey === "Høst" ? histAarStart : histAarSlutt;
+                
                 historikkRader.push({ 
-                    visning: `${pKey} ${aKey.slice(-2)}`, 
+                    visning: `${pKey} ${korrektAar.toString().slice(-2)}`, 
                     tittel: `${historiskTrinn}${klasse}`,
                     klasseProsent: ((klasseSum / klasseAntall) / aMaks) * 100,
                     proveProsent: ((totalProveSum / totalProveAntall) / aMaks) * 100,
@@ -1659,8 +1662,6 @@ try {
     }
     
     // Sortering og tegning av diagram/tabell fortsetter som før...
-    // (Resten av koden for SVG og tabell-generering)
-    
     historikkRader.sort((a,b) => a.sort.localeCompare(b.sort));
 
     if (historikkRader.length > 0) {
@@ -1678,7 +1679,7 @@ try {
             dots += `
                 <circle cx="${x}" cy="${yK}" r="4.5" fill="white" stroke="#3498db" stroke-width="1" />
                 <circle cx="${x}" cy="${yK}" r="2.5" fill="#3498db" />
-                <text x="${x}" y="${h+18}" font-size="8.5" font-weight="bold" text-anchor="middle" transform="rotate(-18 ${x} ${h+18})">${r.visning.replace("20", "")}</text>
+                <text x="${x}" y="${h+18}" font-size="8.5" font-weight="bold" text-anchor="middle" transform="rotate(-18 ${x} ${h+18})">${r.visning}</text>
             `;
         });
 
@@ -1688,7 +1689,7 @@ try {
         htmlSide4 += `<table><thead><tr><th>Periode</th><th>Trinn</th><th>Klasse (%)</th><th>Prøve (%)</th><th>Diff.</th><th>Lav</th><th>Kritisk</th></tr></thead><tbody>`;
 
         historikkRader.forEach(r => {
-            const aktiv = r.visning === `${periode} ${aar}` ? 'style="background:#e8f4fd; font-weight:bold;"' : '';
+            const aktiv = r.visning === `${periode} ${aar.split('-')[periode === "Høst" ? 0 : 1].slice(-2)}` ? 'style="background:#e8f4fd; font-weight:bold;"' : '';
             const diff = r.klasseProsent - r.proveProsent;
             htmlSide4 += `
                 <tr ${aktiv}>
