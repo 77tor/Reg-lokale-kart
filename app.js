@@ -1281,11 +1281,10 @@ elever.forEach(navn => {
         const fellesHeader = `<div class="side-header">${sideTittel}</div>`;
 
 
-// --- SIDE 1: HOVEDANALYSE OG TABELL ---
 // --- SIDE 1: HOVEDANALYSE OG TABELL (Søyler integrert og sentrert med maks-bredde) ---
 let htmlSide1 = fellesHeader;
 
-htmlSide1 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Gjennomsnittlig skår per oppgave</h2>`;
+htmlSide1 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Klassens resultater</h2>`;
 
 htmlSide1 += `
 <div style="margin-top: 15px;">
@@ -1392,7 +1391,7 @@ htmlSide1 += `
             <li style="margin-bottom: 4px;"><b>✓</b> Er resultatet som forventet?</li>
             <li style="margin-bottom: 4px;"><b>✓</b> Ser vi mønstre eller tendenser i resultatene?</li>
             <li style="margin-bottom: 4px;"><b>✓</b> Hvilke konsekvenser får dette for videre arbeid?</li>
-            <li style="margin-bottom: 4px;"><b>✓</b> Hvilke tiltak iverksettes for de i faresonen?</li>
+            <li style="margin-bottom: 4px;"><b>✓</b> Hvilke tiltak iverksettes for de under eller rett over kritisk grense?</li>
         </ul>
     </div>
 </div>`;
