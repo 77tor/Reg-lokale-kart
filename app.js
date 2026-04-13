@@ -1568,7 +1568,7 @@ if (!harSvakheter) {
 htmlSide3 += `</div>`;
 
 
-// --- SIDE 4: UTVIKLING OVER TID (Zoomet linjediagram 50-100%) ---
+// --- SIDE 4: UTVIKLING OVER TID (Tydeligere linjer 50-100%) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
 try {
     const histSnap = await db.ref(`kartlegging`).once('value');
@@ -1639,11 +1639,10 @@ try {
     historikkRader.sort((a,b) => a.sort.localeCompare(b.sort));
 
     if (historikkRader.length > 0) {
-        // --- NYTT: ZOOMER LINJEDIAGRAM (Y-akse fra 50 til 100) ---
         const w = 750; 
         const h = 100; 
-        const pad = 40;
-        const minVal = 50; // Bunnen av diagrammet er nå 50%
+        const pad = 45;
+        const minVal = 50;
         const maxVal = 100;
         const range = maxVal - minVal;
 
@@ -1652,33 +1651,42 @@ try {
         let pK = ""; let pP = ""; let dots = "";
         historikkRader.forEach((r, i) => {
             const x = pad + (i * step);
-            
-            // Kalkulerer Y ved å normalisere prosenten mellom 50 og 100
-            // Hvis klasseProsent er 50, blir y = h (bunn). Hvis 100, blir y = 0 (topp).
-            const valK = Math.max(r.klasseProsent, minVal); // Hindrer at grafen går "under" gulvet
+            const valK = Math.max(r.klasseProsent, minVal);
             const valP = Math.max(r.proveProsent, minVal);
             
             const yK = h - ((valK - minVal) * (h / range));
             const yP = h - ((valP - minVal) * (h / range));
 
             pK += `${x},${yK} `; pP += `${x},${yP} `;
-            dots += `<circle cx="${x}" cy="${yK}" r="3" fill="#3498db" /><text x="${x}" y="${h+15}" font-size="8" text-anchor="middle" transform="rotate(-15 ${x} ${h+15})">${r.visning.replace("20", "")}</text>`;
+            // Forsterket dot: Hvit ring rundt blå sirkel
+            dots += `
+                <circle cx="${x}" cy="${yK}" r="4.5" fill="white" stroke="#3498db" stroke-width="1" />
+                <circle cx="${x}" cy="${yK}" r="2.5" fill="#3498db" />
+                <text x="${x}" y="${h+18}" font-size="8.5" font-weight="bold" text-anchor="middle" transform="rotate(-18 ${x} ${h+18})">${r.visning.replace("20", "")}</text>
+            `;
         });
 
         htmlSide4 += `
-        <div style="text-align:center; margin: 20px 0 40px 0;">
-            <svg width="${w}" height="${h+30}" viewBox="0 0 ${w} ${h+30}">
-                <line x1="${pad}" y1="0" x2="${w-pad}" y2="0" stroke="#f0f0f0" stroke-width="1" /> <line x1="${pad}" y1="${h/2}" x2="${w-pad}" y2="${h/2}" stroke="#f0f0f0" stroke-width="1" /> <line x1="${pad}" y1="0" x2="${pad}" y2="${h}" stroke="#ccc" />
-                <line x1="${pad}" y1="${h}" x2="${w-pad}" y2="${h}" stroke="#ccc" />
-                
-                <text x="${pad-5}" y="${h}" font-size="8" text-anchor="end">50%</text>
-                <text x="${pad-5}" y="8" font-size="8" text-anchor="end">100%</text>
+        <div style="text-align:center; margin: 25px 0 45px 0;">
+            <svg width="${w}" height="${h+40}" viewBox="0 0 ${w} ${h+40}">
+                <line x1="${pad}" y1="0" x2="${w-pad}" y2="0" stroke="#eee" stroke-width="1" />
+                <line x1="${pad}" y1="${h/2}" x2="${w-pad}" y2="${h/2}" stroke="#f5f5f5" stroke-width="1" stroke-dasharray="2" />
+                <line x1="${pad}" y1="${h}" x2="${w-pad}" y2="${h}" stroke="#ccc" stroke-width="1" />
 
-                <polyline points="${pP}" fill="none" stroke="#ddd" stroke-width="2" stroke-dasharray="4" />
-                <polyline points="${pK}" fill="none" stroke="#3498db" stroke-width="3" />
+                <text x="${pad-8}" y="8" font-size="9" text-anchor="end" fill="#999">100%</text>
+                <text x="${pad-8}" y="${h/2 + 3}" font-size="8" text-anchor="end" fill="#ccc">75%</text>
+                <text x="${pad-8}" y="${h}" font-size="9" text-anchor="end" fill="#999">50%</text>
+
+                <polyline points="${pP}" fill="none" stroke="#999" stroke-width="2.5" stroke-dasharray="6,4" opacity="0.7" />
+                
+                <polyline points="${pK}" fill="none" stroke="#3498db" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                
                 ${dots}
             </svg>
-            <div style="font-size:10px; color:#666; margin-top:5px;">Blå linje: Klasse | Stiplet grå: Prøvesnitt (Skala: 50% - 100%)</div>
+            <div style="font-size:11px; margin-top:8px;">
+                <span style="color:#3498db; font-weight:bold;">━━━</span> Klasse &nbsp;&nbsp; 
+                <span style="color:#999; font-weight:bold;">- - -</span> Trinn-snitt
+            </div>
         </div>`;
 
         // --- TABELL ---
