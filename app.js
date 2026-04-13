@@ -1568,8 +1568,7 @@ if (!harSvakheter) {
 htmlSide3 += `</div>`;
 
 
-
-// --- SIDE 4: UTVIKLING OVER TID (Korrigerte snitt-beregninger) ---
+// --- SIDE 4: UTVIKLING OVER TID (Korrigerte snitt-beregninger & Årstall) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
 try {
     const histSnap = await db.ref(`kartlegging`).once('value');
@@ -1584,14 +1583,15 @@ try {
         const fData = alleData[aKey][fag];
         if (!fData) continue;
 
-        const histAarStart = parseInt(aKey.split('-')[0]);
+        const histAarStart = parseInt(aKey.split('-')[0]); // Eks: 2024
+        const histAarSlutt = parseInt(aKey.split('-')[1]); // Eks: 2025
         const aarDiff = naaAarStart - histAarStart;
         const historiskTrinn = (naaTrinnTall - aarDiff).toString();
 
         if (parseInt(historiskTrinn) < 1) continue;
 
-        // Sorter perioder så Høst kommer før Vår i historikken
-   const perioder = Object.keys(fData).sort((a, b) => a.localeCompare(b));
+        // Sorter perioder så Høst kommer før Vår
+        const perioder = Object.keys(fData).sort((a, b) => a.localeCompare(b));
 
         for (const pKey of perioder) {
             if (aKey === aar && pKey === "Vår" && periode === "Høst") continue;
@@ -1612,28 +1612,23 @@ try {
 
             Object.keys(trinnData).forEach(kNavn => {
                 const kData = trinnData[kNavn];
-                
                 Object.keys(kData).forEach(n => {
                     const elevResultat = kData[n];
                     
-                    // --- VIKTIG FILTER: Tell kun elever som har gjennomført og ikke er slettet ---
+                    // --- FILTER: Tell kun elever med faktisk resultat ---
                     if (elevResultat.slettet || elevResultat.ikkeGjennomfort || elevResultat.sum === undefined) {
-                        return; // Hopper over denne eleven i snittberegningen
+                        return; 
                     }
 
                     const eSum = elevResultat.sum || 0;
                     const eProsent = (eSum / aMaks) * 100;
                     
-                    // Data for trinnsnitt (alle klasser)
                     totalProveSum += eSum;
                     totalProveAntall++;
 
-                    // Data for den spesifikke klassen (f.eks "A")
                     if (kNavn === klasse) {
                         klasseSum += eSum;
                         klasseAntall++;
-                        
-                        // Kritiske grenser
                         if (eSum <= aOppsett.grenseTotal) {
                             klasseKritiske++;
                         } else if (eProsent < 70) {
@@ -1643,10 +1638,15 @@ try {
                 });
             });
 
-            // Legg kun til rader hvis det faktisk finnes gjennomførte prøver
             if (klasseAntall > 0) {
+                // --- KORREKT ÅRSTALL-LOGIKK ---
+                // Bruker startåret for Høst (24) og sluttåret for Vår (25)
+                const visningsAar = pKey === "Høst" 
+                    ? histAarStart.toString().slice(-2) 
+                    : histAarSlutt.toString().slice(-2);
+
                 historikkRader.push({ 
-                    visning: `${pKey} ${aKey.slice(-2)}`, 
+                    visning: `${pKey} ${visningsAar}`, 
                     tittel: `${historiskTrinn}${klasse}`,
                     klasseProsent: ((klasseSum / klasseAntall) / aMaks) * 100,
                     proveProsent: ((totalProveSum / totalProveAntall) / aMaks) * 100,
@@ -1658,13 +1658,11 @@ try {
         }
     }
     
-    // Sortering og tegning av diagram/tabell fortsetter som før...
-    // (Resten av koden for SVG og tabell-generering)
-    
+    // Sorterer historikken kronologisk før tegning
     historikkRader.sort((a,b) => a.sort.localeCompare(b.sort));
 
     if (historikkRader.length > 0) {
-        // --- SVG LINJEDIAGRAM (Samme visuelle stil som sist) ---
+        // --- SVG LINJEDIAGRAM ---
         const w = 750; const h = 100; const pad = 45;
         const minVal = 50; const maxVal = 100; const range = maxVal - minVal;
         const step = (w - (pad * 2)) / (Math.max(historikkRader.length - 1, 1));
@@ -1678,7 +1676,7 @@ try {
             dots += `
                 <circle cx="${x}" cy="${yK}" r="4.5" fill="white" stroke="#3498db" stroke-width="1" />
                 <circle cx="${x}" cy="${yK}" r="2.5" fill="#3498db" />
-                <text x="${x}" y="${h+18}" font-size="8.5" font-weight="bold" text-anchor="middle" transform="rotate(-18 ${x} ${h+18})">${r.visning.replace("20", "")}</text>
+                <text x="${x}" y="${h+18}" font-size="8.5" font-weight="bold" text-anchor="middle" transform="rotate(-18 ${x} ${h+18})">${r.visning}</text>
             `;
         });
 
@@ -1688,10 +1686,10 @@ try {
         htmlSide4 += `<table><thead><tr><th>Periode</th><th>Trinn</th><th>Klasse (%)</th><th>Prøve (%)</th><th>Diff.</th><th>Lav</th><th>Kritisk</th></tr></thead><tbody>`;
 
         historikkRader.forEach(r => {
-            const aktiv = r.visning === `${periode} ${aar}` ? 'style="background:#e8f4fd; font-weight:bold;"' : '';
+            const erNaa = r.visning === `${pKey} ${visningsAar}`; // Enkel sjekk for markering
             const diff = r.klasseProsent - r.proveProsent;
             htmlSide4 += `
-                <tr ${aktiv}>
+                <tr>
                     <td>${r.visning}</td>
                     <td>${r.tittel}</td>
                     <td>${r.klasseProsent.toFixed(1)}%</td>
@@ -1717,7 +1715,6 @@ try {
         htmlSide4 += `<div style="margin-top:20px; display: flex; gap: 15px;"><div style="flex: 1; padding:12px; border-left:5px solid #3498db; background:#f9f9f9;"><h4 style="margin:0 0 5px 0;">Intern utvikling</h4><p style="margin:0; font-size:13px;">${utviklingTekst}</p></div><div style="flex: 1; padding:12px; border-left:5px solid #2c3e50; background:#f9f9f9;"><h4 style="margin:0 0 5px 0;">Mot prøvesnitt</h4><p style="margin:0; font-size:13px;">${sammenligningTekst}</p></div></div>`;
     }
 } catch(err) { console.error(err); }
-
 // --- SIDE 4 FERDIG ---
 
 
