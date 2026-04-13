@@ -2381,51 +2381,6 @@ function printSammenligningsDiagram() {
 
 
 // --- KLASSERAPPORT --
-let klasseChart = null;
-let lagretKullData = []; // Brukes for utskrift av alle sider
-
-async function aapneKlasserapportModal() {
-    const kullSelect = document.getElementById('selectKullAar');
-    kullSelect.innerHTML = '';
-    
-    let unikeKull = new Set();
-
-    // 1. Gå gjennom alle elever i registeret
-    for (let id in window.elevRegister) {
-        const e = window.elevRegister[id];
-        
-        // Vi regner ut når eleven faktiske begynte (eller ville begynt) i 1. klasse
-        // Formel: startAar - (startTrinn - 1)
-        // Eks: Startet i 7. trinn i 2024 -> 2024 - (7 - 1) = 2018.
-        const faktiskSkolestart = parseInt(e.startAar) - (parseInt(e.startTrinn) - 1);
-        
-        if (faktiskSkolestart) {
-            unikeKull.add(faktiskSkolestart);
-        }
-    }
-
-    // 2. Sorter årene (eldste først, f.eks 2018, 2019... til 2026)
-    let sorterteStartAar = Array.from(unikeKull).sort((a, b) => a - b);
-
-    // 3. Bygg nedtrekksmenyen
-    sorterteStartAar.forEach(skoleStartAar => {
-        const fødtAar = skoleStartAar - 6;
-        
-        let opt = document.createElement('option');
-        opt.value = fødtAar; 
-        opt.text = `Født i ${fødtAar} / Skolestart ${skoleStartAar}`;
-        
-        kullSelect.appendChild(opt);
-    });
-    
-    // Velg det nyeste kullet som standard (valgfritt - kan også settes til 0 for de eldste)
-    if (kullSelect.options.length > 0) {
-        kullSelect.selectedIndex = kullSelect.options.length - 1;
-    }
-
-    document.getElementById('modalKlasserapport').style.display = 'block';
-}
-
 async function genererKlasserapport() {
     const fodaar = parseInt(document.getElementById('selectKullAar').value);
     const fag = document.getElementById('selectKullFag').value;
@@ -2439,32 +2394,32 @@ async function genererKlasserapport() {
     lagretKullData = []; 
 
     const sorterteAar = Object.keys(allData).sort();
-for (let skoleaar of sorterteAar) {
-        const startAarSkole = parseInt(skoleaar.split('-')[0]);
+
+    for (let skoleaar of sorterteAar) {
+        const startAarSkole = parseInt(skoleaar.split('-')[0]); // Eks 2024
+        const sluttAarSkole = parseInt(skoleaar.split('-')[1]); // Eks 2025
         const trinn = startAarSkole - fodaar - 5;
 
         if (trinn >= 1 && trinn <= 7) {
             const fagData = allData[skoleaar]?.[fag];
             if (!fagData) continue;
 
-            for (let periode in fagData) {
+            // Vi sorterer periodene slik at Høst kommer før Vår
+            const perioder = Object.keys(fagData).sort((a, b) => b.localeCompare(a)); 
+
+            for (let periode of perioder) {
                 const trinnData = fagData[periode][trinn];
                 if (trinnData && trinnData[klasseBokstav]) {
                     
-                    // --- ENDRING HER: Sikre at vi finner et oppsett (fallback til 2025) ---
                     const aarIMal = oppgaveStruktur[skoleaar] ? skoleaar : "2025-2026";
-                    
-                    // Sjekk steg for steg så vi ikke krasjer hvis noe mangler i malen
                     const oppsett = (oppgaveStruktur[aarIMal] && 
                                      oppgaveStruktur[aarIMal][fag] && 
                                      oppgaveStruktur[aarIMal][fag][periode]) 
                                      ? oppgaveStruktur[aarIMal][fag][periode][trinn] 
                                      : null;
 
-                    if (!oppsett) {
-                        console.warn(`Mangler oppsett for ${fag} ${periode} ${trinn}.trinn i ${aarIMal}`);
-                        continue;
-                    }              
+                    if (!oppsett) continue;              
+                    
                     const maksPoeng = oppsett.oppgaver.reduce((s, o) => s + o.maks, 0);
                     const eleverIKlasse = trinnData[klasseBokstav];
                     
@@ -2472,61 +2427,56 @@ for (let skoleaar of sorterteAar) {
                     let elevListeTilPrint = []; 
 
                     for (let id in eleverIKlasse) {
-    const e = eleverIKlasse[id];
+                        const e = eleverIKlasse[id];
+                        const e_reg = elevRegister[id]; 
+                        
+                        if (e_reg) {
+                            const vStartAarSkole = parseInt(skoleaar.split('-')[0]);
+                            const harBegynt = vStartAarSkole >= parseInt(e_reg.startAar);
+                            const harIkkeSluttet = !e_reg.sluttAar || vStartAarSkole <= parseInt(e_reg.sluttAar);
+                            if (!harBegynt || !harIkkeSluttet) continue; 
+                        }
 
-    // --- NY SJEKK: Er eleven aktiv i DETTE skoleåret (skoleaar)? ---
-    const e_reg = elevRegister[id]; 
-    if (e_reg) {
-        // Vi bruker startåret fra den nåværende runden i loopen (skoleaar)
-        const vStartAarSkole = parseInt(skoleaar.split('-')[0]);
-        const harBegynt = vStartAarSkole >= parseInt(e_reg.startAar);
-        const harIkkeSluttet = !e_reg.sluttAar || vStartAarSkole <= parseInt(e_reg.sluttAar);
-        
-        // Hvis eleven ikke har begynt ennå, eller har sluttet i dette året:
-        // Vi hopper helt over dem for denne spesifikke perioden.
-        if (!harBegynt || !harIkkeSluttet) continue; 
-    }
-    // -------------------------------------------------------------
+                        if (e.slettet) continue;
 
-    // Vi hopper over slettede elever, men inkluderer alle andre
-    if (e.slettet) continue;
-
-    let visningsNavn = e.navn || e.elevNavn || id;
-    
-    // Sjekk om eleven faktisk har gjennomført og har poeng
-    if (!e.ikkeGjennomfort && e.sum !== undefined) {
-        const prosent = Math.round((e.sum / maksPoeng) * 100);
-        summerTilSnitt.push(prosent); 
-
-        elevListeTilPrint.push({
-            navn: visningsNavn,
-            sum: e.sum,
-            maks: maksPoeng,
-            prosent: prosent,
-            oppgaver: e.oppgaver || [],
-            status: "ok"
-        });
-    } else {
-        // Eleven er merket "Ikke gjennomført" eller mangler data
-        elevListeTilPrint.push({
-            navn: visningsNavn,
-            sum: "-",
-            maks: maksPoeng,
-            prosent: "-",
-            oppgaver: [],
-            status: "ikke_gjennomfort" 
-        });
-    }
-}
+                        let visningsNavn = e.navn || e.elevNavn || id;
+                        
+                        if (!e.ikkeGjennomfort && e.sum !== undefined) {
+                            const prosent = Math.round((e.sum / maksPoeng) * 100);
+                            summerTilSnitt.push(prosent); 
+                            elevListeTilPrint.push({
+                                navn: visningsNavn,
+                                sum: e.sum,
+                                maks: maksPoeng,
+                                prosent: prosent,
+                                oppgaver: e.oppgaver || [],
+                                status: "ok"
+                            });
+                        } else {
+                            elevListeTilPrint.push({
+                                navn: visningsNavn,
+                                sum: "-",
+                                maks: maksPoeng,
+                                prosent: "-",
+                                oppgaver: [],
+                                status: "ikke_gjennomfort" 
+                            });
+                        }
+                    }
 
                     if (elevListeTilPrint.length > 0) {
-                        // Beregn snitt kun for de som har prosent-tall
                         let snitt = 0;
                         if (summerTilSnitt.length > 0) {
                             snitt = Math.round(summerTilSnitt.reduce((a, b) => a + b, 0) / summerTilSnitt.length);
                         }
 
-                        const label = `${periode} ${skoleaar.slice(-2)} (${trinn}.tr)`;
+                        // --- KORRIGERT LOGIKK FOR LABEL ---
+                        // Hvis det er Høst, bruk startAar (f.eks 24). Hvis Vår, bruk sluttAar (f.eks 25).
+                        const visningsAar = periode === "Høst" 
+                            ? startAarSkole.toString().slice(-2) 
+                            : sluttAarSkole.toString().slice(-2);
+
+                        const label = `${periode} ${visningsAar} (${trinn}.tr)`;
                         
                         tidslinjeData.push({ label, snitt });
                         
