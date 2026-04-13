@@ -2407,8 +2407,12 @@ async function genererKlasserapport() {
             const fagData = allData[skoleaar]?.[fag];
             if (!fagData) continue;
 
-            // Vi sorterer periodene slik at Høst kommer før Vår
-            const perioder = Object.keys(fagData).sort((a, b) => b.localeCompare(a)); 
+// 2. KORRIGERT SORTERING: Høst før Vår
+            const perioder = Object.keys(fagData).sort((a, b) => {
+                if (a === "Høst" && b === "Vår") return -1;
+                if (a === "Vår" && b === "Høst") return 1;
+                return 0;
+            });
 
             for (let periode of perioder) {
                 const trinnData = fagData[periode][trinn];
