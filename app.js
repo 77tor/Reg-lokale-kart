@@ -1569,23 +1569,39 @@ htmlSide3 += `</div>`;
 
 
 // --- SIDE 4: UTVIKLING OVER TID (Tydeligere linjer 50-100%) ---
+// --- SIDE 4: UTVIKLING OVER TID (Korrigerte år/trinn-logikk) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
 try {
     const histSnap = await db.ref(`kartlegging`).once('value');
     const alleData = histSnap.val() || {};
     let historikkRader = [];
 
+    // Finn nåværende trinn som et tall (f.eks. "2" -> 2)
+    const naaTrinnTall = parseInt(trinn);
+    const naaAarStart = parseInt(aar.split('-')[0]);
+
     for (const aKey of Object.keys(alleData)) {
         if (aKey > aar) continue;
         const fData = alleData[aKey][fag];
         if (!fData) continue;
 
+        // BEREGN TRINN FOR DETTE HISTORISKE ÅRET
+        // Eks: Hvis vi er i 2025 (2. trinn) og ser på data fra 2024, må vi se på 1. trinn.
+        const histAarStart = parseInt(aKey.split('-')[0]);
+        const aarDiff = naaAarStart - histAarStart;
+        const historiskTrinn = (naaTrinnTall - aarDiff).toString();
+
+        // Hopp over hvis klassen ikke eksisterte ennå (trinn < 1)
+        if (parseInt(historiskTrinn) < 1) continue;
+
         for (const pKey of Object.keys(fData)) {
             if (aKey === aar && pKey === "Vår" && periode === "Høst") continue;
-            const trinnData = fData[pKey][trinn];
+            
+            // Bruk det beregnede historiske trinnet her
+            const trinnData = fData[pKey][historiskTrinn];
             if (!trinnData) continue;
 
-            const aOppsett = oppgaveStruktur[aKey] ? oppgaveStruktur[aKey][fag][pKey][trinn] : null;
+            const aOppsett = oppgaveStruktur[aKey] ? oppgaveStruktur[aKey][fag][pKey][historiskTrinn] : null;
             if (!aOppsett) continue;
             const aMaks = aOppsett.oppgaver.reduce((s, o) => s + (o.maks || 0), 0);
 
@@ -1593,24 +1609,24 @@ try {
             let klasseKritiske = 0; let klasseLavMestring = 0; 
             let totalProveSum = 0; let totalProveAntall = 0; 
 
-            const historiskStartAar = parseInt(aKey.split('-')[0]);
-
             Object.keys(trinnData).forEach(kNavn => {
                 const kData = trinnData[kNavn];
                 const kElever = Object.keys(kData).filter(n => {
                     const e = elevRegister[n];
                     if (!e) return false; 
-                    const harBegynt = historiskStartAar >= parseInt(e.startAar);
-                    const harIkkeSluttet = !e.sluttAar || historiskStartAar <= parseInt(e.sluttAar);
-                    return kData[n].oppgaver && !kData[n].slettet && harBegynt && harIkkeSluttet;
+                    // Sjekker at eleven faktisk tilhører registeret og ikke er slettet
+                    return kData[n].oppgaver && !kData[n].slettet;
                 });
                 
                 kElever.forEach(n => {
                     const eSum = kData[n].sum || 0;
                     const eProsent = (eSum / aMaks) * 100;
+                    
+                    // Samle data for ALLE klasser på det trinnet det året for snitt-linjen
                     totalProveSum += eSum;
                     totalProveAntall++;
 
+                    // Velg ut KUN den spesifikke klassen (f.eks "A")
                     if (kNavn === klasse) {
                         klasseSum += eSum;
                         klasseAntall++;
@@ -1626,6 +1642,7 @@ try {
             if (klasseAntall > 0) {
                 historikkRader.push({ 
                     visning: `${pKey} ${aKey}`, 
+                    tittel: `${historiskTrinn}${klasse}`, // Viser f.eks "1A" i tabellen
                     klasseProsent: ((klasseSum / klasseAntall) / aMaks) * 100,
                     proveProsent: ((totalProveSum / totalProveAntall) / aMaks) * 100,
                     kritiske: klasseKritiske, 
@@ -1639,26 +1656,17 @@ try {
     historikkRader.sort((a,b) => a.sort.localeCompare(b.sort));
 
     if (historikkRader.length > 0) {
-        const w = 750; 
-        const h = 100; 
-        const pad = 45;
-        const minVal = 50;
-        const maxVal = 100;
-        const range = maxVal - minVal;
-
+        // --- SVG LINJEDIAGRAM (Samme visuelle stil som sist) ---
+        const w = 750; const h = 100; const pad = 45;
+        const minVal = 50; const maxVal = 100; const range = maxVal - minVal;
         const step = (w - (pad * 2)) / (Math.max(historikkRader.length - 1, 1));
         
         let pK = ""; let pP = ""; let dots = "";
         historikkRader.forEach((r, i) => {
             const x = pad + (i * step);
-            const valK = Math.max(r.klasseProsent, minVal);
-            const valP = Math.max(r.proveProsent, minVal);
-            
-            const yK = h - ((valK - minVal) * (h / range));
-            const yP = h - ((valP - minVal) * (h / range));
-
+            const yK = h - ((Math.max(r.klasseProsent, minVal) - minVal) * (h / range));
+            const yP = h - ((Math.max(r.proveProsent, minVal) - minVal) * (h / range));
             pK += `${x},${yK} `; pP += `${x},${yP} `;
-            // Forsterket dot: Hvit ring rundt blå sirkel
             dots += `
                 <circle cx="${x}" cy="${yK}" r="4.5" fill="white" stroke="#3498db" stroke-width="1" />
                 <circle cx="${x}" cy="${yK}" r="2.5" fill="#3498db" />
@@ -1666,56 +1674,23 @@ try {
             `;
         });
 
-        htmlSide4 += `
-        <div style="text-align:center; margin: 25px 0 45px 0;">
-            <svg width="${w}" height="${h+40}" viewBox="0 0 ${w} ${h+40}">
-                <line x1="${pad}" y1="0" x2="${w-pad}" y2="0" stroke="#eee" stroke-width="1" />
-                <line x1="${pad}" y1="${h/2}" x2="${w-pad}" y2="${h/2}" stroke="#f5f5f5" stroke-width="1" stroke-dasharray="2" />
-                <line x1="${pad}" y1="${h}" x2="${w-pad}" y2="${h}" stroke="#ccc" stroke-width="1" />
-
-                <text x="${pad-8}" y="8" font-size="9" text-anchor="end" fill="#999">100%</text>
-                <text x="${pad-8}" y="${h/2 + 3}" font-size="8" text-anchor="end" fill="#ccc">75%</text>
-                <text x="${pad-8}" y="${h}" font-size="9" text-anchor="end" fill="#999">50%</text>
-
-                <polyline points="${pP}" fill="none" stroke="#999" stroke-width="2.5" stroke-dasharray="6,4" opacity="0.7" />
-                
-                <polyline points="${pK}" fill="none" stroke="#3498db" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-                
-                ${dots}
-            </svg>
-            <div style="font-size:11px; margin-top:8px;">
-                <span style="color:#3498db; font-weight:bold;">━━━</span> Klasse &nbsp;&nbsp; 
-                <span style="color:#999; font-weight:bold;">- - -</span> Trinn-snitt
-            </div>
-        </div>`;
+        htmlSide4 += `<div style="text-align:center; margin: 25px 0 45px 0;"><svg width="${w}" height="${h+40}" viewBox="0 0 ${w} ${h+40}"><line x1="${pad}" y1="0" x2="${w-pad}" y2="0" stroke="#eee" stroke-width="1" /><line x1="${pad}" y1="${h/2}" x2="${w-pad}" y2="${h/2}" stroke="#f5f5f5" stroke-width="1" stroke-dasharray="2" /><line x1="${pad}" y1="${h}" x2="${w-pad}" y2="${h}" stroke="#ccc" stroke-width="1" /><text x="${pad-8}" y="8" font-size="9" text-anchor="end" fill="#999">100%</text><text x="${pad-8}" y="${h/2+3}" font-size="8" text-anchor="end" fill="#ccc">75%</text><text x="${pad-8}" y="${h}" font-size="9" text-anchor="end" fill="#999">50%</text><polyline points="${pP}" fill="none" stroke="#999" stroke-width="2.5" stroke-dasharray="6,4" opacity="0.7" /><polyline points="${pK}" fill="none" stroke="#3498db" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />${dots}</svg></div>`;
 
         // --- TABELL ---
-        htmlSide4 += `
-            <table>
-                <thead>
-                    <tr>
-                        <th>Periode</th>
-                        <th>Klasse (%)</th>
-                        <th>Prøve (%)</th>
-                        <th>Diff.</th>
-                        <th>Lav mestring</th>
-                        <th>Under kritisk grense</th>
-                    </tr>
-                </thead>
-                <tbody>`;
+        htmlSide4 += `<table><thead><tr><th>Periode</th><th>Trinn</th><th>Klasse (%)</th><th>Prøve (%)</th><th>Diff.</th><th>Lav</th><th>Kritisk</th></tr></thead><tbody>`;
 
         historikkRader.forEach(r => {
             const aktiv = r.visning === `${periode} ${aar}` ? 'style="background:#e8f4fd; font-weight:bold;"' : '';
             const diff = r.klasseProsent - r.proveProsent;
-            
             htmlSide4 += `
                 <tr ${aktiv}>
                     <td>${r.visning}</td>
+                    <td>${r.tittel}</td>
                     <td>${r.klasseProsent.toFixed(1)}%</td>
                     <td style="color:#666;">${r.proveProsent.toFixed(1)}%</td>
                     <td style="color:${diff >= 0 ? 'green':'red'}; font-weight:bold;">${diff >= 0 ? '+':''}${diff.toFixed(1)}%</td>
                     <td>${r.lavMestring}</td>
-                    <td style="${r.kritiske > 0 ? 'color:red; font-weight:bold;' : ''}">${r.kritiske}</td>
+                    <td>${r.kritiske}</td>
                 </tr>`;
         });
         htmlSide4 += `</tbody></table>`;
@@ -1723,35 +1698,18 @@ try {
         // --- TEKST-BOKSER ---
         const siste = historikkRader[historikkRader.length - 1];
         let utviklingTekst = "Første måling.";
-        let utviklingFarge = "#2980b9";
-
         if (historikkRader.length > 1) {
             const forrige = historikkRader[historikkRader.length - 2];
             const endring = siste.klasseProsent - forrige.klasseProsent;
-            if (endring > 3) { utviklingTekst = `<b>Fremgang:</b> +${endring.toFixed(1)}% siden ${forrige.visning}.`; utviklingFarge = "#27ae60"; }
-            else if (endring < -3) { utviklingTekst = `<b>Nedgang:</b> ${endring.toFixed(1)}% siden ${forrige.visning}.`; utviklingFarge = "#e67e22"; }
-            else { utviklingTekst = `Stabil utvikling siden ${forrige.visning}.`; }
+            utviklingTekst = endring > 3 ? `<b>Fremgang:</b> +${endring.toFixed(1)}% siden ${forrige.visning}.` : (endring < -3 ? `<b>Nedgang:</b> ${endring.toFixed(1)}% siden ${forrige.visning}.` : `Stabil utvikling.`);
         }
-
         const diffMotProve = siste.klasseProsent - siste.proveProsent;
-        let sammenligningTekst = diffMotProve > 2 ? `Klassen presterer over gjennomsnittet for denne prøven.` : (diffMotProve < -2 ? `Klassen presterer under gjennomsnittet for denne prøven.` : `Klassen følger snittet for prøven.`);
+        let sammenligningTekst = diffMotProve > 2 ? `Klassen presterer over gjennomsnittet.` : (diffMotProve < -2 ? `Klassen presterer under gjennomsnittet.` : `Klassen følger snittet.`);
 
-        htmlSide4 += `
-            <div style="margin-top:20px; display: flex; gap: 15px;">
-                <div style="flex: 1; padding:12px; border-left:5px solid ${utviklingFarge}; background:#f9f9f9;">
-                    <h4 style="margin:0 0 5px 0;">Intern utvikling</h4><p style="margin:0; font-size:13px;">${utviklingTekst}</p>
-                </div>
-                <div style="flex: 1; padding:12px; border-left:5px solid #2c3e50; background:#f9f9f9;">
-                    <h4 style="margin:0 0 5px 0;">Mot prøvesnitt</h4><p style="margin:0; font-size:13px;">${sammenligningTekst}</p>
-                </div>
-            </div>`;
-    } else {
-        htmlSide4 += `<p style="text-align:center;">Ingen historikk funnet.</p>`;
+        htmlSide4 += `<div style="margin-top:20px; display: flex; gap: 15px;"><div style="flex: 1; padding:12px; border-left:5px solid #3498db; background:#f9f9f9;"><h4 style="margin:0 0 5px 0;">Intern utvikling</h4><p style="margin:0; font-size:13px;">${utviklingTekst}</p></div><div style="flex: 1; padding:12px; border-left:5px solid #2c3e50; background:#f9f9f9;"><h4 style="margin:0 0 5px 0;">Mot prøvesnitt</h4><p style="margin:0; font-size:13px;">${sammenligningTekst}</p></div></div>`;
     }
-} catch(err) {
-    console.error("Side 4 feil:", err);
-    htmlSide4 += `<p>Kunne ikke laste historikk.</p>`;
-}
+} catch(err) { console.error(err); }
+
 // --- SIDE 4 FERDIG ---
 
 
