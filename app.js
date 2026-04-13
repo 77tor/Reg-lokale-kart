@@ -1297,7 +1297,11 @@ htmlSide1 += `
 oppsett.oppgaver.forEach((o, i) => {
     const snitt = oppgaveSummer[i] / antall;
     const prosent = (snitt / o.maks) * 100;
-    const grenseProsent = (o.grense / o.maks) * 100;
+    
+    // Her beregner vi grensen. Hvis grense er -1 (mangler), setter vi den til 0 for å unngå feil, 
+    // men vanligvis har disse prøvene en verdi.
+    const grenseVerdi = (o.grense && o.grense !== -1) ? o.grense : 0;
+    const grenseProsent = (grenseVerdi / o.maks) * 100;
 
     htmlSide1 += `
         <td style="border: none; vertical-align: bottom; height: 120px; padding: 0;">
@@ -1308,8 +1312,8 @@ oppsett.oppgaver.forEach((o, i) => {
                     <span style="position: absolute; top: -20px; left: -10px; right: -10px; text-align: center; font-size: 10px; font-weight: bold; color: #2c3e50; white-space: nowrap;">${prosent.toFixed(0)}%</span>
                 </div>
                 
-                ${o.grense !== -1 ? `
-                    <div style="position: absolute; bottom: ${grenseProsent}%; left: 50%; transform: translateX(-50%); width: 45px; border-bottom: 2px dashed #e74c3c; z-index: 2;"></div>
+                ${grenseVerdi >= 0 ? `
+                    <div style="position: absolute; bottom: ${grenseProsent}%; left: 50%; transform: translateX(-50%); width: 45px; border-bottom: 2px dashed #e74c3c; z-index: 10 !important; pointer-events: none;"></div>
                 ` : ''}
             </div>
         </td>`;
