@@ -2386,39 +2386,43 @@ async function aapneKlasserapportModal() {
     const kullSelect = document.getElementById('selectKullAar');
     kullSelect.innerHTML = '';
     
-    // 1. Finn alle unike start-år fra elevRegisteret
-    let unikeStartAar = new Set();
+    let unikeKull = new Set();
+
+    // 1. Gå gjennom alle elever i registeret
     for (let id in window.elevRegister) {
-        const startAar = parseInt(window.elevRegister[id].startAar);
-        if (startAar) {
-            unikeStartAar.add(startAar);
+        const e = window.elevRegister[id];
+        
+        // Vi regner ut når eleven faktiske begynte (eller ville begynt) i 1. klasse
+        // Formel: startAar - (startTrinn - 1)
+        // Eks: Startet i 7. trinn i 2024 -> 2024 - (7 - 1) = 2018.
+        const faktiskSkolestart = parseInt(e.startAar) - (parseInt(e.startTrinn) - 1);
+        
+        if (faktiskSkolestart) {
+            unikeKull.add(faktiskSkolestart);
         }
     }
 
-    // 2. Gjør om til en liste og sorter (nyeste år nederst)
-    let sorterteAar = Array.from(unikeStartAar).sort((a, b) => a - b);
+    // 2. Sorter årene (eldste først, f.eks 2018, 2019... til 2026)
+    let sorterteStartAar = Array.from(unikeKull).sort((a, b) => a - b);
 
-    // 3. Generer valgmuligheter basert på faktiske data
-    sorterteAar.forEach(skoleStartAar => {
-        const fødtAar = skoleStartAar - 6; // Regner ut fødselsår (6 år før skolestart)
+    // 3. Bygg nedtrekksmenyen
+    sorterteStartAar.forEach(skoleStartAar => {
+        const fødtAar = skoleStartAar - 6;
         
         let opt = document.createElement('option');
-        opt.value = fødtAar; // Vi beholder fødselsår som verdi slik at logikken din ellers fungerer
-        
-        // Teksten slik du ønsket den:
+        opt.value = fødtAar; 
         opt.text = `Født i ${fødtAar} / Skolestart ${skoleStartAar}`;
         
         kullSelect.appendChild(opt);
     });
     
-    // Velg det siste (nyeste) året som standard
+    // Velg det nyeste kullet som standard (valgfritt - kan også settes til 0 for de eldste)
     if (kullSelect.options.length > 0) {
         kullSelect.selectedIndex = kullSelect.options.length - 1;
     }
 
     document.getElementById('modalKlasserapport').style.display = 'block';
 }
-
 
 async function genererKlasserapport() {
     const fodaar = parseInt(document.getElementById('selectKullAar').value);
