@@ -800,6 +800,14 @@ function visModal(navn) {
     });
 
     document.getElementById('modal').style.display = 'block';
+// NYTT: Sett fokus i det første input-feltet automatisk
+    setTimeout(() => {
+        const førsteFelt = container.querySelector('.oppg-input');
+        if (førsteFelt) {
+            førsteFelt.focus();
+            førsteFelt.select(); // Dette gjør at hvis det står et tall der fra før, blir det markert slik at du bare kan skrive over
+        }
+    }, 100); // En liten forsinkelse på 100ms sikrer at nettleseren har tegnet ferdig feltet før vi prøver å gi det fokus
 }
 
 function validerInputPoeng(input, grense, maks) {
