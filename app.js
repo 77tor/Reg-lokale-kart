@@ -1568,7 +1568,7 @@ if (!harSvakheter) {
 htmlSide3 += `</div>`;
 
 
-// --- SIDE 4: UTVIKLING OVER TID (Linjediagram uten bunn-varsel) ---
+// --- SIDE 4: UTVIKLING OVER TID (Zoomet linjediagram 50-100%) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
 try {
     const histSnap = await db.ref(`kartlegging`).once('value');
@@ -1639,17 +1639,28 @@ try {
     historikkRader.sort((a,b) => a.sort.localeCompare(b.sort));
 
     if (historikkRader.length > 0) {
-        // --- LINJEDIAGRAM (SVG) ---
+        // --- NYTT: ZOOMER LINJEDIAGRAM (Y-akse fra 50 til 100) ---
         const w = 750; 
         const h = 100; 
         const pad = 40;
+        const minVal = 50; // Bunnen av diagrammet er nå 50%
+        const maxVal = 100;
+        const range = maxVal - minVal;
+
         const step = (w - (pad * 2)) / (Math.max(historikkRader.length - 1, 1));
         
         let pK = ""; let pP = ""; let dots = "";
         historikkRader.forEach((r, i) => {
             const x = pad + (i * step);
-            const yK = h - (r.klasseProsent * (h / 100));
-            const yP = h - (r.proveProsent * (h / 100));
+            
+            // Kalkulerer Y ved å normalisere prosenten mellom 50 og 100
+            // Hvis klasseProsent er 50, blir y = h (bunn). Hvis 100, blir y = 0 (topp).
+            const valK = Math.max(r.klasseProsent, minVal); // Hindrer at grafen går "under" gulvet
+            const valP = Math.max(r.proveProsent, minVal);
+            
+            const yK = h - ((valK - minVal) * (h / range));
+            const yP = h - ((valP - minVal) * (h / range));
+
             pK += `${x},${yK} `; pP += `${x},${yP} `;
             dots += `<circle cx="${x}" cy="${yK}" r="3" fill="#3498db" /><text x="${x}" y="${h+15}" font-size="8" text-anchor="middle" transform="rotate(-15 ${x} ${h+15})">${r.visning.replace("20", "")}</text>`;
         });
@@ -1657,13 +1668,17 @@ try {
         htmlSide4 += `
         <div style="text-align:center; margin: 20px 0 40px 0;">
             <svg width="${w}" height="${h+30}" viewBox="0 0 ${w} ${h+30}">
-                <line x1="${pad}" y1="0" x2="${pad}" y2="${h}" stroke="#ccc" />
+                <line x1="${pad}" y1="0" x2="${w-pad}" y2="0" stroke="#f0f0f0" stroke-width="1" /> <line x1="${pad}" y1="${h/2}" x2="${w-pad}" y2="${h/2}" stroke="#f0f0f0" stroke-width="1" /> <line x1="${pad}" y1="0" x2="${pad}" y2="${h}" stroke="#ccc" />
                 <line x1="${pad}" y1="${h}" x2="${w-pad}" y2="${h}" stroke="#ccc" />
+                
+                <text x="${pad-5}" y="${h}" font-size="8" text-anchor="end">50%</text>
+                <text x="${pad-5}" y="8" font-size="8" text-anchor="end">100%</text>
+
                 <polyline points="${pP}" fill="none" stroke="#ddd" stroke-width="2" stroke-dasharray="4" />
                 <polyline points="${pK}" fill="none" stroke="#3498db" stroke-width="3" />
                 ${dots}
             </svg>
-            <div style="font-size:10px; color:#666; margin-top:5px;">Blå linje: Klasse | Stiplet grå: Prøvesnitt</div>
+            <div style="font-size:10px; color:#666; margin-top:5px;">Blå linje: Klasse | Stiplet grå: Prøvesnitt (Skala: 50% - 100%)</div>
         </div>`;
 
         // --- TABELL ---
