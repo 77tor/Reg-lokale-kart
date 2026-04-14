@@ -1509,19 +1509,23 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             if (gjeldendeMapping && gjeldendeMapping[sesong] && gjeldendeMapping[sesong][oppgaveNr]) {
                 const mapData = gjeldendeMapping[sesong][oppgaveNr];
                 
-                const refArray = mapData.bøker.map(b => {
-                    let navn = b.bok;
-                    if (navn === "ovebok") navn = "Øvebok";
-                    else if (navn.includes("grunnbok")) {
-                        const bokstav = navn.toUpperCase().includes("A") ? "A" : "B";
-                        navn = `Multi ${bokstav}`;
-                    }
-                    return `${navn} s. ${b.side}`;
-                });
+const refArray = data.bøker.map(b => {
+        let navn = b.bok;
+        
+        if (navn === "ovebok") {
+            navn = "Øvebok";
+        } else if (navn.includes("grunnbok")) {
+            // Sjekker om det er A eller B
+            const bokstav = navn.toUpperCase().includes("A") ? "A" : "B";
+            // Bygger navnet "Grunnbok 2A", "Grunnbok 3B" osv.
+            navn = `Grunnbok ${rentTrinnNummer}${bokstav}`;
+        }
+        return `${navn} s. ${b.side}`;
+    });
 
-                bokReferanser = `${mapData.tema}:\n${refArray.join(", ")}`;
-                bokInfoTekst = `Anbefalt trening for ${rentTrinnNummer}. trinn:`;
-            }
+    bokReferanser = `${data.tema}:\n${refArray.join(", ")}`;
+    bokInfoTekst = `Anbefalt trening for ${rentTrinnNummer}. trinn:`;
+}
 
 // ---SLUTT PÅ BOKREF
 
