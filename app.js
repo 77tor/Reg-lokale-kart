@@ -1567,7 +1567,11 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
         }
     });
 }
-// ... resten av koden (harSvakheter sjekk osv)
+if (!harSvakheter) {
+    htmlSide3 += `<p style="text-align:center; color:green; padding:20px;">Stabilt høyt nivå på alle områder.</p>`;
+}
+
+htmlSide3 += `</div>`;
 // --- SLUTT PÅ SIDE 3
 
 // --- SIDE 4: UTVIKLING OVER TID (Korrigerte snitt-beregninger) ---
