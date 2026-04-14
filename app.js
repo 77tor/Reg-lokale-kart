@@ -1384,7 +1384,7 @@ htmlSide1 += `
 <h2 style="text-align:center; color:#2c3e50; margin-top:35px;">Refleksjonsspørsmål</h2>
 
 <div style="margin-top: 15px; display: flex; gap: 20px; border-top: 1px solid #eee; padding-top: 15px;">
-    <div style="flex: 1; background: #fcfcfc; padding: 12px; border-radius: 4px; border: 1px solid #eee;">
+    <div style="flex: 1; background: #f0f9f0; padding: 12px; border-radius: 4px; border: 1px solid #d0e8d0;">
         <h3 style="color: #2c3e50; font-size: 14px; margin: 0 0 10px 0;">Sjekkliste etter prøven</h3>
         <ul style="list-style: none; padding: 0; font-size: 11px; line-height: 1.5; color: #444;">
             <li style="margin-bottom: 6px;"><b>✓</b> se nærmere på resultatene til elever under eller like over grensen</li>
