@@ -1387,10 +1387,11 @@ htmlSide1 += `
     <div style="flex: 1; background: #f0f9f0; padding: 12px; border-radius: 4px; border: 2px solid #d0e8d0;">
         <h3 style="color: #2c3e50; font-size: 14px; margin: 0 0 10px 0;">Sjekkliste etter prøven</h3>
         <ul style="list-style: none; padding: 0; font-size: 12px; line-height: 1.5; color: #444;">
-            <li style="margin-bottom: 6px;"><b>✓</b> se nærmere på resultatene til elever under eller like over grensen</li>
+            <li style="margin-bottom: 6px;"><b>✓</b> se nærmere på resultatene til elever under eller like over kritisk grense</li>
             <li style="margin-bottom: 6px;"><b>✓</b> vurdere hva de klarer / ikke klarer på de enkelte oppgavene</li>
-            <li style="margin-bottom: 6px;"><b>✓</b> se resultatene i sammenheng med observasjoner gjort under prøven</li>
-            <li style="margin-bottom: 6px;"><b>✓</b> gi tilbakemelding til elever og foreldre om videre oppfølging</li>
+            <li style="margin-bottom: 6px;"><b>✓</b> se resultatene i sammenheng med andre resultater/observasjoner</li>
+            <li style="margin-bottom: 6px;"><b>✓</b> lag grupper på tvers av klassene og gjennomfør lesekurs/regnekurs</li>
+            <li style="margin-bottom: 6px;"><b>✓</b> gi tilbakemelding til elever og foreldre om resultat og videre oppfølging</li>
         </ul>
     </div>
     <div style="flex: 1; background: #f0f9f0; padding: 12px; border-radius: 4px; border: 2px solid #d0e8d0;">
@@ -1400,6 +1401,7 @@ htmlSide1 += `
             <li style="margin-bottom: 5px;"><b>✓</b> Ser vi mønstre eller tendenser i resultatene?</li>
             <li style="margin-bottom: 5px;"><b>✓</b> Hvilke konsekvenser får dette for videre arbeid?</li>
             <li style="margin-bottom: 5px;"><b>✓</b> Hvilke tiltak iverksettes for de under eller rett over kritisk grense?</li>
+            <li style="margin-bottom: 5px;"><b>✓</b> Hvilke tiltak iverksettes for de elevene som klarer alt?</li>
         </ul>
     </div>
 </div>
