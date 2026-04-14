@@ -1,4 +1,4 @@
-windows.mappingTrinn6 = {
+window.mappingTrinn6 = {
   "Høst": {
     "1": { 
       navn: "Hvor mye? (Penger)", 
@@ -164,3 +164,5 @@ windows.mappingTrinn6 = {
     }
   }
 };
+// Nederst i mappingTrinn6.js
+window.mappingTrinn6 = mappingTrinn6;

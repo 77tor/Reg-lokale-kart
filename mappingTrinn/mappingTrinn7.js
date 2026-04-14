@@ -1,4 +1,4 @@
-windows.mappingTrinn7 = {
+window.mappingTrinn7 = {
   "Høst": {
     "1": { 
       navn: "Finn tallet", 
@@ -184,3 +184,5 @@ windows.mappingTrinn7 = {
     }
   }
 };
+// Nederst i mappingTrinn7.js
+window.mappingTrinn7 = mappingTrinn7;
