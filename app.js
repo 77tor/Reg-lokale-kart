@@ -1580,14 +1580,16 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             harSvakheter = true; 
             let farge = (o.grense !== -1 && snitt <= o.grense) ? "#c0392b" : "#d35400";
             
-            // --- BOK-REFERANSE LOGIKK (KORRIGERT) ---
+            // --- BOK-REFERANSE LOGIKK ---
             let bokReferanser = "Fant ingen spesifikke sidetall i mapping-filen.";
             let bokInfoTekst = "Boksøk:";
+            let rentTema = malInfo.navn; // Fallback hvis mapping mangler
             
             if (gjeldendeMapping && gjeldendeMapping[sesong] && gjeldendeMapping[sesong][oppgaveNr]) {
-                const mapData = gjeldendeMapping[sesong][oppgaveNr]; // Denne heter mapData
+                const mapData = gjeldendeMapping[sesong][oppgaveNr];
+                rentTema = mapData.tema; // Hent tema fra mappingen
                 
-                const refArray = mapData.bøker.map(b => { // Bruker mapData her
+                const refArray = mapData.bøker.map(b => {
                     let navn = b.bok;
                     if (navn === "ovebok") {
                         navn = "Øvebok";
@@ -1601,9 +1603,6 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                 bokReferanser = `${mapData.tema}:\n${refArray.join(", ")}`;
                 bokInfoTekst = `Anbefalt trening for ${rentTrinnNummer}. trinn:`;
             }
-
-// ---SLUTT PÅ BOKREF
-
 
             // --- KI PROMPT ---
             const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
@@ -1619,6 +1618,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
             const safeBokReferanser = btoa(unescape(encodeURIComponent(bokReferanser)));
             const safeBokTittel = btoa(unescape(encodeURIComponent(bokInfoTekst)));
+            const safeTema = btoa(unescape(encodeURIComponent(rentTema))); // Sikker overføring av tema
 
             htmlSide3 += `
             <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 8px 15px; border-bottom: 1px solid #eee; font-size: 0.85em; background: white;">
@@ -1646,10 +1646,10 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                         })(this)"
                         class="btn-ki">KI</button>
 
-${!erLesing ? `
-<button title="Vis sider i Multi" 
-    onclick="visBokPopup('${safeBokTittel}', '${safeBokReferanser}', '${mapData.tema}')" 
-    class="btn-bok">BOK</button>
+                    ${!erLesing ? `
+                    <button title="Vis sider i Multi" 
+                        onclick="visBokPopup('${safeBokTittel}', '${safeBokReferanser}', decodeURIComponent(escape(window.atob('${safeTema}'))))" 
+                        class="btn-bok">BOK</button>
                     ` : ''}
                 </div>
             </div>`;
