@@ -1467,7 +1467,6 @@ if (topper.length > 0) {
 }
 
 
-// --- SIDE 3: ULTRA-KOMPAKT DETALJANALYSE (Med bilde-støtte i KI-prompt) ---
 // --- SIDE 3: ULTRA-KOMPAKT DETALJANALYSE (Oppdatert med mapping-filer) ---
 let htmlSide3 = fellesHeader; 
 htmlSide3 += `<div class="analyse-side-3">`; 
@@ -1482,7 +1481,7 @@ htmlSide3 += `
 
 let harSvakheter = false;
 
-// --- SIDE 3: ANALYSELOGIKK (Oppdatert for dine spesifikke mapping-filer) ---
+// --- SIDE 3: ANALYSELOGIKK ---
 if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     const headerTekst = fellesHeader.toLowerCase();
     const erLesing = headerTekst.includes("lesing");
@@ -1490,30 +1489,28 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     const sesong = erVar ? "Vår" : "Høst";
     const rentTrinnNummer = parseInt(trinn.replace(/\D/g, '')); 
     
-    // Henter variabelen mappingTrinn1, mappingTrinn2 osv fra det globale vinduet
+    // Henter riktig mapping-fil fra det globale vinduet
     const gjeldendeMapping = window[`mappingTrinn${rentTrinnNummer}`];
 
     oppsett.oppgaver.forEach((o, i) => {
         const snitt = oppgaveSummer[i] / antall;
         const prosent = (snitt / o.maks) * 100;
-        const oppgaveNr = (i + 1).toString(); // Mappingen bruker strenger som "1", "2"
+        const oppgaveNr = (i + 1).toString(); 
         const malInfo = gjeldendeMalTabell.oppgaver[oppgaveNr]; 
 
         if ((prosent < 70 || (o.grense !== -1 && snitt <= o.grense)) && malInfo) {
             harSvakheter = true; 
             let farge = (o.grense !== -1 && snitt <= o.grense) ? "#c0392b" : "#d35400";
             
-            // --- BOK-REFERANSE FRA MAPPING ---
+            // --- BOK-REFERANSE LOGIKK ---
             let bokReferanser = "Fant ingen spesifikke sidetall i mapping-filen.";
             let bokInfoTekst = "Boksøk:";
             
-            // MERK: Fjernet ".oppgaver" her for å matche din filstruktur
             if (gjeldendeMapping && gjeldendeMapping[sesong] && gjeldendeMapping[sesong][oppgaveNr]) {
                 const mapData = gjeldendeMapping[sesong][oppgaveNr];
                 
                 const refArray = mapData.bøker.map(b => {
                     let navn = b.bok;
-                    // Gjør boknavnene penere
                     if (navn === "ovebok") navn = "Øvebok";
                     else if (navn.includes("grunnbok")) {
                         const bokstav = navn.toUpperCase().includes("A") ? "A" : "B";
