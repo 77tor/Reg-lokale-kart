@@ -1482,6 +1482,7 @@ htmlSide3 += `
 
 let harSvakheter = false;
 
+// --- SIDE 3: ANALYSELOGIKK (Oppdatert for dine spesifikke mapping-filer) ---
 if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     const headerTekst = fellesHeader.toLowerCase();
     const erLesing = headerTekst.includes("lesing");
@@ -1489,13 +1490,13 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     const sesong = erVar ? "Vår" : "Høst";
     const rentTrinnNummer = parseInt(trinn.replace(/\D/g, '')); 
     
-    // Hent riktig mapping-fil (forutsetter at mappingTrinn1, mappingTrinn2 osv er tilgjengelige globalt)
+    // Henter variabelen mappingTrinn1, mappingTrinn2 osv fra det globale vinduet
     const gjeldendeMapping = window[`mappingTrinn${rentTrinnNummer}`];
 
     oppsett.oppgaver.forEach((o, i) => {
         const snitt = oppgaveSummer[i] / antall;
         const prosent = (snitt / o.maks) * 100;
-        const oppgaveNr = i + 1;
+        const oppgaveNr = (i + 1).toString(); // Mappingen bruker strenger som "1", "2"
         const malInfo = gjeldendeMalTabell.oppgaver[oppgaveNr]; 
 
         if ((prosent < 70 || (o.grense !== -1 && snitt <= o.grense)) && malInfo) {
@@ -1503,18 +1504,30 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             let farge = (o.grense !== -1 && snitt <= o.grense) ? "#c0392b" : "#d35400";
             
             // --- BOK-REFERANSE FRA MAPPING ---
-            let bokReferanser = "Fant ingen spesifikke sidetall.";
+            let bokReferanser = "Fant ingen spesifikke sidetall i mapping-filen.";
             let bokInfoTekst = "Boksøk:";
             
-            if (gjeldendeMapping && gjeldendeMapping[sesong] && gjeldendeMapping[sesong].oppgaver[oppgaveNr]) {
-                const mapData = gjeldendeMapping[sesong].oppgaver[oppgaveNr];
+            // MERK: Fjernet ".oppgaver" her for å matche din filstruktur
+            if (gjeldendeMapping && gjeldendeMapping[sesong] && gjeldendeMapping[sesong][oppgaveNr]) {
+                const mapData = gjeldendeMapping[sesong][oppgaveNr];
+                
                 const refArray = mapData.bøker.map(b => {
-                    const bokNavn = b.bok === "grunnbokA" ? "Multi A" : (b.bok === "ovebok" ? "Øvebok" : "Multi B");
-                    return `${bokNavn} side ${b.side}`;
+                    let navn = b.bok;
+                    // Gjør boknavnene penere
+                    if (navn === "ovebok") navn = "Øvebok";
+                    else if (navn.includes("grunnbok")) {
+                        const bokstav = navn.toUpperCase().includes("A") ? "A" : "B";
+                        navn = `Multi ${bokstav}`;
+                    }
+                    return `${navn} s. ${b.side}`;
                 });
+
                 bokReferanser = `${mapData.tema}:\n${refArray.join(", ")}`;
-                bokInfoTekst = `Anbefalt i Multi for ${rentTrinnNummer}. trinn:`;
+                bokInfoTekst = `Anbefalt trening for ${rentTrinnNummer}. trinn:`;
             }
+
+// ---SLUTT PÅ BOKREF
+
 
             // --- KI PROMPT ---
             const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
