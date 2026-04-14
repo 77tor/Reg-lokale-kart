@@ -5,7 +5,7 @@ window.mappingTrinn1 = {
       tema: "Sortering", 
       bøker: [
         { bok: "grunnbok1A", side: 6 },
-        { bok: "ovebok1", side: 4 }
+        { bok: "Øvebok1", side: 4 }
       ]
     },
     "2": { 
@@ -13,7 +13,7 @@ window.mappingTrinn1 = {
       tema: "Myntene våre", 
       bøker: [
         { bok: "grunnbok1B", side: 76 }, // Introduseres ofte senere, men relevant tema
-        { bok: "ovebok1", side: 116 }
+        { bok: "Øvebok1", side: 116 }
       ]
     },
     "3": { 
@@ -21,7 +21,7 @@ window.mappingTrinn1 = {
       tema: "Like mange. Flere. Færre", 
       bøker: [
         { bok: "grunnbok1A", side: 10 },
-        { bok: "ovebok1", side: 8 }
+        { bok: "Øvebok1", side: 8 }
       ]
     },
     "4": { 
@@ -29,7 +29,7 @@ window.mappingTrinn1 = {
       tema: "Tall på rekke og rad", 
       bøker: [
         { bok: "grunnbok1A", side: 24 },
-        { bok: "ovebok1", side: 18 }
+        { bok: "Øvebok1", side: 18 }
       ]
     },
     "5": { 
@@ -37,7 +37,7 @@ window.mappingTrinn1 = {
       tema: "Tall til 10 på rekke og rad", 
       bøker: [
         { bok: "grunnbok1A", side: 46 },
-        { bok: "ovebok1", side: 32 }
+        { bok: "Øvebok1", side: 32 }
       ]
     },
     "6": { 
@@ -45,7 +45,7 @@ window.mappingTrinn1 = {
       tema: "Tallene 0-6", 
       bøker: [
         { bok: "grunnbok1A", side: 16 },
-        { bok: "ovebok1", side: 12 }
+        { bok: "Øvebok1", side: 12 }
       ]
     },
     "7": { 
@@ -53,7 +53,7 @@ window.mappingTrinn1 = {
       tema: "Tallene 7 og 8 / 9 og 10", 
       bøker: [
         { bok: "grunnbok1A", side: 30 },
-        { bok: "ovebok1", side: 24 }
+        { bok: "Øvebok1", side: 24 }
       ]
     },
     "8": { 
@@ -61,7 +61,7 @@ window.mappingTrinn1 = {
       tema: "Hva er addisjon?", 
       bøker: [
         { bok: "grunnbok1A", side: 72 },
-        { bok: "ovebok1", side: 52 }
+        { bok: "Øvebok1", side: 52 }
       ]
     }
   },
@@ -71,7 +71,7 @@ window.mappingTrinn1 = {
       tema: "Myntene våre", 
       bøker: [
         { bok: "grunnbok1B", side: 76 },
-        { bok: "ovebok1", side: 116 }
+        { bok: "Øvebok1", side: 116 }
       ]
     },
     "2": { 
@@ -79,7 +79,7 @@ window.mappingTrinn1 = {
       tema: "Tallsymbolene til 20", 
       bøker: [
         { bok: "grunnbok1B", side: 58 },
-        { bok: "ovebok1", side: 104 }
+        { bok: "Øvebok1", side: 104 }
       ]
     },
     "3": { 
@@ -87,7 +87,7 @@ window.mappingTrinn1 = {
       tema: "Tiere og enere", 
       bøker: [
         { bok: "grunnbok1B", side: 70 },
-        { bok: "ovebok1", side: 112 }
+        { bok: "Øvebok1", side: 112 }
       ]
     },
     "4": { 
@@ -95,7 +95,7 @@ window.mappingTrinn1 = {
       tema: "Tallenes rekkefølge", 
       bøker: [
         { bok: "grunnbok1B", side: 64 },
-        { bok: "ovebok1", side: 108 }
+        { bok: "Øvebok1", side: 108 }
       ]
     },
     "5": { 
@@ -103,7 +103,7 @@ window.mappingTrinn1 = {
       tema: "Tallenes rekkefølge", 
       bøker: [
         { bok: "grunnbok1B", side: 64 },
-        { bok: "ovebok1", side: 108 }
+        { bok: "Øvebok1", side: 108 }
       ]
     },
     "6": { 
@@ -111,7 +111,7 @@ window.mappingTrinn1 = {
       tema: "Sammenlikne tall", 
       bøker: [
         { bok: "grunnbok1B", side: 82 },
-        { bok: "ovebok1", side: 120 }
+        { bok: "Øvebok1", side: 120 }
       ]
     },
     "7": { 
@@ -119,7 +119,7 @@ window.mappingTrinn1 = {
       tema: "Addisjon til 20", 
       bøker: [
         { bok: "grunnbok1B", side: 94 },
-        { bok: "ovebok1", side: 128 }
+        { bok: "Øvebok1", side: 128 }
       ]
     },
     "8": { 
@@ -127,7 +127,7 @@ window.mappingTrinn1 = {
       tema: "Subtraksjon til 20", 
       bøker: [
         { bok: "grunnbok1B", side: 100 },
-        { bok: "ovebok1", side: 132 }
+        { bok: "Øvebok1", side: 132 }
       ]
     },
     "9": { 
@@ -135,7 +135,7 @@ window.mappingTrinn1 = {
       tema: "Det ukjente tallet", 
       bøker: [
         { bok: "grunnbokB1", side: 112 },
-        { bok: "ovebok1", side: 140 }
+        { bok: "Øvebok1", side: 140 }
       ]
     },
     "10": { 
@@ -143,7 +143,7 @@ window.mappingTrinn1 = {
       tema: "Myntene våre", 
       bøker: [
         { bok: "grunnbok1B", side: 76 },
-        { bok: "ovebok1", side: 116 }
+        { bok: "Øvebok1", side: 116 }
       ]
     }
   }
