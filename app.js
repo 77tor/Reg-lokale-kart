@@ -1282,14 +1282,15 @@ elever.forEach(navn => {
 
 
 // --- SIDE 1: HOVEDANALYSE OG TABELL ---
+// --- SIDE 1: HOVEDANALYSE OG TABELL ---
 let htmlSide1 = fellesHeader;
 
 htmlSide1 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Klassens resultater</h2>`;
 
 htmlSide1 += `
-<div style="margin-top: 50px;"> <table style="table-layout: fixed; width: 100%; border-collapse: collapse;">
+<div style="margin-top: 60px; overflow: visible;"> <table style="table-layout: fixed; width: 100%; border-collapse: collapse; overflow: visible;">
         <thead>
-            <tr style="background: none;">
+            <tr style="background: none; overflow: visible;">
                 <td style="border: none; width: 100px;"></td>`;
 
 // Lag søylene for hver oppgave
@@ -1302,8 +1303,8 @@ oppsett.oppgaver.forEach((o, i) => {
     const grenseProsent = (grensePoeng / o.maks) * 100;
 
     htmlSide1 += `
-        <td style="border: none; vertical-align: bottom; height: 100px; padding: 0; position: relative;">
-            <div style="position: absolute; top: -30px; left: 0; right: 0; text-align: center; font-size: 11px; font-weight: bold; color: #2c3e50; z-index: 100;">
+        <td style="border: none; vertical-align: bottom; height: 100px; padding: 0; position: relative; overflow: visible;">
+            <div style="position: absolute; top: -30px; left: 0; right: 0; text-align: center; font-size: 11px; font-weight: bold; color: #2c3e50; z-index: 100; line-height: 1;">
                 ${prosent.toFixed(0)}%
             </div>
 
@@ -1322,8 +1323,8 @@ oppsett.oppgaver.forEach((o, i) => {
 // Søyle for TOTAL
 const totalGrenseProsent = (oppsett.grenseTotal / totalMaksMulig) * 100;
 htmlSide1 += `
-                <td style="border: none; vertical-align: bottom; height: 100px; padding: 0; position: relative;">
-                    <div style="position: absolute; top: -30px; left: 0; right: 0; text-align: center; font-size: 11px; font-weight: bold; color: #2c3e50; z-index: 100;">
+                <td style="border: none; vertical-align: bottom; height: 100px; padding: 0; position: relative; overflow: visible;">
+                    <div style="position: absolute; top: -30px; left: 0; right: 0; text-align: center; font-size: 11px; font-weight: bold; color: #2c3e50; z-index: 100; line-height: 1;">
                         ${totalKlasseSnittProsent.toFixed(0)}%
                     </div>
 
