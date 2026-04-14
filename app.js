@@ -1489,7 +1489,6 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     const sesong = erVar ? "Vår" : "Høst";
     const rentTrinnNummer = parseInt(trinn.replace(/\D/g, '')); 
     
-    // Henter riktig mapping-fil fra det globale vinduet
     const gjeldendeMapping = window[`mappingTrinn${rentTrinnNummer}`];
 
     oppsett.oppgaver.forEach((o, i) => {
@@ -1502,30 +1501,27 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             harSvakheter = true; 
             let farge = (o.grense !== -1 && snitt <= o.grense) ? "#c0392b" : "#d35400";
             
-            // --- BOK-REFERANSE LOGIKK ---
+            // --- BOK-REFERANSE LOGIKK (KORRIGERT) ---
             let bokReferanser = "Fant ingen spesifikke sidetall i mapping-filen.";
             let bokInfoTekst = "Boksøk:";
             
             if (gjeldendeMapping && gjeldendeMapping[sesong] && gjeldendeMapping[sesong][oppgaveNr]) {
-                const mapData = gjeldendeMapping[sesong][oppgaveNr];
+                const mapData = gjeldendeMapping[sesong][oppgaveNr]; // Denne heter mapData
                 
-const refArray = data.bøker.map(b => {
-        let navn = b.bok;
-        
-        if (navn === "ovebok") {
-            navn = "Øvebok";
-        } else if (navn.includes("grunnbok")) {
-            // Sjekker om det er A eller B
-            const bokstav = navn.toUpperCase().includes("A") ? "A" : "B";
-            // Bygger navnet "Grunnbok 2A", "Grunnbok 3B" osv.
-            navn = `Grunnbok ${rentTrinnNummer}${bokstav}`;
-        }
-        return `${navn} s. ${b.side}`;
-    });
+                const refArray = mapData.bøker.map(b => { // Bruker mapData her
+                    let navn = b.bok;
+                    if (navn === "ovebok") {
+                        navn = "Øvebok";
+                    } else if (navn.includes("grunnbok")) {
+                        const bokstav = navn.toUpperCase().includes("A") ? "A" : "B";
+                        navn = `Grunnbok ${rentTrinnNummer}${bokstav}`;
+                    }
+                    return `${navn} s. ${b.side}`;
+                });
 
-    bokReferanser = `${data.tema}:\n${refArray.join(", ")}`;
-    bokInfoTekst = `Anbefalt trening for ${rentTrinnNummer}. trinn:`;
-}
+                bokReferanser = `${mapData.tema}:\n${refArray.join(", ")}`;
+                bokInfoTekst = `Anbefalt trening for ${rentTrinnNummer}. trinn:`;
+            }
 
 // ---SLUTT PÅ BOKREF
 
