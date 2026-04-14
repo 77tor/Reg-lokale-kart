@@ -761,6 +761,89 @@ async function slettHeleLoggen() {
     }
 }
 
+
+// ================================================================
+// HJELPEFUNKSJONER FOR BOK-POPUP (Kan ligge nederst i app.js)
+// ================================================================
+
+// Sørg for at denne står helt for seg selv, ikke inni en annen funksjon
+window.visBokPopup = function(safeTittel, safeReferanser, tema) {
+    console.log("Popup trigger for tema:", tema); // Legg til denne for å teste i konsollen
+    const tittel = decodeURIComponent(escape(window.atob(safeTittel)));
+    const referanser = decodeURIComponent(escape(window.atob(safeReferanser)));
+
+    if (typeof Swal === 'undefined') {
+        alert(tittel + "\n\n" + referanser);
+        return;
+    }
+
+    Swal.fire({
+        title: tittel,
+        html: `
+            <div style="text-align: left; background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #2980b9; margin-bottom: 20px;">
+                <pre style="white-space: pre-wrap; font-family: inherit; margin: 0; font-size: 1.1em; font-weight: bold; color: #2c3e50;">${referanser}</pre>
+            </div>
+            <p style="font-size: 0.9em; color: #666;">Vil du finne dette temaet på andre trinn?</p>
+        `,
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: 'Søk på tvers av trinn',
+        cancelButtonText: 'Lukk',
+        confirmButtonColor: '#27ae60',
+        cancelButtonColor: '#95a5a6',
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.finnTemaIPåTversAvTrinn(tema);
+        }
+    });
+};
+
+window.finnTemaIPåTversAvTrinn = function(valgtTema) {
+    if (!valgtTema) return;
+    let funn = [];
+    
+    // Går gjennom alle trinnene 1-7
+    for (let t = 1; t <= 7; t++) {
+        const mapping = window[`mappingTrinn${t}`];
+        if (!mapping) continue;
+
+        ["Høst", "Vår"].forEach(sesong => {
+            if (mapping[sesong]) {
+                Object.keys(mapping[sesong]).forEach(oppgNr => {
+                    const data = mapping[sesong][oppgNr];
+                    
+                    // Sjekker om temaet i en annen mapping inneholder det vi leter etter
+                    // Vi gjør det litt fleksibelt så "Multiplikasjon" matcher "Intro til multiplikasjon"
+                    const mTema = data.tema.toLowerCase();
+                    const vTema = valgtTema.toLowerCase();
+                    
+                    if (mTema.includes(vTema) || vTema.includes(mTema)) {
+                        const refStreng = data.bøker.map(b => {
+                            let bNavn = b.bok === "ovebok" ? "Øvebok" : `Grunnbok ${t}${b.bok.toUpperCase().includes("A") ? "A" : "B"}`;
+                            return `${bNavn} s. ${b.side}`;
+                        }).join(", ");
+
+                        funn.push(`<strong>Trinn ${t} (${sesong}):</strong><br>${data.tema}<br><small>${refStreng}</small>`);
+                    }
+                });
+            }
+        });
+    }
+
+    const unikeFunn = [...new Set(funn)];
+
+    Swal.fire({
+        title: `Tema-søk: ${valgtTema}`,
+        html: unikeFunn.length > 0 
+            ? `<div style="text-align:left; max-height: 400px; overflow-y: auto; padding-right: 10px;">${unikeFunn.join('<hr style="margin:10px 0; border:0; border-top:1px solid #eee;">')}</div>`
+            : "Fant ingen treff på dette nøyaktige temaet i de andre trinnene.",
+        confirmButtonText: 'Gå tilbake',
+        width: '500px'
+    });
+};
+
+
+
 // --- 5. MODAL OG LAGRING ---
 function visModal(navn) {
     const oppsett = hentOppsett();
@@ -930,84 +1013,6 @@ function finnRelevanteSider(rentTrinnNummer, oppgaveNavn) {
     return funn.length > 0 ? funn.join("\n") : "Fant ingen direkte treff i innholdsfortegnelsen.";
 }
 
-// ================================================================
-// HJELPEFUNKSJONER FOR BOK-POPUP (Kan ligge nederst i app.js)
-// ================================================================
-
-window.visBokPopup = function(safeTittel, safeReferanser, tema) {
-    const tittel = decodeURIComponent(escape(window.atob(safeTittel)));
-    const referanser = decodeURIComponent(escape(window.atob(safeReferanser)));
-
-    // Sjekker om SweetAlert2 (Swal) er tilgjengelig, hvis ikke bruker vi vanlig alert
-    if (typeof Swal === 'undefined') {
-        alert(tittel + "\n\n" + referanser);
-        return;
-    }
-
-    Swal.fire({
-        title: tittel,
-        html: `
-            <div style="text-align: left; background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #2980b9; margin-bottom: 20px;">
-                <pre style="white-space: pre-wrap; font-family: inherit; margin: 0; font-size: 1.1em; font-weight: bold; color: #2c3e50;">${referanser}</pre>
-            </div>
-            <p style="font-size: 0.9em; color: #666;">Vil du finne dette temaet på andre trinn?</p>
-        `,
-        icon: 'info',
-        showCancelButton: true,
-        confirmButtonText: 'Søk på tvers av trinn',
-        cancelButtonText: 'Lukk',
-        confirmButtonColor: '#27ae60',
-        cancelButtonColor: '#95a5a6',
-    }).then((result) => {
-        if (result.isConfirmed) {
-            window.finnTemaIPåTversAvTrinn(tema);
-        }
-    });
-};
-
-window.finnTemaIPåTversAvTrinn = function(valgtTema) {
-    if (!valgtTema) return;
-    let funn = [];
-    
-    // Går gjennom alle trinnene 1-7
-    for (let t = 1; t <= 7; t++) {
-        const mapping = window[`mappingTrinn${t}`];
-        if (!mapping) continue;
-
-        ["Høst", "Vår"].forEach(sesong => {
-            if (mapping[sesong]) {
-                Object.keys(mapping[sesong]).forEach(oppgNr => {
-                    const data = mapping[sesong][oppgNr];
-                    
-                    // Sjekker om temaet i en annen mapping inneholder det vi leter etter
-                    // Vi gjør det litt fleksibelt så "Multiplikasjon" matcher "Intro til multiplikasjon"
-                    const mTema = data.tema.toLowerCase();
-                    const vTema = valgtTema.toLowerCase();
-                    
-                    if (mTema.includes(vTema) || vTema.includes(mTema)) {
-                        const refStreng = data.bøker.map(b => {
-                            let bNavn = b.bok === "ovebok" ? "Øvebok" : `Grunnbok ${t}${b.bok.toUpperCase().includes("A") ? "A" : "B"}`;
-                            return `${bNavn} s. ${b.side}`;
-                        }).join(", ");
-
-                        funn.push(`<strong>Trinn ${t} (${sesong}):</strong><br>${data.tema}<br><small>${refStreng}</small>`);
-                    }
-                });
-            }
-        });
-    }
-
-    const unikeFunn = [...new Set(funn)];
-
-    Swal.fire({
-        title: `Tema-søk: ${valgtTema}`,
-        html: unikeFunn.length > 0 
-            ? `<div style="text-align:left; max-height: 400px; overflow-y: auto; padding-right: 10px;">${unikeFunn.join('<hr style="margin:10px 0; border:0; border-top:1px solid #eee;">')}</div>`
-            : "Fant ingen treff på dette nøyaktige temaet i de andre trinnene.",
-        confirmButtonText: 'Gå tilbake',
-        width: '500px'
-    });
-};
 
 
 // --- ÅPNE GJENNOMFØRINGSMODAL ---
