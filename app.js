@@ -1513,44 +1513,59 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                 bokReferanser = `${mapData.tema}:\n${refArray.join(", ")}`;
             }
 
-            // --- 2. GLOBAL SØK LOGIKK (TEMA-BASERT) ---
-            let globalBokReferanser = "";
-            let harGlobalTreff = false;
-            const navnMultiGlobal = `Multi 1-${rentTrinnNummer}`;
-            let temaSok = "";
-            
-            if (gjeldendeMapping && gjeldendeMapping[sesong] && gjeldendeMapping[sesong][oppgaveNr]) {
-                temaSok = gjeldendeMapping[sesong][oppgaveNr].tema;
-            }
+// --- 2. GLOBAL SØK LOGIKK (SUPER-ROBUST) ---
+let globalBokReferanser = "";
+let harGlobalTreff = false;
+const navnMultiGlobal = `Multi 1-${rentTrinnNummer}`;
+let temaSok = "";
 
-            if (temaSok) {
-                const vasketSok = temaSok.toLowerCase().trim();
-                for (let t = 1; t <= rentTrinnNummer; t++) {
-                    const trinnMapping = window[`mappingTrinn${t}`];
-                    if (trinnMapping && trinnMapping[sesong]) {
-                        let treffForDetteTrinnet = [];
-                        Object.keys(trinnMapping[sesong]).forEach(nr => {
-                            const data = trinnMapping[sesong][nr];
-                            if (data.tema && data.tema.toLowerCase().trim() === vasketSok) {
-                                const refArray = data.bøker.map(b => {
-                                    let navn = b.bok === "ovebok" ? "Øvebok" : b.bok.includes("grunnbok") ? `Grunnbok ${t}${b.bok.toUpperCase().includes("A") ? "A" : "B"}` : b.bok;
-                                    return `${navn} s. ${b.side}`;
-                                });
-                                treffForDetteTrinnet.push(refArray.join(", "));
-                            }
+if (gjeldendeMapping && gjeldendeMapping[sesong] && gjeldendeMapping[sesong][oppgaveNr]) {
+    temaSok = gjeldendeMapping[sesong][oppgaveNr].tema;
+}
+
+if (temaSok) {
+    const vasketSok = temaSok.toLowerCase().trim();
+    console.log("Søker etter tema:", vasketSok, "i trinn 1 til", rentTrinnNummer);
+
+    for (let t = 1; t <= rentTrinnNummer; t++) {
+        const trinnMapping = window[`mappingTrinn${t}`];
+        
+        if (trinnMapping && trinnMapping[sesong]) {
+            let treffForDetteTrinnet = [];
+
+            Object.keys(trinnMapping[sesong]).forEach(nr => {
+                const data = trinnMapping[sesong][nr];
+                if (data.tema) {
+                    const vasketDataTema = data.tema.toLowerCase().trim();
+                    
+                    // Sjekker om temaet er dønn likt, ELLER om et av temaene inneholder det andre
+                    if (vasketDataTema === vasketSok || vasketDataTema.includes(vasketSok) || vasketSok.includes(vasketDataTema)) {
+                        
+                        const refArray = data.bøker.map(b => {
+                            let navn = b.bok === "ovebok" ? "Øvebok" : b.bok.includes("grunnbok") ? `Grunnbok ${t}${b.bok.toUpperCase().includes("A") ? "A" : "B"}` : b.bok;
+                            return `${navn} s. ${b.side}`;
                         });
-                        if (treffForDetteTrinnet.length > 0) {
-                            const unikeRef = [...new Set(treffForDetteTrinnet)].join("\n   ");
-                            globalBokReferanser += `TRINN ${t} (${temaSok}):\n   ${unikeRef}\n\n`;
-                            harGlobalTreff = true;
-                        }
+                        
+                        treffForDetteTrinnet.push(refArray.join(", "));
                     }
                 }
-            }
+            });
 
-            if (!harGlobalTreff) {
-                globalBokReferanser = `Ingen tidligere treff funnet for "${temaSok}" i trinn 1-${rentTrinnNummer}.`;
+            if (treffForDetteTrinnet.length > 0) {
+                // Fjerner duplikater i sidetallene
+                const unikeRef = [...new Set(treffForDetteTrinnet)].join("\n   ");
+                globalBokReferanser += `TRINN ${t} (${temaSok}):\n   ${unikeRef}\n\n`;
+                harGlobalTreff = true;
             }
+        } else {
+            console.log(`Ingen mapping eller sesong funnet for trinn ${t}`);
+        }
+    }
+}
+
+if (!harGlobalTreff) {
+    globalBokReferanser = `Ingen treff på "${temaSok}" i trinn 1-${rentTrinnNummer}.\n\nTips: Sjekk at tema-navnet er skrevet likt i mapping-filene (f.eks. om ett trinn bruker "Klokka" og et annet bruker "Tid").`;
+}
 
             // --- 3. ENKODING FOR KNAPPER ---
             const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
