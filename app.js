@@ -1,81 +1,3 @@
-// --- GLOBALE POPUP-FUNKSJONER (Flytt disse øverst i app.js) ---
-
-window.visBokPopup = function(safeTittel, safeReferanser, tema) {
-    console.log("Forsøker å åpne popup for:", tema);
-    
-    try {
-        const tittel = decodeURIComponent(escape(window.atob(safeTittel)));
-        const referanser = decodeURIComponent(escape(window.atob(safeReferanser)));
-
-        // Sjekk om SweetAlert2 er lastet. Hvis ikke, bruk vanlig alert som backup.
-        if (typeof Swal === 'undefined') {
-            console.warn("SweetAlert2 er ikke lastet, bruker standard alert.");
-            alert(tittel + "\n\n" + referanser);
-            return;
-        }
-
-        Swal.fire({
-            title: tittel,
-            html: `
-                <div style="text-align: left; background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #2980b9; margin-bottom: 20px;">
-                    <pre style="white-space: pre-wrap; font-family: inherit; margin: 0; font-size: 1.1em; font-weight: bold; color: #2c3e50;">${referanser}</pre>
-                </div>
-                <p style="font-size: 0.9em; color: #666;">Vil du finne dette temaet på andre trinn?</p>
-            `,
-            icon: 'info',
-            showCancelButton: true,
-            confirmButtonText: 'Søk på tvers av trinn',
-            cancelButtonText: 'Lukk',
-            confirmButtonColor: '#27ae60',
-            cancelButtonColor: '#95a5a6',
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.finnTemaIPåTversAvTrinn(tema);
-            }
-        });
-    } catch (e) {
-        console.error("Feil ved dekoding eller visning av popup:", e);
-    }
-};
-
-window.finnTemaIPåTversAvTrinn = function(valgtTema) {
-    if (!valgtTema) return;
-    let funn = [];
-    
-    for (let t = 1; t <= 7; t++) {
-        const mapping = window[`mappingTrinn${t}`];
-        if (!mapping) continue;
-
-        ["Høst", "Vår"].forEach(sesong => {
-            if (mapping[sesong]) {
-                Object.keys(mapping[sesong]).forEach(oppgNr => {
-                    const data = mapping[sesong][oppgNr];
-                    const mTema = data.tema.toLowerCase();
-                    const vTema = valgtTema.toLowerCase();
-                    
-                    if (mTema.includes(vTema) || vTema.includes(mTema)) {
-                        const refStreng = data.bøker.map(b => {
-                            let bNavn = b.bok === "ovebok" ? "Øvebok" : `Grunnbok ${t}${b.bok.toUpperCase().includes("A") ? "A" : "B"}`;
-                            return `${bNavn} s. ${b.side}`;
-                        }).join(", ");
-                        funn.push(`<strong>Trinn ${t} (${sesong}):</strong><br>${data.tema}<br><small>${refStreng}</small>`);
-                    }
-                });
-            }
-        });
-    }
-
-    const unikeFunn = [...new Set(funn)];
-
-    Swal.fire({
-        title: `Søk på tvers: ${valgtTema}`,
-        html: unikeFunn.length > 0 
-            ? `<div style="text-align:left; max-height: 400px; overflow-y: auto;">${unikeFunn.join('<hr style="margin:10px 0; border:0; border-top:1px solid #eee;">')}</div>`
-            : "Fant ingen treff på dette temaet i andre trinn.",
-        confirmButtonText: 'Lukk'
-    });
-};
-
 // --- ALLER ØVERST I app.js ---
 (function() {
     const kopieringsMotor = function(base64) {
@@ -102,7 +24,6 @@ window.finnTemaIPåTversAvTrinn = function(valgtTema) {
         configurable: false
     });
 })();
-
 
 
 function fiksGithubLenke(url) {
@@ -216,6 +137,10 @@ function registrerInnlogging(user) {
 }
 
 
+
+
+
+
 // --- 3. HJELPEFUNKSJONER ---
 function hentOppsett() {
     const aarValgt = document.getElementById('mAar').value;
@@ -254,8 +179,6 @@ function hentSti(elev) {
     const k = document.getElementById('mKlasse').value;
     return `kartlegging/${a}/${f}/${p}/${t}/${k}/${elev}`;
 }
-
-
 
 
 // --- OPPDATER ELEVLISTE (Dropdown i registrerings-modalen) ---
@@ -1544,7 +1467,7 @@ if (topper.length > 0) {
 }
 
 
-// --- SIDE 3: ULTRA-KOMPAKT DETALJANALYSE ---
+// --- SIDE 3: ULTRA-KOMPAKT DETALJANALYSE (Oppdatert med mapping-filer) ---
 let htmlSide3 = fellesHeader; 
 htmlSide3 += `<div class="analyse-side-3">`; 
 
@@ -1578,17 +1501,21 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             harSvakheter = true; 
             let farge = (o.grense !== -1 && snitt <= o.grense) ? "#c0392b" : "#d35400";
             
-            // --- BOK-REFERANSE LOGIKK ---
+            // --- BOK-REFERANSE LOGIKK (KORRIGERT) ---
             let bokReferanser = "Fant ingen spesifikke sidetall i mapping-filen.";
             let bokInfoTekst = "Boksøk:";
-            let rentTema = malInfo.navn; // Fallback hvis mapping mangler
             
             if (gjeldendeMapping && gjeldendeMapping[sesong] && gjeldendeMapping[sesong][oppgaveNr]) {
-                const mapData = gjeldendeMapping[sesong][oppgaveNr];
-                rentTema = mapData.tema; // VIKTIG: Her hentes temaet fra mappingen
+                const mapData = gjeldendeMapping[sesong][oppgaveNr]; // Denne heter mapData
                 
-                const refArray = mapData.bøker.map(b => {
-                    let navn = b.bok === "ovebok" ? "Øvebok" : `Grunnbok ${rentTrinnNummer}${b.bok.toUpperCase().includes("A") ? "A" : "B"}`;
+                const refArray = mapData.bøker.map(b => { // Bruker mapData her
+                    let navn = b.bok;
+                    if (navn === "ovebok") {
+                        navn = "Øvebok";
+                    } else if (navn.includes("grunnbok")) {
+                        const bokstav = navn.toUpperCase().includes("A") ? "A" : "B";
+                        navn = `Grunnbok ${rentTrinnNummer}${bokstav}`;
+                    }
                     return `${navn} s. ${b.side}`;
                 });
 
@@ -1596,15 +1523,23 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                 bokInfoTekst = `Anbefalt trening for ${rentTrinnNummer}. trinn:`;
             }
 
-            // --- KLARGJØRING FOR KNAPPER (ENKODING) ---
-            const safePrompt = btoa(unescape(encodeURIComponent(`Jeg er lærer og klassen min trenger ekstra trening på: "${malInfo.navn}".\nForklaring: ${malInfo.forklaring}.\nLag 5 oppgaver tilpasset ${rentTrinnNummer}. trinn.`)));
+// ---SLUTT PÅ BOKREF
+
+
+            // --- KI PROMPT ---
+            const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
+            let kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}".\nPedagogisk forklaring: ${malInfo.forklaring}.\n\n`;
+            if (bildeUrl) {
+                kiPrompt += `1. Se på bildet av oppgaven: ${bildeUrl}\n2. Lag 5 lignende oppgaver.\n\n`;
+            } else {
+                kiPrompt += `Lag 5 varierte oppgaver som trener dette målet.\n\n`;
+            }
+            kiPrompt += `Tilpass alt til ${rentTrinnNummer}. trinn.`;
+
+            // Enkoding for knapper
+            const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
             const safeBokReferanser = btoa(unescape(encodeURIComponent(bokReferanser)));
             const safeBokTittel = btoa(unescape(encodeURIComponent(bokInfoTekst)));
-            
-            // DENNE LINJEN MANGLER HOS DEG:
-            const safeTema = btoa(unescape(encodeURIComponent(rentTema))); 
-
-            const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
 
             htmlSide3 += `
             <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 8px 15px; border-bottom: 1px solid #eee; font-size: 0.85em; background: white;">
@@ -1615,12 +1550,27 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                 </div>
                 
                 <div style="display: flex; gap: 5px; flex-shrink: 0;">
-                    ${bildeUrl ? `<a href="${bildeUrl}" target="_blank" style="text-decoration:none; padding: 2px 5px; border: 1px solid #ccc; border-radius:3px; background:#f9f9f9;">👁️</a>` : ''}
+                    ${bildeUrl ? `
+                        <span class="bilde-container">
+                            <a href="${bildeUrl}" target="_blank" title="Se oppgave" style="text-decoration:none; padding: 2px 5px; border: 1px solid #ccc; border-radius:3px; background:#f9f9f9;">👁️</a>
+                            <img src="${bildeUrl}" class="hover-bilde" alt="Oppgavebilde">
+                        </span>` : ''}
 
-                    <button onclick="KI_KOPIER_FIX('${safePrompt}')" class="btn-ki">KI</button>
+                    <button title="Generer KI-oppgaver" 
+                        onclick="(function(btn){ 
+                            const promptTekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
+                            navigator.clipboard.writeText(promptTekst).then(() => {
+                                btn.innerText = '✅';
+                                window.open('https://copilot.microsoft.com/?q=' + encodeURIComponent(promptTekst), '_blank');
+                                setTimeout(() => { btn.innerText = 'KI'; }, 2000);
+                            });
+                        })(this)"
+                        class="btn-ki">KI</button>
 
                     ${!erLesing ? `
-                    <button onclick="visBokPopup('${safeBokTittel}', '${safeBokReferanser}', decodeURIComponent(escape(window.atob('${safeTema}'))))" class="btn-bok">BOK</button>
+                    <button title="Vis sider i Multi" 
+                        onclick="alert(decodeURIComponent(escape(window.atob('${safeBokTittel}'))) + '\\n\\n' + decodeURIComponent(escape(window.atob('${safeBokReferanser}'))))" 
+                        class="btn-bok">BOK</button>
                     ` : ''}
                 </div>
             </div>`;
