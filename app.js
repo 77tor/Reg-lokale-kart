@@ -26,6 +26,77 @@
 })();
 
 
+// --- 1. GLOBAL POPUP-FUNKSJON (Legges utenfor/før analyseloopen) ---
+if (typeof window.visBokModal !== 'function') {
+    window.visBokModal = function(tema, aktueltTrinn, sesong) {
+        let alleTrinnReferanser = "";
+        
+        // Gå gjennom trinn 1 til 7 for å finne samme tema
+        for (let t = 1; t <= 7; t++) {
+            const mapping = window[`mappingTrinn${t}`];
+            if (mapping && mapping[sesong]) {
+                let treffForTrinn = [];
+                Object.values(mapping[sesong]).forEach(data => {
+                    if (data.tema === tema && data.bøker) {
+                        data.bøker.forEach(b => {
+                            let navn = b.bok === "ovebok" ? "Øvebok" : `Grunnbok ${t}${b.bok.toUpperCase().includes("A") ? "A" : "B"}`;
+                            treffForTrinn.push(`${navn} s. ${b.side}`);
+                        });
+                    }
+                });
+                
+                if (treffForTrinn.length > 0) {
+                    const unike = [...new Set(treffForTrinn)];
+                    alleTrinnReferanser += `<div style="margin-bottom:8px;"><strong>${t}. trinn:</strong><br>${unike.join(", ")}</div>`;
+                }
+            }
+        }
+
+        // Opprett eller hent modal
+        let modal = document.getElementById('analyse-bok-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'analyse-bok-modal';
+            modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:10000; font-family:sans-serif; backdrop-filter: blur(3px);";
+            document.body.appendChild(modal);
+        }
+
+        const temaID = tema.replace(/\s/g, '');
+        const gjeldendeTrinnReferanse = document.getElementById('temp-ref-' + temaID) ? document.getElementById('temp-ref-' + temaID).innerText : 'Ingen spesifikke sider funnet.';
+
+        modal.innerHTML = `
+            <div style="background:white; padding:25px; border-radius:15px; max-width:450px; width:90%; box-shadow:0 15px 40px rgba(0,0,0,0.4); position:relative; animation: slideIn 0.3s ease-out;">
+                <h2 style="margin:0 0 15px 0; color:#2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">${tema}</h2>
+                
+                <div style="margin-bottom:20px;">
+                    <p style="margin-bottom:5px; font-weight:bold; color:#34495e;">Anbefalt for ${aktueltTrinn}. trinn:</p>
+                    <div style="background:#e8f4fd; padding:15px; border-radius:10px; border-left:5px solid #3498db; font-size:1.1em; color:#2c3e50;">
+                        ${gjeldendeTrinnReferanse}
+                    </div>
+                </div>
+                
+                <button onclick="document.getElementById('ekstra-trinn').style.display='block'; this.style.display='none'" 
+                        style="width:100%; padding:10px; background:#f8f9fa; border:1px solid #ddd; border-radius:8px; cursor:pointer; color:#555; font-weight:500;">
+                    🔍 Se sidetall fra andre trinn (differensiering)
+                </button>
+
+                <div id="ekstra-trinn" style="display:none; margin-top:15px; padding:15px; background:#fdfdfd; border:1px solid #eee; border-radius:10px; font-size:0.9em; max-height:180px; overflow-y:auto;">
+                    <p style="color:#7f8c8d; margin-bottom:10px; font-style:italic; border-bottom:1px solid #eee;">Relatert innhold i verket:</p>
+                    ${alleTrinnReferanser || "Fant ingen treff på andre trinn."}
+                </div>
+
+                <button onclick="document.getElementById('analyse-bok-modal').remove()" 
+                        style="margin-top:20px; width:100%; padding:12px; background:#2c3e50; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; font-size:1em;">
+                    Lukk
+                </button>
+            </div>
+            <style>
+                @keyframes slideIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+            </style>
+        `;
+    };
+}
+
 function fiksGithubLenke(url) {
     if (!url || typeof url !== 'string') return url;
 
@@ -1481,7 +1552,8 @@ htmlSide3 += `
 
 let harSvakheter = false;
 
-// --- SIDE 3: ANALYSELOGIKK ---
+
+// --- 2. SIDE 3: ANALYSELOGIKK ---
 if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     const headerTekst = fellesHeader.toLowerCase();
     const erLesing = headerTekst.includes("lesing");
@@ -1501,14 +1573,17 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             harSvakheter = true; 
             let farge = (o.grense !== -1 && snitt <= o.grense) ? "#c0392b" : "#d35400";
             
-            // --- BOK-REFERANSE LOGIKK (KORRIGERT) ---
-            let bokReferanser = "Fant ingen spesifikke sidetall i mapping-filen.";
-            let bokInfoTekst = "Boksøk:";
+            // --- BOK-REFERANSE LOGIKK ---
+            let bareReferanser = "Ingen sidetall funnet.";
+            let temaNavn = "Tema";
+            let harMapping = false;
             
             if (gjeldendeMapping && gjeldendeMapping[sesong] && gjeldendeMapping[sesong][oppgaveNr]) {
-                const mapData = gjeldendeMapping[sesong][oppgaveNr]; // Denne heter mapData
+                const mapData = gjeldendeMapping[sesong][oppgaveNr];
+                temaNavn = mapData.tema;
+                harMapping = true;
                 
-                const refArray = mapData.bøker.map(b => { // Bruker mapData her
+                const refArray = mapData.bøker.map(b => {
                     let navn = b.bok;
                     if (navn === "ovebok") {
                         navn = "Øvebok";
@@ -1518,13 +1593,12 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                     }
                     return `${navn} s. ${b.side}`;
                 });
-
-                bokReferanser = `${mapData.tema}:\n${refArray.join(", ")}`;
-                bokInfoTekst = `Anbefalt trening for ${rentTrinnNummer}. trinn:`;
+                bareReferanser = refArray.join(", ");
             }
 
-// ---SLUTT PÅ BOKREF
-
+            // Lagrer referansen i en skjult span for å kunne hente den inn i modalen
+            const temaID = temaNavn.replace(/\s/g, '');
+            htmlSide3 += `<span id="temp-ref-${temaID}" style="display:none;">${bareReferanser}</span>`;
 
             // --- KI PROMPT ---
             const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
@@ -1536,10 +1610,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             }
             kiPrompt += `Tilpass alt til ${rentTrinnNummer}. trinn.`;
 
-            // Enkoding for knapper
             const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
-            const safeBokReferanser = btoa(unescape(encodeURIComponent(bokReferanser)));
-            const safeBokTittel = btoa(unescape(encodeURIComponent(bokInfoTekst)));
 
             htmlSide3 += `
             <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 8px 15px; border-bottom: 1px solid #eee; font-size: 0.85em; background: white;">
@@ -1567,9 +1638,9 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                         })(this)"
                         class="btn-ki">KI</button>
 
-                    ${!erLesing ? `
+                    ${(!erLesing && harMapping) ? `
                     <button title="Vis sider i Multi" 
-                        onclick="alert(decodeURIComponent(escape(window.atob('${safeBokTittel}'))) + '\\n\\n' + decodeURIComponent(escape(window.atob('${safeBokReferanser}'))))" 
+                        onclick="visBokModal('${temaNavn.replace(/'/g, "\\'")}', ${rentTrinnNummer}, '${sesong}')" 
                         class="btn-bok">BOK</button>
                     ` : ''}
                 </div>
@@ -1577,12 +1648,13 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
         }
     });
 }
+
 if (!harSvakheter) {
     htmlSide3 += `<p style="text-align:center; color:green; padding:20px;">Stabilt høyt nivå på alle områder.</p>`;
 }
 
 htmlSide3 += `</div>`;
-// --- SLUTT PÅ SIDE 3
+// --- SLUTT PÅ SIDE 3 ---
 
 // --- SIDE 4: UTVIKLING OVER TID (Korrigerte snitt-beregninger) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
