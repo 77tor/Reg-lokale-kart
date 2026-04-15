@@ -1514,47 +1514,46 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             }
 
 
-// --- 2. GLOBAL SØK LOGIKK (ROBUST TEMA-SØK) ---
+// --- 2. GLOBAL SØK LOGIKK (BASERT PÅ DIN FUNGERENDE KODE) ---
 let globalBokReferanser = "";
 let harGlobalTreff = false;
 const navnMultiGlobal = `Multi 1-${rentTrinnNummer}`;
 
-// A. Finn temaet for nåværende oppgave og "vask" teksten (små bokstaver, ingen mellomrom før/etter)
-let temaAaFinne = "";
+// Vi henter temaet fra den koden som du vet fungerer
+let temaSok = "";
 if (gjeldendeMapping && gjeldendeMapping[sesong] && gjeldendeMapping[sesong][oppgaveNr]) {
-    temaAaFinne = gjeldendeMapping[sesong][oppgaveNr].tema.trim();
+    temaSok = gjeldendeMapping[sesong][oppgaveNr].tema;
 }
 
-if (temaAaFinne) {
-    const vasketTemaSok = temaAaFinne.toLowerCase();
+if (temaSok) {
+    // Vi vasker temaet for å være sikre på treff (små bokstaver og fjerner mellomrom)
+    const vasketSok = temaSok.toLowerCase().trim();
 
     for (let t = 1; t <= rentTrinnNummer; t++) {
-        const sjekkMapping = window[`mappingTrinn${t}`];
-        if (sjekkMapping && sjekkMapping[sesong]) {
-            
+        const trinnMapping = window[`mappingTrinn${t}`];
+        
+        if (trinnMapping && trinnMapping[sesong]) {
             let treffForDetteTrinnet = [];
-            
-            // Vi sjekker alle oppgaver i dette trinnet
-            Object.keys(sjekkMapping[sesong]).forEach(nr => {
-                const data = sjekkMapping[sesong][nr];
-                const vasketDataTema = data.tema.toLowerCase().trim();
 
-                // Sjekker om temaet matcher (f.eks "Klokka" vil matche "klokka")
-                if (vasketDataTema === vasketTemaSok) {
-                    const trinnRef = data.bøker.map(b => {
-                        let n = b.bok === "ovebok" ? "Øvebok" : b.bok.includes("grunnbok") ? `Grunnbok ${t}${b.bok.toUpperCase().includes("A") ? "A" : "B"}` : b.bok;
-                        return `${n} s. ${b.side}`;
-                    }).join(", ");
+            // Gå gjennom alle oppgaver i dette trinnet for å finne de med samme tema
+            Object.keys(trinnMapping[sesong]).forEach(nr => {
+                const data = trinnMapping[sesong][nr];
+                if (data.tema && data.tema.toLowerCase().trim() === vasketSok) {
                     
-                    // Unngå duplikater hvis samme tema er på flere oppgaver i samme trinn
-                    if (!treffForDetteTrinnet.includes(trinnRef)) {
-                        treffForDetteTrinnet.push(trinnRef);
-                    }
+                    // Gjenbruker din sidetall-formatering som du vet fungerer:
+                    const refArray = data.bøker.map(b => {
+                        let navn = b.bok === "ovebok" ? "Øvebok" : b.bok.includes("grunnbok") ? `Grunnbok ${t}${b.bok.toUpperCase().includes("A") ? "A" : "B"}` : b.bok;
+                        return `${navn} s. ${b.side}`;
+                    });
+                    
+                    treffForDetteTrinnet.push(refArray.join(", "));
                 }
             });
 
             if (treffForDetteTrinnet.length > 0) {
-                globalBokReferanser += `TRINN ${t} (${temaAaFinne}):\n${treffForDetteTrinnet.join("\n")}\n\n`;
+                // Vi samler opp alle unike sidetall for dette trinnet
+                const unikeRef = [...new Set(treffForDetteTrinnet)].join("\n   ");
+                globalBokReferanser += `TRINN ${t} (${temaSok}):\n   ${unikeRef}\n\n`;
                 harGlobalTreff = true;
             }
         }
@@ -1562,8 +1561,11 @@ if (temaAaFinne) {
 }
 
 if (!harGlobalTreff) {
-    globalBokReferanser = `Ingen treff på "${temaAaFinne}" i trinn 1-${rentTrinnNummer}.\nSjekk at tema-navnet er skrevet likt i alle mapping-filer.`;
+    globalBokReferanser = `Ingen tidligere treff funnet for "${temaSok}" i trinn 1-${rentTrinnNummer}.`;
 }
+
+const safeGlobalBok = btoa(unescape(encodeURIComponent(globalBokReferanser)));
+const safeGlobalTittel = btoa(unescape(encodeURIComponent(navnMultiGlobal)));
 
             // --- 3. ENKODING FOR KNAPPER ---
             const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
