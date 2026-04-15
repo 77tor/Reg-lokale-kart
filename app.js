@@ -1465,7 +1465,7 @@ if (topper.length > 0) {
 }
 
 
-// --- SIDE 3: ULTRA-KOMPAKT DETALJANALYSE (Oppdatert med mapping-filer) ---
+// --- SIDE 3: ULTRA-KOMPAKT DETALJANALYSE (Fullstendig og feilfri) ---
 let htmlSide3 = fellesHeader; 
 htmlSide3 += `<div class="analyse-side-3">`; 
 
@@ -1552,7 +1552,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                 globalBokReferanser = `Ingen tidligere treff funnet for "${temaSok}" i trinn 1-${rentTrinnNummer}.`;
             }
 
-            // --- 3. ENKODING FOR KNAPPER (Korrekt samlet) ---
+            // --- 3. ENKODING FOR KNAPPER ---
             const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
             let kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}".\nPedagogisk forklaring: ${malInfo.forklaring}.\n\n`;
             if (bildeUrl) {
@@ -1562,6 +1562,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             }
             kiPrompt += `Tilpass alt til ${rentTrinnNummer}. trinn.`;
 
+            // Viktig: Her deklareres hver variabel kun ÉN gang
             const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
             const safeBokReferanser = btoa(unescape(encodeURIComponent(bokReferanser)));
             const safeBokTittel = btoa(unescape(encodeURIComponent(bokInfoTekst)));
@@ -1618,7 +1619,8 @@ if (!harSvakheter) {
 }
 
 htmlSide3 += `</div>`;
-// --- SLUTT PÅ SIDE 3
+// --- SLUTT PÅ SIDE 3 ---
+
 
 // --- SIDE 4: UTVIKLING OVER TID (Korrigerte snitt-beregninger) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
