@@ -26,7 +26,9 @@
 })();
 
 // --- TVING FUNKSJONEN TIL Å BLI GLOBAL ---
-window.visBokModal = function(tema, aktueltTrinn, sesong) {
+if (!window.visBokModal) {
+    console.log("Registrerer visBokModal globalt...");
+    window.visBokModal = function(tema, aktueltTrinn, sesong) {
     console.log("Åpner modal for tema:", tema); // Debugging i konsollen
     
     let alleTrinnReferanser = "";
