@@ -83,7 +83,7 @@ if (!window.visBokModal) {
         </div>
     `;
 };
-
+} // <--- DENNE MANGLER DU (lukker if-setningen)
 
 function fiksGithubLenke(url) {
     if (!url || typeof url !== 'string') return url;
