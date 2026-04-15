@@ -1510,7 +1510,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             htmlSide3 += `<span id="temp-ref-${temaID}" style="display:none;">${bareReferanser}</span>`;
 
             // --- KI PROMPT ---
-            const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
+           const bildeUrl = o.bilde ? window.fiksGithubLenke(o.bilde) : "";
             let kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}".\nPedagogisk forklaring: ${malInfo.forklaring}.\n\n`;
             if (bildeUrl) {
                 kiPrompt += `1. Se på bildet av oppgaven: ${bildeUrl}\n2. Lag 5 lignende oppgaver.\n\n`;
