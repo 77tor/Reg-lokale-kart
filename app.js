@@ -1514,34 +1514,42 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             }
 
 
-// --- 2. GLOBAL SØK LOGIKK (SMART TEMA-SØK) ---
+// --- 2. GLOBAL SØK LOGIKK (ROBUST TEMA-SØK) ---
 let globalBokReferanser = "";
 let harGlobalTreff = false;
 const navnMultiGlobal = `Multi 1-${rentTrinnNummer}`;
 
-// A. Finn ut hva temaet er for denne oppgaven på NÅVÆRENDE trinn
+// A. Finn temaet for nåværende oppgave og "vask" teksten (små bokstaver, ingen mellomrom før/etter)
 let temaAaFinne = "";
 if (gjeldendeMapping && gjeldendeMapping[sesong] && gjeldendeMapping[sesong][oppgaveNr]) {
-    temaAaFinne = gjeldendeMapping[sesong][oppgaveNr].tema;
+    temaAaFinne = gjeldendeMapping[sesong][oppgaveNr].tema.trim();
 }
 
-// B. Hvis vi fant et tema, søker vi etter DETTE temaet i alle trinn (fra 1 til nåværende)
 if (temaAaFinne) {
+    const vasketTemaSok = temaAaFinne.toLowerCase();
+
     for (let t = 1; t <= rentTrinnNummer; t++) {
         const sjekkMapping = window[`mappingTrinn${t}`];
         if (sjekkMapping && sjekkMapping[sesong]) {
             
-            // Vi må gå gjennom ALLE oppgavene i det trinnet for å finne de som matcher temaet
             let treffForDetteTrinnet = [];
             
+            // Vi sjekker alle oppgaver i dette trinnet
             Object.keys(sjekkMapping[sesong]).forEach(nr => {
                 const data = sjekkMapping[sesong][nr];
-                if (data.tema === temaAaFinne) {
+                const vasketDataTema = data.tema.toLowerCase().trim();
+
+                // Sjekker om temaet matcher (f.eks "Klokka" vil matche "klokka")
+                if (vasketDataTema === vasketTemaSok) {
                     const trinnRef = data.bøker.map(b => {
                         let n = b.bok === "ovebok" ? "Øvebok" : b.bok.includes("grunnbok") ? `Grunnbok ${t}${b.bok.toUpperCase().includes("A") ? "A" : "B"}` : b.bok;
                         return `${n} s. ${b.side}`;
                     }).join(", ");
-                    treffForDetteTrinnet.push(trinnRef);
+                    
+                    // Unngå duplikater hvis samme tema er på flere oppgaver i samme trinn
+                    if (!treffForDetteTrinnet.includes(trinnRef)) {
+                        treffForDetteTrinnet.push(trinnRef);
+                    }
                 }
             });
 
@@ -1554,7 +1562,7 @@ if (temaAaFinne) {
 }
 
 if (!harGlobalTreff) {
-    globalBokReferanser = `Fant ingen andre oppgaver om "${temaAaFinne}" i trinn 1-${rentTrinnNummer}.`;
+    globalBokReferanser = `Ingen treff på "${temaAaFinne}" i trinn 1-${rentTrinnNummer}.\nSjekk at tema-navnet er skrevet likt i alle mapping-filer.`;
 }
 
             // --- 3. ENKODING FOR KNAPPER ---
