@@ -25,6 +25,45 @@
     });
 })();
 
+// LEGG DISSE HELT ØVERST I app.js
+window.visBokPopup = function(safeTittel, safeReferanser, tema) {
+    try {
+        const tittel = decodeURIComponent(escape(window.atob(safeTittel)));
+        const referanser = decodeURIComponent(escape(window.atob(safeReferanser)));
+
+        if (typeof Swal === 'undefined') {
+            alert(tittel + "\n\n" + referanser);
+            return;
+        }
+
+        Swal.fire({
+            title: tittel,
+            html: `
+                <div style="text-align: left; background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #2980b9; margin-bottom: 20px;">
+                    <pre style="white-space: pre-wrap; font-family: inherit; margin: 0; font-size: 1.1em; font-weight: bold; color: #2c3e50;">${referanser}</pre>
+                </div>
+                <p style="font-size: 0.9em; color: #666;">Vil du finne dette temaet på andre trinn?</p>
+            `,
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Søk på tvers av trinn',
+            cancelButtonText: 'Lukk',
+            confirmButtonColor: '#27ae60',
+            cancelButtonColor: '#95a5a6',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.finnTemaIPåTversAvTrinn(tema);
+            }
+        });
+    } catch (e) {
+        console.error("Feil i visBokPopup:", e);
+    }
+};
+
+window.finnTemaIPåTversAvTrinn = function(valgtTema) {
+    // ... (resten av koden vi skrev tidligere)
+};
+
 
 function fiksGithubLenke(url) {
     if (!url || typeof url !== 'string') return url;
@@ -1467,7 +1506,7 @@ if (topper.length > 0) {
 }
 
 
-// --- SIDE 3: ULTRA-KOMPAKT DETALJANALYSE (Oppdatert med mapping-filer) ---
+// --- SIDE 3: ULTRA-KOMPAKT DETALJANALYSE ---
 let htmlSide3 = fellesHeader; 
 htmlSide3 += `<div class="analyse-side-3">`; 
 
@@ -1501,18 +1540,19 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             harSvakheter = true; 
             let farge = (o.grense !== -1 && snitt <= o.grense) ? "#c0392b" : "#d35400";
             
-            // --- BOK-REFERANSE LOGIKK (KORRIGERT) ---
+            // --- BOK-REFERANSE LOGIKK ---
             let bokReferanser = "Fant ingen spesifikke sidetall i mapping-filen.";
             let bokInfoTekst = "Boksøk:";
             
+            // Sjekk om mappingen faktisk har data for denne oppgaven
             if (gjeldendeMapping && gjeldendeMapping[sesong] && gjeldendeMapping[sesong][oppgaveNr]) {
-                const mapData = gjeldendeMapping[sesong][oppgaveNr]; // Denne heter mapData
+                const mapData = gjeldendeMapping[sesong][oppgaveNr];
                 
-                const refArray = mapData.bøker.map(b => { // Bruker mapData her
+                const refArray = mapData.bøker.map(b => {
                     let navn = b.bok;
                     if (navn === "ovebok") {
                         navn = "Øvebok";
-                    } else if (navn.includes("grunnbok")) {
+                    } else if (navn.toLowerCase().includes("grunnbok")) {
                         const bokstav = navn.toUpperCase().includes("A") ? "A" : "B";
                         navn = `Grunnbok ${rentTrinnNummer}${bokstav}`;
                     }
@@ -1522,9 +1562,6 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                 bokReferanser = `${mapData.tema}:\n${refArray.join(", ")}`;
                 bokInfoTekst = `Anbefalt trening for ${rentTrinnNummer}. trinn:`;
             }
-
-// ---SLUTT PÅ BOKREF
-
 
             // --- KI PROMPT ---
             const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
@@ -1568,15 +1605,16 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                         class="btn-ki">KI</button>
 
                     ${!erLesing ? `
-                    <button title="Vis sider i Multi" 
-                        onclick="alert(decodeURIComponent(escape(window.atob('${safeBokTittel}'))) + '\\n\\n' + decodeURIComponent(escape(window.atob('${safeBokReferanser}'))))" 
-                        class="btn-bok">BOK</button>
+<button title="Vis sider i Multi" 
+    onclick="visBokPopup('${safeBokTittel}', '${safeBokReferanser}', decodeURIComponent(escape(window.atob('${safeTema}'))))" 
+    class="btn-bok">BOK</button>
                     ` : ''}
                 </div>
             </div>`;
         }
     });
 }
+
 if (!harSvakheter) {
     htmlSide3 += `<p style="text-align:center; color:green; padding:20px;">Stabilt høyt nivå på alle områder.</p>`;
 }
