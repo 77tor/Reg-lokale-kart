@@ -339,536 +339,141 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 
 <div class="container no-print" id="mainContent" style="display: none;">
     <div class="top-header-bar no-print">
-    <div class="header-left">
-        <img src="kart_02.png" alt="Logo" class="top-logo">
-        <h1 id="printTittel" style="margin: 0; font-size: 1.2em; color: #2c3e50;"></h1>
-    </div>
-
-    <div class="header-right">
-        <div class="user-pill">
-            👤 <span id="userInfo"></span>
+        <div class="header-left">
+            <img src="kart_02.png" alt="Logo" class="top-logo">
+            <h1 id="printTittel" style="margin: 0; font-size: 1.2em; color: #2c3e50;"></h1>
         </div>
-        <button class="btn btn-admin" onclick="sjekkAdminKode()">Admin</button>
-        <button class="btn btn-logout" onclick="logout()">Logg ut</button>
-    </div>
-</div>
-
-
-<div id="adminPanel" class="no-print" style="display: none; background: #f8f9fa; border: 2px solid #2980b9; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-    <h3 class="no-print" style="margin-top:0;color:#2980b9;border-bottom:1px solid #2980b9;padding-bottom:10px;">Administrativt panel</h3>
-    <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr; gap:20px;">
-        
-        <div style="border-right:1px solid #dee2e6; padding-right:10px;">
-            <h4 class="no-print">Årsrapport og eksport</h4>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-            <button class="btn btn-edit" style="width:100%; background-color: #006B39;" onclick="document.getElementById('modalRapport').style.display='block'">Generer Årsrapport</button>
-            <button class="btn btn-excel" style="width:100%; background-color: #00A321;" onclick="document.getElementById('modalTotalEksport').style.display='block'">Eksporter alt (Faner)</button>
+        <div class="header-right">
+            <div class="user-pill">
+                👤 <span id="userInfo"></span>
+            </div>
+            <button class="btn btn-admin" onclick="sjekkAdminKode()">Admin</button>
+            <button class="btn btn-logout" onclick="logout()">Logg ut</button>
         </div>
-            <p style="font-size:0.8em;color:#666;">Lager rapport/eksporterer til Excel alle klasser i gitt år/periode/fag.</p>
-        </div>
-
-        <div style="border-right:1px solid #dee2e6; padding-right:10px;">
-            <h4 class="no-print">Utvikling og sammenligning</h4>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-            <button class="btn btn-analyse" style="width:100%; background-color: #A300FF; color: white;" onclick="aapneUtviklingsModal()">Skolens utvikling over tid</button>
-            <button class="btn btn-hent" style="width:100%; background-color: #FF00DC; color: white;" onclick="aapneSammenligningsModal()">Lag trinn-sammenligning</button>
-        </div>            
-            <p style="font-size:0.8em;color:#666;">Viser skolens resultater over alle år og perioder.</p>
-        </div>
-
-<div style="border-right: 1px solid #dee2e6; padding-right: 10px;">
-    <h4 class="no-print">Klasse og enkeltelver</h4>
-    <div style="display: flex; flex-direction: column; gap: 8px;">
-        <button class="btn" style="width:100%; background-color: #2980b9; color: white;" onclick="aapneKlasserapportModal()">Klasserapport</button>
-        <button class="btn btn-print" style="width:100%;" onclick="aapneElevrapportValg()">Elevrapport</button>
-    </div>
-    <p style="font-size:0.8em;color:#666; margin-top: 10px;">Rapporter for enkeltelever eller hele klasser over tid.</p>
-</div>
-
-<div style="border-right: 1px solid #dee2e6; padding-right: 10px;">
-    <h4 class="no-print">Systemlogg</h4>
-    <div style="display: flex; flex-direction: column; gap: 8px;">
-        <button class="btn btn-admin" style="width:100%; background-color: #34495e;" onclick="aapneLoggModal()">Vis innlogginger</button>
-        <button class="btn" style="width:100%; background-color: #2c3e50; color: white;" onclick="aapneGjennomfoeringModal()">Gjennomføring</button>
-    </div>
-    <p style="font-size:0.8em; color: black; margin-top: 10px;">Se status på prøver og loggføring.</p>
-</div>
-
-        <div>
-            <h4 class="no-print" style="color: #e74c3c;">Slett elever</h4>
-            <button class="btn btn-danger" style="width:100%; background-color: #e74c3c; color: white;" onclick="aapneSlettElevModal()">Slett elever</button>
-            <p style="font-size:0.8em;color:#666;">Søk og fjern elever permanent fra elevregisteret i databasen.</p>
-        </div>
-
     </div>
 
-<div id="chartContainer" style="display:none; margin-top:20px; background:white; padding:15px; border-radius:8px; border:1px solid #ddd;">
-    
-    <h2 id="chartOverskrift" class="no-print" style="text-align:center; margin-bottom:20px; color:#2c3e50; font-family: sans-serif;"></h2>
-        <canvas id="sammenligningsChart"></canvas>
-    </div>
-
-    <div style="margin-top:20px; text-align:right;">
-        <button class="btn btn-fjern" onclick="lukkAdmin()">Lukk Panel</button>
-    </div>
-</div>
-
-
-<div id="modalSammenlign" class="modal no-print" 
-     style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
-    
-    <div class="modal-content" 
-         style="background:white; padding:20px; width:80%; max-width:900px; border-radius:8px; max-height: 95vh; display:flex; flex-direction:column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
-        
-        <h3 style="color:#2980b9; border-bottom:1px solid #2980b9; padding-bottom:10px; margin-top:0;">Sammenlign klasser (Trinn-oversikt)</h3>
-        
-        <div style="overflow-y: auto; flex-grow: 1; padding-right: 10px;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 4px;">
-                <div>
-                    <label>År:</label>
-                    <select id="compAar" class="form-control" style="width:100%"></select>
-                </div>
-                <div>
-                    <label>Periode:</label>
-                    <select id="compPeriode" class="form-control" style="width:100%"></select>
-                </div>
-                <div>
-                    <label>Fag:</label>
-                    <select id="compFag" class="form-control" style="width:100%"></select>
-                </div>
-                <div>
-                    <label>Trinn:</label>
-                    <select id="compTrinn" class="form-control" style="width:100%"></select>
+    <div id="adminPanel" class="no-print" style="display: none; background: #f8f9fa; border: 2px solid #2980b9; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+        <h3 style="margin-top:0;color:#2980b9;border-bottom:1px solid #2980b9;padding-bottom:10px;">Administrativt panel</h3>
+        <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:20px;">
+            <div style="border-right:1px solid #dee2e6; padding-right:10px;">
+                <h4>Årsrapport og eksport</h4>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button class="btn btn-edit" style="background-color: #006B39;" onclick="document.getElementById('modalRapport').style.display='block'">Generer Årsrapport</button>
+                    <button class="btn btn-excel" style="background-color: #00A321;" onclick="document.getElementById('modalTotalEksport').style.display='block'">Eksporter alt (Faner)</button>
                 </div>
             </div>
-
-            <button class="btn btn-analyse" style="width:100%; margin-bottom:10px;" onclick="kjorSammenligning()">Generer diagram</button>
-            <button class="btn btn-print" style="width:100%; background-color: #2980b9; margin-bottom:20px;" onclick="printSammenligningsDiagram()">Skriv ut diagram</button>
-            
-            <div id="modalChartArea" style="display:none; background:white; padding:15px; border:1px solid #ddd; border-radius:4px;">
-                <h2 id="modalChartOverskrift" style="text-align:center; font-size: 1.2em; color:#2c3e50;"></h2>
-                <canvas id="modalSammenligningsChart"></canvas>
-            </div>
-        </div>
-        <div style="margin-top:20px; text-align:right; border-top: 1px solid #eee; padding-top: 10px;">
-            <button class="btn btn-fjern" style="background: #95a5a6; color: white;" onclick="document.getElementById('modalSammenlign').style.display='none'">Lukk</button>
-        </div>
-    </div>
-</div>
-
-
-<div id="modalGjennomfoering" class="modal no-print" style="display:none; position:fixed; z-index:2200; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); align-items:center; justify-content:center;">
-    <div class="modal-content" style="background:white; padding:25px; width: 95%; max-width: 1200px; max-height: 90vh; display:flex; flex-direction:column; border-radius:12px;">
-        
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c3e50; padding-bottom: 10px; margin-bottom: 15px;">
-            <h2 style="color: #2c3e50; margin: 0;">📋 Status på gjennomføring</h2>
-            <button class="btn-fjern" style="background: #95a5a6; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer;" onclick="document.getElementById('modalGjennomfoering').style.display='none'">Lukk</button>
-        </div>
-
-        <div style="overflow-y: auto; flex-grow: 1; padding-right: 10px;">
-            <h4 style="color: #e67e22;">⚠️ Ikke ferdigstilte prøver</h4>
-            <div id="ikkeFerdigstilteListe" style="margin-bottom: 30px;">
+            <div style="border-right:1px solid #dee2e6; padding-right:10px;">
+                <h4>Utvikling</h4>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button class="btn btn-analyse" style="background-color: #A300FF; color: white;" onclick="aapneUtviklingsModal()">Skolens utvikling</button>
+                    <button class="btn btn-hent" style="background-color: #FF00DC; color: white;" onclick="aapneSammenligningsModal()">Trinn-sammenligning</button>
                 </div>
-
-            <h4 style="color: #2980b9;">📊 Fullstendig oversikt per klasse</h4>
-            <div id="gjennomfoeringTabellContainer">
+            </div>
+            <div style="border-right: 1px solid #dee2e6; padding-right: 10px;">
+                <h4>Klasse og enkeltelver</h4>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button class="btn" style="background-color: #2980b9; color: white;" onclick="aapneKlasserapportModal()">Klasserapport</button>
+                    <button class="btn btn-print" onclick="aapneElevrapportValg()">Elevrapport</button>
                 </div>
-        </div>
-    </div>
-</div>
-
-<div id="modalTotalEksport" class="modal">
-    <div class="modal-content" style="width: 350px;">
-        <h3 style="margin-top:0; color: #1f7244;">Full skole-eksport</h3>
-        <p style="font-size: 0.85em; color: #666;">Dette lager én fil med alle trinn (1-7) og alle klasser (A-D) som egne faner.</p>
-        <hr>
-        <label>Skoleår:</label>
-        <select id="teAar">
-            <option value=""selected>-- Laster år... --</option>            
-        </select>
-        <label>Periode:</label>
-        <select id="tePeriode">
-            <option value="Høst">Høst</option>
-            <option value="Vår">Vår</option>
-        </select>
-
-        <label>Fag:</label>
-        <select id="teFag">
-            <option value="Lesing">Lesing</option>
-            <option value="Regning">Regning</option>
-        </select>
-
-        <div style="margin-top:20px; display:flex; gap:10px;">
-            <button class="btn btn-reg" style="flex:2; background-color: #1f7244;" onclick="kjorFullSkoleEksport()">Last ned alt</button>
-            <button class="btn btn-fjern" style="flex:1" onclick="document.getElementById('modalTotalEksport').style.display='none'">Avbryt</button>
-        </div>
-    </div>
-</div>
-
-<div id="skjemaInnhold">
-    <div class="header-grid no-print">
-        <div>
-            <label>Skoleår:</label>
-            <select id="mAar" onchange="hentData()">
-            <option value=""selected>-- Laster år... --</option>            
-            </select>
-        </div>
-        <div>
-            <label>Periode:</label>
-            <select id="mPeriode" onchange="hentData()">
-                <option value="">-- Velg periode --</option>
-                <option value="Høst">Høst</option>
-                <option value="Vår">Vår</option>
-            </select>
-        </div>
-
-        <div>
-            <label>Fag:</label>
-            <select id="mFag" onchange="hentData()">
-                <option value="">-- Velg fag --</option>
-                <option value="Lesing">Lesing</option>
-                <option value="Regning">Regning</option>
-            </select>
-        </div>
-
-        <div>
-            <label>Trinn:</label>
-            <select id="mTrinn" onchange="hentData()">
-                <option value="">-- Velg trinn --</option>
-                <option value="1">1. Trinn</option>
-                <option value="2">2. Trinn</option>
-                <option value="3">3. Trinn</option>
-                <option value="4">4. Trinn</option>
-                <option value="5">5. Trinn</option>
-                <option value="6">6. Trinn</option>
-                <option value="7">7. Trinn</option>
-            </select>
-        </div>
-        <div>
-            <label>Klasse:</label>
-            <select id="mKlasse" onchange="hentData()">
-                <option value="">-- Velg klasse --</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="D">D</option>
-            </select>
-        </div>
-    </div>
-    </div>
-
-<div class="action-bar no-print">
-    <button id="btnFerdigstill" class="btn btn-lock" onclick="toggleFerdigstill()">
-        <span class="btn-icon">🔒</span> <span id="lockText">Ferdigstille prøven</span>
-    </button>
-    <button class="btn btn-print" onclick="forberedPrint()">
-        <span class="btn-icon">🖨️</span> Skriv ut
-    </button>
-    <button class="btn btn-analyse" onclick="genererKlasseAnalyse()">
-        <span class="btn-icon">📊</span> Analyse
-    </button>
-    <button class="btn btn-excel" onclick="eksporter()">
-        <span class="btn-icon">📤</span> Eksport
-    </button>
-<button id="btnImport" class="btn btn-hent" onclick="document.getElementById('excelInput').click()">
-    <span class="btn-icon">📥</span> Import
-</button>
-    
-    <input type="file" id="excelInput" style="display:none" accept=".xlsx, .xls, .csv" onchange="handterExcelFil(this)">
-    <span id="dynamiskOverskrift"></span>
-</div>
-
-
-<div id="modalMapping" class="modal" style="display:none; z-index:2000;">
-    <div class="modal-content" style="width: 600px; max-width: 95%;">
-        <h3>Koble navn fra Excel</h3>
-        <p style="font-size: 0.9em; color: #4a5568;">Vi fant navn i Excel-filen som ikke matcher listen din helt. Velg hvem som er hvem:</p>
-        <hr>
-        <div id="mappingContainer" style="max-height: 400px; overflow-y: auto; margin: 15px 0;"></div>
-        <div style="display: flex; gap: 10px;">
-            <button class="btn btn-reg" style="flex:2" onclick="fullforImport()">Fullfør import</button>
-            <button class="btn btn-fjern" style="flex:1" onclick="document.getElementById('modalMapping').style.display='none'">Avbryt</button>
-        </div>
-    </div>
-</div>
-
-        <table id="hovedTabell">
-            <thead id="tHead"></thead>
-            <tbody id="tBody"></tbody>
-        </table>
-
-<div id="nyElevSeksjon" class="ny-elev-boks no-print" style="display: none; margin-top: 40px; padding: 20px; background: #f8f9fa; border: 2px dashed #cbd5e0; border-radius: 8px;">
-    <h4>Legg til ny elev manuelt</h4>
-    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <input type="text" id="nyttEtternavn" placeholder="Etternavn" style="flex:1">
-        <input type="text" id="nyttFornavn" placeholder="Fornavn" style="flex:1">
-        <button class="btn btn-reg" onclick="leggTilNyElev()">Legg til i denne klassen</button>
+            </div>
+            <div style="border-right: 1px solid #dee2e6; padding-right: 10px;">
+                <h4>Systemlogg</h4>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button class="btn btn-admin" style="background-color: #34495e;" onclick="aapneLoggModal()">Vis innlogginger</button>
+                    <button class="btn" style="background-color: #2c3e50; color: white;" onclick="aapneGjennomfoeringModal()">Gjennomføring</button>
+                </div>
+            </div>
+            <div>
+                <h4 style="color: #e74c3c;">Slett elever</h4>
+                <button class="btn btn-danger" style="background-color: #e74c3c; color: white;" onclick="aapneSlettElevModal()">Slett elever</button>
             </div>
         </div>
-    </div>
-</div>
-
-<div id="modal" class="modal">
-    <div class="modal-content">
-<h3 id="modalNavn" style="margin-top: 0; margin-bottom: 2px; font-size: 1.1em; color: #2c3e50;">Navn</h3>
-<p style="font-size: 0.7em; color: #7f8c8d; margin-bottom: 8px; margin-top: 0;">
-    Naviger med [Enter]. Lagre på siste felt.
-</p>
-<hr style="margin-bottom: 10px; opacity: 0.3;">
-        
-        <div id="oppgaveFelter" class="modal-body-scroll"></div>
-
-        <div style="margin-top: 15px; padding: 10px; background: #fff5f5; border: 1px solid #feb2b2; border-radius: 6px;">
-            <label style="display: flex; align-items: center; cursor: pointer; font-weight: bold; color: #c53030;">
-                <input type="checkbox" id="ikkeGjennomfort" style="width: 18px; height: 18px; margin-right: 10px;">
-                Ikke gjennomført (f.eks. syk/fritak)
-            </label>
-        </div>
-
-        <div style="margin-top: 20px; display: flex; gap: 10px;">
-            <button class="btn btn-reg" style="flex:2" onclick="lagreData()">Lagre</button>
-            <button class="btn btn-fjern" style="flex:1" onclick="lukkModal()">Avbryt</button>
+        <div style="margin-top:20px; text-align:right;">
+            <button class="btn btn-fjern" onclick="lukkAdmin()">Lukk Panel</button>
         </div>
     </div>
-</div>
 
-<div id="modalRapport" class="modal"><div class="modal-content"><h3>Generer Årsrapport</h3><label>Skoleår:</label>
-<select id="adminAar">
-            <option value=""selected>-- Laster år... --</option>            
-</select>
-<label>Fag:</label><select id="adminFag"><option value="Lesing">Lesing</option><option value="Regning">Regning</option></select><label>Periode:</label><select id="adminPeriode"><option value="Høst">Høst</option><option value="Vår">Vår</option></select><div style="margin-top:20px;display:flex;gap:10px;"><button class="btn btn-reg" style="flex:2" onclick="kjorAdminRapport('alle')">Vis Rapport</button><button class="btn btn-slett" style="flex:2" onclick="kjorAdminRapport('kritisk')">Kun Kritisk</button><button class="btn btn-fjern" style="flex:1" onclick="document.getElementById('modalRapport').style.display='none'">Avbryt</button></div></div></div>
-
-
-<div id="modalUtvikling" class="modal no-print" 
-     style="display:none; position:fixed; z-index:2000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); align-items:center; justify-content:center;">
-    
-    <div class="modal-content" 
-         style="background:white; padding:25px; width:95%; max-width:1250px; border-radius:12px; max-height: 95vh; display:flex; flex-direction:column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
-        
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #8e44ad; padding-bottom: 10px; margin-bottom: 10px;">
-            <h2 style="color: #8e44ad; margin: 0; font-size: 1.5em;">📈 Skolens utvikling over tid</h2>
-            <div class="no-print" style="display: flex; gap: 10px;">
-                <button class="btn btn-print" onclick="printUtvikling()">Skriv ut / Lagre PDF</button>
-                <button class="btn-fjern" style="background: #95a5a6; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer;" onclick="document.getElementById('modalUtvikling').style.display='none'">Lukk</button>
-            </div>
-        </div>
-
-        <div style="overflow-y: auto; flex-grow: 1; padding-right: 15px;">
-            
-            <div id="utviklingFilter" class="no-print" style="margin: 15px 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
-                <button class="btn" style="background:#2c3e50; color:white; min-width: 100px;" onclick="oppdaterUtviklingFilter('alle')">Alle valg</button>
-                <button class="btn" style="background:#2c3e50; color:white; min-width: 120px;" onclick="oppdaterUtviklingFilter('total')">Kun Skolen totalt</button>
-                <div style="width: 2px; background: #ccc; margin: 0 5px;"></div> 
-                <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('1')">1. trinn</button>
-                <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('2')">2. trinn</button>
-                <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('3')">3. trinn</button>
-                <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('4')">4. trinn</button>
-                <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('5')">5. trinn</button>
-                <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('6')">6. trinn</button>
-                <button class="btn btn-hent" onclick="oppdaterUtviklingFilter('7')">7. trinn</button>
-            </div>
-
-            <p class="no-print" style="text-align: center; color: #666; margin-bottom: 20px;">Klikk på knappene over for å filtrere visningen. Skolen totalt (linje) vises alltid som referanse.</p>
-            
-            <div class="chart-container" style="position: relative; height:400px; margin-bottom: 50px; background: white;">
-                <canvas id="chartUtviklingLesing"></canvas>
-            </div>
-            
-            <hr style="border: 0; border-top: 1px dashed #ccc; margin: 40px 0;">
-            
-            <div class="chart-container" style="position: relative; height:400px; margin-bottom: 20px; background: white;">
-                <canvas id="chartUtviklingRegning"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="modalLogg" class="modal">
-    <div class="modal-content" style="width: 700px; max-width: 95%;">
-        <h2 style="border-bottom: 2px solid #34495e; padding-bottom: 10px; margin-top: 0;">Systemlogg & Statistikk</h2>
-        <div id="loggListe" style="max-height: 400px; overflow-y: auto;">
-            <p>Henter logg...</p>
-        </div>
-        <button class="btn btn-fjern" onclick="document.getElementById('modalLogg').style.display='none'" style="margin-top: 20px; width: 100%;">Lukk</button>
-    </div>
-</div>
-
-
-<div id="modalSammenlign" class="modal no-print">
-    <div class="modal-content" style="background:white; margin:5% auto; padding:20px; width:80%; max-width:900px; border-radius:8px;">
-        <h3 style="color:#2980b9; border-bottom:1px solid #2980b9; padding-bottom:10px;">Sammenlign klasser (Trinn-oversikt)</h3>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 4px;">
+    <div id="skjemaInnhold">
+        <div class="header-grid no-print">
             <div>
                 <label>Skoleår:</label>
-                <select id="compAar" class="form-control" style="width:100%"></select>
+                <select id="mAar" onchange="hentData()"><option value="" selected>-- Laster år... --</option></select>
             </div>
             <div>
                 <label>Periode:</label>
-                <select id="compPeriode" class="form-control" style="width:100%">
+                <select id="mPeriode" onchange="hentData()">
+                    <option value="">-- Velg periode --</option>
                     <option value="Høst">Høst</option>
                     <option value="Vår">Vår</option>
                 </select>
             </div>
             <div>
                 <label>Fag:</label>
-                <select id="compFag" class="form-control" style="width:100%">
+                <select id="mFag" onchange="hentData()">
+                    <option value="">-- Velg fag --</option>
                     <option value="Lesing">Lesing</option>
                     <option value="Regning">Regning</option>
                 </select>
             </div>
-
             <div>
                 <label>Trinn:</label>
-                <select id="compTrinn" class="form-control" style="width:100%">
-                    <option value="1">1. Trinn</option>
-                    <option value="2">2. Trinn</option>
-                    <option value="3">3. Trinn</option>
-                    <option value="4">4. Trinn</option>
-                    <option value="5">5. Trinn</option>
-                    <option value="6">6. Trinn</option>
+                <select id="mTrinn" onchange="hentData()">
+                    <option value="">-- Velg trinn --</option>
+                    <option value="1">1. Trinn</option><option value="2">2. Trinn</option>
+                    <option value="3">3. Trinn</option><option value="4">4. Trinn</option>
+                    <option value="5">5. Trinn</option><option value="6">6. Trinn</option>
                     <option value="7">7. Trinn</option>
+                </select>
+            </div>
+            <div>
+                <label>Klasse:</label>
+                <select id="mKlasse" onchange="hentData()">
+                    <option value="">-- Velg klasse --</option>
+                    <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
                 </select>
             </div>
         </div>
 
-        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <button class="btn btn-analyse" style="flex: 2;" onclick="kjorSammenligning()">Lag Diagram</button>
-            <button class="btn btn-print" style="flex: 1; background-color: #2980b9;" onclick="printSammenligningsDiagram()">Skriv ut diagram</button>
+        <div class="action-bar no-print">
+            <button id="btnFerdigstill" class="btn btn-lock" onclick="toggleFerdigstill()"><span class="btn-icon">🔒</span> <span id="lockText">Ferdigstille</span></button>
+            <button class="btn btn-print" onclick="forberedPrint()"><span class="btn-icon">🖨️</span> Skriv ut</button>
+            <button class="btn btn-analyse" onclick="genererKlasseAnalyse()"><span class="btn-icon">📊</span> Analyse</button>
+            <button class="btn btn-excel" onclick="eksporter()"><span class="btn-icon">📤</span> Eksport</button>
+            <button id="btnImport" class="btn btn-hent" onclick="document.getElementById('excelInput').click()"><span class="btn-icon">📥</span> Import</button>
+            <input type="file" id="excelInput" style="display:none" accept=".xlsx, .xls, .csv" onchange="handterExcelFil(this)">
         </div>
 
-        <div id="modalChartArea" style="display:none; background:white; padding:15px; border:1px solid #ddd; border-radius:4px;">
-            <h2 id="modalChartOverskrift" style="text-align:center; font-size: 1.1em; color:#2c3e50; margin-bottom: 15px;"></h2>
-            <canvas id="modalSammenligningsChart"></canvas>
+        <div style="overflow-x: auto;">
+            <table id="hovedTabell">
+                <thead id="tHead"></thead>
+                <tbody id="tBody"></tbody>
+            </table>
         </div>
 
-        <div style="margin-top:20px; text-align:right;">
-            <button class="btn btn-fjern" onclick="document.getElementById('modalSammenlign').style.display='none'">Lukk</button>
-        </div>
-    </div>
-</div>
-
-<div id="modalKlasserapport" class="modal no-print" 
-     style="display:none; position:fixed; z-index:2100; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); align-items:center; justify-content:center;">
-    
-    <div class="modal-content" 
-         style="background:white; padding:25px; width: 95%; max-width: 1100px; max-height: 95vh; display:flex; flex-direction:column; border-radius:12px; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
-        
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2980b9; padding-bottom: 10px; margin-bottom: 10px;">
-            <h2 style="color: #2980b9; margin: 0;">📊 Klasserapport (Kull-utvikling)</h2>
-            <button class="btn-fjern" style="background: #95a5a6; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer;" onclick="document.getElementById('modalKlasserapport').style.display='none'">Lukk</button>
-        </div>
-
-        <div style="overflow-y: auto; flex-grow: 1; padding-right: 15px;">
-            
-            <div class="no-print" style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                <div>
-                    <label style="font-weight:bold; display:block; margin-bottom:5px;">Fødselsår (Kull):</label>
-                    <select id="selectKullAar" class="form-control" style="width:100%;"></select>
-                </div>
-                <div>
-                    <label style="font-weight:bold; display:block; margin-bottom:5px;">Fag:</label>
-                    <select id="selectKullFag" class="form-control" style="width:100%;">
-                        <option value="Lesing">Lesing</option>
-                        <option value="Regning">Regning</option>
-                    </select>
-                </div>
-                <div>
-                    <label style="font-weight:bold; display:block; margin-bottom:5px;">Klasse (Bokstav):</label>
-                    <select id="selectKullKlasse" class="form-control" style="width:100%;">
-                        <option value="A">A</option>
-                        <option value="B">B</option>
-                        <option value="C">C</option>
-                        <option value="D">D</option>
-                    </select>
-                </div>
-                <div style="display: flex; align-items: flex-end; gap: 10px;">
-                    <button class="btn btn-hent" onclick="genererKlasserapport()">Vis utvikling</button>
-                    <button class="btn btn-print" style="background:#2980b9;" onclick="printKlasseDiagram()">Skriv ut diagram</button>
-                    <button class="btn btn-excel" style="background:#27ae60;" onclick="printAlleKlasseResultater()">Print alle resultater</button>
-                </div>
+        <div id="nyElevSeksjon" class="ny-elev-boks no-print" style="display: none; margin-top: 40px; padding: 20px; background: #f8f9fa; border: 2px dashed #cbd5e0; border-radius: 8px;">
+            <h4>Legg til ny elev manuelt</h4>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <input type="text" id="nyttEtternavn" placeholder="Etternavn">
+                <input type="text" id="nyttFornavn" placeholder="Fornavn">
+                <button class="btn btn-reg" onclick="leggTilNyElev()">Legg til</button>
             </div>
-
-            <div id="klasserapportVisning">
-                <div style="height: 400px; position: relative; margin-bottom: 30px;">
-                    <canvas id="chartKlasseUtvikling"></canvas>
-                </div>
-                
-                <div id="klasseTabellPrint" style="margin-top: 20px;"></div>
-            </div>
-            
         </div>
+    </div> </div> <div id="modalSammenlign" class="modal no-print" style="display:none; position:fixed; z-index:3000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+    <div class="modal-content" style="background:white; padding:20px; width:80%; max-width:900px; border-radius:8px;">
+        <h3 style="color:#2980b9; border-bottom:1px solid #2980b9; padding-bottom:10px;">Sammenlign klasser</h3>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; background: #f8f9fa; padding: 15px;">
+            <div><label>År:</label><select id="compAar" class="form-control"></select></div>
+            <div><label>Periode:</label><select id="compPeriode" class="form-control"><option>Høst</option><option>Vår</option></select></div>
+            <div><label>Fag:</label><select id="compFag" class="form-control"><option>Lesing</option><option>Regning</option></select></div>
+            <div><label>Trinn:</label><select id="compTrinn" class="form-control"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option></select></div>
+        </div>
+        <button class="btn btn-analyse" style="width:100%; margin-bottom:10px;" onclick="kjorSammenligning()">Generer diagram</button>
+        <div id="modalChartArea" style="display:none;"><canvas id="modalSammenligningsChart"></canvas></div>
+        <div style="text-align:right;"><button class="btn btn-fjern" onclick="document.getElementById('modalSammenlign').style.display='none'">Lukk</button></div>
     </div>
 </div>
 
-
-<div id="modalSlettElev" class="modal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5);">
-    <div class="modal-content" style="background-color:white; margin:5% auto; padding:20px; width:500px; border-radius:8px; position:relative; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-        <h2 style="color:#e74c3c; border-bottom: 2px solid #e74c3c; padding-bottom: 10px;">Slett elev fra registeret</h2>
-        
-        <div style="margin: 15px 0;">
-            <label>Søk etter elev:</label>
-            <input type="text" id="slettElevSok" placeholder="Skriv navn for å filtrere..." onkeyup="filtrerSletteliste()" 
-                   style="width:100%; padding:12px; margin-top:5px; border:1px solid #ccc; border-radius:4px; box-sizing: border-box; font-size: 16px;">
-        </div>
-        
-        <div id="sletteListeContainer" style="max-height:350px; overflow-y:auto; border:1px solid #eee; border-radius:4px; background: #fafafa;">
-            </div>
-        
-        <div style="margin-top:20px; text-align:right; border-top: 1px solid #eee; padding-top: 15px;">
-            <button onclick="document.getElementById('modalSlettElev').style.display='none'" 
-                    style="padding: 10px 20px; background: #95a5a6; color: white; border: none; border-radius: 4px; cursor: pointer;">Avbryt / Lukk</button>
-        </div>
-    </div>
-</div>
-
-
-<div id="modalElevrapport" class="modal no-print" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5);">
-    <div class="modal-content no-print" style="background:white; margin:10% auto; padding:20px; width:400px; border-radius:8px;">
-        <h3 class="no-print">Generer Elevrapport</h3>
-        <p class="no-print">Søk etter elevnavn:</p>
-        
-        <input type="text" id="elevSokInput" placeholder="Skriv navn..." onkeyup="filtrerElevListe()" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc; border-radius:4px;">
-        
-        <div id="elevListeContainer" style="max-height: 300px; overflow-y: auto; border: 1px solid #eee; padding: 5px; background:#fafafa;">
-        </div>
-        
-        <div style="margin-top:15px; text-align:right;" class="no-print">
-            <button class="btn btn-fjern" onclick="document.getElementById('modalElevrapport').style.display='none'">Avbryt</button>
-        </div>
-    </div>
-</div>
-
-<div id="utskriftRapportArea" class="only-print"></div>
-
-
-<footer class="no-print" style="
-    margin-top: 50px; 
-    padding: 40px 0; 
-    text-align: center; 
-    width: 100%; 
-    clear: both;">
-    
-    <span style="
-        background: #f8f9fa; 
-        padding: 10px 25px; 
-        border-radius: 30px; 
-        font-size: 13px; 
-        color: #555; 
-        border: 1px solid #ddd; 
-        display: inline-block; 
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
-        font-family: sans-serif;">
-        
-Utviklet av <strong style="color: #2c3e50;">Tor Skarprud</strong> &bull; 2026 &bull; 
-        <a href="https://teams.microsoft.com/l/chat/0/0?users=tor.skarprud@kristiansand.kommune.no" 
-           target="_blank" 
-           style="color: #464eb8; text-decoration: none; font-weight: bold;">
-            Kontakt support (Teams)
-        </a>
-    </span>
-</footer>
-
+<div id="modalRapport" class="modal"><div class="modal-content"><h3>Generer Årsrapport</h3><label>Skoleår:</label><select id="adminAar"></select><button class="btn btn-reg" onclick="kjorAdminRapport('alle')">Vis</button><button class="btn btn-fjern" onclick="document.getElementById('modalRapport').style.display='none'">Avbryt</button></div></div>
 
 <script src="Global_aar.js"></script>
 <script src="analyseMaler.js"></script>
@@ -878,6 +483,4 @@ Utviklet av <strong style="color: #2c3e50;">Tor Skarprud</strong> &bull; 2026 &b
 <script src="ansatte.js"></script>
 <script src="modal.js"></script>
 <script src="app.js"></script>
-
 </body>
-</html>
