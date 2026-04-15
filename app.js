@@ -1567,64 +1567,57 @@ if (!harGlobalTreff) {
     globalBokReferanser = `Ingen treff på "${temaSok}" i trinn 1-${rentTrinnNummer}.\n\nTips: Sjekk at tema-navnet er skrevet likt i mapping-filene (f.eks. om ett trinn bruker "Klokka" og et annet bruker "Tid").`;
 }
 
-            // --- 3. ENKODING FOR KNAPPER ---
-            const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
-            let kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}".\nPedagogisk forklaring: ${malInfo.forklaring}.\n\n`;
-            if (bildeUrl) {
-                kiPrompt += `1. Se på bildet av oppgaven: ${bildeUrl}\n2. Lag 5 lignende oppgaver.\n\n`;
-            } else {
-                kiPrompt += `Lag 5 varierte oppgaver som trener dette målet.\n\n`;
-            }
-            kiPrompt += `Tilpass alt til ${rentTrinnNummer}. trinn.`;
+      // --- 3. ENKODING FOR KNAPPER ---
+const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
+let kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}".\nPedagogisk forklaring: ${malInfo.forklaring}.\n\n`;
+if (bildeUrl) {
+    kiPrompt += `1. Se på bildet av oppgaven: ${bildeUrl}\n2. Lag 5 lignende oppgaver.\n\n`;
+} else {
+    kiPrompt += `Lag 5 varierte oppgaver som trener dette målet.\n\n`;
+}
+kiPrompt += `Tilpass alt til ${rentTrinnNummer}. trinn.`;
 
-            // Viktig: Her deklareres hver variabel kun ÉN gang
-            const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
-            const safeBokReferanser = btoa(unescape(encodeURIComponent(bokReferanser)));
-            const safeBokTittel = btoa(unescape(encodeURIComponent(bokInfoTekst)));
-            const safeGlobalBok = btoa(unescape(encodeURIComponent(globalBokReferanser)));
-            const safeGlobalTittel = btoa(unescape(encodeURIComponent(navnMultiGlobal)));
+const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
+const safeGlobalBok = btoa(unescape(encodeURIComponent(globalBokReferanser)));
+const safeGlobalTittel = btoa(unescape(encodeURIComponent(navnMultiGlobal)));
 
-            // --- 4. BYGG HTML RAD ---
-            htmlSide3 += `
-            <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 8px 15px; border-bottom: 1px solid #eee; font-size: 0.85em; background: white;">
-                <div style="padding-right: 15px;">
-                    <strong style="color: ${farge};">${malInfo.navn}</strong> 
-                    <span style="color: #666;">(${prosent.toFixed(1)}%)</span> — 
-                    <span style="color: #888; font-style: italic;">${malInfo.forklaring}</span>
-                </div>
-                
-                <div style="display: flex; gap: 5px; flex-shrink: 0;">
-                    ${bildeUrl ? `
-                        <span class="bilde-container">
-                            <a href="${bildeUrl}" target="_blank" title="Se oppgave" style="text-decoration:none; padding: 2px 5px; border: 1px solid #ccc; border-radius:3px; background:#f9f9f9;">👁️</a>
-                            <img src="${bildeUrl}" class="hover-bilde" alt="Oppgavebilde">
-                        </span>` : ''}
+// --- 4. BYGG HTML RAD (Nå med kun én Multi-knapp) ---
+htmlSide3 += `
+<div style="display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 8px 15px; border-bottom: 1px solid #eee; font-size: 0.85em; background: white;">
+    <div style="padding-right: 15px;">
+        <strong style="color: ${farge};">${malInfo.navn}</strong> 
+        <span style="color: #666;">(${prosent.toFixed(1)}%)</span> — 
+        <span style="color: #888; font-style: italic;">${malInfo.forklaring}</span>
+    </div>
+    
+    <div style="display: flex; gap: 5px; flex-shrink: 0;">
+        ${bildeUrl ? `
+            <span class="bilde-container">
+                <a href="${bildeUrl}" target="_blank" title="Se oppgave" style="text-decoration:none; padding: 2px 5px; border: 1px solid #ccc; border-radius:3px; background:#f9f9f9;">👁️</a>
+                <img src="${bildeUrl}" class="hover-bilde" alt="Oppgavebilde">
+            </span>` : ''}
 
-                    <button title="Generer KI-oppgaver" 
-                        onclick="(function(btn){ 
-                            const promptTekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
-                            navigator.clipboard.writeText(promptTekst).then(() => {
-                                btn.innerText = '✅';
-                                window.open('https://copilot.microsoft.com/?q=' + encodeURIComponent(promptTekst), '_blank');
-                                setTimeout(() => { btn.innerText = 'KI'; }, 2000);
-                            });
-                        })(this)"
-                        class="btn-ki">KI</button>
+        <button title="Generer KI-oppgaver" 
+            onclick="(function(btn){ 
+                const promptTekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
+                navigator.clipboard.writeText(promptTekst).then(() => {
+                    btn.innerText = '✅';
+                    window.open('https://copilot.microsoft.com/?q=' + encodeURIComponent(promptTekst), '_blank');
+                    setTimeout(() => { btn.innerText = 'KI'; }, 2000);
+                });
+            })(this)"
+            class="btn-ki">KI</button>
 
-                    ${!erLesing ? `
-                    <button title="Vis sider i Multi for dette trinnet" 
-                        onclick="alert(decodeURIComponent(escape(window.atob('${safeBokTittel}'))) + '\\n\\n' + decodeURIComponent(escape(window.atob('${safeBokReferanser}'))))" 
-                        class="btn-bok">${navnMultiTrinn}</button>
-
-                    <button title="Søk i alle trinn opp til nåværende" 
-                        onclick="alert(decodeURIComponent(escape(window.atob('${safeGlobalTittel}'))) + ':\\n\\n' + decodeURIComponent(escape(window.atob('${safeGlobalBok}'))))" 
-                        class="btn-multi-alle" 
-                        style="background-color: #f39c12; color: white; border: none; padding: 2px 5px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">
-                        ${navnMultiGlobal}
-                    </button>
-                    ` : ''}
-                </div>
-            </div>`;
+        ${!erLesing ? `
+        <button title="Søk i alle Multi-bøker fra 1. trinn opp til nåværende" 
+            onclick="alert(decodeURIComponent(escape(window.atob('${safeGlobalTittel}'))) + ':\\n\\n' + decodeURIComponent(escape(window.atob('${safeGlobalBok}'))))" 
+            class="btn-multi-alle" 
+            style="background-color: #f39c12; color: white; border: none; padding: 2px 10px; border-radius: 3px; cursor: pointer; font-size: 0.85em; font-weight: bold;">
+            ${navnMultiGlobal}
+        </button>
+        ` : ''}
+    </div>
+</div>`;
         }
     });
 }
