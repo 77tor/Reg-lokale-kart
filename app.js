@@ -25,86 +25,6 @@
     });
 })();
 
-// --- TVING FUNKSJONEN TIL Å BLI GLOBAL ---
-// --- TVING FUNKSJONEN TIL Å BLI GLOBAL ---
-if (!window.visBokModal) {
-    console.log("Registrerer visBokModal globalt...");
-    
-    window.visBokModal = function(tema, aktueltTrinn, sesong) {
-        console.log("Åpner modal for tema:", tema);
-        
-        let alleTrinnReferanser = "";
-        for (let t = 1; t <= 7; t++) {
-            const mapping = window[`mappingTrinn${t}`];
-            if (mapping && mapping[sesong]) {
-                let treffForTrinn = [];
-                Object.values(mapping[sesong]).forEach(data => {
-                    if (data.tema === tema && data.bøker) {
-                        data.bøker.forEach(b => {
-                            let navn = b.bok === "ovebok" ? "Øvebok" : `Grunnbok ${t}${b.bok.toUpperCase().includes("A") ? "A" : "B"}`;
-                            treffForTrinn.push(`${navn} s. ${b.side}`);
-                        });
-                    }
-                });
-                if (treffForTrinn.length > 0) {
-                    const unike = [...new Set(treffForTrinn)];
-                    alleTrinnReferanser += `<div style="margin-bottom:8px;"><strong>${t}. trinn:</strong><br>${unike.join(", ")}</div>`;
-                }
-            }
-        }
-
-        let modal = document.getElementById('analyse-bok-modal');
-        if (!modal) {
-            modal = document.createElement('div');
-            modal.id = 'analyse-bok-modal';
-            modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:100000; font-family:sans-serif; backdrop-filter: blur(3px);";
-            document.body.appendChild(modal);
-        }
-
-        const temaID = tema.replace(/[^a-zA-Z0-9]/g, '');
-        const gjeldendeTrinnReferanse = document.getElementById('temp-ref-' + temaID) ? document.getElementById('temp-ref-' + temaID).innerText : 'Referanse ikke funnet.';
-
-        modal.innerHTML = `
-            <div style="background:white; padding:25px; border-radius:15px; max-width:450px; width:90%; box-shadow:0 15px 40px rgba(0,0,0,0.4); position:relative; color: #333;">
-                <h2 style="margin:0 0 15px 0; color:#2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">${tema}</h2>
-                <p style="margin-bottom:5px; font-weight:bold;">For ditt trinn (${aktueltTrinn}.):</p>
-                <div style="background:#e8f4fd; padding:15px; border-radius:10px; border-left:5px solid #3498db; margin-bottom:15px;">
-                    ${gjeldendeTrinnReferanse}
-                </div>
-                <button onclick="document.getElementById('ekstra-trinn').style.display='block'; this.style.display='none'" 
-                        style="width:100%; padding:10px; background:#f8f9fa; border:1px solid #ddd; border-radius:8px; cursor:pointer;">
-                    🔍 Vis andre trinn (differensiering)
-                </button>
-                <div id="ekstra-trinn" style="display:none; margin-top:15px; padding:15px; background:#fdfdfd; border:1px solid #eee; border-radius:10px; font-size:0.9em; max-height:180px; overflow-y:auto; text-align:left;">
-                    ${alleTrinnReferanser || "Ingen andre trinn funnet."}
-                </div>
-                <button onclick="document.getElementById('analyse-bok-modal').remove()" 
-                        style="margin-top:20px; width:100%; padding:12px; background:#2c3e50; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">
-                    Lukk
-                </button>
-            </div>
-        `;
-    }; // Lukker funksjonen
-} // <--- DENNE MANGLER DU (lukker if-setningen)
-
-function fiksGithubLenke(url) {
-    if (!url || typeof url !== 'string') return url;
-
-    // 1. Hvis det er en forkortet sti (starter med Oppgavebilder/), legg på hele GitHub-adressen
-    if (url.startsWith("Oppgavebilder/")) {
-        const brukernavn = "77tor"; // Sjekk at dette er ditt brukernavn
-        const repo = "Reg-lokale-kart";
-        return `https://raw.githubusercontent.com/${brukernavn}/${repo}/main/${url}`;
-    }
-
-    // 2. Hvis det er en vanlig GitHub-lenke med /blob/, gjør den om til raw
-    if (url.includes("github.com") && url.includes("/blob/")) {
-        return url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
-    }
-
-    return url;
-}
-
 
 // --- 1. FIREBASE CONFIG ---
 const firebaseConfig = {
@@ -1586,7 +1506,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             }
 
             // Lagrer referansen i en skjult span for å kunne hente den inn i modalen
-            const temaID = temaNavn.replace(/\s/g, '');
+    const temaID = temaNavn.replace(/[^a-zA-Z0-9]/g, ''); // Lik som i HTML-funksjonen
             htmlSide3 += `<span id="temp-ref-${temaID}" style="display:none;">${bareReferanser}</span>`;
 
             // --- KI PROMPT ---
@@ -1629,7 +1549,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
 
                     ${(!erLesing && harMapping) ? `
                     <button title="Vis sider i Multi" 
-                        onclick="visBokModal('${temaNavn.replace(/'/g, "\\'")}', ${rentTrinnNummer}, '${sesong}')" 
+         onclick="window.visBokModal('${temaNavn.replace(/'/g, "\\'")}', ${rentTrinnNummer}, '${sesong}')"
                         class="btn-bok">BOK</button>
                     ` : ''}
                 </div>
