@@ -1280,8 +1280,6 @@ elever.forEach(navn => {
         const sideTittel = `Analyse: ${fag} - ${trinn}${klasse} (${periode} ${aar})`;
         const fellesHeader = `<div class="side-header">${sideTittel}</div>`;
 
-
-// --- SIDE 1: HOVEDANALYSE OG TABELL ---
 // --- SIDE 1: HOVEDANALYSE OG TABELL ---
 let htmlSide1 = fellesHeader;
 
@@ -1523,6 +1521,31 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                 bokInfoTekst = `Anbefalt trening for ${rentTrinnNummer}. trinn:`;
             }
 
+// --- NY LOGIKK FOR MULTI 1-7 SØK ---
+let globalBokReferanser = "";
+let harGlobalTreff = false;
+
+// Vi går gjennom alle trinn fra 1 til 7
+for (let t = 1; t <= 7; t++) {
+    const sjekkMapping = window[`mappingTrinn${t}`];
+    if (sjekkMapping && sjekkMapping[sesong] && sjekkMapping[sesong][oppgaveNr]) {
+        const mData = sjekkMapping[sesong][oppgaveNr];
+        
+        const trinnRef = mData.bøker.map(b => {
+            let navn = b.bok === "ovebok" ? "Øvebok" : b.bok.includes("grunnbok") ? `Grunnbok ${t}${b.bok.toUpperCase().includes("A") ? "A" : "B"}` : b.bok;
+            return `${navn} s. ${b.side}`;
+        }).join(", ");
+
+        globalBokReferanser += `TRINN ${t} (${mData.tema}):\n${trinnRef}\n\n`;
+        harGlobalTreff = true;
+    }
+}
+
+if (!harGlobalTreff) {
+    globalBokReferanser = "Ingen treff funnet i Multi 1-7 for denne oppgaven.";
+}
+
+const safeGlobalBok = btoa(unescape(encodeURIComponent(globalBokReferanser)));
 // ---SLUTT PÅ BOKREF
 
 
@@ -1571,6 +1594,11 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                     <button title="Vis sider i Multi" 
                         onclick="alert(decodeURIComponent(escape(window.atob('${safeBokTittel}'))) + '\\n\\n' + decodeURIComponent(escape(window.atob('${safeBokReferanser}'))))" 
                         class="btn-bok">BOK</button>
+
+<button title="Søk i alle trinn (1-7)" 
+        onclick="alert('Multi-søk på tvers av alle trinn:\\n\\n' + decodeURIComponent(escape(window.atob('${safeGlobalBok}'))))" 
+        class="btn-multi-alle" style="background-color: #f39c12; color: white; border: none; padding: 2px 5px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">Multi 1-7</button>
+
                     ` : ''}
                 </div>
             </div>`;
