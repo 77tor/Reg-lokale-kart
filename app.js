@@ -1,26 +1,34 @@
-// 1. Definer funksjonen globalt med en gang
+console.log("App.js har startet lastingen..."); // Sjekk i konsollen om du ser denne!
+
 window.visBokModal = function(tema, aktueltTrinn, sesong) {
-    console.log("Åpner modal for:", tema);
+    console.log("Funksjon visBokModal er kalt!");
     
+    // Hvis tema mangler eller er rart, stopp her så vi ikke krasjer
+    if (!tema) return;
+
     let alleTrinnReferanser = "";
-    for (let t = 1; t <= 7; t++) {
-        const m = window["mappingTrinn" + t];
-        if (m && m[sesong]) {
-            let treff = [];
-            Object.keys(m[sesong]).forEach(nr => {
-                const data = m[sesong][nr];
-                if (data.tema === tema && data.bøker) {
-                    data.bøker.forEach(b => {
-                        let navn = (b.bok === "ovebok") ? "Øvebok" : "Grunnbok " + t + (b.bok.toUpperCase().includes("A") ? "A" : "B");
-                        treff.push(navn + " s. " + b.side);
-                    });
+    try {
+        for (let t = 1; t <= 7; t++) {
+            const m = window["mappingTrinn" + t];
+            if (m && m[sesong]) {
+                let treff = [];
+                Object.keys(m[sesong]).forEach(nr => {
+                    const data = m[sesong][nr];
+                    if (data && data.tema === tema && data.bøker) {
+                        data.bøker.forEach(b => {
+                            let navn = (b.bok === "ovebok") ? "Øvebok" : "Grunnbok " + t + (b.bok.toUpperCase().includes("A") ? "A" : "B");
+                            treff.push(navn + " s. " + b.side);
+                        });
+                    }
+                });
+                if (treff.length > 0) {
+                    const unike = [...new Set(treff)];
+                    alleTrinnReferanser += `<div style="margin-bottom:8px;"><strong>${t}. trinn:</strong><br>${unike.join(", ")}</div>`;
                 }
-            });
-            if (treff.length > 0) {
-                const unike = [...new Set(treff)];
-                alleTrinnReferanser += `<div style="margin-bottom:8px;"><strong>${t}. trinn:</strong><br>${unike.join(", ")}</div>`;
             }
         }
+    } catch (err) {
+        console.error("Feil i mapping-loopen:", err);
     }
 
     let modal = document.getElementById('analyse-bok-modal');
@@ -33,7 +41,7 @@ window.visBokModal = function(tema, aktueltTrinn, sesong) {
 
     const temaID = tema.replace(/[^a-zA-Z0-9]/g, '');
     const refElement = document.getElementById('temp-ref-' + temaID);
-    const gjeldendeTrinnReferanse = refElement ? refElement.innerText : 'Referanse ikke funnet.';
+    const gjeldendeTrinnReferanse = refElement ? refElement.innerText : 'Referanse ikke funnet for dette trinnet.';
 
     modal.innerHTML = `
         <div style="background:white; padding:25px; border-radius:15px; max-width:450px; width:90%; box-shadow:0 15px 40px rgba(0,0,0,0.4); position:relative; color: #333; text-align: left;">
@@ -47,7 +55,7 @@ window.visBokModal = function(tema, aktueltTrinn, sesong) {
                 🔍 Vis andre trinn (differensiering)
             </button>
             <div id="ekstra-trinn" style="display:none; margin-top:15px; padding:15px; background:#fdfdfd; border:1px solid #eee; border-radius:10px; font-size:0.9em; max-height:180px; overflow-y:auto;">
-                ${alleTrinnReferanser || "Ingen andre trinn funnet med dette temaet."}
+                ${alleTrinnReferanser || "Ingen andre trinn funnet."}
             </div>
             <button onclick="document.getElementById('analyse-bok-modal').remove()" 
                     style="margin-top:20px; width:100%; padding:12px; background:#2c3e50; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">
@@ -56,6 +64,7 @@ window.visBokModal = function(tema, aktueltTrinn, sesong) {
         </div>
     `;
 };
+console.log("visBokModal er nå registrert på window.");
 
 
 // --- ALLER ØVERST I app.js ---
