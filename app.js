@@ -1499,62 +1499,43 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             harSvakheter = true; 
             let farge = (o.grense !== -1 && snitt <= o.grense) ? "#c0392b" : "#d35400";
             
-            // --- BOK-REFERANSE LOGIKK (KORRIGERT) ---
+            // --- 1. BOK-REFERANSE (KUN AKTUELT TRINN) ---
             let bokReferanser = "Fant ingen spesifikke sidetall i mapping-filen.";
-            let bokInfoTekst = "Boksøk:";
-            
+            let bokInfoTekst = `Anbefalt trening for ${rentTrinnNummer}. trinn:`;
+            const navnMultiTrinn = `Multi ${rentTrinnNummer}`; // Navn til knappen
+
             if (gjeldendeMapping && gjeldendeMapping[sesong] && gjeldendeMapping[sesong][oppgaveNr]) {
-                const mapData = gjeldendeMapping[sesong][oppgaveNr]; // Denne heter mapData
-                
-                const refArray = mapData.bøker.map(b => { // Bruker mapData her
-                    let navn = b.bok;
-                    if (navn === "ovebok") {
-                        navn = "Øvebok";
-                    } else if (navn.includes("grunnbok")) {
-                        const bokstav = navn.toUpperCase().includes("A") ? "A" : "B";
-                        navn = `Grunnbok ${rentTrinnNummer}${bokstav}`;
-                    }
+                const mapData = gjeldendeMapping[sesong][oppgaveNr];
+                const refArray = mapData.bøker.map(b => {
+                    let navn = b.bok === "ovebok" ? "Øvebok" : b.bok.includes("grunnbok") ? `Grunnbok ${rentTrinnNummer}${b.bok.toUpperCase().includes("A") ? "A" : "B"}` : b.bok;
                     return `${navn} s. ${b.side}`;
                 });
-
                 bokReferanser = `${mapData.tema}:\n${refArray.join(", ")}`;
-                bokInfoTekst = `Anbefalt trening for ${rentTrinnNummer}. trinn:`;
             }
 
-// --- NY LOGIKK FOR MULTI 1-7 SØK ---
-// --- NY LOGIKK FOR MULTI SØK (DYNAMISK TRINN) ---
-let globalBokReferanser = "";
-let harGlobalTreff = false;
+            // --- 2. GLOBAL SØK LOGIKK (FRA TRINN 1 TIL AKTUELT TRINN) ---
+            let globalBokReferanser = "";
+            let harGlobalTreff = false;
+            const navnMultiGlobal = `Multi 1-${rentTrinnNummer}`; // Navn til oransje knapp
 
-// Vi går gjennom fra trinn 1 og stopper på det trinnet vi er på nå (rentTrinnNummer)
-for (let t = 1; t <= rentTrinnNummer; t++) {
-    const sjekkMapping = window[`mappingTrinn${t}`];
-    if (sjekkMapping && sjekkMapping[sesong] && sjekkMapping[sesong][oppgaveNr]) {
-        const mData = sjekkMapping[sesong][oppgaveNr];
-        
-        const trinnRef = mData.bøker.map(b => {
-            let navn = b.bok === "ovebok" ? "Øvebok" : b.bok.includes("grunnbok") ? `Grunnbok ${t}${b.bok.toUpperCase().includes("A") ? "A" : "B"}` : b.bok;
-            return `${navn} s. ${b.side}`;
-        }).join(", ");
+            for (let t = 1; t <= rentTrinnNummer; t++) {
+                const sjekkMapping = window[`mappingTrinn${t}`];
+                if (sjekkMapping && sjekkMapping[sesong] && sjekkMapping[sesong][oppgaveNr]) {
+                    const mData = sjekkMapping[sesong][oppgaveNr];
+                    const trinnRef = mData.bøker.map(b => {
+                        let n = b.bok === "ovebok" ? "Øvebok" : b.bok.includes("grunnbok") ? `Grunnbok ${t}${b.bok.toUpperCase().includes("A") ? "A" : "B"}` : b.bok;
+                        return `${n} s. ${b.side}`;
+                    }).join(", ");
+                    globalBokReferanser += `TRINN ${t} (${mData.tema}):\n${trinnRef}\n\n`;
+                    harGlobalTreff = true;
+                }
+            }
 
-        globalBokReferanser += `TRINN ${t} (${mData.tema}):\n${trinnRef}\n\n`;
-        harGlobalTreff = true;
-    }
-}
+            if (!harGlobalTreff) {
+                globalBokReferanser = `Ingen treff funnet i Multi 1-${rentTrinnNummer} for denne oppgaven.`;
+            }
 
-if (!harGlobalTreff) {
-    globalBokReferanser = `Ingen treff funnet i Multi 1-${rentTrinnNummer} for denne oppgaven.`;
-}
-
-// Navnet på knappen blir nå dynamisk, f.eks. "Multi 1-5"
-const knappNavn = `Multi 1-${rentTrinnNummer}`;
-
-const safeGlobalBok = btoa(unescape(encodeURIComponent(globalBokReferanser)));
-const safeKnappNavn = btoa(unescape(encodeURIComponent(knappNavn)));
-// ---SLUTT PÅ BOKREF
-
-
-            // --- KI PROMPT ---
+            // --- 3. ENKODING FOR KNAPPER ---
             const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
             let kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}".\nPedagogisk forklaring: ${malInfo.forklaring}.\n\n`;
             if (bildeUrl) {
@@ -1564,11 +1545,13 @@ const safeKnappNavn = btoa(unescape(encodeURIComponent(knappNavn)));
             }
             kiPrompt += `Tilpass alt til ${rentTrinnNummer}. trinn.`;
 
-            // Enkoding for knapper
             const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
             const safeBokReferanser = btoa(unescape(encodeURIComponent(bokReferanser)));
             const safeBokTittel = btoa(unescape(encodeURIComponent(bokInfoTekst)));
+            const safeGlobalBok = btoa(unescape(encodeURIComponent(globalBokReferanser)));
+            const safeGlobalTittel = btoa(unescape(encodeURIComponent(navnMultiGlobal)));
 
+            // --- 4. BYGG HTML RAD ---
             htmlSide3 += `
             <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 8px 15px; border-bottom: 1px solid #eee; font-size: 0.85em; background: white;">
                 <div style="padding-right: 15px;">
@@ -1596,23 +1579,23 @@ const safeKnappNavn = btoa(unescape(encodeURIComponent(knappNavn)));
                         class="btn-ki">KI</button>
 
                     ${!erLesing ? `
-                    <button title="Vis sider i Multi" 
+                    <button title="Vis sider i Multi for dette trinnet" 
                         onclick="alert(decodeURIComponent(escape(window.atob('${safeBokTittel}'))) + '\\n\\n' + decodeURIComponent(escape(window.atob('${safeBokReferanser}'))))" 
-                        class="btn-bok">BOK</button>
+                        class="btn-bok">${navnMultiTrinn}</button>
 
-<button title="Søk i alle trinn opp til nåværende" 
-    onclick="alert(decodeURIComponent(escape(window.atob('${safeKnappNavn}'))) + ':\\n\\n' + decodeURIComponent(escape(window.atob('${safeGlobalBok}'))))" 
-    class="btn-multi-alle" 
-    style="background-color: #f39c12; color: white; border: none; padding: 2px 5px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">
-    ${knappNavn}
-</button>
-
+                    <button title="Søk i alle trinn opp til nåværende" 
+                        onclick="alert(decodeURIComponent(escape(window.atob('${safeGlobalTittel}'))) + ':\\n\\n' + decodeURIComponent(escape(window.atob('${safeGlobalBok}'))))" 
+                        class="btn-multi-alle" 
+                        style="background-color: #f39c12; color: white; border: none; padding: 2px 5px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">
+                        ${navnMultiGlobal}
+                    </button>
                     ` : ''}
                 </div>
             </div>`;
         }
     });
 }
+
 if (!harSvakheter) {
     htmlSide3 += `<p style="text-align:center; color:green; padding:20px;">Stabilt høyt nivå på alle områder.</p>`;
 }
