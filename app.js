@@ -25,13 +25,11 @@
     });
 })();
 
-
-// --- 1. DEFINER FUNKSJONEN GLOBALT FØRST ---
-// Ved å legge den på window.visBokModal, er den tilgjengelig overalt
+// --- TVING FUNKSJONEN TIL Å BLI GLOBAL ---
 window.visBokModal = function(tema, aktueltTrinn, sesong) {
-    let alleTrinnReferanser = "";
+    console.log("Åpner modal for tema:", tema); // Debugging i konsollen
     
-    // Gå gjennom alle trinn-mappinger som ligger i window-objektet
+    let alleTrinnReferanser = "";
     for (let t = 1; t <= 7; t++) {
         const mapping = window[`mappingTrinn${t}`];
         if (mapping && mapping[sesong]) {
@@ -44,7 +42,6 @@ window.visBokModal = function(tema, aktueltTrinn, sesong) {
                     });
                 }
             });
-            
             if (treffForTrinn.length > 0) {
                 const unike = [...new Set(treffForTrinn)];
                 alleTrinnReferanser += `<div style="margin-bottom:8px;"><strong>${t}. trinn:</strong><br>${unike.join(", ")}</div>`;
@@ -52,50 +49,39 @@ window.visBokModal = function(tema, aktueltTrinn, sesong) {
         }
     }
 
-    // Lag eller hent modal-vinduet
     let modal = document.getElementById('analyse-bok-modal');
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'analyse-bok-modal';
-        modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:10000; font-family:sans-serif; backdrop-filter: blur(3px);";
+        modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:100000; font-family:sans-serif; backdrop-filter: blur(3px);";
         document.body.appendChild(modal);
     }
 
-    // Finn referansen for gjeldende trinn fra den skjulte span-en vi laget i loopen
-    const temaID = tema.replace(/\s/g, '');
-    const gjeldendeTrinnReferanse = document.getElementById('temp-ref-' + temaID) ? document.getElementById('temp-ref-' + temaID).innerText : 'Ingen spesifikke sider funnet for dette trinnet.';
+    const temaID = tema.replace(/[^a-zA-Z0-9]/g, '');
+    const gjeldendeTrinnReferanse = document.getElementById('temp-ref-' + temaID) ? document.getElementById('temp-ref-' + temaID).innerText : 'Referanse ikke funnet.';
 
     modal.innerHTML = `
-        <div style="background:white; padding:25px; border-radius:15px; max-width:450px; width:90%; box-shadow:0 15px 40px rgba(0,0,0,0.4); position:relative; animation: modalFadeIn 0.3s ease-out; color: #333;">
-            <h2 style="margin:0 0 15px 0; color:#2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 1.4em;">${tema}</h2>
-            
-            <div style="margin-bottom:20px;">
-                <p style="margin-bottom:5px; font-weight:bold; color:#555;">Anbefalt for ${aktueltTrinn}. trinn:</p>
-                <div style="background:#e8f4fd; padding:15px; border-radius:10px; border-left:5px solid #3498db; font-size:1.1em;">
-                    ${gjeldendeTrinnReferanse}
-                </div>
+        <div style="background:white; padding:25px; border-radius:15px; max-width:450px; width:90%; box-shadow:0 15px 40px rgba(0,0,0,0.4); position:relative; color: #333;">
+            <h2 style="margin:0 0 15px 0; color:#2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">${tema}</h2>
+            <p style="margin-bottom:5px; font-weight:bold;">For ditt trinn (${aktueltTrinn}.):</p>
+            <div style="background:#e8f4fd; padding:15px; border-radius:10px; border-left:5px solid #3498db; margin-bottom:15px;">
+                ${gjeldendeTrinnReferanse}
             </div>
-            
             <button onclick="document.getElementById('ekstra-trinn').style.display='block'; this.style.display='none'" 
-                    style="width:100%; padding:10px; background:#f8f9fa; border:1px solid #ddd; border-radius:8px; cursor:pointer; color:#666; font-weight:500;">
-                🔍 Se sidetall fra andre trinn (differensiering)
+                    style="width:100%; padding:10px; background:#f8f9fa; border:1px solid #ddd; border-radius:8px; cursor:pointer;">
+                🔍 Vis andre trinn (differensiering)
             </button>
-
-            <div id="ekstra-trinn" style="display:none; margin-top:15px; padding:15px; background:#fdfdfd; border:1px solid #eee; border-radius:10px; font-size:0.9em; max-height:180px; overflow-y:auto; text-align: left;">
-                <p style="color:#888; margin-bottom:10px; font-style:italic; border-bottom:1px solid #eee; padding-bottom:5px;">Relatert innhold i andre klassetrinn:</p>
-                ${alleTrinnReferanser || "Ingen treff på andre trinn."}
+            <div id="ekstra-trinn" style="display:none; margin-top:15px; padding:15px; background:#fdfdfd; border:1px solid #eee; border-radius:10px; font-size:0.9em; max-height:180px; overflow-y:auto; text-align:left;">
+                ${alleTrinnReferanser || "Ingen andre trinn funnet."}
             </div>
-
             <button onclick="document.getElementById('analyse-bok-modal').remove()" 
-                    style="margin-top:20px; width:100%; padding:12px; background:#2c3e50; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; font-size:1em;">
+                    style="margin-top:20px; width:100%; padding:12px; background:#2c3e50; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">
                 Lukk
             </button>
         </div>
-        <style>
-            @keyframes modalFadeIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        </style>
     `;
 };
+
 
 function fiksGithubLenke(url) {
     if (!url || typeof url !== 'string') return url;
