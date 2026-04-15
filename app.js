@@ -1502,7 +1502,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             // --- 1. BOK-REFERANSE (KUN AKTUELT TRINN) ---
             let bokReferanser = "Fant ingen spesifikke sidetall i mapping-filen.";
             let bokInfoTekst = `Anbefalt trening for ${rentTrinnNummer}. trinn:`;
-            const navnMultiTrinn = `Multi ${rentTrinnNummer}`; // Navn til knappen
+            const navnMultiTrinn = `Multi ${rentTrinnNummer}`;
 
             if (gjeldendeMapping && gjeldendeMapping[sesong] && gjeldendeMapping[sesong][oppgaveNr]) {
                 const mapData = gjeldendeMapping[sesong][oppgaveNr];
@@ -1513,61 +1513,46 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                 bokReferanser = `${mapData.tema}:\n${refArray.join(", ")}`;
             }
 
-
-// --- 2. GLOBAL SØK LOGIKK (BASERT PÅ DIN FUNGERENDE KODE) ---
-let globalBokReferanser = "";
-let harGlobalTreff = false;
-const navnMultiGlobal = `Multi 1-${rentTrinnNummer}`;
-
-// Vi henter temaet fra den koden som du vet fungerer
-let temaSok = "";
-if (gjeldendeMapping && gjeldendeMapping[sesong] && gjeldendeMapping[sesong][oppgaveNr]) {
-    temaSok = gjeldendeMapping[sesong][oppgaveNr].tema;
-}
-
-if (temaSok) {
-    // Vi vasker temaet for å være sikre på treff (små bokstaver og fjerner mellomrom)
-    const vasketSok = temaSok.toLowerCase().trim();
-
-    for (let t = 1; t <= rentTrinnNummer; t++) {
-        const trinnMapping = window[`mappingTrinn${t}`];
-        
-        if (trinnMapping && trinnMapping[sesong]) {
-            let treffForDetteTrinnet = [];
-
-            // Gå gjennom alle oppgaver i dette trinnet for å finne de med samme tema
-            Object.keys(trinnMapping[sesong]).forEach(nr => {
-                const data = trinnMapping[sesong][nr];
-                if (data.tema && data.tema.toLowerCase().trim() === vasketSok) {
-                    
-                    // Gjenbruker din sidetall-formatering som du vet fungerer:
-                    const refArray = data.bøker.map(b => {
-                        let navn = b.bok === "ovebok" ? "Øvebok" : b.bok.includes("grunnbok") ? `Grunnbok ${t}${b.bok.toUpperCase().includes("A") ? "A" : "B"}` : b.bok;
-                        return `${navn} s. ${b.side}`;
-                    });
-                    
-                    treffForDetteTrinnet.push(refArray.join(", "));
-                }
-            });
-
-            if (treffForDetteTrinnet.length > 0) {
-                // Vi samler opp alle unike sidetall for dette trinnet
-                const unikeRef = [...new Set(treffForDetteTrinnet)].join("\n   ");
-                globalBokReferanser += `TRINN ${t} (${temaSok}):\n   ${unikeRef}\n\n`;
-                harGlobalTreff = true;
+            // --- 2. GLOBAL SØK LOGIKK (TEMA-BASERT) ---
+            let globalBokReferanser = "";
+            let harGlobalTreff = false;
+            const navnMultiGlobal = `Multi 1-${rentTrinnNummer}`;
+            let temaSok = "";
+            
+            if (gjeldendeMapping && gjeldendeMapping[sesong] && gjeldendeMapping[sesong][oppgaveNr]) {
+                temaSok = gjeldendeMapping[sesong][oppgaveNr].tema;
             }
-        }
-    }
-}
 
-if (!harGlobalTreff) {
-    globalBokReferanser = `Ingen tidligere treff funnet for "${temaSok}" i trinn 1-${rentTrinnNummer}.`;
-}
+            if (temaSok) {
+                const vasketSok = temaSok.toLowerCase().trim();
+                for (let t = 1; t <= rentTrinnNummer; t++) {
+                    const trinnMapping = window[`mappingTrinn${t}`];
+                    if (trinnMapping && trinnMapping[sesong]) {
+                        let treffForDetteTrinnet = [];
+                        Object.keys(trinnMapping[sesong]).forEach(nr => {
+                            const data = trinnMapping[sesong][nr];
+                            if (data.tema && data.tema.toLowerCase().trim() === vasketSok) {
+                                const refArray = data.bøker.map(b => {
+                                    let navn = b.bok === "ovebok" ? "Øvebok" : b.bok.includes("grunnbok") ? `Grunnbok ${t}${b.bok.toUpperCase().includes("A") ? "A" : "B"}` : b.bok;
+                                    return `${navn} s. ${b.side}`;
+                                });
+                                treffForDetteTrinnet.push(refArray.join(", "));
+                            }
+                        });
+                        if (treffForDetteTrinnet.length > 0) {
+                            const unikeRef = [...new Set(treffForDetteTrinnet)].join("\n   ");
+                            globalBokReferanser += `TRINN ${t} (${temaSok}):\n   ${unikeRef}\n\n`;
+                            harGlobalTreff = true;
+                        }
+                    }
+                }
+            }
 
-const safeGlobalBok = btoa(unescape(encodeURIComponent(globalBokReferanser)));
-const safeGlobalTittel = btoa(unescape(encodeURIComponent(navnMultiGlobal)));
+            if (!harGlobalTreff) {
+                globalBokReferanser = `Ingen tidligere treff funnet for "${temaSok}" i trinn 1-${rentTrinnNummer}.`;
+            }
 
-            // --- 3. ENKODING FOR KNAPPER ---
+            // --- 3. ENKODING FOR KNAPPER (Korrekt samlet) ---
             const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
             let kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}".\nPedagogisk forklaring: ${malInfo.forklaring}.\n\n`;
             if (bildeUrl) {
