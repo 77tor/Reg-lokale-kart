@@ -1543,19 +1543,14 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             // --- BOK-REFERANSE LOGIKK ---
             let bokReferanser = "Fant ingen spesifikke sidetall i mapping-filen.";
             let bokInfoTekst = "Boksøk:";
+            let rentTema = malInfo.navn; // Fallback hvis mapping mangler
             
-            // Sjekk om mappingen faktisk har data for denne oppgaven
             if (gjeldendeMapping && gjeldendeMapping[sesong] && gjeldendeMapping[sesong][oppgaveNr]) {
                 const mapData = gjeldendeMapping[sesong][oppgaveNr];
+                rentTema = mapData.tema; // VIKTIG: Her hentes temaet fra mappingen
                 
                 const refArray = mapData.bøker.map(b => {
-                    let navn = b.bok;
-                    if (navn === "ovebok") {
-                        navn = "Øvebok";
-                    } else if (navn.toLowerCase().includes("grunnbok")) {
-                        const bokstav = navn.toUpperCase().includes("A") ? "A" : "B";
-                        navn = `Grunnbok ${rentTrinnNummer}${bokstav}`;
-                    }
+                    let navn = b.bok === "ovebok" ? "Øvebok" : `Grunnbok ${rentTrinnNummer}${b.bok.toUpperCase().includes("A") ? "A" : "B"}`;
                     return `${navn} s. ${b.side}`;
                 });
 
@@ -1563,20 +1558,15 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                 bokInfoTekst = `Anbefalt trening for ${rentTrinnNummer}. trinn:`;
             }
 
-            // --- KI PROMPT ---
-            const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
-            let kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}".\nPedagogisk forklaring: ${malInfo.forklaring}.\n\n`;
-            if (bildeUrl) {
-                kiPrompt += `1. Se på bildet av oppgaven: ${bildeUrl}\n2. Lag 5 lignende oppgaver.\n\n`;
-            } else {
-                kiPrompt += `Lag 5 varierte oppgaver som trener dette målet.\n\n`;
-            }
-            kiPrompt += `Tilpass alt til ${rentTrinnNummer}. trinn.`;
-
-            // Enkoding for knapper
-            const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
+            // --- KLARGJØRING FOR KNAPPER (ENKODING) ---
+            const safePrompt = btoa(unescape(encodeURIComponent(`Jeg er lærer og klassen min trenger ekstra trening på: "${malInfo.navn}".\nForklaring: ${malInfo.forklaring}.\nLag 5 oppgaver tilpasset ${rentTrinnNummer}. trinn.`)));
             const safeBokReferanser = btoa(unescape(encodeURIComponent(bokReferanser)));
             const safeBokTittel = btoa(unescape(encodeURIComponent(bokInfoTekst)));
+            
+            // DENNE LINJEN MANGLER HOS DEG:
+            const safeTema = btoa(unescape(encodeURIComponent(rentTema))); 
+
+            const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
 
             htmlSide3 += `
             <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 8px 15px; border-bottom: 1px solid #eee; font-size: 0.85em; background: white;">
@@ -1587,34 +1577,18 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                 </div>
                 
                 <div style="display: flex; gap: 5px; flex-shrink: 0;">
-                    ${bildeUrl ? `
-                        <span class="bilde-container">
-                            <a href="${bildeUrl}" target="_blank" title="Se oppgave" style="text-decoration:none; padding: 2px 5px; border: 1px solid #ccc; border-radius:3px; background:#f9f9f9;">👁️</a>
-                            <img src="${bildeUrl}" class="hover-bilde" alt="Oppgavebilde">
-                        </span>` : ''}
+                    ${bildeUrl ? `<a href="${bildeUrl}" target="_blank" style="text-decoration:none; padding: 2px 5px; border: 1px solid #ccc; border-radius:3px; background:#f9f9f9;">👁️</a>` : ''}
 
-                    <button title="Generer KI-oppgaver" 
-                        onclick="(function(btn){ 
-                            const promptTekst = decodeURIComponent(escape(window.atob('${safePrompt}')));
-                            navigator.clipboard.writeText(promptTekst).then(() => {
-                                btn.innerText = '✅';
-                                window.open('https://copilot.microsoft.com/?q=' + encodeURIComponent(promptTekst), '_blank');
-                                setTimeout(() => { btn.innerText = 'KI'; }, 2000);
-                            });
-                        })(this)"
-                        class="btn-ki">KI</button>
+                    <button onclick="KI_KOPIER_FIX('${safePrompt}')" class="btn-ki">KI</button>
 
                     ${!erLesing ? `
-<button title="Vis sider i Multi" 
-    onclick="visBokPopup('${safeBokTittel}', '${safeBokReferanser}', decodeURIComponent(escape(window.atob('${safeTema}'))))" 
-    class="btn-bok">BOK</button>
+                    <button onclick="visBokPopup('${safeBokTittel}', '${safeBokReferanser}', decodeURIComponent(escape(window.atob('${safeTema}'))))" class="btn-bok">BOK</button>
                     ` : ''}
                 </div>
             </div>`;
         }
     });
 }
-
 if (!harSvakheter) {
     htmlSide3 += `<p style="text-align:center; color:green; padding:20px;">Stabilt høyt nivå på alle områder.</p>`;
 }
