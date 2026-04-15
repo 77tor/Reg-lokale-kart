@@ -134,7 +134,7 @@ window.mappingTrinn1 = {
       navn: "Finn tallet som mangler", 
       tema: "Det ukjente tallet", 
       bøker: [
-        { bok: "grunnbokB1", side: 112 },
+        { bok: "grunnbok1B", side: 112 },
         { bok: "Øvebok1", side: 140 }
       ]
     },
