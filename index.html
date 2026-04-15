@@ -12,37 +12,34 @@
     window.fiksGithubLenke = function(url) {
         if (!url || typeof url !== 'string') return url;
         if (url.startsWith("Oppgavebilder/")) {
-            const brukernavn = "77tor"; 
-            const repo = "Reg-lokale-kart";
-            return "https://raw.githubusercontent.com/" + brukernavn + "/" + repo + "/main/" + url;
-        }
-        if (url.includes("github.com") && url.includes("/blob/")) {
-            return url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
+            return "https://raw.githubusercontent.com/77tor/Reg-lokale-kart/main/" + url;
         }
         return url;
     };
 
-    // --- 2. MODAL FUNKSJON ---
-    // Her bruker vi den tryggeste metoden:
-    var visBokModal = function(tema, aktueltTrinn, sesong) {
-        console.log("NÅ kjører funksjonen for:", tema);
+    // --- 2. MODAL FUNKSJON (Direkte på window) ---
+    window.visBokModal = function(tema, aktueltTrinn, sesong) {
+        console.log("Forsøker å åpne modal for:", tema);
         
         let alleTrinnReferanser = "";
+        // Sjekk alle trinn 1-7
         for (let t = 1; t <= 7; t++) {
-            const mapping = window["mappingTrinn" + t];
-            if (mapping && mapping[sesong]) {
-                let treffForTrinn = [];
-                Object.values(mapping[sesong]).forEach(data => {
+            const m = window["mappingTrinn" + t];
+            if (m && m[sesong]) {
+                let treff = [];
+                // Gå gjennom alle oppgaver i mappingen for det trinnet
+                Object.keys(m[sesong]).forEach(nr => {
+                    const data = m[sesong][nr];
                     if (data.tema === tema && data.bøker) {
                         data.bøker.forEach(b => {
-                            let navn = b.bok === "ovebok" ? "Øvebok" : "Grunnbok " + t + (b.bok.toUpperCase().includes("A") ? "A" : "B");
-                            treffForTrinn.push(navn + " s. " + b.side);
+                            let navn = (b.bok === "ovebok") ? "Øvebok" : "Grunnbok " + t + (b.bok.toUpperCase().includes("A") ? "A" : "B");
+                            treff.push(navn + " s. " + b.side);
                         });
                     }
                 });
-                if (treffForTrinn.length > 0) {
-                    const unike = [...new Set(treffForTrinn)];
-                    alleTrinnReferanser += '<div style="margin-bottom:8px;"><strong>' + t + '. trinn:</strong><br>' + unike.join(", ") + '</div>';
+                if (treff.length > 0) {
+                    const unike = [...new Set(treff)];
+                    alleTrinnReferanser += `<div style="margin-bottom:8px;"><strong>${t}. trinn:</strong><br>${unike.join(", ")}</div>`;
                 }
             }
         }
@@ -51,12 +48,13 @@
         if (!modal) {
             modal = document.createElement('div');
             modal.id = 'analyse-bok-modal';
-            modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:100000; font-family:sans-serif; backdrop-filter: blur(3px);";
+            modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:1000000; font-family:sans-serif; backdrop-filter: blur(3px);";
             document.body.appendChild(modal);
         }
 
         const temaID = tema.replace(/[^a-zA-Z0-9]/g, '');
-        const gjeldendeTrinnReferanse = document.getElementById('temp-ref-' + temaID) ? document.getElementById('temp-ref-' + temaID).innerText : 'Referanse ikke funnet.';
+        const refElement = document.getElementById('temp-ref-' + temaID);
+        const gjeldendeTrinnReferanse = refElement ? refElement.innerText : 'Referanse ikke funnet.';
 
         modal.innerHTML = `
             <div style="background:white; padding:25px; border-radius:15px; max-width:450px; width:90%; box-shadow:0 15px 40px rgba(0,0,0,0.4); position:relative; color: #333; text-align: left;">
@@ -70,7 +68,7 @@
                     🔍 Vis andre trinn (differensiering)
                 </button>
                 <div id="ekstra-trinn" style="display:none; margin-top:15px; padding:15px; background:#fdfdfd; border:1px solid #eee; border-radius:10px; font-size:0.9em; max-height:180px; overflow-y:auto;">
-                    ${alleTrinnReferanser || "Ingen andre trinn funnet."}
+                    ${alleTrinnReferanser || "Ingen andre trinn funnet med dette temaet."}
                 </div>
                 <button onclick="document.getElementById('analyse-bok-modal').remove()" 
                         style="margin-top:20px; width:100%; padding:12px; background:#2c3e50; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">
@@ -79,9 +77,6 @@
             </div>
         `;
     };
-
-    // Tving den på window-objektet
-    window.visBokModal = visBokModal;
 </script>
 
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
