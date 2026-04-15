@@ -26,6 +26,25 @@
 })();
 
 
+function fiksGithubLenke(url) {
+    if (!url || typeof url !== 'string') return url;
+
+    // 1. Hvis det er en forkortet sti (starter med Oppgavebilder/), legg på hele GitHub-adressen
+    if (url.startsWith("Oppgavebilder/")) {
+        const brukernavn = "77tor"; // Sjekk at dette er ditt brukernavn
+        const repo = "Reg-lokale-kart";
+        return `https://raw.githubusercontent.com/${brukernavn}/${repo}/main/${url}`;
+    }
+
+    // 2. Hvis det er en vanlig GitHub-lenke med /blob/, gjør den om til raw
+    if (url.includes("github.com") && url.includes("/blob/")) {
+        return url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
+    }
+
+    return url;
+}
+
+
 // --- 1. FIREBASE CONFIG ---
 const firebaseConfig = {
     apiKey: "AIzaSyC7g1gllBUVACl3fkpYeEe7r1LfBs2ck3U",
@@ -1462,14 +1481,14 @@ htmlSide3 += `
 
 let harSvakheter = false;
 
-
-// --- 2. SIDE 3: ANALYSELOGIKK ---
+// --- SIDE 3: ANALYSELOGIKK ---
 if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
     const headerTekst = fellesHeader.toLowerCase();
     const erLesing = headerTekst.includes("lesing");
     const erVar = headerTekst.includes("vår");
     const sesong = erVar ? "Vår" : "Høst";
-    const rentTrinnNummer = parseInt(trinn.replace(/\D/g, ''));
+    const rentTrinnNummer = parseInt(trinn.replace(/\D/g, '')); 
+    
     const gjeldendeMapping = window[`mappingTrinn${rentTrinnNummer}`];
 
     oppsett.oppgaver.forEach((o, i) => {
@@ -1482,17 +1501,14 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             harSvakheter = true; 
             let farge = (o.grense !== -1 && snitt <= o.grense) ? "#c0392b" : "#d35400";
             
-            // --- BOK-REFERANSE LOGIKK ---
-            let bareReferanser = "Ingen sidetall funnet.";
-            let temaNavn = "Tema";
-            let harMapping = false;
+            // --- BOK-REFERANSE LOGIKK (KORRIGERT) ---
+            let bokReferanser = "Fant ingen spesifikke sidetall i mapping-filen.";
+            let bokInfoTekst = "Boksøk:";
             
             if (gjeldendeMapping && gjeldendeMapping[sesong] && gjeldendeMapping[sesong][oppgaveNr]) {
-                const mapData = gjeldendeMapping[sesong][oppgaveNr];
-                temaNavn = mapData.tema;
-                harMapping = true;
+                const mapData = gjeldendeMapping[sesong][oppgaveNr]; // Denne heter mapData
                 
-                const refArray = mapData.bøker.map(b => {
+                const refArray = mapData.bøker.map(b => { // Bruker mapData her
                     let navn = b.bok;
                     if (navn === "ovebok") {
                         navn = "Øvebok";
@@ -1502,15 +1518,16 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                     }
                     return `${navn} s. ${b.side}`;
                 });
-                bareReferanser = refArray.join(", ");
+
+                bokReferanser = `${mapData.tema}:\n${refArray.join(", ")}`;
+                bokInfoTekst = `Anbefalt trening for ${rentTrinnNummer}. trinn:`;
             }
 
-            // Lagrer referansen i en skjult span for å kunne hente den inn i modalen
-    const temaID = temaNavn.replace(/[^a-zA-Z0-9]/g, ''); // Lik som i HTML-funksjonen
-            htmlSide3 += `<span id="temp-ref-${temaID}" style="display:none;">${bareReferanser}</span>`;
+// ---SLUTT PÅ BOKREF
+
 
             // --- KI PROMPT ---
-           const bildeUrl = o.bilde ? window.fiksGithubLenke(o.bilde) : "";
+            const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
             let kiPrompt = `Jeg er lærer og klassen min trenger ekstra trening på dette området: "${malInfo.navn}".\nPedagogisk forklaring: ${malInfo.forklaring}.\n\n`;
             if (bildeUrl) {
                 kiPrompt += `1. Se på bildet av oppgaven: ${bildeUrl}\n2. Lag 5 lignende oppgaver.\n\n`;
@@ -1519,7 +1536,10 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             }
             kiPrompt += `Tilpass alt til ${rentTrinnNummer}. trinn.`;
 
+            // Enkoding for knapper
             const safePrompt = btoa(unescape(encodeURIComponent(kiPrompt)));
+            const safeBokReferanser = btoa(unescape(encodeURIComponent(bokReferanser)));
+            const safeBokTittel = btoa(unescape(encodeURIComponent(bokInfoTekst)));
 
             htmlSide3 += `
             <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 8px 15px; border-bottom: 1px solid #eee; font-size: 0.85em; background: white;">
@@ -1547,9 +1567,9 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                         })(this)"
                         class="btn-ki">KI</button>
 
-                    ${(!erLesing && harMapping) ? `
+                    ${!erLesing ? `
                     <button title="Vis sider i Multi" 
-         onclick="window.visBokModal('${temaNavn.replace(/'/g, "\\\'")}', ${rentTrinnNummer}, '${sesong}')"
+                        onclick="alert(decodeURIComponent(escape(window.atob('${safeBokTittel}'))) + '\\n\\n' + decodeURIComponent(escape(window.atob('${safeBokReferanser}'))))" 
                         class="btn-bok">BOK</button>
                     ` : ''}
                 </div>
@@ -1557,13 +1577,12 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
         }
     });
 }
-
 if (!harSvakheter) {
     htmlSide3 += `<p style="text-align:center; color:green; padding:20px;">Stabilt høyt nivå på alle områder.</p>`;
 }
 
 htmlSide3 += `</div>`;
-// --- SLUTT PÅ SIDE 3 ---
+// --- SLUTT PÅ SIDE 3
 
 // --- SIDE 4: UTVIKLING OVER TID (Korrigerte snitt-beregninger) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
