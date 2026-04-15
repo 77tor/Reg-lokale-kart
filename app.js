@@ -1513,27 +1513,49 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
                 bokReferanser = `${mapData.tema}:\n${refArray.join(", ")}`;
             }
 
-            // --- 2. GLOBAL SØK LOGIKK (FRA TRINN 1 TIL AKTUELT TRINN) ---
-            let globalBokReferanser = "";
-            let harGlobalTreff = false;
-            const navnMultiGlobal = `Multi 1-${rentTrinnNummer}`; // Navn til oransje knapp
 
-            for (let t = 1; t <= rentTrinnNummer; t++) {
-                const sjekkMapping = window[`mappingTrinn${t}`];
-                if (sjekkMapping && sjekkMapping[sesong] && sjekkMapping[sesong][oppgaveNr]) {
-                    const mData = sjekkMapping[sesong][oppgaveNr];
-                    const trinnRef = mData.bøker.map(b => {
+// --- 2. GLOBAL SØK LOGIKK (SMART TEMA-SØK) ---
+let globalBokReferanser = "";
+let harGlobalTreff = false;
+const navnMultiGlobal = `Multi 1-${rentTrinnNummer}`;
+
+// A. Finn ut hva temaet er for denne oppgaven på NÅVÆRENDE trinn
+let temaAaFinne = "";
+if (gjeldendeMapping && gjeldendeMapping[sesong] && gjeldendeMapping[sesong][oppgaveNr]) {
+    temaAaFinne = gjeldendeMapping[sesong][oppgaveNr].tema;
+}
+
+// B. Hvis vi fant et tema, søker vi etter DETTE temaet i alle trinn (fra 1 til nåværende)
+if (temaAaFinne) {
+    for (let t = 1; t <= rentTrinnNummer; t++) {
+        const sjekkMapping = window[`mappingTrinn${t}`];
+        if (sjekkMapping && sjekkMapping[sesong]) {
+            
+            // Vi må gå gjennom ALLE oppgavene i det trinnet for å finne de som matcher temaet
+            let treffForDetteTrinnet = [];
+            
+            Object.keys(sjekkMapping[sesong]).forEach(nr => {
+                const data = sjekkMapping[sesong][nr];
+                if (data.tema === temaAaFinne) {
+                    const trinnRef = data.bøker.map(b => {
                         let n = b.bok === "ovebok" ? "Øvebok" : b.bok.includes("grunnbok") ? `Grunnbok ${t}${b.bok.toUpperCase().includes("A") ? "A" : "B"}` : b.bok;
                         return `${n} s. ${b.side}`;
                     }).join(", ");
-                    globalBokReferanser += `TRINN ${t} (${mData.tema}):\n${trinnRef}\n\n`;
-                    harGlobalTreff = true;
+                    treffForDetteTrinnet.push(trinnRef);
                 }
-            }
+            });
 
-            if (!harGlobalTreff) {
-                globalBokReferanser = `Ingen treff funnet i Multi 1-${rentTrinnNummer} for denne oppgaven.`;
+            if (treffForDetteTrinnet.length > 0) {
+                globalBokReferanser += `TRINN ${t} (${temaAaFinne}):\n${treffForDetteTrinnet.join("\n")}\n\n`;
+                harGlobalTreff = true;
             }
+        }
+    }
+}
+
+if (!harGlobalTreff) {
+    globalBokReferanser = `Fant ingen andre oppgaver om "${temaAaFinne}" i trinn 1-${rentTrinnNummer}.`;
+}
 
             // --- 3. ENKODING FOR KNAPPER ---
             const bildeUrl = o.bilde ? fiksGithubLenke(o.bilde) : "";
