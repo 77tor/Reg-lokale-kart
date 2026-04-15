@@ -1549,7 +1549,7 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
 
                     ${(!erLesing && harMapping) ? `
                     <button title="Vis sider i Multi" 
-         onclick="window.visBokModal('${temaNavn.replace(/'/g, "\\'")}', ${rentTrinnNummer}, '${sesong}')"
+         onclick="window.visBokModal('${temaNavn.replace(/'/g, "\\\'")}', ${rentTrinnNummer}, '${sesong}')"
                         class="btn-bok">BOK</button>
                     ` : ''}
                 </div>
