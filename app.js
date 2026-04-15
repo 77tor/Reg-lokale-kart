@@ -1522,11 +1522,12 @@ if (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver) {
             }
 
 // --- NY LOGIKK FOR MULTI 1-7 SØK ---
+// --- NY LOGIKK FOR MULTI SØK (DYNAMISK TRINN) ---
 let globalBokReferanser = "";
 let harGlobalTreff = false;
 
-// Vi går gjennom alle trinn fra 1 til 7
-for (let t = 1; t <= 7; t++) {
+// Vi går gjennom fra trinn 1 og stopper på det trinnet vi er på nå (rentTrinnNummer)
+for (let t = 1; t <= rentTrinnNummer; t++) {
     const sjekkMapping = window[`mappingTrinn${t}`];
     if (sjekkMapping && sjekkMapping[sesong] && sjekkMapping[sesong][oppgaveNr]) {
         const mData = sjekkMapping[sesong][oppgaveNr];
@@ -1542,10 +1543,14 @@ for (let t = 1; t <= 7; t++) {
 }
 
 if (!harGlobalTreff) {
-    globalBokReferanser = "Ingen treff funnet i Multi 1-7 for denne oppgaven.";
+    globalBokReferanser = `Ingen treff funnet i Multi 1-${rentTrinnNummer} for denne oppgaven.`;
 }
 
+// Navnet på knappen blir nå dynamisk, f.eks. "Multi 1-5"
+const knappNavn = `Multi 1-${rentTrinnNummer}`;
+
 const safeGlobalBok = btoa(unescape(encodeURIComponent(globalBokReferanser)));
+const safeKnappNavn = btoa(unescape(encodeURIComponent(knappNavn)));
 // ---SLUTT PÅ BOKREF
 
 
@@ -1595,9 +1600,12 @@ const safeGlobalBok = btoa(unescape(encodeURIComponent(globalBokReferanser)));
                         onclick="alert(decodeURIComponent(escape(window.atob('${safeBokTittel}'))) + '\\n\\n' + decodeURIComponent(escape(window.atob('${safeBokReferanser}'))))" 
                         class="btn-bok">BOK</button>
 
-<button title="Søk i alle trinn (1-7)" 
-        onclick="alert('Multi-søk på tvers av alle trinn:\\n\\n' + decodeURIComponent(escape(window.atob('${safeGlobalBok}'))))" 
-        class="btn-multi-alle" style="background-color: #f39c12; color: white; border: none; padding: 2px 5px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">Multi 1-7</button>
+<button title="Søk i alle trinn opp til nåværende" 
+    onclick="alert(decodeURIComponent(escape(window.atob('${safeKnappNavn}'))) + ':\\n\\n' + decodeURIComponent(escape(window.atob('${safeGlobalBok}'))))" 
+    class="btn-multi-alle" 
+    style="background-color: #f39c12; color: white; border: none; padding: 2px 5px; border-radius: 3px; cursor: pointer; font-size: 0.85em;">
+    ${knappNavn}
+</button>
 
                     ` : ''}
                 </div>
