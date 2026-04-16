@@ -1010,11 +1010,9 @@ async function visLaererDetaljer(valgtEpost) {
     const valgtAar = document.getElementById('valgtAarLaerer').value;
     const ansatteListe = window.ansatteData[valgtAar] || [];
     
-    // Finn læreren i ansatte.js
     const ansatt = ansatteListe.find(a => a.epost === valgtEpost);
     if (!ansatt) return;
 
-    // Bygg liste over alle IDer (hovedepost + alle påloggingsmail)
     let mineIder = [ansatt.epost.toLowerCase().trim()];
     if (ansatt.paloggingsmail) {
         if (Array.isArray(ansatt.paloggingsmail)) {
@@ -1027,7 +1025,6 @@ async function visLaererDetaljer(valgtEpost) {
     document.getElementById('detaljerNavn').innerText = `Statistikk for ${ansatt.navn}`;
     document.getElementById('modalLaererDetaljer').style.display = 'block';
 
-    // Vi henter data for det valgte året
     const statusSnapshot = await db.ref(`status/${valgtAar}`).once('value');
     const statusData = statusSnapshot.val() || {};
     
@@ -1053,7 +1050,6 @@ async function visLaererDetaljer(valgtEpost) {
                     const info = statusData[fag][periode][trinn][klasse];
                     const registrertAv = (info.endretAv || "").toLowerCase().trim();
 
-                    // Sjekk om denne læreren har registrert prøven
                     if (mineIder.includes(registrertAv)) {
                         
                         const oppsett = oppgaveStruktur[valgtAar]?.[fag]?.[periode]?.[trinn];
@@ -1065,12 +1061,14 @@ async function visLaererDetaljer(valgtEpost) {
                         const kartSnapshot = await db.ref(`kartlegging/${valgtAar}/${fag}/${periode}/${trinn}/${klasse}`).once('value');
                         const elever = kartSnapshot.val() || {};
 
+                        let totaltIKlassen = Object.keys(elever).length; // Totalt antall elever i klasselisten
                         let deltakere = 0;
                         let sumPoeng = 0;
                         let underKritisk = 0;
 
                         Object.values(elever).forEach(elev => {
-                            if (elev && elev.sum !== undefined && elev.sum !== "Ikke deltatt" && !elev.ikkeGjennomfort) {
+                            // Sjekker om eleven faktisk har gjennomført (har en sum og er ikke markert som 'ikkeGjennomfort')
+                            if (elev && elev.sum !== undefined && elev.sum !== "" && elev.sum !== "Ikke deltatt" && !elev.ikkeGjennomfort) {
                                 const p = parseFloat(elev.sum);
                                 if (!isNaN(p)) {
                                     deltakere++;
@@ -1083,17 +1081,15 @@ async function visLaererDetaljer(valgtEpost) {
                         if (deltakere > 0) {
                             antallFullforte++;
                             const snitt = Math.round((sumPoeng / (deltakere * maksPrElev)) * 100);
-                            
-                            // Formaterer navnet slik du ønsket: "Fag-TrinnKlasse-Periode-Skoleår"
                             const fulltNavn = `${fag}-${trinn}${klasse}-${periode} ${valgtAar}`;
                             
                             tabellHtml += `
                                 <tr style="border-bottom:1px solid #ddd;">
                                     <td style="padding:10px;"><strong>${fulltNavn}</strong></td>
-                                    <td style="padding:10px; text-align:center;">${deltakere}</td>
+                                    <td style="padding:10px; text-align:center;">${deltakere} / ${totaltIKlassen}</td>
                                     <td style="padding:10px; text-align:center; font-weight:bold;">${snitt}%</td>
                                     <td style="padding:10px; text-align:center; color:${underKritisk > 0 ? '#e74c3c' : '#27ae60'};">
-                                        <strong>${underKritisk}</strong>
+                                        <strong>${underKritisk} elever</strong>
                                     </td>
                                     <td style="padding:10px;"><small>${info.dato ? info.dato.split(',')[0] : "-"}</small></td>
                                 </tr>`;
@@ -1106,7 +1102,7 @@ async function visLaererDetaljer(valgtEpost) {
 
     tabellHtml += `</tbody></table></div>`;
     document.getElementById('detaljerAntallProever').innerText = antallFullforte;
-    document.getElementById('laererProeveListe').innerHTML = antallFullforte > 0 ? tabellHtml : "<p style='padding:20px;'>Ingen prøver funnet for dette skoleåret.</p>";
+    document.getElementById('laererProeveListe').innerHTML = antallFullforte > 0 ? tabellHtml : "<p style='padding:20px;'>Ingen prøver funnet.</p>";
 }
 // ---SLUTT PÅ LÆRERDETALJER
 
