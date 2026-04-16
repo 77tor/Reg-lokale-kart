@@ -947,7 +947,7 @@ function oppdaterLaererListe() {
     );
 
 
-// 2. Sortering (Tall-trinn først, tekst-trinn nederst)
+// 2. Sortering (Tall-trinn først -> Kontaktlærer før faglærer -> Alfabetisk klasse -> Navn)
     filtrerte.sort((a, b) => {
         const verdiA = a.trinn && a.trinn.length > 0 ? a.trinn[0] : "";
         const verdiB = b.trinn && b.trinn.length > 0 ? b.trinn[0] : "";
@@ -955,28 +955,32 @@ function oppdaterLaererListe() {
         const erTallA = !isNaN(parseInt(verdiA));
         const erTallB = !isNaN(parseInt(verdiB));
 
-        // A. Håndter prioritering mellom tall og tekst
-        if (erTallA && !erTallB) return -1; // Tall skal før tekst
-        if (!erTallA && erTallB) return 1;  // Tekst skal etter tall
+        // A. Prioritering: Tall-trinn (1-10) før tekst (Adm/Permisjon)
+        if (erTallA && !erTallB) return -1;
+        if (!erTallA && erTallB) return 1;
 
-        // B. Hvis begge er tall, sorter kronologisk (1, 2, 3...)
+        // B. Hvis begge er tall-trinn
         if (erTallA && erTallB) {
             const numA = parseInt(verdiA);
             const numB = parseInt(verdiB);
+            
+            // 1. Først sorter på selve trinn-tallet (1 før 2)
             if (numA !== numB) return numA - numB;
             
-            // Hvis samme trinn-tall, sorter på klassebokstav (1a, 1b...)
-            const klasseA = a.kontaktlaerer ? String(a.kontaktlaerer).toLowerCase() : "";
-            const klasseB = b.kontaktlaerer ? String(b.kontaktlaerer).toLowerCase() : "";
+            // 2. Hvis samme trinn: Sorter kontaktlærere FØR de uten kontaktlærer-felt
+            // Vi gir de uten klasse en verdi ("zzz") så de havner nederst på trinnet
+            const klasseA = a.kontaktlaerer ? String(a.kontaktlaerer).toLowerCase() : "zzz";
+            const klasseB = b.kontaktlaerer ? String(b.kontaktlaerer).toLowerCase() : "zzz";
+            
             if (klasseA !== klasseB) return klasseA.localeCompare(klasseB);
         }
 
-        // C. Hvis begge er tekst (f.eks. "Adm" og "Permisjon"), sorter alfabetisk
+        // C. Hvis begge er tekst-trinn (Adm/Permisjon), sorter alfabetisk på trinn-navnet
         if (!erTallA && !erTallB) {
             if (verdiA !== verdiB) return verdiA.localeCompare(verdiB);
         }
 
-        // D. Siste utvei: Sorter på navn
+        // D. Siste utvei: Sorter alfabetisk på navn
         return a.navn.localeCompare(b.navn);
     });
 
