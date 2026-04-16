@@ -930,7 +930,66 @@ function finnRelevanteSider(rentTrinnNummer, oppgaveNavn) {
     return funn.length > 0 ? funn.join("\n") : "Fant ingen direkte treff i innholdsfortegnelsen.";
 }
 
+// --- LÆRERSIDE ---
+function aapneLaererModal() {
+    document.getElementById('modalLaerere').style.display = 'block';
+    oppdaterLaererListe();
+}
 
+function oppdaterLaererListe() {
+    const sok = document.getElementById('sokLaerer').value.toLowerCase();
+    const container = document.getElementById('laererListeContainer');
+    
+    // Antar 'ansatte' er arrayen din fra ansatte.js
+    let filtrerte = ansatte.filter(a => a.navn.toLowerCase().includes(sok));
+
+    // KRONOLOGISK SORTERING
+    filtrerte.sort((a, b) => {
+        // 1. Sorter på trinn først (1, 2, 3...)
+        if (a.trinn !== b.trinn) return a.trinn - b.trinn;
+
+        // 2. Hvis samme trinn, sjekk om rolle inneholder "kontakt"
+        const aErKontakt = a.rolle.toLowerCase().includes("kontakt");
+        const bErKontakt = b.rolle.toLowerCase().includes("kontakt");
+
+        if (aErKontakt && !bErKontakt) return -1;
+        if (!aErKontakt && bErKontakt) return 1;
+
+        // 3. Alfabetisk på navn hvis trinn og rolle er like
+        return a.navn.localeCompare(b.navn);
+    });
+
+    // Generer tabellen
+    let html = `
+        <table style="width:100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background:#f8f9fa; text-align:left;">
+                    <th style="padding:10px; border-bottom:2px solid #ddd;">Navn</th>
+                    <th style="padding:10px; border-bottom:2px solid #ddd;">Trinn</th>
+                    <th style="padding:10px; border-bottom:2px solid #ddd;">Rolle</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+    filtrerte.forEach(a => {
+        html += `
+            <tr style="border-bottom:1px solid #eee; cursor:pointer;" onclick="visLoggForAnsatt('${a.epost}')" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='none'">
+                <td style="padding:10px;">${a.navn}</td>
+                <td style="padding:10px;">${a.trinn}. trinn</td>
+                <td style="padding:10px;">${a.rolle}</td>
+            </tr>`;
+    });
+
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+}
+
+function visLoggForAnsatt(epost) {
+    // Her kan du koble på eksisterende funksjonalitet for å se prøver/innlogging
+    console.log("Viser logg for: " + epost);
+    alert("Her åpnes detaljer for " + epost + ". Du kan her kalle din eksisterende funksjon for systemlogg filtrert på denne brukeren.");
+}
+// --- SLUTT LÆRERSIDE ---
 
 // --- ÅPNE GJENNOMFØRINGSMODAL ---
 function aapneGjennomfoeringModal() {
