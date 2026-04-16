@@ -993,10 +993,22 @@ function oppdaterLaererListe() {
     container.innerHTML = filtrerte.length > 0 ? html : `<p style="padding:20px;">Ingen ansatte funnet for skoleåret ${valgtAar}.</p>`;
 }
 
-function visLoggForAnsatt(epost) {
-    // Her kan du koble på eksisterende funksjonalitet for å se prøver/innlogging
+// Endret navn fra visLoggForAnsatt til visLaererDetaljer for å matche tabellen
+function visLaererDetaljer(epost) {
     console.log("Viser logg for: " + epost);
-    alert("Her åpnes detaljer for " + epost + ". Du kan her kalle din eksisterende funksjon for systemlogg filtrert på denne brukeren.");
+    alert("Detaljer for " + epost + "\n\nHer kan du koble på systemloggen din.");
+}
+
+function aapneLaererModal() {
+    // Vis selve modal-vinduet
+    const modal = document.getElementById('modalLaerere');
+    if (modal) {
+        modal.style.display = 'block';
+        // Kjør funksjonen din som henter og sorterer lærere
+        oppdaterLaererListe();
+    } else {
+        console.error("Fant ikke modalLaerere i HTML-en!");
+    }
 }
 // --- SLUTT LÆRERSIDE ---
 
@@ -4155,3 +4167,6 @@ function printUtvikling() {
     `);
     printVindu.document.close();
 }
+
+window.aapneLaererModal = aapneLaererModal;
+window.oppdaterLaererListe = oppdaterLaererListe;
