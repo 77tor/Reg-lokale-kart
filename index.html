@@ -440,6 +440,29 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     </div>
 </div>
 
+<div id="modalLaererDetaljer" class="modal" style="display:none; position:fixed; z-index:1100; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.6);">
+    <div style="background-color:white; margin:2% auto; padding:25px; border-radius:10px; width:90%; max-width:1000px; max-height:90vh; overflow-y:auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #3498db; padding-bottom:15px; margin-bottom:20px;">
+            <h2 id="detaljerNavn" style="margin:0; color:#2c3e50;"></h2>
+            <span onclick="document.getElementById('modalLaererDetaljer').style.display='none'" style="cursor:pointer; font-size:30px;">&times;</span>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:20px;">
+            <div style="background:#ecf0f1; padding:15px; border-radius:8px; text-align:center;">
+                <h4 style="margin:0;">Antall innlogginger</h4>
+                <p id="detaljerInnlogginger" style="font-size:2em; font-weight:bold; margin:10px 0; color:#2980b9;">0</p>
+            </div>
+            <div style="background:#ecf0f1; padding:15px; border-radius:8px; text-align:center;">
+                <h4 style="margin:0;">Registrerte prøver</h4>
+                <p id="detaljerAntallProever" style="font-size:2em; font-weight:bold; margin:10px 0; color:#27ae60;">0</p>
+            </div>
+        </div>
+
+        <h3>Prøveoversikt</h3>
+        <div id="laererProeveListe">
+            </div>
+    </div>
+</div>
 
 <div id="modalSammenlign" class="modal no-print" 
      style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">

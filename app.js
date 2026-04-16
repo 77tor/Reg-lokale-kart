@@ -1012,33 +1012,84 @@ function oppdaterLaererListe() {
     container.innerHTML = filtrerte.length > 0 ? html : `<p style="padding:20px;">Ingen ansatte funnet for skoleåret ${valgtAar}.</p>`;
 }
 
-// Endret navn fra visLoggForAnsatt til visLaererDetaljer for å matche tabellen
+// --- LÆRERDETALJER
 function visLaererDetaljer(epost) {
-    // 1. Finn søkefeltet som hører til systemloggen din
-    // (Sjekk om ID-en på søkefeltet i logg-modalen din er 'loggSok' eller lignende)
-    const loggSokFelt = document.getElementById('filterBruker'); // Bytt ut med riktig ID
-
-    if (loggSokFelt) {
-        // Sett e-posten til læreren i søkefeltet
-        loggSokFelt.value = epost;
-        
-        // Trigger søkefunksjonen i loggen (hvis du har en slik, f.svg. oppdaterLogg())
-        if (typeof oppdaterLoggVisning === "function") {
-            oppdaterLoggVisning();
-        }
-    }
-
-    // 2. Lukk lærermodalen og åpne loggmodalen
-    document.getElementById('modalLaerere').style.display = 'none';
+    const valgtAar = document.getElementById('valgtAarLaerer').value;
+    const ansatt = window.ansatteData[valgtAar].find(a => a.epost === epost);
     
-    // Kall på din eksisterende funksjon for å åpne loggen
-    if (typeof aapneLoggModal === "function") {
-        aapneLoggModal();
-    } else {
-        // Hvis funksjonen ikke kan kalles direkte, bare vis modalen
-        document.getElementById('modalLogg').style.display = 'block';
+    if (!ansatt) return;
+
+    // 1. Sett navn og vis modal
+    document.getElementById('detaljerNavn').innerText = `Statistikk for ${ansatt.navn} (${valgtAar})`;
+    document.getElementById('modalLaererDetaljer').style.display = 'block';
+
+    // 2. Finn innlogginger
+    // Antar at 'alleLogger' inneholder rader med { bruker: "epost", handling: "Innlogging" }
+    const innlogginger = window.alleLogger ? window.alleLogger.filter(l => 
+        l.bruker === epost && l.handling.toLowerCase().includes("innlogging")
+    ).length : 0;
+    document.getElementById('detaljerInnlogginger').innerText = innlogginger;
+
+    // 3. Finn prøver registrert av denne læreren
+    // Antar 'alleResultater' inneholder rader med { laererEpost: "...", poengSum: X, maxPoeng: Y, kritiskGrense: Z }
+    const laererensProever = window.alleResultater ? window.alleResultater.filter(p => 
+        p.laererEpost === epost && p.skoleaar === valgtAar
+    ) : [];
+
+    // Grupper prøver per prøvenavn for å få oversikt per klasse/gruppe
+    const grupperteProever = {};
+    laererensProever.forEach(p => {
+        const nøkkel = p.proeveNavn + "_" + p.klasse;
+        if (!grupperteProever[nøkkel]) {
+            grupperteProever[nøkkel] = { navn: p.proeveNavn, klasse: p.klasse, elever: [] };
+        }
+        grupperteProever[nøkkel].elever.push(p);
+    });
+
+    document.getElementById('detaljerAntallProever').innerText = Object.keys(grupperteProever).length;
+
+    // 4. Generer tabellen
+    let html = `
+        <table style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr style="background:#34495e; color:white; text-align:left;">
+                    <th style="padding:10px;">Prøve / Klasse</th>
+                    <th style="padding:10px;">Antall elever</th>
+                    <th style="padding:10px;">Snittskår (%)</th>
+                    <th style="padding:10px;">Under kritisk grense</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+    Object.values(grupperteProever).forEach(gruppe => {
+        const antallElever = gruppe.elever.length;
+        
+        // Beregn snittskår
+        const totalProsent = gruppe.elever.reduce((sum, p) => sum + (p.poengSum / p.maxPoeng * 100), 0);
+        const snitt = (totalProsent / antallElever).toFixed(1);
+
+        // Tell antall under kritisk grense
+        const underKritisk = gruppe.elever.filter(p => p.poengSum < p.kritiskGrense).length;
+        const fargeKritisk = underKritisk > 0 ? "#e74c3c" : "#27ae60";
+
+        html += `
+            <tr style="border-bottom:1px solid #ddd;">
+                <td style="padding:10px;"><strong>${gruppe.navn}</strong><br><small>${gruppe.klasse}</small></td>
+                <td style="padding:10px;">${antallElever}</td>
+                <td style="padding:10px;">${snitt}%</td>
+                <td style="padding:10px; color:${fargeKritisk}; font-weight:bold;">${underKritisk} elever</td>
+            </tr>`;
+    });
+
+    html += `</tbody></table>`;
+    
+    if (laererensProever.length === 0) {
+        html = "<p>Ingen registrerte prøver funnet for denne læreren i valgt periode.</p>";
     }
+
+    document.getElementById('laererProeveListe').innerHTML = html;
 }
+
 
 function aapneLaererModal() {
     const modal = document.getElementById('modalLaerere');
