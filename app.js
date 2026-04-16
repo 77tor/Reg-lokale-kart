@@ -1013,98 +1013,64 @@ function oppdaterLaererListe() {
 }
 
 // --- LÆRERDETALJER
-function visLaererDetaljer(epost) {
+async function visLaererDetaljer(epost) {
     const valgtAar = document.getElementById('valgtAarLaerer').value;
-    // Finn den ansatte basert på eposten som ble klikket i tabellen
     const ansatt = window.ansatteData[valgtAar].find(a => a.epost === epost);
-    
     if (!ansatt) return;
 
-    // Bruk paloggingsmail for å hente data (f.eks. "77tor@ikrs.no")
-    const idForSok = ansatt.paloggingsmail;
+    const idForSok = ansatt.paloggingsmail; // "77tor@ikrs.no"
 
-    // Oppdater overskrift og vis modal
-    document.getElementById('detaljerNavn').innerText = `Statistikk for ${ansatt.navn} (${valgtAar})`;
+    // Vis modal og sett navn
+    document.getElementById('detaljerNavn').innerText = `Statistikk for ${ansatt.navn}`;
     document.getElementById('modalLaererDetaljer').style.display = 'block';
 
-    // 1. FINN INNLOGGINGER (Sjekker window.alleLogger eller window.systemLogg)
-    const loggData = window.alleLogger || window.systemLogg || [];
-    const innlogginger = loggData.filter(l => 
-        (l.bruker === idForSok || l.epost === idForSok) && 
-        l.handling.toLowerCase().includes("innlogging")
-    ).length;
+    // --- 1. TELL INNLOGGINGER ---
+    const loggData = window.systemLogg || {};
+    const innlogginger = Object.values(loggData).filter(l => l.epost === epost || l.epost === idForSok).length;
     document.getElementById('detaljerInnlogginger').innerText = innlogginger;
 
-    // 2. FINN PRØVER (Sjekker window.alleResultater eller window.elever)
-    const resultatData = window.alleResultater || window.elever || [];
-    const laererensProever = resultatData.filter(p => 
-        p.laererID === idForSok || p.registrertAv === idForSok || p.laererEpost === idForSok
-    );
-
-    // Grupper prøvene for oversiktlig tabell
-    const grupperteProever = {};
-    laererensProever.forEach(p => {
-        const nøkkel = p.proeveNavn + "_" + (p.klasse || "Ukjent");
-        if (!grupperteProever[nøkkel]) {
-            grupperteProever[nøkkel] = { navn: p.proeveNavn, klasse: p.klasse, elever: [] };
-        }
-        grupperteProever[nøkkel].elever.push(p);
-    });
-
-    document.getElementById('detaljerAntallProever').innerText = Object.keys(grupperteProever).length;
-
-    // 3. GENERER TABELL
-    let html = `
+    // --- 2. FINN PRØVER VIA "STATUS"-NODEN ---
+    // Vi henter 'status'-noden fra Firebase (den du sendte bilde av)
+    const statusSnapshot = await db.ref(`status/${valgtAar}`).once('value');
+    const statusData = statusSnapshot.val() || {};
+    
+    let antallFullforte = 0;
+    let tabellHtml = `
         <table style="width:100%; border-collapse:collapse;">
             <thead>
                 <tr style="background:#34495e; color:white; text-align:left;">
                     <th style="padding:10px;">Prøve / Klasse</th>
-                    <th style="padding:10px; text-align:center;">Elever</th>
-                    <th style="padding:10px; text-align:center;">Snitt (%)</th>
-                    <th style="padding:10px; text-align:center;">Kritisk grense</th>
+                    <th style="padding:10px;">Status</th>
+                    <th style="padding:10px;">Dato ferdigstilt</th>
                 </tr>
             </thead>
             <tbody>`;
 
-    const rader = Object.values(grupperteProever);
-    rader.forEach(gruppe => {
-        const antallElever = gruppe.elever.length;
-        
-        // Beregn snitt (sjekker poengSum mot maxPoeng)
-        const totalProsent = gruppe.elever.reduce((sum, p) => {
-            const prosent = (p.poengSum / (p.maxPoeng || 1)) * 100;
-            return sum + prosent;
-        }, 0);
-        const snitt = (totalProsent / antallElever).toFixed(1);
-
-        // Finn antall under kritisk grense
-        const underKritisk = gruppe.elever.filter(p => {
-            // Sjekker om poengsummen er strengt mindre enn kritisk grense
-            return parseFloat(p.poengSum) < parseFloat(p.kritiskGrense);
-        }).length;
-
-        const fargeKritisk = underKritisk > 0 ? "#e74c3c" : "#27ae60";
-
-        html += `
-            <tr style="border-bottom:1px solid #ddd;">
-                <td style="padding:10px;"><strong>${gruppe.navn}</strong><br><small>${gruppe.klasse || ""}</small></td>
-                <td style="padding:10px; text-align:center;">${antallElever}</td>
-                <td style="padding:10px; text-align:center;">${snitt}%</td>
-                <td style="padding:10px; text-align:center; color:${fargeKritisk}; font-weight:bold;">${underKritisk}</td>
-            </tr>`;
-    });
-
-    html += `</tbody></table>`;
-    
-    if (rader.length === 0) {
-        html = `
-            <div style="text-align:center; padding:40px; color:#666;">
-                <p>Ingen registrerte prøver funnet på ID: <strong>${idForSok}</strong></p>
-                <small>Sjekk at 'laererID' eller 'registrertAv' i resultatlisten din matcher påloggingsmailen.</small>
-            </div>`;
+    // Vi må "traversere" (gå gjennom) status-treet: Fag -> Periode -> Trinn -> Klasse
+    for (let fag in statusData) {
+        for (let periode in statusData[fag]) {
+            for (let trinn in statusData[fag][periode]) {
+                for (let klasse in statusData[fag][periode][trinn]) {
+                    const info = statusData[fag][periode][trinn][klasse];
+                    
+                    // Sjekker om det er denne læreren som har ferdigstilt
+                    if (info.endretAv === idForSok || info.endretAv === epost) {
+                        antallFullforte++;
+                        tabellHtml += `
+                            <tr style="border-bottom:1px solid #ddd;">
+                                <td style="padding:10px;"><strong>${fag} (${periode})</strong><br><small>${trinn}. trinn - klasse ${klasse}</small></td>
+                                <td style="padding:10px;"><span style="color:green;">✔️ Ferdigstilt</span></td>
+                                <td style="padding:10px;">${info.dato || "Ukjent"}</td>
+                            </tr>`;
+                    }
+                }
+            }
+        }
     }
 
-    document.getElementById('laererProeveListe').innerHTML = html;
+    tabellHtml += `</tbody></table>`;
+    document.getElementById('detaljerAntallProever').innerText = antallFullforte;
+    document.getElementById('laererProeveListe').innerHTML = antallFullforte > 0 ? tabellHtml : "<p style='padding:20px;'>Ingen ferdigstilte prøver funnet på denne læreren.</p>";
 }
 // ---SLUTT PÅ LÆRERDETALJER
 
