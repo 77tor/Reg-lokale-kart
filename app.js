@@ -1000,14 +1000,30 @@ function visLaererDetaljer(epost) {
 }
 
 function aapneLaererModal() {
-    // Vis selve modal-vinduet
     const modal = document.getElementById('modalLaerere');
-    if (modal) {
+    const select = document.getElementById('valgtAarLaerer');
+    
+    if (modal && select) {
+        // 1. Tøm eksisterende valg i menyen
+        select.innerHTML = '';
+
+        // 2. Hent alle årstall fra ansatte.js (nøklene i objektet)
+        const tilgjengeligeAar = Object.keys(window.ansatteData).sort().reverse();
+
+        // 3. Fyll menyen dynamisk
+        tilgjengeligeAar.forEach(aar => {
+            const option = document.createElement('option');
+            option.value = aar;
+            // Gjør visningen penere (bytter - med /)
+            option.textContent = aar.replace('-', '/');
+            select.appendChild(option);
+        });
+
+        // 4. Vis modalen og oppdater listen
         modal.style.display = 'block';
-        // Kjør funksjonen din som henter og sorterer lærere
         oppdaterLaererListe();
     } else {
-        console.error("Fant ikke modalLaerere i HTML-en!");
+        console.error("Fant ikke modal eller meny i HTML-en!");
     }
 }
 // --- SLUTT LÆRERSIDE ---
