@@ -1018,7 +1018,11 @@ async function visLaererDetaljer(epost) {
     const ansatt = window.ansatteData[valgtAar].find(a => a.epost === epost);
     if (!ansatt) return;
 
-    const idForSok = ansatt.paloggingsmail; // "77tor@ikrs.no"
+    // Hent alle gyldige ID-er for denne læreren (både hoved-epost og påloggings-mailer)
+    // Vi sørger for at alt ligger i en liste, selv om det bare er én e-post
+    const alleIder = Array.isArray(ansatt.paloggingsmail) 
+        ? [...ansatt.paloggingsmail, ansatt.epost] 
+        : [ansatt.paloggingsmail, ansatt.epost];
 
     // Vis modal og sett navn
     document.getElementById('detaljerNavn').innerText = `Statistikk for ${ansatt.navn}`;
@@ -1026,7 +1030,9 @@ async function visLaererDetaljer(epost) {
 
     // --- 1. TELL INNLOGGINGER ---
     const loggData = window.systemLogg || {};
-    const innlogginger = Object.values(loggData).filter(l => l.epost === epost || l.epost === idForSok).length;
+    const innlogginger = Object.values(loggData).filter(l => 
+        alleIder.includes(l.epost) // Sjekker om e-posten i loggen finnes i lærerens liste
+    ).length;
     document.getElementById('detaljerInnlogginger').innerText = innlogginger;
 
     // --- 2. FINN PRØVER VIA "STATUS"-NODEN ---
@@ -1034,26 +1040,16 @@ async function visLaererDetaljer(epost) {
     const statusData = statusSnapshot.val() || {};
     
     let antallFullforte = 0;
-    let tabellHtml = `
-        <table style="width:100%; border-collapse:collapse;">
-            <thead>
-                <tr style="background:#34495e; color:white; text-align:left;">
-                    <th style="padding:10px;">Prøve / Klasse</th>
-                    <th style="padding:10px; text-align:center;">Snittskår</th>
-                    <th style="padding:10px; text-align:center;">Under kritisk</th>
-                    <th style="padding:10px;">Dato</th>
-                </tr>
-            </thead>
-            <tbody>`;
+    // ... restene av tabellHtml-oppsettet ditt ...
 
-    // Traverser status-treet
     for (let fag in statusData) {
         for (let periode in statusData[fag]) {
             for (let trinn in statusData[fag][periode]) {
                 for (let klasse in statusData[fag][periode][trinn]) {
                     const info = statusData[fag][periode][trinn][klasse];
                     
-                    if (info.endretAv === idForSok || info.endretAv === epost) {
+                    // ENDRET LINJE: Sjekker om 'endretAv' matcher en av e-postene i listen vår
+                    if (alleIder.includes(info.endretAv)) {
                         antallFullforte++;
 
                         // --- NYTT: Hent faktiske elevresultater for denne klassen ---
