@@ -1018,9 +1018,7 @@ async function visLaererDetaljer(epost) {
     document.getElementById('modalLaererDetaljer').style.display = 'block';
 
     const loggData = window.systemLogg || {};
-    const innlogginger = Object.values(loggData).filter(l => 
-        alleIder.includes(l.epost)
-    ).length;
+    const innlogginger = Object.values(loggData).filter(l => alleIder.includes(l.epost)).length;
     document.getElementById('detaljerInnlogginger').innerText = innlogginger;
 
     const statusSnapshot = await db.ref(`status/${valgtAar}`).once('value');
@@ -1028,16 +1026,15 @@ async function visLaererDetaljer(epost) {
     
     let antallFullforte = 0;
 
-    // NYTT: Lagt til scroll-container og STICKY header
     let tabellHtml = `
-        <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
+        <div style="max-height: 450px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
             <table style="width:100%; border-collapse:collapse;">
                 <thead>
-                    <tr style="position: sticky; top: 0; background:#f2f2f2; color: black; z-index: 10;">
-                        <th style="padding:10px; text-align:left;">Prøve / Klasse</th>
-                        <th style="padding:10px; text-align:center;">Snittskår</th>
-                        <th style="padding:10px; text-align:center;">Under kritisk</th>
-                        <th style="padding:10px; text-align:left;">Dato</th>
+                    <tr style="position: sticky; top: 0; background:#f2f2f2; color:black; z-index: 10;">
+                        <th style="padding:10px; text-align:left; border-bottom:1px solid #ddd;">Prøve / Klasse</th>
+                        <th style="padding:10px; text-align:center; border-bottom:1px solid #ddd;">Snitt (Prosent)</th>
+                        <th style="padding:10px; text-align:center; border-bottom:1px solid #ddd;">Under kritisk</th>
+                        <th style="padding:10px; text-align:left; border-bottom:1px solid #ddd;">Dato</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -1049,35 +1046,50 @@ async function visLaererDetaljer(epost) {
                     const info = statusData[fag][periode][trinn][klasse];
                     
                     if (alleIder.includes(info.endretAv)) {
-                        antallFullforte++;
-
                         const kartleggingSti = `kartlegging/${valgtAar}/${fag}/${periode}/${trinn}/${klasse}`;
                         const kartleggingSnapshot = await db.ref(kartleggingSti).once('value');
                         const elever = kartleggingSnapshot.val() || {};
-                        const elevListe = Object.values(elever).filter(e => !e.slettet);
+                        
+                        // 1. Filtrer ut elever som er slettet ELLER som står som "Ikke deltatt"
+                        const aktiveElever = Object.values(elever).filter(e => !e.slettet && e.sum !== "Ikke deltatt");
+                        const harDeltakere = aktiveElever.length > 0;
 
-                        let snittTekst = "Ingen data";
-                        let underKritiskTeller = 0;
-                        let kritiskFarge = "#27ae60";
+                        let snittVisning = "Ikke gjennomført";
+                        let underKritiskVisning = "-";
+                        let kritiskFarge = "#666";
+                        
+                        if (harDeltakere) {
+                            antallFullforte++; // Tell kun med prøver som faktisk har deltakere
 
-                        if (elevListe.length > 0) {
-                            const totalSum = elevListe.reduce((acc, e) => acc + (Number(e.sum) || 0), 0);
-                            snittTekst = (totalSum / elevListe.length).toFixed(1) + " p";
+                            // 2. Finn maks poeng fra første elev (eller sett fallback)
+                            const maksPoeng = Number(aktiveElever[0].maksPoeng) || 1;
+                            
+                            // 3. Beregn snitt i prosent
+                            const totalSum = aktiveElever.reduce((acc, e) => acc + (Number(e.sum) || 0), 0);
+                            const snittPoeng = totalSum / aktiveElever.length;
+                            const snittProsent = (snittPoeng / maksPoeng) * 100;
+                            snittVisning = snittProsent.toFixed(1) + "%";
 
-                            underKritiskTeller = elevListe.filter(e => {
+                            // 4. Beregn under kritisk grense
+                            const underKritiskTeller = aktiveElever.filter(e => {
                                 const sum = Number(e.sum) || 0;
-                                const grense = Number(e.kritiskGrense) || 15;
+                                const grense = Number(e.kritiskGrense) || 0;
                                 return sum < grense;
                             }).length;
 
-                            if (underKritiskTeller > 0) kritiskFarge = "#e74c3c";
+                            underKritiskVisning = underKritiskTeller + " elever";
+                            kritiskFarge = underKritiskTeller > 0 ? "#e74c3c" : "#27ae60";
                         }
+
+                        // 5. Formater prøvenavn med skoleår (eks: Lesing-2a-Våren-2025/2026)
+                        const visningsAar = valgtAar.replace('-', '/');
+                        const proeveNavn = `${fag}-${trinn}${klasse}-${periode}-${visningsAar}`;
 
                         tabellHtml += `
                             <tr style="border-bottom:1px solid #ddd;">
-                                <td style="padding:10px;"><strong>${fag} (${periode})</strong><br><small>${trinn}. trinn - ${klasse}</small></td>
-                                <td style="padding:10px; text-align:center;">${snittTekst}</td>
-                                <td style="padding:10px; text-align:center; color:${kritiskFarge}; font-weight:bold;">${underKritiskTeller} elever</td>
+                                <td style="padding:10px;"><strong>${proeveNavn}</strong></td>
+                                <td style="padding:10px; text-align:center;">${snittVisning}</td>
+                                <td style="padding:10px; text-align:center; color:${kritiskFarge}; font-weight:bold;">${underKritiskVisning}</td>
                                 <td style="padding:10px;"><small>${info.dato ? info.dato.split(',')[0] : "Ukjent"}</small></td>
                             </tr>`;
                     }
@@ -1091,7 +1103,7 @@ async function visLaererDetaljer(epost) {
     document.getElementById('detaljerAntallProever').innerText = antallFullforte;
     document.getElementById('laererProeveListe').innerHTML = antallFullforte > 0 
         ? tabellHtml 
-        : "<p style='padding:20px; text-align:center; color:#666;'>Ingen ferdigstilte prøver funnet på denne læreren.</p>";
+        : "<p style='padding:20px; text-align:center; color:#666;'>Ingen gjennomførte prøver funnet på denne læreren.</p>";
 }
 // ---SLUTT PÅ LÆRERDETALJER
 
