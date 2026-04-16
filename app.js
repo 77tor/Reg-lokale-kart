@@ -1007,19 +1007,18 @@ container.innerHTML = filtrerte.length > 0 ? html : `<p style="padding:20px; tex
 
 // --- LÆRERDETALJER (Endelig korrigert versjon)
 async function visLaererDetaljer(valgtEpost) {
-    // 1. Samle alle skoleår som finnes i registeret
+    // 1. Hent alle tilgjengelige år fra ansatteData
     const alleAar = Object.keys(window.ansatteData);
     
-    // 2. Finn læreren og alle deres e-postadresser på tvers av ALLE år
+    // 2. Finn læreren og samle alle e-poster de har brukt
     let mineIder = new Set([valgtEpost.toLowerCase().trim()]);
     let laererNavn = "";
 
     alleAar.forEach(aar => {
         const ansattIAar = window.ansatteData[aar].find(a => a.epost === valgtEpost);
         if (ansattIAar) {
-            if (!laererNavn) laererNavn = ansattIAar.navn; // Henter navnet én gang
+            if (!laererNavn) laererNavn = ansattIAar.navn;
             
-            // Legg til påloggingsmailer (håndterer både streng og array)
             if (ansattIAar.paloggingsmail) {
                 if (Array.isArray(ansattIAar.paloggingsmail)) {
                     ansattIAar.paloggingsmail.forEach(m => mineIder.add(m.toLowerCase().trim()));
@@ -1032,6 +1031,7 @@ async function visLaererDetaljer(valgtEpost) {
 
     if (!laererNavn) return;
 
+    // Oppdater UI
     document.getElementById('detaljerNavn').innerText = `Statistikk for ${laererNavn}`;
     document.getElementById('modalLaererDetaljer').style.display = 'block';
 
@@ -1050,8 +1050,8 @@ async function visLaererDetaljer(valgtEpost) {
                 </thead>
                 <tbody>`;
 
-    // 3. Gå gjennom hvert skoleår i Firebase
-    for (const aar av alleAar) {
+    // 3. Gå gjennom hvert år (Her var feilen: 'av' er nå endret til 'of')
+    for (const aar of alleAar) {
         const statusSnapshot = await db.ref(`status/${aar}`).once('value');
         const statusData = statusSnapshot.val() || {};
 
@@ -1062,9 +1062,7 @@ async function visLaererDetaljer(valgtEpost) {
                         const info = statusData[fag][periode][trinn][klasse];
                         const registrertAv = (info.endretAv || "").toLowerCase().trim();
 
-                        // Sjekk om e-posten i Firebase matcher en av lærerens IDer
                         if (mineIder.has(registrertAv)) {
-                            
                             const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
                             if (!oppsett) continue;
 
@@ -1103,7 +1101,7 @@ async function visLaererDetaljer(valgtEpost) {
                                         <td style="padding:10px; text-align:center;">${deltakere} / ${totaltIKlassen}</td>
                                         <td style="padding:10px; text-align:center; font-weight:bold;">${snitt}%</td>
                                         <td style="padding:10px; text-align:center; color:${underKritisk > 0 ? '#e74c3c' : '#27ae60'};">
-                                            <strong>${underKritisk} elever</strong>
+                                            <strong>${underKritisk}</strong>
                                         </td>
                                         <td style="padding:10px;"><small>${info.dato ? info.dato.split(',')[0] : "-"}</small></td>
                                     </tr>`;
@@ -1117,7 +1115,7 @@ async function visLaererDetaljer(valgtEpost) {
 
     tabellHtml += `</tbody></table></div>`;
     document.getElementById('detaljerAntallProever').innerText = totaltAntallProever;
-    document.getElementById('laererProeveListe').innerHTML = totaltAntallProever > 0 ? tabellHtml : "<p style='padding:20px;'>Ingen prøver funnet for denne læreren i noe år.</p>";
+    document.getElementById('laererProeveListe').innerHTML = totaltAntallProever > 0 ? tabellHtml : "<p style='padding:20px;'>Ingen prøver funnet.</p>";
 }
 // ---SLUTT PÅ LÆRERDETALJER
 
