@@ -931,57 +931,66 @@ function finnRelevanteSider(rentTrinnNummer, oppgaveNavn) {
 }
 
 // --- LÆRERSIDE ---
-function aapneLaererModal() {
-    document.getElementById('modalLaerere').style.display = 'block';
-    oppdaterLaererListe();
-}
-
 function oppdaterLaererListe() {
     const sok = document.getElementById('sokLaerer').value.toLowerCase();
+    const valgtAar = document.getElementById('valgtAarLaerer').value; // F.eks "2025-2026"
     const container = document.getElementById('laererListeContainer');
     
-    // Antar 'ansatte' er arrayen din fra ansatte.js
-    let filtrerte = ansatte.filter(a => a.navn.toLowerCase().includes(sok));
+    // Hent ut listen for det spesifikke året fra ansatteData
+    // Vi bruker window.ansatteData for å være helt sikre på at vi treffer den globale variabelen
+    const gjeldendeAnsatte = window.ansatteData && window.ansatteData[valgtAar] ? window.ansatteData[valgtAar] : [];
 
-    // KRONOLOGISK SORTERING
+    // 1. Filtrer basert på søk
+    let filtrerte = gjeldendeAnsatte.filter(a => 
+        a.navn.toLowerCase().includes(sok) || 
+        a.epost.toLowerCase().includes(sok)
+    );
+
+    // 2. Sortering (Kronologisk)
     filtrerte.sort((a, b) => {
-        // 1. Sorter på trinn først (1, 2, 3...)
-        if (a.trinn !== b.trinn) return a.trinn - b.trinn;
+        // Håndter trinn (hvis tom liste, sett som 0)
+        const trinnA = a.trinn && a.trinn.length > 0 ? a.trinn[0] : 99;
+        const trinnB = b.trinn && b.trinn.length > 0 ? b.trinn[0] : 99;
+        
+        if (trinnA !== trinnB) return trinnA - trinnB;
 
-        // 2. Hvis samme trinn, sjekk om rolle inneholder "kontakt"
-        const aErKontakt = a.rolle.toLowerCase().includes("kontakt");
-        const bErKontakt = b.rolle.toLowerCase().includes("kontakt");
+        // Sjekk kontaktlærer/adm status
+        const aStatus = a.kontaktlaerer ? a.kontaktlaerer.toLowerCase() : "";
+        const bStatus = b.kontaktlaerer ? b.kontaktlaerer.toLowerCase() : "";
 
-        if (aErKontakt && !bErKontakt) return -1;
-        if (!aErKontakt && bErKontakt) return 1;
+        // Prioriter admin og kontaktlærere
+        if (aStatus && !bStatus) return -1;
+        if (!aStatus && bStatus) return 1;
 
-        // 3. Alfabetisk på navn hvis trinn og rolle er like
         return a.navn.localeCompare(b.navn);
     });
 
-    // Generer tabellen
+    // 3. Generer HTML Tabell
     let html = `
-        <table style="width:100%; border-collapse: collapse;">
+        <table style="width:100%; border-collapse: collapse; margin-top:10px;">
             <thead>
-                <tr style="background:#f8f9fa; text-align:left;">
-                    <th style="padding:10px; border-bottom:2px solid #ddd;">Navn</th>
-                    <th style="padding:10px; border-bottom:2px solid #ddd;">Trinn</th>
-                    <th style="padding:10px; border-bottom:2px solid #ddd;">Rolle</th>
+                <tr style="background:#f2f2f2; text-align:left;">
+                    <th style="padding:12px; border-bottom:2px solid #ddd;">Navn</th>
+                    <th style="padding:12px; border-bottom:2px solid #ddd;">Trinn</th>
+                    <th style="padding:12px; border-bottom:2px solid #ddd;">Rolle/Klasse</th>
                 </tr>
             </thead>
             <tbody>`;
 
     filtrerte.forEach(a => {
+        const trinnVisning = a.trinn && a.trinn.length > 0 ? a.trinn.join(", ") + ". trinn" : "Ikke satt";
+        const rolleVisning = a.kontaktlaerer === "adm" ? "Administrasjon" : (a.kontaktlaerer || "Lærer");
+
         html += `
-            <tr style="border-bottom:1px solid #eee; cursor:pointer;" onclick="visLoggForAnsatt('${a.epost}')" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='none'">
-                <td style="padding:10px;">${a.navn}</td>
-                <td style="padding:10px;">${a.trinn}. trinn</td>
-                <td style="padding:10px;">${a.rolle}</td>
+            <tr style="border-bottom:1px solid #eee; cursor:pointer;" onclick="visLaererDetaljer('${a.epost}')" class="laerer-rad">
+                <td style="padding:10px;"><strong>${a.navn}</strong><br><small style="color:#666">${a.epost}</small></td>
+                <td style="padding:10px;">${trinnVisning}</td>
+                <td style="padding:10px;">${rolleVisning}</td>
             </tr>`;
     });
 
     html += `</tbody></table>`;
-    container.innerHTML = html;
+    container.innerHTML = filtrerte.length > 0 ? html : `<p style="padding:20px;">Ingen ansatte funnet for skoleåret ${valgtAar}.</p>`;
 }
 
 function visLoggForAnsatt(epost) {
