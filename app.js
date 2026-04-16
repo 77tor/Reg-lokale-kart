@@ -980,7 +980,7 @@ function oppdaterLaererListe() {
         <div style="max-height: 500px; overflow-y: auto; border: 1px solid #ddd;">
             <table style="width:100%; border-collapse: collapse;">
                 <thead>
-                    <tr style="position: sticky; top: 0; background: #34495e; color: white; z-index: 10;">
+                    <tr style="position: sticky; top: 0; background: #f2f2f2; color: black; z-index: 10;">
                         <th style="padding:12px; text-align:left; border-bottom:2px solid #2c3e50;">Navn</th>
                         <th style="padding:12px; text-align:left; border-bottom:2px solid #2c3e50;">Trinn</th>
                         <th style="padding:12px; text-align:left; border-bottom:2px solid #2c3e50;">Rolle/Klasse</th>
@@ -1004,7 +1004,6 @@ function oppdaterLaererListe() {
 container.innerHTML = filtrerte.length > 0 ? html : `<p style="padding:20px; text-align:center;">Ingen ansatte funnet for skoleåret ${valgtAar}.</p>`;
 }
 
-// --- LÆRERDETALJER
 // --- LÆRERDETALJER
 async function visLaererDetaljer(epost) {
     const valgtAar = document.getElementById('valgtAarLaerer').value;
@@ -1034,7 +1033,7 @@ async function visLaererDetaljer(epost) {
         <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
             <table style="width:100%; border-collapse:collapse;">
                 <thead>
-                    <tr style="position: sticky; top: 0; background:#34495e; color:white; z-index: 10;">
+                    <tr style="position: sticky; top: 0; background:#f2f2f2; color: black; z-index: 10;">
                         <th style="padding:10px; text-align:left;">Prøve / Klasse</th>
                         <th style="padding:10px; text-align:center;">Snittskår</th>
                         <th style="padding:10px; text-align:center;">Under kritisk</th>
