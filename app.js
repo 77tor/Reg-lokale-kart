@@ -1006,6 +1006,7 @@ container.innerHTML = filtrerte.length > 0 ? html : `<p style="padding:20px; tex
 
 
 // --- LÆRERDETALJER (Endelig korrigert versjon)
+// --- LÆRERDETALJER (Endelig korrigert med feilsøking)
 async function visLaererDetaljer(epost) {
     const valgtAar = document.getElementById('valgtAarLaerer').value;
     const ansatt = window.ansatteData[valgtAar].find(a => a.epost === epost);
@@ -1018,15 +1019,13 @@ async function visLaererDetaljer(epost) {
     document.getElementById('detaljerNavn').innerText = `Statistikk for ${ansatt.navn}`;
     document.getElementById('modalLaererDetaljer').style.display = 'block';
 
-    const loggData = window.systemLogg || {};
-    const innlogginger = Object.values(loggData).filter(l => alleIder.includes(l.epost)).length;
-    document.getElementById('detaljerInnlogginger').innerText = innlogginger;
+    // Nullstill tellere og tabell
+    let antallFullforteProever = 0;
+    document.getElementById('detaljerInnlogginger').innerText = Object.values(window.systemLogg || {}).filter(l => alleIder.includes(l.epost)).length;
 
     const statusSnapshot = await db.ref(`status/${valgtAar}`).once('value');
     const statusData = statusSnapshot.val() || {};
     
-    let antallFullforte = 0;
-
     let tabellHtml = `
         <div style="max-height: 450px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
             <table style="width:100%; border-collapse:collapse;">
@@ -1047,6 +1046,7 @@ async function visLaererDetaljer(epost) {
                 for (let klasse in statusData[fag][periode][trinn]) {
                     const info = statusData[fag][periode][trinn][klasse];
                     
+                    // Sjekk om denne læreren har ferdigstilt/endret denne spesifikke klassen
                     if (alleIder.includes(info.endretAv)) {
                         const kartleggingSti = `kartlegging/${valgtAar}/${fag}/${periode}/${trinn}/${klasse}`;
                         const kartleggingSnapshot = await db.ref(kartleggingSti).once('value');
@@ -1056,54 +1056,47 @@ async function visLaererDetaljer(epost) {
                         const totaltAntallElever = hentAntallEleverIRegister(fulltKlasseNavn.trim().toUpperCase(), valgtAar);
                         
                         let antallDeltatt = 0;
-                        let sumOppnaaddPoeng = 0;
-                        let totaltMaksPoengDeltakere = 0;
+                        let sumPoeng = 0;
+                        let sumMaksMulig = 0;
                         let underKritiskTeller = 0;
 
-                        Object.entries(eleverObjekt).forEach(([id, node]) => {
-                            if (id === "laast" || id === "ferdigstilt" || typeof node !== 'object') return;
+                        Object.entries(eleverObjekt).forEach(([id, elev]) => {
+                            if (id === "laast" || id === "ferdigstilt" || typeof elev !== 'object') return;
 
-                            const råPoeng = node.sum;
-                            // Sjekker alle varianter av fravær
-                            const erFravaer = (
-                                råPoeng === "Ikke deltatt" || 
-                                node.ikkeGjennomfort === true || 
-                                råPoeng === "" || 
-                                råPoeng === undefined || 
-                                råPoeng === null
-                            );
+                            const sum = elev.sum;
+                            const ikkeDeltatt = (sum === "Ikke deltatt" || elev.ikkeGjennomfort === true || sum === "" || sum === undefined);
 
-                            if (!erFravaer) {
-                                const poeng = parseFloat(råPoeng);
-                                // VIKTIG: Hent maksPoeng lagret på eleven, eller fallback til det som er i oppsettet
-                                const elevMaks = parseFloat(node.maksPoeng) || 
-                                               (window.oppgaveStruktur?.[valgtAar]?.[fag]?.[periode]?.[trinn]?.oppgaver?.reduce((a, b) => a + (b.maks || 0), 0)) || 
-                                               30;
+                            if (!ikkeDeltatt) {
+                                const p = parseFloat(sum);
+                                // Henter maksPoeng direkte fra eleven slik det ble lagret under prøven
+                                const m = parseFloat(elev.maksPoeng);
+                                // Henter kritisk grense direkte fra eleven
+                                const k = parseFloat(elev.kritiskGrense);
 
-                                if (!isNaN(poeng)) {
+                                if (!isNaN(p) && !isNaN(m)) {
                                     antallDeltatt++;
-                                    sumOppnaaddPoeng += poeng;
-                                    totaltMaksPoengDeltakere += elevMaks;
+                                    sumPoeng += p;
+                                    sumMaksMulig += m;
 
-                                    const grense = Number(node.kritiskGrense) || 15;
-                                    if (poeng < grense) underKritiskTeller++;
+                                    if (p < k) {
+                                        underKritiskTeller++;
+                                    }
                                 }
                             }
                         });
 
                         if (antallDeltatt > 0) {
-                            antallFullforte++;
-                            
-                            // Beregn snitt basert på summen av maks-poeng for de som faktisk deltok
-                            const snittProsent = Math.round((sumOppnaaddPoeng / totaltMaksPoengDeltakere) * 100);
-                            
+                            antallFullforteProever++;
+                            const snittProsent = Math.round((sumPoeng / sumMaksMulig) * 100);
                             const visningsAar = valgtAar.replace('-', '/');
-                            const proeveNavn = `${fag}-${fulltKlasseNavn}-${periode}-${visningsAar}`;
+                            const proeveNavnFullt = `${fag}-${fulltKlasseNavn}-${periode}-${visningsAar}`;
+                            
+                            // Fargekoding for kritisk grense
                             const kritiskFarge = underKritiskTeller > 0 ? "#e74c3c" : "#27ae60";
 
                             tabellHtml += `
                                 <tr style="border-bottom:1px solid #ddd;">
-                                    <td style="padding:10px;"><strong>${proeveNavn}</strong></td>
+                                    <td style="padding:10px;"><strong>${proeveNavnFullt}</strong></td>
                                     <td style="padding:10px; text-align:center;">${antallDeltatt} / ${totaltAntallElever}</td>
                                     <td style="padding:10px; text-align:center; font-weight:bold;">${snittProsent}%</td>
                                     <td style="padding:10px; text-align:center; color:${kritiskFarge}; font-weight:bold;">${underKritiskTeller} elever</td>
@@ -1117,11 +1110,8 @@ async function visLaererDetaljer(epost) {
     }
 
     tabellHtml += `</tbody></table></div>`;
-
-    document.getElementById('detaljerAntallProever').innerText = antallFullforte;
-    document.getElementById('laererProeveListe').innerHTML = antallFullforte > 0 
-        ? tabellHtml 
-        : "<p style='padding:20px; text-align:center; color:#666;'>Ingen gjennomførte prøver funnet.</p>";
+    document.getElementById('detaljerAntallProever').innerText = antallFullforteProever;
+    document.getElementById('laererProeveListe').innerHTML = antallFullforteProever > 0 ? tabellHtml : "<p>Ingen data funnet.</p>";
 }
 // ---SLUTT PÅ LÆRERDETALJER
 
