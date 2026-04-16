@@ -939,7 +939,7 @@ function oppdaterLaererListe() {
 
     let filtrerte = gjeldendeAnsatte.filter(a => 
         a.navn.toLowerCase().includes(sok) || 
-        a.epost.toLowerCase().includes(sok)
+        (Array.isArray(a.paloggingsmail) ? a.paloggingsmail.join(" ").toLowerCase().includes(sok) : (a.paloggingsmail || "").toLowerCase().includes(sok))
     );
 
     filtrerte.sort((a, b) => {
@@ -949,39 +949,32 @@ function oppdaterLaererListe() {
         const erTallA = !isNaN(parseInt(verdiA));
         const erTallB = !isNaN(parseInt(verdiB));
 
-        // A. Prioritering: Tall-trinn (1-10) før tekst (Adm/Permisjon)
         if (erTallA && !erTallB) return -1;
         if (!erTallA && erTallB) return 1;
 
-        // B. Hvis begge er tall-trinn
         if (erTallA && erTallB) {
             const numA = parseInt(verdiA);
             const numB = parseInt(verdiB);
-            
             if (numA !== numB) return numA - numB;
             
             const klasseA = a.kontaktlaerer ? String(a.kontaktlaerer).toLowerCase() : "zzz";
             const klasseB = b.kontaktlaerer ? String(b.kontaktlaerer).toLowerCase() : "zzz";
-            
             if (klasseA !== klasseB) return klasseA.localeCompare(klasseB);
         }
 
-        // C. Hvis begge er tekst-trinn (Adm/Permisjon)
         if (!erTallA && !erTallB) {
             if (verdiA !== verdiB) return verdiA.localeCompare(verdiB);
         }
 
-        // D. Siste utvei: Sorter alfabetisk på navn
         return a.navn.localeCompare(b.navn);
     });
 
-    // 3. Generer HTML Tabell med "Sticky" overskrift
     let html = `
         <div style="max-height: 500px; overflow-y: auto; border: 1px solid #ddd;">
             <table style="width:100%; border-collapse: collapse;">
                 <thead>
                     <tr style="position: sticky; top: 0; background: #f2f2f2; color: black; z-index: 10;">
-                        <th style="padding:12px; text-align:left; border-bottom:2px solid #2c3e50;">Navn</th>
+                        <th style="padding:12px; text-align:left; border-bottom:2px solid #2c3e50;">Navn / Påloggingsmail</th>
                         <th style="padding:12px; text-align:left; border-bottom:2px solid #2c3e50;">Trinn</th>
                         <th style="padding:12px; text-align:left; border-bottom:2px solid #2c3e50;">Rolle/Klasse</th>
                     </tr>
@@ -992,16 +985,27 @@ function oppdaterLaererListe() {
         const trinnVisning = a.trinn && a.trinn.length > 0 ? a.trinn.join(", ") + ". trinn" : "Ikke satt";
         const rolleVisning = a.kontaktlaerer === "adm" ? "Administrasjon" : (a.kontaktlaerer || "Lærer");
 
+        // NY LOGIKK: Formaterer påloggingsmail (håndterer både tekst og liste/array)
+        let visningsMail = "";
+        if (Array.isArray(a.paloggingsmail)) {
+            visningsMail = a.paloggingsmail.join(", ");
+        } else {
+            visningsMail = a.paloggingsmail || "Mangler";
+        }
+
         html += `
             <tr style="border-bottom:1px solid #eee; cursor:pointer;" onclick="visLaererDetaljer('${a.epost}')" class="laerer-rad">
-                <td style="padding:10px;"><strong>${a.navn}</strong><br><small style="color:#666">${a.epost}</small></td>
+                <td style="padding:10px;">
+                    <strong>${a.navn}</strong><br>
+                    <small style="color:#007bff; font-family: monospace;">${visningsMail}</small>
+                </td>
                 <td style="padding:10px;">${trinnVisning}</td>
                 <td style="padding:10px;">${rolleVisning}</td>
             </tr>`;
     });
 
-    html += `</tbody></table></div>`; // Lukker både tbody, table og scroll-div
-container.innerHTML = filtrerte.length > 0 ? html : `<p style="padding:20px; text-align:center;">Ingen ansatte funnet for skoleåret ${valgtAar}.</p>`;
+    html += `</tbody></table></div>`;
+    container.innerHTML = filtrerte.length > 0 ? html : `<p style="padding:20px; text-align:center;">Ingen ansatte funnet for skoleåret ${valgtAar}.</p>`;
 }
 
 
