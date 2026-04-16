@@ -1006,26 +1006,31 @@ container.innerHTML = filtrerte.length > 0 ? html : `<p style="padding:20px; tex
 
 
 // --- LÆRERDETALJER (Endelig korrigert versjon)
-// --- LÆRERDETALJER (Endelig korrigert med feilsøking)
+// --- LÆRERDETALJER (Korrigeret for flere e-poster / påloggingsmail)
 async function visLaererDetaljer(epost) {
     const valgtAar = document.getElementById('valgtAarLaerer').value;
-    const ansatt = window.ansatteData[valgtAar].find(a => a.epost === epost);
+    const ansatteListe = window.ansatteData[valgtAar] || [];
+    const ansatt = ansatteListe.find(a => a.epost === epost);
+    
     if (!ansatt) return;
 
-    const alleIder = Array.isArray(ansatt.paloggingsmail) 
-        ? [...ansatt.paloggingsmail, ansatt.epost] 
-        : [ansatt.paloggingsmail, ansatt.epost];
+    // Samler ALLE e-poster læreren kan ha brukt (viktig for Tor og andre med flere)
+    let alleIder = [ansatt.epost.toLowerCase()];
+    if (ansatt.paloggingsmail) {
+        if (Array.isArray(ansatt.paloggingsmail)) {
+            ansatt.paloggingsmail.forEach(m => alleIder.push(m.toLowerCase()));
+        } else {
+            alleIder.push(ansatt.paloggingsmail.toLowerCase());
+        }
+    }
 
     document.getElementById('detaljerNavn').innerText = `Statistikk for ${ansatt.navn}`;
     document.getElementById('modalLaererDetaljer').style.display = 'block';
 
-    // Nullstill tellere og tabell
-    let antallFullforteProever = 0;
-    document.getElementById('detaljerInnlogginger').innerText = Object.values(window.systemLogg || {}).filter(l => alleIder.includes(l.epost)).length;
-
     const statusSnapshot = await db.ref(`status/${valgtAar}`).once('value');
     const statusData = statusSnapshot.val() || {};
     
+    let antallFullforteProever = 0;
     let tabellHtml = `
         <div style="max-height: 450px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
             <table style="width:100%; border-collapse:collapse;">
@@ -1046,8 +1051,11 @@ async function visLaererDetaljer(epost) {
                 for (let klasse in statusData[fag][periode][trinn]) {
                     const info = statusData[fag][periode][trinn][klasse];
                     
-                    // Sjekk om denne læreren har ferdigstilt/endret denne spesifikke klassen
-                    if (alleIder.includes(info.endretAv)) {
+                    // Sjekker om e-posten som lagret prøven finnes i læreren sin liste over e-poster
+                    const epostBruktVedLagring = info.endretAv ? info.endretAv.toLowerCase() : "";
+                    const erDenneLaereren = alleIder.includes(epostBruktVedLagring);
+
+                    if (erDenneLaereren) {
                         const kartleggingSti = `kartlegging/${valgtAar}/${fag}/${periode}/${trinn}/${klasse}`;
                         const kartleggingSnapshot = await db.ref(kartleggingSti).once('value');
                         const eleverObjekt = kartleggingSnapshot.val() || {};
@@ -1057,52 +1065,50 @@ async function visLaererDetaljer(epost) {
                         
                         let antallDeltatt = 0;
                         let sumPoeng = 0;
-                        let sumMaksMulig = 0;
-                        let underKritiskTeller = 0;
+                        let sumMaks = 0;
+                        let underKritisk = 0;
 
-                        Object.entries(eleverObjekt).forEach(([id, elev]) => {
-                            if (id === "laast" || id === "ferdigstilt" || typeof elev !== 'object') return;
+                        Object.values(eleverObjekt).forEach(elev => {
+                            if (typeof elev !== 'object' || elev === null) return;
 
                             const sum = elev.sum;
-                            const ikkeDeltatt = (sum === "Ikke deltatt" || elev.ikkeGjennomfort === true || sum === "" || sum === undefined);
+                            const fravaer = (sum === "Ikke deltatt" || elev.ikkeGjennomfort === true || sum === "" || sum === undefined);
 
-                            if (!ikkeDeltatt) {
+                            if (!fravaer) {
                                 const p = parseFloat(sum);
-                                // Henter maksPoeng direkte fra eleven slik det ble lagret under prøven
                                 const m = parseFloat(elev.maksPoeng);
-                                // Henter kritisk grense direkte fra eleven
                                 const k = parseFloat(elev.kritiskGrense);
 
                                 if (!isNaN(p) && !isNaN(m)) {
                                     antallDeltatt++;
                                     sumPoeng += p;
-                                    sumMaksMulig += m;
-
-                                    if (p < k) {
-                                        underKritiskTeller++;
-                                    }
+                                    sumMaks += m;
+                                    if (p < k) underKritisk++;
                                 }
                             }
                         });
 
+                        // Formatering av raden
+                        let snittVisning = "Ikke gjennomført";
+                        let kritiskVisning = "-";
+                        let radFarge = "#666";
+
                         if (antallDeltatt > 0) {
                             antallFullforteProever++;
-                            const snittProsent = Math.round((sumPoeng / sumMaksMulig) * 100);
-                            const visningsAar = valgtAar.replace('-', '/');
-                            const proeveNavnFullt = `${fag}-${fulltKlasseNavn}-${periode}-${visningsAar}`;
-                            
-                            // Fargekoding for kritisk grense
-                            const kritiskFarge = underKritiskTeller > 0 ? "#e74c3c" : "#27ae60";
-
-                            tabellHtml += `
-                                <tr style="border-bottom:1px solid #ddd;">
-                                    <td style="padding:10px;"><strong>${proeveNavnFullt}</strong></td>
-                                    <td style="padding:10px; text-align:center;">${antallDeltatt} / ${totaltAntallElever}</td>
-                                    <td style="padding:10px; text-align:center; font-weight:bold;">${snittProsent}%</td>
-                                    <td style="padding:10px; text-align:center; color:${kritiskFarge}; font-weight:bold;">${underKritiskTeller} elever</td>
-                                    <td style="padding:10px;"><small>${info.dato ? info.dato.split(',')[0] : "Ukjent"}</small></td>
-                                </tr>`;
+                            snittVisning = Math.round((sumPoeng / sumMaks) * 100) + "%";
+                            kritiskVisning = underKritisk + " elever";
+                            radFarge = underKritisk > 0 ? "#e74c3c" : "#27ae60";
                         }
+
+                        const visningsAar = valgtAar.replace('-', '/');
+                        tabellHtml += `
+                            <tr style="border-bottom:1px solid #ddd;">
+                                <td style="padding:10px;"><strong>${fag}-${fulltKlasseNavn}-${periode}-${visningsAar}</strong></td>
+                                <td style="padding:10px; text-align:center;">${antallDeltatt} / ${totaltAntallElever}</td>
+                                <td style="padding:10px; text-align:center; font-weight:bold;">${snittVisning}</td>
+                                <td style="padding:10px; text-align:center; color:${radFarge}; font-weight:bold;">${kritiskVisning}</td>
+                                <td style="padding:10px;"><small>${info.dato ? info.dato.split(',')[0] : "-"}</small></td>
+                            </tr>`;
                     }
                 }
             }
@@ -1111,7 +1117,7 @@ async function visLaererDetaljer(epost) {
 
     tabellHtml += `</tbody></table></div>`;
     document.getElementById('detaljerAntallProever').innerText = antallFullforteProever;
-    document.getElementById('laererProeveListe').innerHTML = antallFullforteProever > 0 ? tabellHtml : "<p>Ingen data funnet.</p>";
+    document.getElementById('laererProeveListe').innerHTML = antallFullforteProever > 0 ? tabellHtml : "<p style='text-align:center; padding:20px;'>Ingen data funnet for denne læreren.</p>";
 }
 // ---SLUTT PÅ LÆRERDETALJER
 
