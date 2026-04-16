@@ -1010,28 +1010,24 @@ async function visLaererDetaljer(valgtEpost) {
     const valgtAar = document.getElementById('valgtAarLaerer').value;
     const ansatteListe = window.ansatteData[valgtAar] || [];
     
-    // 1. Finn den ansatte i registeret
+    // Finn læreren i ansatte.js
     const ansatt = ansatteListe.find(a => a.epost === valgtEpost);
     if (!ansatt) return;
 
-    // 2. Bygg en liste over alle gyldige ID-er for denne læreren fra ansatte.js
+    // Bygg liste over alle IDer (hovedepost + alle påloggingsmail)
     let mineIder = [ansatt.epost.toLowerCase().trim()];
-    
     if (ansatt.paloggingsmail) {
         if (Array.isArray(ansatt.paloggingsmail)) {
-            // Hvis det er en array (som for Tor i 25/26)
             ansatt.paloggingsmail.forEach(m => mineIder.push(m.toLowerCase().trim()));
         } else {
-            // Hvis det er en enkel streng (som for de fleste andre)
             mineIder.push(ansatt.paloggingsmail.toLowerCase().trim());
         }
     }
 
-    // Sett overskrift og vis modal
     document.getElementById('detaljerNavn').innerText = `Statistikk for ${ansatt.navn}`;
     document.getElementById('modalLaererDetaljer').style.display = 'block';
 
-    // 3. Hent status-data fra Firebase
+    // Vi henter data for det valgte året
     const statusSnapshot = await db.ref(`status/${valgtAar}`).once('value');
     const statusData = statusSnapshot.val() || {};
     
@@ -1041,7 +1037,7 @@ async function visLaererDetaljer(valgtEpost) {
             <table style="width:100%; border-collapse:collapse;">
                 <thead>
                     <tr style="position: sticky; top: 0; background:#f2f2f2; color:black; z-index: 10;">
-                        <th style="padding:10px; text-align:left;">Prøve</th>
+                        <th style="padding:10px; text-align:left;">Prøve / Skoleår</th>
                         <th style="padding:10px; text-align:center;">Elever</th>
                         <th style="padding:10px; text-align:center;">Snitt %</th>
                         <th style="padding:10px; text-align:center;">Under kritisk</th>
@@ -1050,7 +1046,6 @@ async function visLaererDetaljer(valgtEpost) {
                 </thead>
                 <tbody>`;
 
-    // Gå gjennom Firebase-strukturen
     for (let fag in statusData) {
         for (let periode in statusData[fag]) {
             for (let trinn in statusData[fag][periode]) {
@@ -1058,17 +1053,15 @@ async function visLaererDetaljer(valgtEpost) {
                     const info = statusData[fag][periode][trinn][klasse];
                     const registrertAv = (info.endretAv || "").toLowerCase().trim();
 
-                    // SJEKK: Er denne prøven registrert av en av læreren sine e-poster?
+                    // Sjekk om denne læreren har registrert prøven
                     if (mineIder.includes(registrertAv)) {
                         
-                        // Hent oppsett for å finne maks poeng og kritisk grense
                         const oppsett = oppgaveStruktur[valgtAar]?.[fag]?.[periode]?.[trinn];
                         if (!oppsett) continue;
 
                         const maksPrElev = oppsett.oppgaver.reduce((s, o) => s + o.maks, 0);
                         const kritiskGrense = oppsett.grenseTotal;
 
-                        // Hent faktiske elevresultater
                         const kartSnapshot = await db.ref(`kartlegging/${valgtAar}/${fag}/${periode}/${trinn}/${klasse}`).once('value');
                         const elever = kartSnapshot.val() || {};
 
@@ -1090,14 +1083,18 @@ async function visLaererDetaljer(valgtEpost) {
                         if (deltakere > 0) {
                             antallFullforte++;
                             const snitt = Math.round((sumPoeng / (deltakere * maksPrElev)) * 100);
-                            const klasseNavn = trinn + klasse;
+                            
+                            // Formaterer navnet slik du ønsket: "Fag-TrinnKlasse-Periode-Skoleår"
+                            const fulltNavn = `${fag}-${trinn}${klasse}-${periode} ${valgtAar}`;
                             
                             tabellHtml += `
                                 <tr style="border-bottom:1px solid #ddd;">
-                                    <td style="padding:10px;"><strong>${fag} ${klasseNavn}</strong><br><small>${periode}</small></td>
+                                    <td style="padding:10px;"><strong>${fulltNavn}</strong></td>
                                     <td style="padding:10px; text-align:center;">${deltakere}</td>
                                     <td style="padding:10px; text-align:center; font-weight:bold;">${snitt}%</td>
-                                    <td style="padding:10px; text-align:center; color:${underKritisk > 0 ? 'red' : 'green'};">${underKritisk}</td>
+                                    <td style="padding:10px; text-align:center; color:${underKritisk > 0 ? '#e74c3c' : '#27ae60'};">
+                                        <strong>${underKritisk}</strong>
+                                    </td>
                                     <td style="padding:10px;"><small>${info.dato ? info.dato.split(',')[0] : "-"}</small></td>
                                 </tr>`;
                         }
@@ -1109,7 +1106,7 @@ async function visLaererDetaljer(valgtEpost) {
 
     tabellHtml += `</tbody></table></div>`;
     document.getElementById('detaljerAntallProever').innerText = antallFullforte;
-    document.getElementById('laererProeveListe').innerHTML = antallFullforte > 0 ? tabellHtml : "<p>Ingen prøver funnet.</p>";
+    document.getElementById('laererProeveListe').innerHTML = antallFullforte > 0 ? tabellHtml : "<p style='padding:20px;'>Ingen prøver funnet for dette skoleåret.</p>";
 }
 // ---SLUTT PÅ LÆRERDETALJER
 
