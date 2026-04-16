@@ -1030,7 +1030,6 @@ async function visLaererDetaljer(epost) {
     document.getElementById('detaljerInnlogginger').innerText = innlogginger;
 
     // --- 2. FINN PRØVER VIA "STATUS"-NODEN ---
-    // Vi henter 'status'-noden fra Firebase (den du sendte bilde av)
     const statusSnapshot = await db.ref(`status/${valgtAar}`).once('value');
     const statusData = statusSnapshot.val() || {};
     
@@ -1040,27 +1039,55 @@ async function visLaererDetaljer(epost) {
             <thead>
                 <tr style="background:#34495e; color:white; text-align:left;">
                     <th style="padding:10px;">Prøve / Klasse</th>
-                    <th style="padding:10px;">Status</th>
-                    <th style="padding:10px;">Dato ferdigstilt</th>
+                    <th style="padding:10px; text-align:center;">Snittskår</th>
+                    <th style="padding:10px; text-align:center;">Under kritisk</th>
+                    <th style="padding:10px;">Dato</th>
                 </tr>
             </thead>
             <tbody>`;
 
-    // Vi må "traversere" (gå gjennom) status-treet: Fag -> Periode -> Trinn -> Klasse
+    // Traverser status-treet
     for (let fag in statusData) {
         for (let periode in statusData[fag]) {
             for (let trinn in statusData[fag][periode]) {
                 for (let klasse in statusData[fag][periode][trinn]) {
                     const info = statusData[fag][periode][trinn][klasse];
                     
-                    // Sjekker om det er denne læreren som har ferdigstilt
                     if (info.endretAv === idForSok || info.endretAv === epost) {
                         antallFullforte++;
+
+                        // --- NYTT: Hent faktiske elevresultater for denne klassen ---
+                        const kartleggingSti = `kartlegging/${valgtAar}/${fag}/${periode}/${trinn}/${klasse}`;
+                        const kartleggingSnapshot = await db.ref(kartleggingSti).once('value');
+                        const elever = kartleggingSnapshot.val() || {};
+                        const elevListe = Object.values(elever).filter(e => !e.slettet);
+
+                        let snittTekst = "Ingen data";
+                        let underKritiskTeller = 0;
+                        let kritiskFarge = "#27ae60"; // Grønn som standard
+
+                        if (elevListe.length > 0) {
+                            const totalSum = elevListe.reduce((acc, e) => acc + (Number(e.sum) || 0), 0);
+                            snittTekst = (totalSum / elevListe.length).toFixed(1) + " p";
+
+                            // Her henter vi kritisk grense. 
+                            // Hvis du ikke har lagret grensen på hver elev, kan du sette en fast her (f.eks 15)
+                            // eller hente den fra din 'oppsett'-funksjon.
+                            underKritiskTeller = elevListe.filter(e => {
+                                const sum = Number(e.sum) || 0;
+                                const grense = Number(e.kritiskGrense) || 15; // Fallback til 15
+                                return sum < grense;
+                            }).length;
+
+                            if (underKritiskTeller > 0) kritiskFarge = "#e74c3c"; // Rød hvis det er bekymring
+                        }
+
                         tabellHtml += `
                             <tr style="border-bottom:1px solid #ddd;">
-                                <td style="padding:10px;"><strong>${fag} (${periode})</strong><br><small>${trinn}. trinn - klasse ${klasse}</small></td>
-                                <td style="padding:10px;"><span style="color:green;">✔️ Ferdigstilt</span></td>
-                                <td style="padding:10px;">${info.dato || "Ukjent"}</td>
+                                <td style="padding:10px;"><strong>${fag} (${periode})</strong><br><small>${trinn}. trinn - ${klasse}</small></td>
+                                <td style="padding:10px; text-align:center;">${snittTekst}</td>
+                                <td style="padding:10px; text-align:center; color:${kritiskFarge}; font-weight:bold;">${underKritiskTeller} elever</td>
+                                <td style="padding:10px;"><small>${info.dato ? info.dato.split(',')[0] : "Ukjent"}</small></td>
                             </tr>`;
                     }
                 }
