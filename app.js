@@ -1014,8 +1014,30 @@ function oppdaterLaererListe() {
 
 // Endret navn fra visLoggForAnsatt til visLaererDetaljer for å matche tabellen
 function visLaererDetaljer(epost) {
-    console.log("Viser logg for: " + epost);
-    alert("Detaljer for " + epost + "\n\nHer kan du koble på systemloggen din.");
+    // 1. Finn søkefeltet som hører til systemloggen din
+    // (Sjekk om ID-en på søkefeltet i logg-modalen din er 'loggSok' eller lignende)
+    const loggSokFelt = document.getElementById('filterBruker'); // Bytt ut med riktig ID
+
+    if (loggSokFelt) {
+        // Sett e-posten til læreren i søkefeltet
+        loggSokFelt.value = epost;
+        
+        // Trigger søkefunksjonen i loggen (hvis du har en slik, f.svg. oppdaterLogg())
+        if (typeof oppdaterLoggVisning === "function") {
+            oppdaterLoggVisning();
+        }
+    }
+
+    // 2. Lukk lærermodalen og åpne loggmodalen
+    document.getElementById('modalLaerere').style.display = 'none';
+    
+    // Kall på din eksisterende funksjon for å åpne loggen
+    if (typeof aapneLoggModal === "function") {
+        aapneLoggModal();
+    } else {
+        // Hvis funksjonen ikke kan kalles direkte, bare vis modalen
+        document.getElementById('modalLogg').style.display = 'block';
+    }
 }
 
 function aapneLaererModal() {
