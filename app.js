@@ -1015,31 +1015,36 @@ function oppdaterLaererListe() {
 // --- LÆRERDETALJER
 function visLaererDetaljer(epost) {
     const valgtAar = document.getElementById('valgtAarLaerer').value;
+    // Finn den ansatte basert på eposten som ble klikket i tabellen
     const ansatt = window.ansatteData[valgtAar].find(a => a.epost === epost);
     
     if (!ansatt) return;
 
-    // 1. Sett navn og vis modal
+    // Bruk paloggingsmail for å hente data (f.eks. "77tor@ikrs.no")
+    const idForSok = ansatt.paloggingsmail;
+
+    // Oppdater overskrift og vis modal
     document.getElementById('detaljerNavn').innerText = `Statistikk for ${ansatt.navn} (${valgtAar})`;
     document.getElementById('modalLaererDetaljer').style.display = 'block';
 
-    // 2. Finn innlogginger
-    // Antar at 'alleLogger' inneholder rader med { bruker: "epost", handling: "Innlogging" }
-    const innlogginger = window.alleLogger ? window.alleLogger.filter(l => 
-        l.bruker === epost && l.handling.toLowerCase().includes("innlogging")
-    ).length : 0;
+    // 1. FINN INNLOGGINGER (Sjekker window.alleLogger eller window.systemLogg)
+    const loggData = window.alleLogger || window.systemLogg || [];
+    const innlogginger = loggData.filter(l => 
+        (l.bruker === idForSok || l.epost === idForSok) && 
+        l.handling.toLowerCase().includes("innlogging")
+    ).length;
     document.getElementById('detaljerInnlogginger').innerText = innlogginger;
 
-    // 3. Finn prøver registrert av denne læreren
-    // Antar 'alleResultater' inneholder rader med { laererEpost: "...", poengSum: X, maxPoeng: Y, kritiskGrense: Z }
-    const laererensProever = window.alleResultater ? window.alleResultater.filter(p => 
-        p.laererEpost === epost && p.skoleaar === valgtAar
-    ) : [];
+    // 2. FINN PRØVER (Sjekker window.alleResultater eller window.elever)
+    const resultatData = window.alleResultater || window.elever || [];
+    const laererensProever = resultatData.filter(p => 
+        p.laererID === idForSok || p.registrertAv === idForSok || p.laererEpost === idForSok
+    );
 
-    // Grupper prøver per prøvenavn for å få oversikt per klasse/gruppe
+    // Grupper prøvene for oversiktlig tabell
     const grupperteProever = {};
     laererensProever.forEach(p => {
-        const nøkkel = p.proeveNavn + "_" + p.klasse;
+        const nøkkel = p.proeveNavn + "_" + (p.klasse || "Ukjent");
         if (!grupperteProever[nøkkel]) {
             grupperteProever[nøkkel] = { navn: p.proeveNavn, klasse: p.klasse, elever: [] };
         }
@@ -1048,48 +1053,60 @@ function visLaererDetaljer(epost) {
 
     document.getElementById('detaljerAntallProever').innerText = Object.keys(grupperteProever).length;
 
-    // 4. Generer tabellen
+    // 3. GENERER TABELL
     let html = `
         <table style="width:100%; border-collapse:collapse;">
             <thead>
                 <tr style="background:#34495e; color:white; text-align:left;">
                     <th style="padding:10px;">Prøve / Klasse</th>
-                    <th style="padding:10px;">Antall elever</th>
-                    <th style="padding:10px;">Snittskår (%)</th>
-                    <th style="padding:10px;">Under kritisk grense</th>
+                    <th style="padding:10px; text-align:center;">Elever</th>
+                    <th style="padding:10px; text-align:center;">Snitt (%)</th>
+                    <th style="padding:10px; text-align:center;">Kritisk grense</th>
                 </tr>
             </thead>
             <tbody>`;
 
-    Object.values(grupperteProever).forEach(gruppe => {
+    const rader = Object.values(grupperteProever);
+    rader.forEach(gruppe => {
         const antallElever = gruppe.elever.length;
         
-        // Beregn snittskår
-        const totalProsent = gruppe.elever.reduce((sum, p) => sum + (p.poengSum / p.maxPoeng * 100), 0);
+        // Beregn snitt (sjekker poengSum mot maxPoeng)
+        const totalProsent = gruppe.elever.reduce((sum, p) => {
+            const prosent = (p.poengSum / (p.maxPoeng || 1)) * 100;
+            return sum + prosent;
+        }, 0);
         const snitt = (totalProsent / antallElever).toFixed(1);
 
-        // Tell antall under kritisk grense
-        const underKritisk = gruppe.elever.filter(p => p.poengSum < p.kritiskGrense).length;
+        // Finn antall under kritisk grense
+        const underKritisk = gruppe.elever.filter(p => {
+            // Sjekker om poengsummen er strengt mindre enn kritisk grense
+            return parseFloat(p.poengSum) < parseFloat(p.kritiskGrense);
+        }).length;
+
         const fargeKritisk = underKritisk > 0 ? "#e74c3c" : "#27ae60";
 
         html += `
             <tr style="border-bottom:1px solid #ddd;">
-                <td style="padding:10px;"><strong>${gruppe.navn}</strong><br><small>${gruppe.klasse}</small></td>
-                <td style="padding:10px;">${antallElever}</td>
-                <td style="padding:10px;">${snitt}%</td>
-                <td style="padding:10px; color:${fargeKritisk}; font-weight:bold;">${underKritisk} elever</td>
+                <td style="padding:10px;"><strong>${gruppe.navn}</strong><br><small>${gruppe.klasse || ""}</small></td>
+                <td style="padding:10px; text-align:center;">${antallElever}</td>
+                <td style="padding:10px; text-align:center;">${snitt}%</td>
+                <td style="padding:10px; text-align:center; color:${fargeKritisk}; font-weight:bold;">${underKritisk}</td>
             </tr>`;
     });
 
     html += `</tbody></table>`;
     
-    if (laererensProever.length === 0) {
-        html = "<p>Ingen registrerte prøver funnet for denne læreren i valgt periode.</p>";
+    if (rader.length === 0) {
+        html = `
+            <div style="text-align:center; padding:40px; color:#666;">
+                <p>Ingen registrerte prøver funnet på ID: <strong>${idForSok}</strong></p>
+                <small>Sjekk at 'laererID' eller 'registrertAv' i resultatlisten din matcher påloggingsmailen.</small>
+            </div>`;
     }
 
     document.getElementById('laererProeveListe').innerHTML = html;
 }
-
+// ---SLUTT PÅ LÆRERDETALJER
 
 function aapneLaererModal() {
     const modal = document.getElementById('modalLaerere');
