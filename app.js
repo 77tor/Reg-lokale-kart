@@ -1004,14 +1004,13 @@ function oppdaterLaererListe() {
 container.innerHTML = filtrerte.length > 0 ? html : `<p style="padding:20px; text-align:center;">Ingen ansatte funnet for skoleåret ${valgtAar}.</p>`;
 }
 
-// --- LÆRERDETALJER
-// --- LÆRERDETALJER (Basert på logikk fra gjennomføringsmodul)
+
+// --- LÆRERDETALJER (Endelig korrigert versjon)
 async function visLaererDetaljer(epost) {
     const valgtAar = document.getElementById('valgtAarLaerer').value;
     const ansatt = window.ansatteData[valgtAar].find(a => a.epost === epost);
     if (!ansatt) return;
 
-    // Håndterer både primær e-post og eventuelle påloggingsmailer
     const alleIder = Array.isArray(ansatt.paloggingsmail) 
         ? [...ansatt.paloggingsmail, ansatt.epost] 
         : [ansatt.paloggingsmail, ansatt.epost];
@@ -1048,59 +1047,56 @@ async function visLaererDetaljer(epost) {
                 for (let klasse in statusData[fag][periode][trinn]) {
                     const info = statusData[fag][periode][trinn][klasse];
                     
-                    // Sjekk om denne læreren har endret/ferdigstilt prøven
                     if (alleIder.includes(info.endretAv)) {
                         const kartleggingSti = `kartlegging/${valgtAar}/${fag}/${periode}/${trinn}/${klasse}`;
                         const kartleggingSnapshot = await db.ref(kartleggingSti).once('value');
                         const eleverObjekt = kartleggingSnapshot.val() || {};
 
-                        // --- BEREGNINGER HENTET FRA DIN MODAL-LOGIKK ---
                         let fulltKlasseNavn = trinn + klasse;
                         const totaltAntallElever = hentAntallEleverIRegister(fulltKlasseNavn.trim().toUpperCase(), valgtAar);
                         
-                        let antallGjennomfoert = 0;
+                        let antallDeltatt = 0;
                         let sumOppnaaddPoeng = 0;
-                        let maksMuligPoengForKlassen = 0;
+                        let totaltMaksPoengDeltakere = 0;
                         let underKritiskTeller = 0;
 
-                        // Hent makspoeng fra oppsett.js
-                        let infoFraOppsett = window.oppgaveStruktur?.[valgtAar]?.[fag]?.[periode]?.[trinn];
-                        let korrektMaksPoengPerElev = 30; // Fallback
-                        if (infoFraOppsett && infoFraOppsett.oppgaver) {
-                            korrektMaksPoengPerElev = infoFraOppsett.oppgaver.reduce((acc, oppg) => acc + (oppg.maks || 0), 0);
-                        }
-
-                        // Gå gjennom elevene
                         Object.entries(eleverObjekt).forEach(([id, node]) => {
                             if (id === "laast" || id === "ferdigstilt" || typeof node !== 'object') return;
 
-                            let råPoeng = node.sum;
-                            // Filtrerer ut "Ikke deltatt"
-                            const markertSomIkkeGjennomfoert = råPoeng === "Ikke deltatt" || node.ikkeGjennomfort === true;
+                            const råPoeng = node.sum;
+                            // Sjekker alle varianter av fravær
+                            const erFravaer = (
+                                råPoeng === "Ikke deltatt" || 
+                                node.ikkeGjennomfort === true || 
+                                råPoeng === "" || 
+                                råPoeng === undefined || 
+                                råPoeng === null
+                            );
 
-                            if (råPoeng !== undefined && råPoeng !== null && råPoeng !== "" && !markertSomIkkeGjennomfoert) {
-                                const p = parseFloat(råPoeng);
-                                if (!isNaN(p)) {
-                                    antallGjennomfoert++;
-                                    sumOppnaaddPoeng += p;
-                                    maksMuligPoengForKlassen += korrektMaksPoengPerElev;
+                            if (!erFravaer) {
+                                const poeng = parseFloat(råPoeng);
+                                // VIKTIG: Hent maksPoeng lagret på eleven, eller fallback til det som er i oppsettet
+                                const elevMaks = parseFloat(node.maksPoeng) || 
+                                               (window.oppgaveStruktur?.[valgtAar]?.[fag]?.[periode]?.[trinn]?.oppgaver?.reduce((a, b) => a + (b.maks || 0), 0)) || 
+                                               30;
 
-                                    // Sjekk kritisk grense
+                                if (!isNaN(poeng)) {
+                                    antallDeltatt++;
+                                    sumOppnaaddPoeng += poeng;
+                                    totaltMaksPoengDeltakere += elevMaks;
+
                                     const grense = Number(node.kritiskGrense) || 15;
-                                    if (p < grense) underKritiskTeller++;
+                                    if (poeng < grense) underKritiskTeller++;
                                 }
                             }
                         });
 
-                        // Kun vis prøven hvis det faktisk er deltakere (gjennomført)
-                        if (antallGjennomfoert > 0) {
+                        if (antallDeltatt > 0) {
                             antallFullforte++;
-
-                            let snittVisning = "0%"; 
-                            if (maksMuligPoengForKlassen > 0) {
-                                snittVisning = Math.round((sumOppnaaddPoeng / maksMuligPoengForKlassen) * 100) + "%";
-                            }
-
+                            
+                            // Beregn snitt basert på summen av maks-poeng for de som faktisk deltok
+                            const snittProsent = Math.round((sumOppnaaddPoeng / totaltMaksPoengDeltakere) * 100);
+                            
                             const visningsAar = valgtAar.replace('-', '/');
                             const proeveNavn = `${fag}-${fulltKlasseNavn}-${periode}-${visningsAar}`;
                             const kritiskFarge = underKritiskTeller > 0 ? "#e74c3c" : "#27ae60";
@@ -1108,8 +1104,8 @@ async function visLaererDetaljer(epost) {
                             tabellHtml += `
                                 <tr style="border-bottom:1px solid #ddd;">
                                     <td style="padding:10px;"><strong>${proeveNavn}</strong></td>
-                                    <td style="padding:10px; text-align:center;">${antallGjennomfoert} / ${totaltAntallElever}</td>
-                                    <td style="padding:10px; text-align:center; font-weight:bold;">${snittVisning}</td>
+                                    <td style="padding:10px; text-align:center;">${antallDeltatt} / ${totaltAntallElever}</td>
+                                    <td style="padding:10px; text-align:center; font-weight:bold;">${snittProsent}%</td>
                                     <td style="padding:10px; text-align:center; color:${kritiskFarge}; font-weight:bold;">${underKritiskTeller} elever</td>
                                     <td style="padding:10px;"><small>${info.dato ? info.dato.split(',')[0] : "Ukjent"}</small></td>
                                 </tr>`;
