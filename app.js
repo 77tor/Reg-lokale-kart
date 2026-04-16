@@ -1005,6 +1005,7 @@ container.innerHTML = filtrerte.length > 0 ? html : `<p style="padding:20px; tex
 }
 
 // --- LÆRERDETALJER
+// --- LÆRERDETALJER (Oppdatert med logikk fra gjennomføringsmodul)
 async function visLaererDetaljer(epost) {
     const valgtAar = document.getElementById('valgtAarLaerer').value;
     const ansatt = window.ansatteData[valgtAar].find(a => a.epost === epost);
@@ -1031,8 +1032,9 @@ async function visLaererDetaljer(epost) {
             <table style="width:100%; border-collapse:collapse;">
                 <thead>
                     <tr style="position: sticky; top: 0; background:#f2f2f2; color:black; z-index: 10;">
-                        <th style="padding:10px; text-align:left; border-bottom:1px solid #ddd;">Prøve / Klasse</th>
-                        <th style="padding:10px; text-align:center; border-bottom:1px solid #ddd;">Snitt (Prosent)</th>
+                        <th style="padding:10px; text-align:left; border-bottom:1px solid #ddd;">Prøve</th>
+                        <th style="padding:10px; text-align:center; border-bottom:1px solid #ddd;">Gjennomført</th>
+                        <th style="padding:10px; text-align:center; border-bottom:1px solid #ddd;">Snitt %</th>
                         <th style="padding:10px; text-align:center; border-bottom:1px solid #ddd;">Under kritisk</th>
                         <th style="padding:10px; text-align:left; border-bottom:1px solid #ddd;">Dato</th>
                     </tr>
@@ -1045,53 +1047,65 @@ async function visLaererDetaljer(epost) {
                 for (let klasse in statusData[fag][periode][trinn]) {
                     const info = statusData[fag][periode][trinn][klasse];
                     
+                    // Sjekk om denne læreren har ferdigstilt prøven
                     if (alleIder.includes(info.endretAv)) {
                         const kartleggingSti = `kartlegging/${valgtAar}/${fag}/${periode}/${trinn}/${klasse}`;
                         const kartleggingSnapshot = await db.ref(kartleggingSti).once('value');
-                        const elever = kartleggingSnapshot.val() || {};
+                        const eleverObjekt = kartleggingSnapshot.val() || {};
                         
-                        // 1. Filtrer ut elever som er slettet ELLER som står som "Ikke deltatt"
-                        const aktiveElever = Object.values(elever).filter(e => !e.slettet && e.sum !== "Ikke deltatt");
-                        const harDeltakere = aktiveElever.length > 0;
-
-                        let snittVisning = "Ikke gjennomført";
-                        let underKritiskVisning = "-";
-                        let kritiskFarge = "#666";
+                        // --- LOGIKK FRA GJENNOMFØRINGSMODUL ---
+                        let fulltKlasseNavn = trinn + klasse;
+                        const totaltAntallElever = hentAntallEleverIRegister(fulltKlasseNavn.trim().toUpperCase(), valgtAar);
                         
-                        if (harDeltakere) {
-                            antallFullforte++; // Tell kun med prøver som faktisk har deltakere
+                        let antallDeltatt = 0;
+                        let sumOppnaaddPoeng = 0;
+                        let underKritiskTeller = 0;
 
-                            // 2. Finn maks poeng fra første elev (eller sett fallback)
-                            const maksPoeng = Number(aktiveElever[0].maksPoeng) || 1;
+                        // Hent makspoeng fra oppsett.js (oppgaveStruktur)
+                        let infoFraOppsett = window.oppgaveStruktur?.[valgtAar]?.[fag]?.[periode]?.[trinn];
+                        let korrektMaksPoengPerElev = infoFraOppsett?.oppgaver ? 
+                            infoFraOppsett.oppgaver.reduce((acc, oppg) => acc + (oppg.maks || 0), 0) : 30;
+
+                        // Behandle elevene i denne klassen
+                        const elevRader = Object.values(eleverObjekt).filter(e => typeof e === 'object' && e !== null);
+                        
+                        elevRader.forEach(elev => {
+                            const råPoeng = elev.sum;
+                            const markertSomIkkeGjennomfoert = elev.sum === "Ikke deltatt" || elev.ikkeGjennomfort === true;
+
+                            if (råPoeng !== undefined && råPoeng !== null && råPoeng !== "" && !markertSomIkkeGjennomfoert) {
+                                const p = parseFloat(råPoeng);
+                                if (!isNaN(p)) {
+                                    antallDeltatt++;
+                                    sumOppnaaddPoeng += p;
+                                    
+                                    // Sjekk kritisk grense (bruker grense fra elev eller fallback 15)
+                                    const grense = Number(elev.kritiskGrense) || 15;
+                                    if (p < grense) underKritiskTeller++;
+                                }
+                            }
+                        });
+
+                        // Sjekk om klassen faktisk har gjennomført (minst én elev har deltatt)
+                        if (antallDeltatt > 0) {
+                            antallFullforte++;
                             
-                            // 3. Beregn snitt i prosent
-                            const totalSum = aktiveElever.reduce((acc, e) => acc + (Number(e.sum) || 0), 0);
-                            const snittPoeng = totalSum / aktiveElever.length;
-                            const snittProsent = (snittPoeng / maksPoeng) * 100;
-                            snittVisning = snittProsent.toFixed(1) + "%";
+                            // Beregn snitt % (sum / (antall deltakere * makspoeng))
+                            const snittProsent = Math.round((sumOppnaaddPoeng / (antallDeltatt * korrektMaksPoengPerElev)) * 100);
+                            
+                            const visningsAar = valgtAar.replace('-', '/');
+                            const proeveNavn = `${fag}-${fulltKlasseNavn}-${periode}-${visningsAar}`;
+                            const kritiskFarge = underKritiskTeller > 0 ? "#e74c3c" : "#27ae60";
 
-                            // 4. Beregn under kritisk grense
-                            const underKritiskTeller = aktiveElever.filter(e => {
-                                const sum = Number(e.sum) || 0;
-                                const grense = Number(e.kritiskGrense) || 0;
-                                return sum < grense;
-                            }).length;
-
-                            underKritiskVisning = underKritiskTeller + " elever";
-                            kritiskFarge = underKritiskTeller > 0 ? "#e74c3c" : "#27ae60";
+                            tabellHtml += `
+                                <tr style="border-bottom:1px solid #ddd;">
+                                    <td style="padding:10px;"><strong>${proeveNavn}</strong></td>
+                                    <td style="padding:10px; text-align:center;">${antallDeltatt} / ${totaltAntallElever}</td>
+                                    <td style="padding:10px; text-align:center; font-weight:bold;">${snittProsent}%</td>
+                                    <td style="padding:10px; text-align:center; color:${kritiskFarge}; font-weight:bold;">${underKritiskTeller} elever</td>
+                                    <td style="padding:10px;"><small>${info.dato ? info.dato.split(',')[0] : "Ukjent"}</small></td>
+                                </tr>`;
                         }
-
-                        // 5. Formater prøvenavn med skoleår (eks: Lesing-2a-Våren-2025/2026)
-                        const visningsAar = valgtAar.replace('-', '/');
-                        const proeveNavn = `${fag}-${trinn}${klasse}-${periode}-${visningsAar}`;
-
-                        tabellHtml += `
-                            <tr style="border-bottom:1px solid #ddd;">
-                                <td style="padding:10px;"><strong>${proeveNavn}</strong></td>
-                                <td style="padding:10px; text-align:center;">${snittVisning}</td>
-                                <td style="padding:10px; text-align:center; color:${kritiskFarge}; font-weight:bold;">${underKritiskVisning}</td>
-                                <td style="padding:10px;"><small>${info.dato ? info.dato.split(',')[0] : "Ukjent"}</small></td>
-                            </tr>`;
                     }
                 }
             }
@@ -1103,7 +1117,7 @@ async function visLaererDetaljer(epost) {
     document.getElementById('detaljerAntallProever').innerText = antallFullforte;
     document.getElementById('laererProeveListe').innerHTML = antallFullforte > 0 
         ? tabellHtml 
-        : "<p style='padding:20px; text-align:center; color:#666;'>Ingen gjennomførte prøver funnet på denne læreren.</p>";
+        : "<p style='padding:20px; text-align:center; color:#666;'>Ingen gjennomførte prøver med deltakere funnet.</p>";
 }
 // ---SLUTT PÅ LÆRERDETALJER
 
