@@ -1006,23 +1006,30 @@ container.innerHTML = filtrerte.length > 0 ? html : `<p style="padding:20px; tex
 
 
 // --- LÆRERDETALJER (Endelig korrigert versjon)
-// --- LÆRERDETALJER (Korrigeret for flere e-poster / påloggingsmail)
+// --- LÆRERDETALJER (Forbedret e-post-matching)
 async function visLaererDetaljer(epost) {
     const valgtAar = document.getElementById('valgtAarLaerer').value;
     const ansatteListe = window.ansatteData[valgtAar] || [];
     const ansatt = ansatteListe.find(a => a.epost === epost);
     
-    if (!ansatt) return;
+    if (!ansatt) {
+        console.error("Fant ikke ansatt-objekt for:", epost);
+        return;
+    }
 
-    // Samler ALLE e-poster læreren kan ha brukt (viktig for Tor og andre med flere)
-    let alleIder = [ansatt.epost.toLowerCase()];
+    // 1. Bygg en liste over ALLE mulige e-post-IDer for denne læreren
+    let alleMineIder = [ansatt.epost.toLowerCase().trim()];
+    
     if (ansatt.paloggingsmail) {
         if (Array.isArray(ansatt.paloggingsmail)) {
-            ansatt.paloggingsmail.forEach(m => alleIder.push(m.toLowerCase()));
-        } else {
-            alleIder.push(ansatt.paloggingsmail.toLowerCase());
+            ansatt.paloggingsmail.forEach(m => alleMineIder.push(m.toLowerCase().trim()));
+        } else if (typeof ansatt.paloggingsmail === 'string') {
+            // Hvis det er en kommaseparert streng
+            ansatt.paloggingsmail.split(',').forEach(m => alleMineIder.push(m.toLowerCase().trim()));
         }
     }
+    
+    console.log("Sjekker database mot disse IDene:", alleMineIder);
 
     document.getElementById('detaljerNavn').innerText = `Statistikk for ${ansatt.navn}`;
     document.getElementById('modalLaererDetaljer').style.display = 'block';
@@ -1051,11 +1058,11 @@ async function visLaererDetaljer(epost) {
                 for (let klasse in statusData[fag][periode][trinn]) {
                     const info = statusData[fag][periode][trinn][klasse];
                     
-                    // Sjekker om e-posten som lagret prøven finnes i læreren sin liste over e-poster
-                    const epostBruktVedLagring = info.endretAv ? info.endretAv.toLowerCase() : "";
-                    const erDenneLaereren = alleIder.includes(epostBruktVedLagring);
+                    // SJEKK: Matcher e-posten brukt ved lagring en av lærerens Ider?
+                    const lagretEpost = (info.endretAv || "").toLowerCase().trim();
+                    const erMatch = alleMineIder.includes(lagretEpost);
 
-                    if (erDenneLaereren) {
+                    if (erMatch) {
                         const kartleggingSti = `kartlegging/${valgtAar}/${fag}/${periode}/${trinn}/${klasse}`;
                         const kartleggingSnapshot = await db.ref(kartleggingSti).once('value');
                         const eleverObjekt = kartleggingSnapshot.val() || {};
@@ -1068,8 +1075,8 @@ async function visLaererDetaljer(epost) {
                         let sumMaks = 0;
                         let underKritisk = 0;
 
-                        Object.values(eleverObjekt).forEach(elev => {
-                            if (typeof elev !== 'object' || elev === null) return;
+                        Object.entries(eleverObjekt).forEach(([id, elev]) => {
+                            if (id === "laast" || id === "ferdigstilt" || typeof elev !== 'object') return;
 
                             const sum = elev.sum;
                             const fravaer = (sum === "Ikke deltatt" || elev.ikkeGjennomfort === true || sum === "" || sum === undefined);
@@ -1088,27 +1095,20 @@ async function visLaererDetaljer(epost) {
                             }
                         });
 
-                        // Formatering av raden
-                        let snittVisning = "Ikke gjennomført";
-                        let kritiskVisning = "-";
-                        let radFarge = "#666";
-
                         if (antallDeltatt > 0) {
                             antallFullforteProever++;
-                            snittVisning = Math.round((sumPoeng / sumMaks) * 100) + "%";
-                            kritiskVisning = underKritisk + " elever";
-                            radFarge = underKritisk > 0 ? "#e74c3c" : "#27ae60";
+                            const snittVal = Math.round((sumPoeng / sumMaks) * 100);
+                            const visningsAar = valgtAar.replace('-', '/');
+                            
+                            tabellHtml += `
+                                <tr style="border-bottom:1px solid #ddd;">
+                                    <td style="padding:10px;"><strong>${fag}-${fulltKlasseNavn}-${periode}-${visningsAar}</strong></td>
+                                    <td style="padding:10px; text-align:center;">${antallDeltatt} / ${totaltAntallElever}</td>
+                                    <td style="padding:10px; text-align:center; font-weight:bold;">${snittVal}%</td>
+                                    <td style="padding:10px; text-align:center; color:${underKritisk > 0 ? '#e74c3c' : '#27ae60'}; font-weight:bold;">${underKritisk} elever</td>
+                                    <td style="padding:10px;"><small>${info.dato ? info.dato.split(',')[0] : "-"}</small></td>
+                                </tr>`;
                         }
-
-                        const visningsAar = valgtAar.replace('-', '/');
-                        tabellHtml += `
-                            <tr style="border-bottom:1px solid #ddd;">
-                                <td style="padding:10px;"><strong>${fag}-${fulltKlasseNavn}-${periode}-${visningsAar}</strong></td>
-                                <td style="padding:10px; text-align:center;">${antallDeltatt} / ${totaltAntallElever}</td>
-                                <td style="padding:10px; text-align:center; font-weight:bold;">${snittVisning}</td>
-                                <td style="padding:10px; text-align:center; color:${radFarge}; font-weight:bold;">${kritiskVisning}</td>
-                                <td style="padding:10px;"><small>${info.dato ? info.dato.split(',')[0] : "-"}</small></td>
-                            </tr>`;
                     }
                 }
             }
@@ -1117,7 +1117,7 @@ async function visLaererDetaljer(epost) {
 
     tabellHtml += `</tbody></table></div>`;
     document.getElementById('detaljerAntallProever').innerText = antallFullforteProever;
-    document.getElementById('laererProeveListe').innerHTML = antallFullforteProever > 0 ? tabellHtml : "<p style='text-align:center; padding:20px;'>Ingen data funnet for denne læreren.</p>";
+    document.getElementById('laererProeveListe').innerHTML = antallFullforteProever > 0 ? tabellHtml : "<p style='text-align:center; padding:20px;'>Ingen data funnet. Sjekk at e-posten i 'ansatte.js' matcher den som ble brukt ved innlogging.</p>";
 }
 // ---SLUTT PÅ LÆRERDETALJER
 
