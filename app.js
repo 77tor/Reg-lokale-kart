@@ -1005,47 +1005,44 @@ container.innerHTML = filtrerte.length > 0 ? html : `<p style="padding:20px; tex
 }
 
 // --- LÆRERDETALJER
+// --- LÆRERDETALJER
 async function visLaererDetaljer(epost) {
     const valgtAar = document.getElementById('valgtAarLaerer').value;
     const ansatt = window.ansatteData[valgtAar].find(a => a.epost === epost);
     if (!ansatt) return;
 
-    // Henter alle e-poster læreren kan ha brukt (både vanlig epost og påloggings-mailer)
     const alleIder = Array.isArray(ansatt.paloggingsmail) 
         ? [...ansatt.paloggingsmail, ansatt.epost] 
         : [ansatt.paloggingsmail, ansatt.epost];
 
-    // Vis modal og sett navn
     document.getElementById('detaljerNavn').innerText = `Statistikk for ${ansatt.navn}`;
     document.getElementById('modalLaererDetaljer').style.display = 'block';
 
-    // --- 1. TELL INNLOGGINGER ---
     const loggData = window.systemLogg || {};
     const innlogginger = Object.values(loggData).filter(l => 
         alleIder.includes(l.epost)
     ).length;
     document.getElementById('detaljerInnlogginger').innerText = innlogginger;
 
-    // --- 2. FINN PRØVER VIA "STATUS"-NODEN ---
     const statusSnapshot = await db.ref(`status/${valgtAar}`).once('value');
     const statusData = statusSnapshot.val() || {};
     
     let antallFullforte = 0;
 
-    // VIKTIG: Her starter vi tabell-variabelen
+    // NYTT: Lagt til scroll-container og STICKY header
     let tabellHtml = `
-        <table style="width:100%; border-collapse:collapse; margin-top:10px;">
-            <thead>
-                <tr style="background:#34495e; color:white; text-align:left;">
-                    <th style="padding:10px;">Prøve / Klasse</th>
-                    <th style="padding:10px; text-align:center;">Snittskår</th>
-                    <th style="padding:10px; text-align:center;">Under kritisk</th>
-                    <th style="padding:10px;">Dato</th>
-                </tr>
-            </thead>
-            <tbody>`;
+        <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
+            <table style="width:100%; border-collapse:collapse;">
+                <thead>
+                    <tr style="position: sticky; top: 0; background:#34495e; color:white; z-index: 10;">
+                        <th style="padding:10px; text-align:left;">Prøve / Klasse</th>
+                        <th style="padding:10px; text-align:center;">Snittskår</th>
+                        <th style="padding:10px; text-align:center;">Under kritisk</th>
+                        <th style="padding:10px; text-align:left;">Dato</th>
+                    </tr>
+                </thead>
+                <tbody>`;
 
-    // Går gjennom status-treet for å finne prøver læreren har ferdigstilt
     for (let fag in statusData) {
         for (let periode in statusData[fag]) {
             for (let trinn in statusData[fag][periode]) {
@@ -1055,7 +1052,6 @@ async function visLaererDetaljer(epost) {
                     if (alleIder.includes(info.endretAv)) {
                         antallFullforte++;
 
-                        // Hent faktiske elevresultater for denne klassen for å beregne snitt
                         const kartleggingSti = `kartlegging/${valgtAar}/${fag}/${periode}/${trinn}/${klasse}`;
                         const kartleggingSnapshot = await db.ref(kartleggingSti).once('value');
                         const elever = kartleggingSnapshot.val() || {};
@@ -1063,7 +1059,7 @@ async function visLaererDetaljer(epost) {
 
                         let snittTekst = "Ingen data";
                         let underKritiskTeller = 0;
-                        let kritiskFarge = "#27ae60"; // Grønn
+                        let kritiskFarge = "#27ae60";
 
                         if (elevListe.length > 0) {
                             const totalSum = elevListe.reduce((acc, e) => acc + (Number(e.sum) || 0), 0);
@@ -1071,11 +1067,11 @@ async function visLaererDetaljer(epost) {
 
                             underKritiskTeller = elevListe.filter(e => {
                                 const sum = Number(e.sum) || 0;
-                                const grense = Number(e.kritiskGrense) || 15; // Fallback til 15
+                                const grense = Number(e.kritiskGrense) || 15;
                                 return sum < grense;
                             }).length;
 
-                            if (underKritiskTeller > 0) kritiskFarge = "#e74c3c"; // Rød
+                            if (underKritiskTeller > 0) kritiskFarge = "#e74c3c";
                         }
 
                         tabellHtml += `
@@ -1091,9 +1087,8 @@ async function visLaererDetaljer(epost) {
         }
     }
 
-    tabellHtml += `</tbody></table>`;
+    tabellHtml += `</tbody></table></div>`;
 
-    // Oppdaterer telleren og setter inn tabellen i modalen
     document.getElementById('detaljerAntallProever').innerText = antallFullforte;
     document.getElementById('laererProeveListe').innerHTML = antallFullforte > 0 
         ? tabellHtml 
