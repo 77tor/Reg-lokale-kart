@@ -933,21 +933,15 @@ function finnRelevanteSider(rentTrinnNummer, oppgaveNavn) {
 // --- LÆRERSIDE ---
 function oppdaterLaererListe() {
     const sok = document.getElementById('sokLaerer').value.toLowerCase();
-    const valgtAar = document.getElementById('valgtAarLaerer').value; // F.eks "2025-2026"
+    const valgtAar = document.getElementById('valgtAarLaerer').value; 
     const container = document.getElementById('laererListeContainer');
-    
-    // Hent ut listen for det spesifikke året fra ansatteData
-    // Vi bruker window.ansatteData for å være helt sikre på at vi treffer den globale variabelen
     const gjeldendeAnsatte = window.ansatteData && window.ansatteData[valgtAar] ? window.ansatteData[valgtAar] : [];
 
-    // 1. Filtrer basert på søk
     let filtrerte = gjeldendeAnsatte.filter(a => 
         a.navn.toLowerCase().includes(sok) || 
         a.epost.toLowerCase().includes(sok)
     );
 
-
-// 2. Sortering (Tall-trinn først -> Kontaktlærer før faglærer -> Alfabetisk klasse -> Navn)
     filtrerte.sort((a, b) => {
         const verdiA = a.trinn && a.trinn.length > 0 ? a.trinn[0] : "";
         const verdiB = b.trinn && b.trinn.length > 0 ? b.trinn[0] : "";
@@ -964,18 +958,15 @@ function oppdaterLaererListe() {
             const numA = parseInt(verdiA);
             const numB = parseInt(verdiB);
             
-            // 1. Først sorter på selve trinn-tallet (1 før 2)
             if (numA !== numB) return numA - numB;
             
-            // 2. Hvis samme trinn: Sorter kontaktlærere FØR de uten kontaktlærer-felt
-            // Vi gir de uten klasse en verdi ("zzz") så de havner nederst på trinnet
             const klasseA = a.kontaktlaerer ? String(a.kontaktlaerer).toLowerCase() : "zzz";
             const klasseB = b.kontaktlaerer ? String(b.kontaktlaerer).toLowerCase() : "zzz";
             
             if (klasseA !== klasseB) return klasseA.localeCompare(klasseB);
         }
 
-        // C. Hvis begge er tekst-trinn (Adm/Permisjon), sorter alfabetisk på trinn-navnet
+        // C. Hvis begge er tekst-trinn (Adm/Permisjon)
         if (!erTallA && !erTallB) {
             if (verdiA !== verdiB) return verdiA.localeCompare(verdiB);
         }
@@ -1012,14 +1003,14 @@ function oppdaterLaererListe() {
     container.innerHTML = filtrerte.length > 0 ? html : `<p style="padding:20px;">Ingen ansatte funnet for skoleåret ${valgtAar}.</p>`;
 }
 
+
 // --- LÆRERDETALJER
 async function visLaererDetaljer(epost) {
     const valgtAar = document.getElementById('valgtAarLaerer').value;
     const ansatt = window.ansatteData[valgtAar].find(a => a.epost === epost);
     if (!ansatt) return;
 
-    // Hent alle gyldige ID-er for denne læreren (både hoved-epost og påloggings-mailer)
-    // Vi sørger for at alt ligger i en liste, selv om det bare er én e-post
+    // Henter alle e-poster læreren kan ha brukt (både vanlig epost og påloggings-mailer)
     const alleIder = Array.isArray(ansatt.paloggingsmail) 
         ? [...ansatt.paloggingsmail, ansatt.epost] 
         : [ansatt.paloggingsmail, ansatt.epost];
@@ -1031,7 +1022,7 @@ async function visLaererDetaljer(epost) {
     // --- 1. TELL INNLOGGINGER ---
     const loggData = window.systemLogg || {};
     const innlogginger = Object.values(loggData).filter(l => 
-        alleIder.includes(l.epost) // Sjekker om e-posten i loggen finnes i lærerens liste
+        alleIder.includes(l.epost)
     ).length;
     document.getElementById('detaljerInnlogginger').innerText = innlogginger;
 
@@ -1040,19 +1031,31 @@ async function visLaererDetaljer(epost) {
     const statusData = statusSnapshot.val() || {};
     
     let antallFullforte = 0;
-    // ... restene av tabellHtml-oppsettet ditt ...
 
+    // VIKTIG: Her starter vi tabell-variabelen
+    let tabellHtml = `
+        <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+            <thead>
+                <tr style="background:#34495e; color:white; text-align:left;">
+                    <th style="padding:10px;">Prøve / Klasse</th>
+                    <th style="padding:10px; text-align:center;">Snittskår</th>
+                    <th style="padding:10px; text-align:center;">Under kritisk</th>
+                    <th style="padding:10px;">Dato</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+    // Går gjennom status-treet for å finne prøver læreren har ferdigstilt
     for (let fag in statusData) {
         for (let periode in statusData[fag]) {
             for (let trinn in statusData[fag][periode]) {
                 for (let klasse in statusData[fag][periode][trinn]) {
                     const info = statusData[fag][periode][trinn][klasse];
                     
-                    // ENDRET LINJE: Sjekker om 'endretAv' matcher en av e-postene i listen vår
                     if (alleIder.includes(info.endretAv)) {
                         antallFullforte++;
 
-                        // --- NYTT: Hent faktiske elevresultater for denne klassen ---
+                        // Hent faktiske elevresultater for denne klassen for å beregne snitt
                         const kartleggingSti = `kartlegging/${valgtAar}/${fag}/${periode}/${trinn}/${klasse}`;
                         const kartleggingSnapshot = await db.ref(kartleggingSti).once('value');
                         const elever = kartleggingSnapshot.val() || {};
@@ -1060,22 +1063,19 @@ async function visLaererDetaljer(epost) {
 
                         let snittTekst = "Ingen data";
                         let underKritiskTeller = 0;
-                        let kritiskFarge = "#27ae60"; // Grønn som standard
+                        let kritiskFarge = "#27ae60"; // Grønn
 
                         if (elevListe.length > 0) {
                             const totalSum = elevListe.reduce((acc, e) => acc + (Number(e.sum) || 0), 0);
                             snittTekst = (totalSum / elevListe.length).toFixed(1) + " p";
 
-                            // Her henter vi kritisk grense. 
-                            // Hvis du ikke har lagret grensen på hver elev, kan du sette en fast her (f.eks 15)
-                            // eller hente den fra din 'oppsett'-funksjon.
                             underKritiskTeller = elevListe.filter(e => {
                                 const sum = Number(e.sum) || 0;
                                 const grense = Number(e.kritiskGrense) || 15; // Fallback til 15
                                 return sum < grense;
                             }).length;
 
-                            if (underKritiskTeller > 0) kritiskFarge = "#e74c3c"; // Rød hvis det er bekymring
+                            if (underKritiskTeller > 0) kritiskFarge = "#e74c3c"; // Rød
                         }
 
                         tabellHtml += `
@@ -1092,10 +1092,15 @@ async function visLaererDetaljer(epost) {
     }
 
     tabellHtml += `</tbody></table>`;
+
+    // Oppdaterer telleren og setter inn tabellen i modalen
     document.getElementById('detaljerAntallProever').innerText = antallFullforte;
-    document.getElementById('laererProeveListe').innerHTML = antallFullforte > 0 ? tabellHtml : "<p style='padding:20px;'>Ingen ferdigstilte prøver funnet på denne læreren.</p>";
+    document.getElementById('laererProeveListe').innerHTML = antallFullforte > 0 
+        ? tabellHtml 
+        : "<p style='padding:20px; text-align:center; color:#666;'>Ingen ferdigstilte prøver funnet på denne læreren.</p>";
 }
 // ---SLUTT PÅ LÆRERDETALJER
+
 
 function aapneLaererModal() {
     const modal = document.getElementById('modalLaerere');
