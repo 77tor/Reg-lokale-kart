@@ -975,17 +975,18 @@ function oppdaterLaererListe() {
         return a.navn.localeCompare(b.navn);
     });
 
-    // 3. Generer HTML Tabell
+    // 3. Generer HTML Tabell med "Sticky" overskrift
     let html = `
-        <table style="width:100%; border-collapse: collapse; margin-top:10px;">
-            <thead>
-                <tr style="background:#f2f2f2; text-align:left;">
-                    <th style="padding:12px; border-bottom:2px solid #ddd;">Navn</th>
-                    <th style="padding:12px; border-bottom:2px solid #ddd;">Trinn</th>
-                    <th style="padding:12px; border-bottom:2px solid #ddd;">Rolle/Klasse</th>
-                </tr>
-            </thead>
-            <tbody>`;
+        <div style="max-height: 500px; overflow-y: auto; border: 1px solid #ddd;">
+            <table style="width:100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="position: sticky; top: 0; background: #34495e; color: white; z-index: 10;">
+                        <th style="padding:12px; text-align:left; border-bottom:2px solid #2c3e50;">Navn</th>
+                        <th style="padding:12px; text-align:left; border-bottom:2px solid #2c3e50;">Trinn</th>
+                        <th style="padding:12px; text-align:left; border-bottom:2px solid #2c3e50;">Rolle/Klasse</th>
+                    </tr>
+                </thead>
+                <tbody>`;
 
     filtrerte.forEach(a => {
         const trinnVisning = a.trinn && a.trinn.length > 0 ? a.trinn.join(", ") + ". trinn" : "Ikke satt";
@@ -999,10 +1000,9 @@ function oppdaterLaererListe() {
             </tr>`;
     });
 
-    html += `</tbody></table>`;
-    container.innerHTML = filtrerte.length > 0 ? html : `<p style="padding:20px;">Ingen ansatte funnet for skoleåret ${valgtAar}.</p>`;
+    html += `</tbody></table></div>`; // Lukker både tbody, table og scroll-div
+container.innerHTML = filtrerte.length > 0 ? html : `<p style="padding:20px; text-align:center;">Ingen ansatte funnet for skoleåret ${valgtAar}.</p>`;
 }
-
 
 // --- LÆRERDETALJER
 async function visLaererDetaljer(epost) {
