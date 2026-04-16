@@ -946,22 +946,30 @@ function oppdaterLaererListe() {
         a.epost.toLowerCase().includes(sok)
     );
 
-    // 2. Sortering (Kronologisk)
+
+// 2. Sortering (Kronologisk: Trinn -> Klasse bokstav -> Navn)
     filtrerte.sort((a, b) => {
-        // Håndter trinn (hvis tom liste, sett som 0)
+        // A. Først sorter på trinn (1, 2, 3...)
         const trinnA = a.trinn && a.trinn.length > 0 ? a.trinn[0] : 99;
         const trinnB = b.trinn && b.trinn.length > 0 ? b.trinn[0] : 99;
         
         if (trinnA !== trinnB) return trinnA - trinnB;
 
-        // Sjekk kontaktlærer/adm status
-        const aStatus = a.kontaktlaerer ? a.kontaktlaerer.toLowerCase() : "";
-        const bStatus = b.kontaktlaerer ? b.kontaktlaerer.toLowerCase() : "";
+        // B. Hvis samme trinn, sorter på klasse-bokstav (1a før 1b)
+        // Vi henter ut teksten fra kontaktlaerer-feltet (f.eks "1a")
+        const klasseA = a.kontaktlaerer ? String(a.kontaktlaerer).toLowerCase() : "";
+        const klasseB = b.kontaktlaerer ? String(b.kontaktlaerer).toLowerCase() : "";
 
-        // Prioriter admin og kontaktlærere
-        if (aStatus && !bStatus) return -1;
-        if (!aStatus && bStatus) return 1;
+        // Spesialhåndtering for "adm" (hvis du vil ha administrasjon øverst på trinnet eller skolen)
+        if (klasseA === "adm" && klasseB !== "adm") return -1;
+        if (klasseA !== "adm" && klasseB === "adm") return 1;
 
+        // Sammenlign klassenavnet (1a vs 1b)
+        if (klasseA !== klasseB) {
+            return klasseA.localeCompare(klasseB);
+        }
+
+        // C. Til slutt alfabetisk på navn hvis de er i samme klasse/rolle
         return a.navn.localeCompare(b.navn);
     });
 
