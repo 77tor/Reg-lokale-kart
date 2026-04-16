@@ -1006,25 +1006,29 @@ container.innerHTML = filtrerte.length > 0 ? html : `<p style="padding:20px; tex
 
 
 // --- LÆRERDETALJER (Endelig korrigert versjon)
-// --- LÆRERDETALJER (Henter "endretAv" direkte fra Firebase status-node)
 async function visLaererDetaljer(epost) {
+    // 1. Finn riktig årstall fra dropdown
     const valgtAar = document.getElementById('valgtAarLaerer').value;
+    
+    // 2. Finn ansatt-objektet
     const ansatteListe = window.ansatteData[valgtAar] || [];
     const ansatt = ansatteListe.find(a => a.epost === epost);
-    
     if (!ansatt) return;
 
-    // Lager en liste over alle Tor sine kjente e-poster for å matche mot Firebase
+    // 3. Lag en liste over alle Tor sine e-poster (inkl. 77tor@ikrs.no)
     let mineIder = [ansatt.epost.toLowerCase().trim()];
     if (ansatt.paloggingsmail) {
-        const mails = Array.isArray(ansatt.paloggingsmail) ? ansatt.paloggingsmail : [ansatt.paloggingsmail];
-        mails.forEach(m => mineIder.push(m.toLowerCase().trim()));
+        if (Array.isArray(ansatt.paloggingsmail)) {
+            ansatt.paloggingsmail.forEach(m => mineIder.push(m.toLowerCase().trim()));
+        } else {
+            mineIder.push(ansatt.paloggingsmail.toLowerCase().trim());
+        }
     }
 
     document.getElementById('detaljerNavn').innerText = `Statistikk for ${ansatt.navn}`;
     document.getElementById('modalLaererDetaljer').style.display = 'block';
 
-    // Henter status-noden fra Firebase (slik vist på bildet ditt)
+    // 4. Hent status-noden slik den er vist på bildet ditt
     const statusSnapshot = await db.ref(`status/${valgtAar}`).once('value');
     const statusData = statusSnapshot.val() || {};
     
@@ -1034,30 +1038,28 @@ async function visLaererDetaljer(epost) {
             <table style="width:100%; border-collapse:collapse;">
                 <thead>
                     <tr style="position: sticky; top: 0; background:#f2f2f2; color:black; z-index: 10;">
-                        <th style="padding:10px; text-align:left; border-bottom:1px solid #ddd;">Prøve</th>
-                        <th style="padding:10px; text-align:center; border-bottom:1px solid #ddd;">Gjennomført</th>
-                        <th style="padding:10px; text-align:center; border-bottom:10px solid #ddd;">Snitt %</th>
-                        <th style="padding:10px; text-align:center; border-bottom:1px solid #ddd;">Under kritisk</th>
-                        <th style="padding:10px; text-align:left; border-bottom:1px solid #ddd;">Dato</th>
+                        <th style="padding:10px; text-align:left;">Prøve</th>
+                        <th style="padding:10px; text-align:center;">Gjennomført</th>
+                        <th style="padding:10px; text-align:center;">Snitt %</th>
+                        <th style="padding:10px; text-align:center;">Under kritisk</th>
+                        <th style="padding:10px; text-align:left;">Dato</th>
                     </tr>
                 </thead>
                 <tbody>`;
 
-    // Går gjennom strukturen: Fag -> Periode -> Trinn -> Klasse
     for (let fag in statusData) {
         for (let periode in statusData[fag]) {
             for (let trinn in statusData[fag][periode]) {
                 for (let klasse in statusData[fag][periode][trinn]) {
                     const info = statusData[fag][periode][trinn][klasse];
                     
-                    // Sjekker om "endretAv" i Firebase matcher en av læreren sine e-poster
+                    // SJEKK: Matcher "endretAv" fra Firebase med Tor sine IDer?
                     const registrertAv = (info.endretAv || "").toLowerCase().trim();
+                    
                     if (mineIder.includes(registrertAv)) {
-                        
-                        // Henter selve elevdataene for denne spesifikke prøven
-                        const kartSnapshot = await db.ref(`kartlegging/${valgtAar}/${fag}/${periode}/${trinn}/${klasse}`).once('value');
+                        const kartSti = `kartlegging/${valgtAar}/${fag}/${periode}/${trinn}/${klasse}`;
+                        const kartSnapshot = await db.ref(kartSti).once('value');
                         const elever = kartSnapshot.val() || {};
-                        const fullKlasse = trinn + klasse;
 
                         let deltakere = 0;
                         let poengSum = 0;
@@ -1067,13 +1069,13 @@ async function visLaererDetaljer(epost) {
                         Object.values(elever).forEach(elev => {
                             if (typeof elev !== 'object' || elev === null) return;
                             
-                            // Logikk for å kun telle de som faktisk har deltatt
+                            // Logikk for å ekskludere fravær og beregne korrekt snitt
                             if (elev.sum !== undefined && elev.sum !== "Ikke deltatt" && !elev.ikkeGjennomfort) {
                                 const p = parseFloat(elev.sum);
-                                const m = parseFloat(elev.maksPoeng);
-                                const k = parseFloat(elev.kritiskGrense);
+                                const m = parseFloat(elev.maksPoeng) || 30; // Hindrer 166% feilen
+                                const k = parseFloat(elev.kritiskGrense) || 15;
 
-                                if (!isNaN(p) && !isNaN(m)) {
+                                if (!isNaN(p)) {
                                     deltakere++;
                                     poengSum += p;
                                     maksSum += m;
@@ -1085,11 +1087,12 @@ async function visLaererDetaljer(epost) {
                         if (deltakere > 0) {
                             antallFullforteProever++;
                             const snittVal = Math.round((poengSum / maksSum) * 100);
+                            const fullKlasse = trinn + klasse;
                             const totaltIClass = hentAntallEleverIRegister(fullKlasse.toUpperCase(), valgtAar);
                             
                             tabellHtml += `
                                 <tr style="border-bottom:1px solid #ddd;">
-                                    <td style="padding:10px;"><strong>${fag}-${fullKlasse}-${periode}-${valgtAar.replace('-','/')}</strong></td>
+                                    <td style="padding:10px;"><strong>${fag}-${fullKlasse}-${periode}-${valgtAar}</strong></td>
                                     <td style="padding:10px; text-align:center;">${deltakere} / ${totaltIClass}</td>
                                     <td style="padding:10px; text-align:center; font-weight:bold;">${snittVal}%</td>
                                     <td style="padding:10px; text-align:center; color:${underKritisk > 0 ? '#e74c3c' : '#27ae60'}; font-weight:bold;">${underKritisk} elever</td>
@@ -1104,7 +1107,9 @@ async function visLaererDetaljer(epost) {
 
     tabellHtml += `</tbody></table></div>`;
     document.getElementById('detaljerAntallProever').innerText = antallFullforteProever;
-    document.getElementById('laererProeveListe').innerHTML = antallFullforteProever > 0 ? tabellHtml : "<p style='text-align:center; padding:20px;'>Ingen data funnet for denne læreren i Firebase.</p>";
+    document.getElementById('laererProeveListe').innerHTML = antallFullforteProever > 0 
+        ? tabellHtml 
+        : "<p style='text-align:center; padding:20px;'>Ingen data funnet for læreren i årstallet " + valgtAar + ".</p>";
 }
 // ---SLUTT PÅ LÆRERDETALJER
 
