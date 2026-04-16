@@ -947,29 +947,36 @@ function oppdaterLaererListe() {
     );
 
 
-// 2. Sortering (Kronologisk: Trinn -> Klasse bokstav -> Navn)
+// 2. Sortering (Tall-trinn først, tekst-trinn nederst)
     filtrerte.sort((a, b) => {
-        // A. Først sorter på trinn (1, 2, 3...)
-        const trinnA = a.trinn && a.trinn.length > 0 ? a.trinn[0] : 99;
-        const trinnB = b.trinn && b.trinn.length > 0 ? b.trinn[0] : 99;
-        
-        if (trinnA !== trinnB) return trinnA - trinnB;
+        const verdiA = a.trinn && a.trinn.length > 0 ? a.trinn[0] : "";
+        const verdiB = b.trinn && b.trinn.length > 0 ? b.trinn[0] : "";
 
-        // B. Hvis samme trinn, sorter på klasse-bokstav (1a før 1b)
-        // Vi henter ut teksten fra kontaktlaerer-feltet (f.eks "1a")
-        const klasseA = a.kontaktlaerer ? String(a.kontaktlaerer).toLowerCase() : "";
-        const klasseB = b.kontaktlaerer ? String(b.kontaktlaerer).toLowerCase() : "";
+        const erTallA = !isNaN(parseInt(verdiA));
+        const erTallB = !isNaN(parseInt(verdiB));
 
-        // Spesialhåndtering for "adm" (hvis du vil ha administrasjon øverst på trinnet eller skolen)
-        if (klasseA === "adm" && klasseB !== "adm") return -1;
-        if (klasseA !== "adm" && klasseB === "adm") return 1;
+        // A. Håndter prioritering mellom tall og tekst
+        if (erTallA && !erTallB) return -1; // Tall skal før tekst
+        if (!erTallA && erTallB) return 1;  // Tekst skal etter tall
 
-        // Sammenlign klassenavnet (1a vs 1b)
-        if (klasseA !== klasseB) {
-            return klasseA.localeCompare(klasseB);
+        // B. Hvis begge er tall, sorter kronologisk (1, 2, 3...)
+        if (erTallA && erTallB) {
+            const numA = parseInt(verdiA);
+            const numB = parseInt(verdiB);
+            if (numA !== numB) return numA - numB;
+            
+            // Hvis samme trinn-tall, sorter på klassebokstav (1a, 1b...)
+            const klasseA = a.kontaktlaerer ? String(a.kontaktlaerer).toLowerCase() : "";
+            const klasseB = b.kontaktlaerer ? String(b.kontaktlaerer).toLowerCase() : "";
+            if (klasseA !== klasseB) return klasseA.localeCompare(klasseB);
         }
 
-        // C. Til slutt alfabetisk på navn hvis de er i samme klasse/rolle
+        // C. Hvis begge er tekst (f.eks. "Adm" og "Permisjon"), sorter alfabetisk
+        if (!erTallA && !erTallB) {
+            if (verdiA !== verdiB) return verdiA.localeCompare(verdiB);
+        }
+
+        // D. Siste utvei: Sorter på navn
         return a.navn.localeCompare(b.navn);
     });
 
