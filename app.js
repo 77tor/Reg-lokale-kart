@@ -1006,40 +1006,43 @@ container.innerHTML = filtrerte.length > 0 ? html : `<p style="padding:20px; tex
 
 
 // --- LÆRERDETALJER (Endelig korrigert versjon)
-async function visLaererDetaljer(epost) {
-    // 1. Finn riktig årstall fra dropdown
+async function visLaererDetaljer(valgtEpost) {
     const valgtAar = document.getElementById('valgtAarLaerer').value;
-    
-    // 2. Finn ansatt-objektet
     const ansatteListe = window.ansatteData[valgtAar] || [];
-    const ansatt = ansatteListe.find(a => a.epost === epost);
+    
+    // 1. Finn den ansatte i registeret
+    const ansatt = ansatteListe.find(a => a.epost === valgtEpost);
     if (!ansatt) return;
 
-    // 3. Lag en liste over alle Tor sine e-poster (inkl. 77tor@ikrs.no)
+    // 2. Bygg en liste over alle gyldige ID-er for denne læreren fra ansatte.js
     let mineIder = [ansatt.epost.toLowerCase().trim()];
+    
     if (ansatt.paloggingsmail) {
         if (Array.isArray(ansatt.paloggingsmail)) {
+            // Hvis det er en array (som for Tor i 25/26)
             ansatt.paloggingsmail.forEach(m => mineIder.push(m.toLowerCase().trim()));
         } else {
+            // Hvis det er en enkel streng (som for de fleste andre)
             mineIder.push(ansatt.paloggingsmail.toLowerCase().trim());
         }
     }
 
+    // Sett overskrift og vis modal
     document.getElementById('detaljerNavn').innerText = `Statistikk for ${ansatt.navn}`;
     document.getElementById('modalLaererDetaljer').style.display = 'block';
 
-    // 4. Hent status-noden slik den er vist på bildet ditt
+    // 3. Hent status-data fra Firebase
     const statusSnapshot = await db.ref(`status/${valgtAar}`).once('value');
     const statusData = statusSnapshot.val() || {};
     
-    let antallFullforteProever = 0;
+    let antallFullforte = 0;
     let tabellHtml = `
         <div style="max-height: 450px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
             <table style="width:100%; border-collapse:collapse;">
                 <thead>
                     <tr style="position: sticky; top: 0; background:#f2f2f2; color:black; z-index: 10;">
                         <th style="padding:10px; text-align:left;">Prøve</th>
-                        <th style="padding:10px; text-align:center;">Gjennomført</th>
+                        <th style="padding:10px; text-align:center;">Elever</th>
                         <th style="padding:10px; text-align:center;">Snitt %</th>
                         <th style="padding:10px; text-align:center;">Under kritisk</th>
                         <th style="padding:10px; text-align:left;">Dato</th>
@@ -1047,55 +1050,54 @@ async function visLaererDetaljer(epost) {
                 </thead>
                 <tbody>`;
 
+    // Gå gjennom Firebase-strukturen
     for (let fag in statusData) {
         for (let periode in statusData[fag]) {
             for (let trinn in statusData[fag][periode]) {
                 for (let klasse in statusData[fag][periode][trinn]) {
                     const info = statusData[fag][periode][trinn][klasse];
-                    
-                    // SJEKK: Matcher "endretAv" fra Firebase med Tor sine IDer?
                     const registrertAv = (info.endretAv || "").toLowerCase().trim();
-                    
+
+                    // SJEKK: Er denne prøven registrert av en av læreren sine e-poster?
                     if (mineIder.includes(registrertAv)) {
-                        const kartSti = `kartlegging/${valgtAar}/${fag}/${periode}/${trinn}/${klasse}`;
-                        const kartSnapshot = await db.ref(kartSti).once('value');
+                        
+                        // Hent oppsett for å finne maks poeng og kritisk grense
+                        const oppsett = oppgaveStruktur[valgtAar]?.[fag]?.[periode]?.[trinn];
+                        if (!oppsett) continue;
+
+                        const maksPrElev = oppsett.oppgaver.reduce((s, o) => s + o.maks, 0);
+                        const kritiskGrense = oppsett.grenseTotal;
+
+                        // Hent faktiske elevresultater
+                        const kartSnapshot = await db.ref(`kartlegging/${valgtAar}/${fag}/${periode}/${trinn}/${klasse}`).once('value');
                         const elever = kartSnapshot.val() || {};
 
                         let deltakere = 0;
-                        let poengSum = 0;
-                        let maksSum = 0;
+                        let sumPoeng = 0;
                         let underKritisk = 0;
 
                         Object.values(elever).forEach(elev => {
-                            if (typeof elev !== 'object' || elev === null) return;
-                            
-                            // Logikk for å ekskludere fravær og beregne korrekt snitt
-                            if (elev.sum !== undefined && elev.sum !== "Ikke deltatt" && !elev.ikkeGjennomfort) {
+                            if (elev && elev.sum !== undefined && elev.sum !== "Ikke deltatt" && !elev.ikkeGjennomfort) {
                                 const p = parseFloat(elev.sum);
-                                const m = parseFloat(elev.maksPoeng) || 30; // Hindrer 166% feilen
-                                const k = parseFloat(elev.kritiskGrense) || 15;
-
                                 if (!isNaN(p)) {
                                     deltakere++;
-                                    poengSum += p;
-                                    maksSum += m;
-                                    if (p < k) underKritisk++;
+                                    sumPoeng += p;
+                                    if (p < kritiskGrense) underKritisk++;
                                 }
                             }
                         });
 
                         if (deltakere > 0) {
-                            antallFullforteProever++;
-                            const snittVal = Math.round((poengSum / maksSum) * 100);
-                            const fullKlasse = trinn + klasse;
-                            const totaltIClass = hentAntallEleverIRegister(fullKlasse.toUpperCase(), valgtAar);
+                            antallFullforte++;
+                            const snitt = Math.round((sumPoeng / (deltakere * maksPrElev)) * 100);
+                            const klasseNavn = trinn + klasse;
                             
                             tabellHtml += `
                                 <tr style="border-bottom:1px solid #ddd;">
-                                    <td style="padding:10px;"><strong>${fag}-${fullKlasse}-${periode}-${valgtAar}</strong></td>
-                                    <td style="padding:10px; text-align:center;">${deltakere} / ${totaltIClass}</td>
-                                    <td style="padding:10px; text-align:center; font-weight:bold;">${snittVal}%</td>
-                                    <td style="padding:10px; text-align:center; color:${underKritisk > 0 ? '#e74c3c' : '#27ae60'}; font-weight:bold;">${underKritisk} elever</td>
+                                    <td style="padding:10px;"><strong>${fag} ${klasseNavn}</strong><br><small>${periode}</small></td>
+                                    <td style="padding:10px; text-align:center;">${deltakere}</td>
+                                    <td style="padding:10px; text-align:center; font-weight:bold;">${snitt}%</td>
+                                    <td style="padding:10px; text-align:center; color:${underKritisk > 0 ? 'red' : 'green'};">${underKritisk}</td>
                                     <td style="padding:10px;"><small>${info.dato ? info.dato.split(',')[0] : "-"}</small></td>
                                 </tr>`;
                         }
@@ -1106,10 +1108,8 @@ async function visLaererDetaljer(epost) {
     }
 
     tabellHtml += `</tbody></table></div>`;
-    document.getElementById('detaljerAntallProever').innerText = antallFullforteProever;
-    document.getElementById('laererProeveListe').innerHTML = antallFullforteProever > 0 
-        ? tabellHtml 
-        : "<p style='text-align:center; padding:20px;'>Ingen data funnet for læreren i årstallet " + valgtAar + ".</p>";
+    document.getElementById('detaljerAntallProever').innerText = antallFullforte;
+    document.getElementById('laererProeveListe').innerHTML = antallFullforte > 0 ? tabellHtml : "<p>Ingen prøver funnet.</p>";
 }
 // ---SLUTT PÅ LÆRERDETALJER
 
