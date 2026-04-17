@@ -152,6 +152,28 @@ window.onclick = function(event) {
     }
 }
 
+// Funksjon for å lukke konto-modalen
+function lukkKonto() {
+    const modal = document.getElementById('modalKonto');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Valgfritt: Lukke modalen hvis man klikker på den mørke bakgrunnen
+window.addEventListener('click', function(event) {
+    const modalKonto = document.getElementById('modalKonto');
+    const modalVeiledning = document.getElementById('modalVeiledning');
+    
+    if (event.target === modalKonto) {
+        lukkKonto();
+    }
+    if (event.target === modalVeiledning) {
+        lukkVeiledning();
+    }
+});
+
+
 // Din eksisterende toggle-funksjon (sørg for at den ser slik ut)
 function toggleDropdown() {
     document.getElementById("userDropdown").classList.toggle("show");
@@ -168,61 +190,63 @@ function oppdaterMenyBasertPaaRolle(brukerData) {
         adminLink.style.display = 'none';
     }
 }
-
 function aapneKonto() {
-    const skoleaar = "2025-2026"; 
-    const ansatteListe = window.ansatteData && window.ansatteData[skoleaar];
+// 1. Hent skoleåret som er valgt i hovedmenyen (f.eks. fra en <select id="velgSkoleaar">)
+    // Hvis du ikke har en ID på den, kan vi bruke dato-logikken som reserve (fallback)
+    let skoleaar = document.getElementById('velgSkoleaar')?.value;
 
-    // Henter navnet slik det står i headeren (f.eks. "Tor Skarprud")
-    const innloggetNavn = document.getElementById('userInfo').innerText.trim();
-
-    console.log("Leter etter bruker med navn:", innloggetNavn);
-
-    if (!innloggetNavn) {
-        alert("Fant ikke navnet på innlogget bruker.");
-        return;
+    if (!skoleaar) {
+        // Fallback: Hvis ingen meny er valgt, finn årstall basert på dagens dato
+        const idag = new Date();
+        const aar = idag.getFullYear();
+        skoleaar = (idag.getMonth() >= 7) ? `${aar}-${aar + 1}` : `${aar - 1}-${aar}`;
     }
 
-    // Vi leter nå etter match i "navn"-feltet
+    const ansatteListe = window.ansatteData && window.ansatteData[skoleaar];
+
+    // 1. Finn navnet fra headeren
+    const innloggetNavn = document.getElementById('userInfo').innerText.trim();
+
+    // 2. Finn den FAKTISKE e-posten som ble brukt ved innlogging fra localStorage
+    // (Pass på at innloggingsfunksjonen din lagrer denne som 'brukerEpost')
+    const faktiskInnloggetEpost = localStorage.getItem('brukerEpost');
+
     const bruker = ansatteListe.find(a => a.navn.toLowerCase() === innloggetNavn.toLowerCase());
 
     if (!bruker) {
-        alert("Fant ingen data i ansatte.js for navnet: " + innloggetNavn);
+        alert("Fant ingen data for: " + innloggetNavn);
         return;
     }
 
-    // Fyll ut informasjonen i modalen
-    // Vi viser den primære e-posten som "Logget inn som"
-    document.getElementById('kontoEpost').innerText = bruker.epost;
+    // 3. VISNING: Her bruker vi nå den faktiske mailen hvis den finnes, 
+    // ellers faller vi tilbake på hoved-eposten
+    document.getElementById('kontoEpost').innerText = faktiskInnloggetEpost || bruker.epost;
+    
     document.getElementById('kontoTrinn').innerText = bruker.trinn.join(", ");
     document.getElementById('kontoKontakt').innerText = bruker.kontaktlaerer || "Ingen";
 
-    // Generer knapper for å bytte påloggingsadresse
+    // 4. GENERER KNAPPER
     const listeDiv = document.getElementById('byttEpostListe');
     listeDiv.innerHTML = '';
 
-    // Finn alle mailer knyttet til denne personen
-    let alleMailer = [];
+    // Samle alle mulige e-poster for brukeren
+    let alleMailer = [bruker.epost];
     if (Array.isArray(bruker.paloggingsmail)) {
-        alleMailer = [...bruker.paloggingsmail];
+        alleMailer = [...alleMailer, ...bruker.paloggingsmail];
     } else if (bruker.paloggingsmail) {
         alleMailer.push(bruker.paloggingsmail);
     }
 
-    // Legg til hoved-eposten i listen hvis den ikke er der
-    if (!alleMailer.includes(bruker.epost)) {
-        alleMailer.unshift(bruker.epost);
-    }
-
-    // Lag knapper
+    // Lag knapper for de e-postene som IKKE er i bruk akkurat nå
     alleMailer.forEach(mail => {
-        const btn = document.createElement('button');
-        btn.innerText = `Bruk ${mail} ved pålogging`;
-        btn.style = "padding: 10px; cursor: pointer; border: 1px solid #007bff; background: white; color: #007bff; border-radius: 4px; text-align: left; margin-bottom: 5px; font-weight: bold;";
-        
-        // Denne funksjonen må lagre valget slik at innloggings-logikken din bruker den neste gang
-        btn.onclick = () => byttBrukerEpost(mail);
-        listeDiv.appendChild(btn);
+        if (mail.toLowerCase() !== (faktiskInnloggetEpost || "").toLowerCase()) {
+            const btn = document.createElement('button');
+            btn.innerText = `Bruk ${mail} ved pålogging`;
+            btn.className = "btn-switch-account"; // Du kan style denne i CSS
+            btn.style = "padding: 10px; cursor: pointer; border: 1px solid #007bff; background: white; color: #007bff; border-radius: 4px; text-align: left; margin-bottom: 5px; font-weight: bold;";
+            btn.onclick = () => byttBrukerEpost(mail);
+            listeDiv.appendChild(btn);
+        }
     });
 
     document.getElementById('modalKonto').style.display = 'block';
