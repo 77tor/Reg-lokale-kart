@@ -105,6 +105,7 @@ auth.onAuthStateChanged(user => {
         document.getElementById('mainContent').style.display = 'block';
         document.getElementById('userInfo').innerText = user.displayName;
         localStorage.setItem('brukerEpost', user.email);
+        sjekkVelkomstPopup(user);
 
         // --- ADMIN-SJEKK MOT ANSATTEDATA ---
         
@@ -193,6 +194,29 @@ window.addEventListener('click', function(event) {
     }
 });
 
+
+function lukkVelkomst() {
+    const skalSkjules = document.getElementById('skjulVelkomstCheckbox').checked;
+    const user = auth.currentUser;
+
+    if (skalSkjules && user) {
+        // Lagre i Firebase at denne brukeren ikke vil se popup igjen
+        db.ref('brukerInnstillinger/' + user.uid).update({
+            visVelkomst: false
+        });
+    }
+    document.getElementById('modalVelkomst').style.display = 'none';
+}
+
+async function sjekkVelkomstPopup(user) {
+    const snapshot = await db.ref('brukerInnstillinger/' + user.uid + '/visVelkomst').once('value');
+    const visIgjen = snapshot.val();
+
+    // Hvis verdien ikke er 'false', vis popup-en
+    if (visIgjen !== false) {
+        document.getElementById('modalVelkomst').style.display = 'block';
+    }
+}
 
 // Din eksisterende toggle-funksjon (sørg for at den ser slik ut)
 function toggleDropdown() {
@@ -1052,19 +1076,35 @@ function aapneVeiledning() {
     }
 }
 
-// Funksjon for å lukke veiledning
-function lukkVeiledning() {
-    document.getElementById('modalVeiledning').style.display = 'none';
-}
+// ÉN felles lytter for alle klikk i hele systemet
+window.addEventListener('click', function(event) {
+    const modalKonto = document.getElementById('modalKonto');
+    const modalVeiledning = document.getElementById('modalVeiledning');
+    const modalVelkomst = document.getElementById('modalVelkomst'); // Den nye popup-en
+    const dropdown = document.getElementById("userDropdown");
 
-// Valgfritt: Lukk modalen hvis man klikker utenfor selve boksen
-window.onclick = function(event) {
-    const modal = document.getElementById('modalVeiledning');
-    if (event.target == modal) {
+    // 1. Lukk dropdown hvis man klikker utenfor .user-pill
+    if (!event.target.closest('.user-pill')) {
+        if (dropdown && dropdown.classList.contains('show')) {
+            dropdown.classList.remove('show');
+        }
+    }
+
+    // 2. Lukk konto-modal hvis man klikker på den mørke bakgrunnen
+    if (event.target === modalKonto) {
+        lukkKonto();
+    }
+    
+    // 3. Lukk veiledning-modal hvis man klikker på den mørke bakgrunnen
+    if (event.target === modalVeiledning) {
         lukkVeiledning();
     }
-}
 
+    // 4. Lukk velkomst-modal hvis man klikker på den mørke bakgrunnen
+    if (event.target === modalVelkomst) {
+        lukkVelkomst();
+    }
+});
 
 // --- LÆRERSIDE ---
 function oppdaterLaererListe() {
