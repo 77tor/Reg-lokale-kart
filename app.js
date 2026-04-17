@@ -178,66 +178,69 @@ function oppdaterMenyBasertPaaRolle(brukerData) {
         adminLink.style.display = 'none';
     }
 }
-function aapneKonto() {
-// 1. Hent skoleåret som er valgt i hovedmenyen (f.eks. fra en <select id="velgSkoleaar">)
-    // Hvis du ikke har en ID på den, kan vi bruke dato-logikken som reserve (fallback)
-    let skoleaar = document.getElementById('velgSkoleaar')?.value;
 
+function aapneKonto() {
+    // NYTT: Lukk dropdown-menyen med en gang
+    const dropdown = document.getElementById("userDropdown");
+    if (dropdown) dropdown.classList.remove("show");
+
+    let skoleaar = document.getElementById('velgSkoleaar')?.value;
     if (!skoleaar) {
-        // Fallback: Hvis ingen meny er valgt, finn årstall basert på dagens dato
         const idag = new Date();
         const aar = idag.getFullYear();
         skoleaar = (idag.getMonth() >= 7) ? `${aar}-${aar + 1}` : `${aar - 1}-${aar}`;
     }
 
     const ansatteListe = window.ansatteData && window.ansatteData[skoleaar];
-
-    // 1. Finn navnet fra headeren
     const innloggetNavn = document.getElementById('userInfo').innerText.trim();
+    const faktiskInnloggetEpost = localStorage.getItem('brukerEpost') || "";
 
-    // 2. Finn den FAKTISKE e-posten som ble brukt ved innlogging fra localStorage
-    // (Pass på at innloggingsfunksjonen din lagrer denne som 'brukerEpost')
-    const faktiskInnloggetEpost = localStorage.getItem('brukerEpost');
-
-    const bruker = ansatteListe.find(a => a.navn.toLowerCase() === innloggetNavn.toLowerCase());
+    const bruker = ansatteListe?.find(a => a.navn.toLowerCase() === innloggetNavn.toLowerCase());
 
     if (!bruker) {
         alert("Fant ingen data for: " + innloggetNavn);
         return;
     }
 
-    // 3. VISNING: Her bruker vi nå den faktiske mailen hvis den finnes, 
-    // ellers faller vi tilbake på hoved-eposten
     document.getElementById('kontoEpost').innerText = faktiskInnloggetEpost || bruker.epost;
-    
     document.getElementById('kontoTrinn').innerText = bruker.trinn.join(", ");
     document.getElementById('kontoKontakt').innerText = bruker.kontaktlaerer || "Ingen";
 
-    // 4. GENERER KNAPPER
     const listeDiv = document.getElementById('byttEpostListe');
     listeDiv.innerHTML = '';
 
-    // Samle alle mulige e-poster for brukeren
+    // LAG EN REN LISTE OVER UNIKE E-POSTER
     let alleMailer = [bruker.epost];
     if (Array.isArray(bruker.paloggingsmail)) {
         alleMailer = [...alleMailer, ...bruker.paloggingsmail];
     } else if (bruker.paloggingsmail) {
         alleMailer.push(bruker.paloggingsmail);
     }
+    
+    // Fjern duplikater og gjør alt til små bokstaver for sammenligning
+    let unikeMailer = [...new Set(alleMailer.map(m => m.toLowerCase()))];
 
-    // Lag knapper for de e-postene som IKKE er i bruk akkurat nå
-    alleMailer.forEach(mail => {
-        if (mail.toLowerCase() !== (faktiskInnloggetEpost || "").toLowerCase()) {
+    unikeMailer.forEach(mail => {
+        // Vis bare knapper for de mailene som IKKE er i bruk nå
+        if (mail !== faktiskInnloggetEpost.toLowerCase()) {
             const btn = document.createElement('button');
             btn.innerText = `Bruk ${mail} ved pålogging`;
-            btn.className = "btn-switch-account"; // Du kan style denne i CSS
-            btn.style = "padding: 10px; cursor: pointer; border: 1px solid #007bff; background: white; color: #007bff; border-radius: 4px; text-align: left; margin-bottom: 5px; font-weight: bold;";
+            btn.style = "padding: 10px; cursor: pointer; border: 1px solid #007bff; background: white; color: #007bff; border-radius: 4px; text-align: left; margin-bottom: 5px; font-weight: bold; font-size: 13px;";
             btn.onclick = () => byttBrukerEpost(mail);
             listeDiv.appendChild(btn);
         }
     });
 
     document.getElementById('modalKonto').style.display = 'block';
+}
+
+// DENNE MÅ DU HA MED FOR AT KNAPPENE SKAL VIRKE:
+function byttBrukerEpost(nyMail) {
+    if (confirm("Vil du endre din foretrukne påloggingsadresse til " + nyMail + "?")) {
+        localStorage.setItem('brukerEpost', nyMail);
+        alert("Valgt e-post er lagret. Den vil brukes ved neste pålogging.");
+        lukkKonto();
+    }
 }
 
 // --- 3. HJELPEFUNKSJONER ---
