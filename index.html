@@ -413,20 +413,19 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
             <h2 style="margin: 0;">👤 Min konto</h2>
             <span class="close" onclick="lukkKonto()" style="cursor:pointer; font-size:24px;">&times;</span>
         </div>
-        
+
         <div style="padding: 20px; font-family: sans-serif;">
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <p><strong>Logget inn som:</strong> <span id="kontoEpost"></span></p>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                <p style="font-size: 1.2em; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+                    <strong>Navn:</strong> <span id="kontoNavn"></span>
+                </p>
+                
+                <p><strong>Logget inn med:</strong> <span id="kontoEpost"></span></p>
                 <p><strong>Trinn:</strong> <span id="kontoTrinn"></span></p>
                 <p><strong>Kontaktlærer:</strong> <span id="kontoKontakt"></span></p>
             </div>
-
-            <h4 style="margin-bottom: 10px;">Bytt påloggingsadresse:</h4>
-            <p style="font-size: 0.9em; color: #666;">Velg en annen e-postadresse som er knyttet til din bruker:</p>
-            <div id="byttEpostListe" style="display: flex; flex-direction: column; gap: 10px;">
-                </div>
         </div>
-
+        
         <div style="text-align: right; border-top: 1px solid #eee; padding: 15px;">
             <button class="btn" onclick="lukkKonto()">Lukk</button>
         </div>

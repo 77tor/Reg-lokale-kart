@@ -201,7 +201,6 @@ function oppdaterMenyBasertPaaRolle(brukerData) {
 }
 
 function aapneKonto() {
-    // NYTT: Lukk dropdown-menyen med en gang
     const dropdown = document.getElementById("userDropdown");
     if (dropdown) dropdown.classList.remove("show");
 
@@ -214,43 +213,20 @@ function aapneKonto() {
 
     const ansatteListe = window.ansatteData && window.ansatteData[skoleaar];
     const innloggetNavn = document.getElementById('userInfo').innerText.trim();
-    const faktiskInnloggetEpost = localStorage.getItem('brukerEpost') || "";
+    const faktiskInnloggetEpost = localStorage.getItem('brukerEpost') || "Ikke registrert";
 
     const bruker = ansatteListe?.find(a => a.navn.toLowerCase() === innloggetNavn.toLowerCase());
 
     if (!bruker) {
-        alert("Fant ingen data for: " + innloggetNavn);
+        alert("Fant ingen profil-data for: " + innloggetNavn);
         return;
     }
 
-    document.getElementById('kontoEpost').innerText = faktiskInnloggetEpost || bruker.epost;
+    // FYLL UT FELTENE
+    document.getElementById('kontoNavn').innerText = bruker.navn; // Henter navnet fra ansatteData
+    document.getElementById('kontoEpost').innerText = faktiskInnloggetEpost;
     document.getElementById('kontoTrinn').innerText = bruker.trinn.join(", ");
     document.getElementById('kontoKontakt').innerText = bruker.kontaktlaerer || "Ingen";
-
-    const listeDiv = document.getElementById('byttEpostListe');
-    listeDiv.innerHTML = '';
-
-    // LAG EN REN LISTE OVER UNIKE E-POSTER
-    let alleMailer = [bruker.epost];
-    if (Array.isArray(bruker.paloggingsmail)) {
-        alleMailer = [...alleMailer, ...bruker.paloggingsmail];
-    } else if (bruker.paloggingsmail) {
-        alleMailer.push(bruker.paloggingsmail);
-    }
-    
-    // Fjern duplikater og gjør alt til små bokstaver for sammenligning
-    let unikeMailer = [...new Set(alleMailer.map(m => m.toLowerCase()))];
-
-    unikeMailer.forEach(mail => {
-        // Vis bare knapper for de mailene som IKKE er i bruk nå
-        if (mail !== faktiskInnloggetEpost.toLowerCase()) {
-            const btn = document.createElement('button');
-            btn.innerText = `Bruk ${mail} ved pålogging`;
-            btn.style = "padding: 10px; cursor: pointer; border: 1px solid #007bff; background: white; color: #007bff; border-radius: 4px; text-align: left; margin-bottom: 5px; font-weight: bold; font-size: 13px;";
-            btn.onclick = () => byttBrukerEpost(mail);
-            listeDiv.appendChild(btn);
-        }
-    });
 
     document.getElementById('modalKonto').style.display = 'block';
 }
