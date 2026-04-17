@@ -930,6 +930,29 @@ function finnRelevanteSider(rentTrinnNummer, oppgaveNavn) {
     return funn.length > 0 ? funn.join("\n") : "Fant ingen direkte treff i innholdsfortegnelsen.";
 }
 
+
+//--- INFO - LÆRERVEILEDNING
+function aapneVeiledning() {
+    const modal = document.getElementById('modalVeiledning');
+    if (modal) {
+        modal.style.display = 'block';
+    }
+}
+
+// Funksjon for å lukke veiledning
+function lukkVeiledning() {
+    document.getElementById('modalVeiledning').style.display = 'none';
+}
+
+// Valgfritt: Lukk modalen hvis man klikker utenfor selve boksen
+window.onclick = function(event) {
+    const modal = document.getElementById('modalVeiledning');
+    if (event.target == modal) {
+        lukkVeiledning();
+    }
+}
+
+
 // --- LÆRERSIDE ---
 function oppdaterLaererListe() {
     const sok = document.getElementById('sokLaerer').value.toLowerCase();

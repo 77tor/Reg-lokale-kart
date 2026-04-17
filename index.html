@@ -328,6 +328,10 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     color: #2c3e50;
     font-weight: 500;
 }
+.user-pill button:hover {
+    transform: scale(1.2);
+    transition: transform 0.2s;
+}
 </style>
 </head>
 <body>
@@ -346,18 +350,46 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 
     <div class="header-right">
 
-<button onclick="aapneVeiledning()" title="Lærerveiledning" 
+        <button onclick="aapneVeiledning()" title="Lærerveiledning" 
         style="background: #007bff; color: white; border: none; cursor: pointer; 
                margin-right: 10px; width: 22px; height: 22px; border-radius: 50%; 
                font-weight: bold; font-family: serif; font-style: italic; font-size: 14px;
                display: flex; align-items: center; justify-content: center;">
-    i
-</button>
+               i
+        </button>
         <div class="user-pill">
             👤 <span id="userInfo"></span>
         </div>
         <button class="btn btn-admin" onclick="sjekkAdminKode()">Admin</button>
         <button class="btn btn-logout" onclick="logout()">Logg ut</button>
+    </div>
+</div>
+
+<div id="modalVeiledning" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width: 800px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+            <h2 style="margin: 0;">Lærerveiledning & Informasjon</h2>
+            <span class="close" onclick="lukkVeiledning()">&times;</span>
+        </div>
+        
+        <div style="padding: 20px; line-height: 1.6; max-height: 70vh; overflow-y: auto;">
+            <h3>Velkommen til Kartleggingssystemet</h3>
+            <p>Dette systemet hjelper deg med å registrere og analysere elevresultater. Her er noen tips:</p>
+            
+            <ul>
+                <li><strong>Registrering:</strong> Velg fag, trinn og klasse i menyene for å starte.</li>
+                <li><strong>Status:</strong> Bruk "Lås prøve" når alle elever er ferdig registrert for å lagre snitt og dato.</li>
+                <li><strong>Utskrift:</strong> Systemet er tilpasset utskrift (Ctrl+P) for oversikter til elevsamtaler eller foreldremøter.</li>
+                <li><strong>Support:</strong> Kontakt din administrator hvis du mangler tilgang til en klasse.</li>
+            </ul>
+            
+            <hr>
+            <p><small>Versjon 2.0 - Siste oppdatering: 2026</small></p>
+        </div>
+        
+        <div style="text-align: right; border-top: 1px solid #eee; padding-top: 10px;">
+            <button class="btn" onclick="lukkVeiledning()">Lukk</button>
+        </div>
     </div>
 </div>
 
