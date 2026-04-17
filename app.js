@@ -137,22 +137,24 @@ function registrerInnlogging(user) {
 }
 
 
-// Funksjon for å åpne/lukke menyen
-function toggleDropdown() {
-    document.getElementById("userDropdown").classList.toggle("show");
-}
-
-// Lukk menyen hvis brukeren klikker utenfor
+// Denne sørger for at menyen lukkes når du klikker utenfor
 window.onclick = function(event) {
-    if (!event.target.closest('.dropdown')) {
+    // Sjekk om klikket IKKE traff selve user-pill (navnet/pila)
+    if (!event.target.closest('.user-pill')) {
         var dropdowns = document.getElementsByClassName("dropdown-content");
         for (var i = 0; i < dropdowns.length; i++) {
             var openDropdown = dropdowns[i];
+            // Hvis menyen har klassen 'show', fjern den
             if (openDropdown.classList.contains('show')) {
                 openDropdown.classList.remove('show');
             }
         }
     }
+}
+
+// Din eksisterende toggle-funksjon (sørg for at den ser slik ut)
+function toggleDropdown() {
+    document.getElementById("userDropdown").classList.toggle("show");
 }
 
 // KJØRES VED INNLOGGING: Sjekk om bruker er Admin
