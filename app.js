@@ -100,21 +100,26 @@ async function logout() {
 
 auth.onAuthStateChanged(user => {
     if (user) {
+        // --- NYTT: Lagre e-posten i localStorage slik at "Min konto" finner den ---
+        localStorage.setItem('brukerEpost', user.email);
+        // ------------------------------------------------------------------------
+
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
         document.getElementById('userInfo').innerText = user.displayName;
 
-        // 1. Denne ene linjen fikser NÅ alle menyer (mAar, teAar, adminAar, compAar)
-        // Den henter år, fyller boksene, og velger riktig skoleår automatisk.
         oppdaterAlleAarsMenyer(); 
-
-        // 2. Loggføring og henting av data
         registrerInnlogging(user); 
         hentRegister(); 
         hentData();     
     } else {
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('mainContent').style.display = 'none';
+        
+        // --- NYTT: Fjern e-posten når man logger ut ---
+        localStorage.removeItem('brukerEpost');
+        // ----------------------------------------------
+        
         sessionStorage.removeItem('currentLogId');
     }
 });
