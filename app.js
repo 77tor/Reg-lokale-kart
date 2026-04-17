@@ -172,46 +172,70 @@ function oppdaterMenyBasertPaaRolle(brukerData) {
 
 
 function aapneKonto() {
-    // 1. Finn brukerdata (vi bruker e-posten som er lagret i systemet ditt nå)
-    const nåværendeEpost = localStorage.getItem('brukerEpost'); // Eller variabelen du bruker
-    const bruker = ansatte.find(a => a.epost === nåværendeEpost || a.paloggingsmail.includes(nåværendeEpost));
+    // 1. Definer hvilket skoleår vi skal se i (bør kanskje hentes fra en variabel i appen din)
+    const skoleaar = "2025-2026"; 
+    
+    // 2. Hent listen fra window.ansatteData
+    const ansatteListe = window.ansatteData && window.ansatteData[skoleaar];
 
-    if (!bruker) return;
+    if (!ansatteListe) {
+        console.error("Fant ikke ansattedata for " + skoleaar);
+        return;
+    }
 
-    // 2. Fyll inn info i modalen
+    // 3. Finn nåværende e-post (den som er logget inn nå)
+    // Her må du bruke navnet på variabelen du lagrer innlogget e-post i
+    const nåværendeEpost = localStorage.getItem('brukerEpost') || ""; 
+
+    // 4. Finn brukeren i listen
+    const bruker = ansatteListe.find(a => {
+        const epostMatch = a.epost.toLowerCase() === nåværendeEpost.toLowerCase();
+        
+        // Sjekk paloggingsmail (håndterer både tekststreng og array)
+        let paloggingMatch = false;
+        if (Array.isArray(a.paloggingsmail)) {
+            paloggingMatch = a.paloggingsmail.some(m => m.toLowerCase() === nåværendeEpost.toLowerCase());
+        } else if (a.paloggingsmail) {
+            paloggingMatch = a.paloggingsmail.toLowerCase() === nåværendeEpost.toLowerCase();
+        }
+        
+        return epostMatch || paloggingMatch;
+    });
+
+    if (!bruker) {
+        alert("Fant ingen brukerdata for: " + nåværendeEpost);
+        return;
+    }
+
+    // 5. Oppdater modalen
     document.getElementById('kontoEpost').innerText = nåværendeEpost;
     document.getElementById('kontoTrinn').innerText = bruker.trinn.join(", ");
     document.getElementById('kontoKontakt').innerText = bruker.kontaktlaerer || "Ingen";
 
-    // 3. Generer knapper for å bytte konto (paloggingsmail)
+    // 6. Generer knapper for å bytte konto
     const listeDiv = document.getElementById('byttEpostListe');
-    listeDiv.innerHTML = ''; // Tøm listen først
+    listeDiv.innerHTML = '';
 
-    bruker.paloggingsmail.forEach(mail => {
-        if (mail !== nåværendeEpost) {
+    // Lag en liste over alle mulige mailer for denne brukeren
+    let alleMailer = [bruker.epost];
+    if (Array.isArray(bruker.paloggingsmail)) {
+        alleMailer = [...alleMailer, ...bruker.paloggingsmail];
+    } else if (bruker.paloggingsmail) {
+        alleMailer.push(bruker.paloggingsmail);
+    }
+
+    // Lag knapper for de mailene man IKKE bruker akkurat nå
+    alleMailer.forEach(mail => {
+        if (mail.toLowerCase() !== nåværendeEpost.toLowerCase()) {
             const btn = document.createElement('button');
             btn.innerText = `Bytt til ${mail}`;
-            btn.style = "padding: 8px; cursor: pointer; border: 1px solid #007bff; background: white; color: #007bff; border-radius: 4px; text-align: left;";
+            btn.style = "padding: 10px; cursor: pointer; border: 1px solid #007bff; background: white; color: #007bff; border-radius: 4px; text-align: left; margin-bottom: 5px; font-weight: bold;";
             btn.onclick = () => byttBrukerEpost(mail);
             listeDiv.appendChild(btn);
         }
     });
 
     document.getElementById('modalKonto').style.display = 'block';
-}
-
-function lukkKonto() {
-    document.getElementById('modalKonto').style.display = 'none';
-}
-
-function byttBrukerEpost(nyMail) {
-    if (confirm(`Vil du bytte påloggingsadresse til ${nyMail}?`)) {
-        // Her oppdaterer du e-posten i systemet ditt
-        localStorage.setItem('brukerEpost', nyMail);
-        
-        // Kjør dine eksisterende funksjoner for å oppdatere siden
-        location.reload(); // Enkel løsning: Last inn siden på nytt med ny mail
-    }
 }
 
 
