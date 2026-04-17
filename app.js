@@ -167,31 +167,29 @@ function oppdaterMenyBasertPaaRolle(brukerData) {
     }
 }
 
-// Eksempel på hvordan du kaller denne (legges der du håndterer innlogging)
-// oppdaterMenyBasertPaaRolle(innloggetBruker);
-
-
 function aapneKonto() {
-    // 1. Definer hvilket skoleår vi skal se i (bør kanskje hentes fra en variabel i appen din)
     const skoleaar = "2025-2026"; 
-    
-    // 2. Hent listen fra window.ansatteData
     const ansatteListe = window.ansatteData && window.ansatteData[skoleaar];
 
-    if (!ansatteListe) {
-        console.error("Fant ikke ansattedata for " + skoleaar);
+    // HENT E-POST: Sjekk først localStorage, deretter navnet i userInfo-feltet
+    let nåværendeEpost = localStorage.getItem('brukerEpost');
+    
+    // Hvis localStorage er tom, prøver vi å hente fra userInfo-spanen i headeren din
+    if (!nåværendeEpost) {
+        nåværendeEpost = document.getElementById('userInfo').innerText;
+    }
+
+    console.log("Leter etter bruker med e-post:", nåværendeEpost);
+    console.log("Tilgjengelige data:", ansatteListe);
+
+    if (!nåværendeEpost || nåværendeEpost === "") {
+        alert("Systemet fant ikke din påloggingsadresse. Prøv å logge ut og inn igjen.");
         return;
     }
 
-    // 3. Finn nåværende e-post (den som er logget inn nå)
-    // Her må du bruke navnet på variabelen du lagrer innlogget e-post i
-    const nåværendeEpost = localStorage.getItem('brukerEpost') || ""; 
-
-    // 4. Finn brukeren i listen
     const bruker = ansatteListe.find(a => {
-        const epostMatch = a.epost.toLowerCase() === nåværendeEpost.toLowerCase();
+        const epostMatch = a.epost && a.epost.toLowerCase() === nåværendeEpost.toLowerCase();
         
-        // Sjekk paloggingsmail (håndterer både tekststreng og array)
         let paloggingMatch = false;
         if (Array.isArray(a.paloggingsmail)) {
             paloggingMatch = a.paloggingsmail.some(m => m.toLowerCase() === nåværendeEpost.toLowerCase());
@@ -203,38 +201,16 @@ function aapneKonto() {
     });
 
     if (!bruker) {
-        alert("Fant ingen brukerdata for: " + nåværendeEpost);
+        alert("Fant ingen brukerdata for: " + nåværendeEpost + "\n\nSjekk at e-posten stemmer med listen i ansatte.js.");
         return;
     }
 
-    // 5. Oppdater modalen
+    // ... resten av koden (fylling av modal) er lik som før
     document.getElementById('kontoEpost').innerText = nåværendeEpost;
     document.getElementById('kontoTrinn').innerText = bruker.trinn.join(", ");
     document.getElementById('kontoKontakt').innerText = bruker.kontaktlaerer || "Ingen";
-
-    // 6. Generer knapper for å bytte konto
-    const listeDiv = document.getElementById('byttEpostListe');
-    listeDiv.innerHTML = '';
-
-    // Lag en liste over alle mulige mailer for denne brukeren
-    let alleMailer = [bruker.epost];
-    if (Array.isArray(bruker.paloggingsmail)) {
-        alleMailer = [...alleMailer, ...bruker.paloggingsmail];
-    } else if (bruker.paloggingsmail) {
-        alleMailer.push(bruker.paloggingsmail);
-    }
-
-    // Lag knapper for de mailene man IKKE bruker akkurat nå
-    alleMailer.forEach(mail => {
-        if (mail.toLowerCase() !== nåværendeEpost.toLowerCase()) {
-            const btn = document.createElement('button');
-            btn.innerText = `Bytt til ${mail}`;
-            btn.style = "padding: 10px; cursor: pointer; border: 1px solid #007bff; background: white; color: #007bff; border-radius: 4px; text-align: left; margin-bottom: 5px; font-weight: bold;";
-            btn.onclick = () => byttBrukerEpost(mail);
-            listeDiv.appendChild(btn);
-        }
-    });
-
+    
+    // Vis modalen
     document.getElementById('modalKonto').style.display = 'block';
 }
 
