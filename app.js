@@ -100,14 +100,29 @@ async function logout() {
 
 auth.onAuthStateChanged(user => {
     if (user) {
-        // --- NYTT: Lagre e-posten i localStorage slik at "Min konto" finner den ---
-        localStorage.setItem('brukerEpost', user.email);
-        // ------------------------------------------------------------------------
-
+        // Standard innloggings-oppsett
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
         document.getElementById('userInfo').innerText = user.displayName;
+        localStorage.setItem('brukerEpost', user.email);
 
+        // --- ADMIN-SJEKK MOT ANSATTEDATA ---
+        
+        // 1. Finn riktig skoleår (samme som i aapneKonto)
+        const idag = new Date();
+        const aar = idag.getFullYear();
+        const skoleaar = (idag.getMonth() >= 7) ? `${aar}-${aar + 1}` : `${aar - 1}-${aar}`;
+        
+        // 2. Hent listen fra ansatte.js
+        const ansatteListe = window.ansatteData && window.ansatteData[skoleaar];
+        
+        // 3. Finn profilen til den som logger inn (matcher på Navn)
+        const brukerProfil = ansatteListe?.find(a => a.navn.toLowerCase() === user.displayName.toLowerCase());
+
+        // 4. Send profilen til funksjonen som viser/skjuler Admin-knappen
+        oppdaterMenyBasertPaaRolle(brukerProfil);
+
+        // Resten av dine funksjoner
         oppdaterAlleAarsMenyer(); 
         registrerInnlogging(user); 
         hentRegister(); 
@@ -115,11 +130,7 @@ auth.onAuthStateChanged(user => {
     } else {
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('mainContent').style.display = 'none';
-        
-        // --- NYTT: Fjern e-posten når man logger ut ---
         localStorage.removeItem('brukerEpost');
-        // ----------------------------------------------
-        
         sessionStorage.removeItem('currentLogId');
     }
 });
@@ -191,12 +202,15 @@ function toggleDropdown() {
 // KJØRES VED INNLOGGING: Sjekk om bruker er Admin
 function oppdaterMenyBasertPaaRolle(brukerData) {
     const adminLink = document.getElementById('adminLink');
-    
-    // Sjekker om trinn-arrayen inneholder "Adm"
+    if (!adminLink) return; // Sikkerhet hvis ID-en mangler i HTML
+
+    // Sjekker om brukeren finnes og om "Adm" er i trinn-listen
     if (brukerData && brukerData.trinn && brukerData.trinn.includes("Adm")) {
         adminLink.style.display = 'block';
+        console.log("Admin-tilgang innvilget for:", brukerData.navn);
     } else {
         adminLink.style.display = 'none';
+        console.log("Vanlig brukertilgang.");
     }
 }
 
