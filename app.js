@@ -171,49 +171,60 @@ function aapneKonto() {
     const skoleaar = "2025-2026"; 
     const ansatteListe = window.ansatteData && window.ansatteData[skoleaar];
 
-    // HENT E-POST: Sjekk først localStorage, deretter navnet i userInfo-feltet
-    let nåværendeEpost = localStorage.getItem('brukerEpost');
-    
-    // Hvis localStorage er tom, prøver vi å hente fra userInfo-spanen i headeren din
-    if (!nåværendeEpost) {
-        nåværendeEpost = document.getElementById('userInfo').innerText;
-    }
+    // Henter navnet slik det står i headeren (f.eks. "Tor Skarprud")
+    const innloggetNavn = document.getElementById('userInfo').innerText.trim();
 
-    console.log("Leter etter bruker med e-post:", nåværendeEpost);
-    console.log("Tilgjengelige data:", ansatteListe);
+    console.log("Leter etter bruker med navn:", innloggetNavn);
 
-    if (!nåværendeEpost || nåværendeEpost === "") {
-        alert("Systemet fant ikke din påloggingsadresse. Prøv å logge ut og inn igjen.");
+    if (!innloggetNavn) {
+        alert("Fant ikke navnet på innlogget bruker.");
         return;
     }
 
-    const bruker = ansatteListe.find(a => {
-        const epostMatch = a.epost && a.epost.toLowerCase() === nåværendeEpost.toLowerCase();
-        
-        let paloggingMatch = false;
-        if (Array.isArray(a.paloggingsmail)) {
-            paloggingMatch = a.paloggingsmail.some(m => m.toLowerCase() === nåværendeEpost.toLowerCase());
-        } else if (a.paloggingsmail) {
-            paloggingMatch = a.paloggingsmail.toLowerCase() === nåværendeEpost.toLowerCase();
-        }
-        
-        return epostMatch || paloggingMatch;
-    });
+    // Vi leter nå etter match i "navn"-feltet
+    const bruker = ansatteListe.find(a => a.navn.toLowerCase() === innloggetNavn.toLowerCase());
 
     if (!bruker) {
-        alert("Fant ingen brukerdata for: " + nåværendeEpost + "\n\nSjekk at e-posten stemmer med listen i ansatte.js.");
+        alert("Fant ingen data i ansatte.js for navnet: " + innloggetNavn);
         return;
     }
 
-    // ... resten av koden (fylling av modal) er lik som før
-    document.getElementById('kontoEpost').innerText = nåværendeEpost;
+    // Fyll ut informasjonen i modalen
+    // Vi viser den primære e-posten som "Logget inn som"
+    document.getElementById('kontoEpost').innerText = bruker.epost;
     document.getElementById('kontoTrinn').innerText = bruker.trinn.join(", ");
     document.getElementById('kontoKontakt').innerText = bruker.kontaktlaerer || "Ingen";
-    
-    // Vis modalen
+
+    // Generer knapper for å bytte påloggingsadresse
+    const listeDiv = document.getElementById('byttEpostListe');
+    listeDiv.innerHTML = '';
+
+    // Finn alle mailer knyttet til denne personen
+    let alleMailer = [];
+    if (Array.isArray(bruker.paloggingsmail)) {
+        alleMailer = [...bruker.paloggingsmail];
+    } else if (bruker.paloggingsmail) {
+        alleMailer.push(bruker.paloggingsmail);
+    }
+
+    // Legg til hoved-eposten i listen hvis den ikke er der
+    if (!alleMailer.includes(bruker.epost)) {
+        alleMailer.unshift(bruker.epost);
+    }
+
+    // Lag knapper
+    alleMailer.forEach(mail => {
+        const btn = document.createElement('button');
+        btn.innerText = `Bruk ${mail} ved pålogging`;
+        btn.style = "padding: 10px; cursor: pointer; border: 1px solid #007bff; background: white; color: #007bff; border-radius: 4px; text-align: left; margin-bottom: 5px; font-weight: bold;";
+        
+        // Denne funksjonen må lagre valget slik at innloggings-logikken din bruker den neste gang
+        btn.onclick = () => byttBrukerEpost(mail);
+        listeDiv.appendChild(btn);
+    });
+
     document.getElementById('modalKonto').style.display = 'block';
 }
-
 
 // --- 3. HJELPEFUNKSJONER ---
 function hentOppsett() {
