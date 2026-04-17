@@ -1033,11 +1033,27 @@ async function visLaererDetaljer(valgtEpost) {
         }
     });
 
-    if (!laererNavn) return;
+if (!laererNavn) return;
 
     // Oppdater UI
     document.getElementById('detaljerNavn').innerText = `Statistikk for ${laererNavn}`;
     document.getElementById('modalLaererDetaljer').style.display = 'block';
+
+    // ============================================================
+    // HER LIMER DU INN DENNE DELEN:
+    // ============================================================
+    const loggSnapshot = await db.ref('systemLogg').once('value');
+    const loggData = loggSnapshot.val() || {};
+    const mineIderArray = Array.from(mineIder); // Gjør Set om til liste for filter
+
+    const antallInnlogginger = Object.values(loggData).filter(l => {
+        if (!l.epost) return false;
+        // Sjekker om eposten i loggen (i små bokstaver) finnes i din samling av ID-er
+        return mineIderArray.includes(l.epost.toLowerCase().trim());
+    }).length;
+
+    document.getElementById('detaljerInnlogginger').innerText = antallInnlogginger;
+    // ============================================================
 
     let totaltAntallProever = 0;
     let tabellHtml = `
