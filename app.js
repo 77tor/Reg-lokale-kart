@@ -513,8 +513,8 @@ function oppdaterLaaseVisning(erLaast) {
 
     if (erLaast) {
         tabell.classList.add('is-locked');
-        if (tekstElement) tekstElement.innerText = "Gjenåpne prøven";
-        if (ikonElement) ikonElement.innerText = "🔓";
+        if (tekstElement) tekstElement.innerText = "Ferdigstilt!";
+        if (ikonElement) ikonElement.innerText = "🔒";
         knapp.style.backgroundColor = "#27ae60"; // Grønn for gjenåpne
         
 // GJØR IMPORT-KNAPPEN INAKTIV
@@ -538,7 +538,7 @@ function oppdaterLaaseVisning(erLaast) {
     } else {
         tabell.classList.remove('is-locked');
         if (tekstElement) tekstElement.innerText = "Ferdigstille prøven";
-        if (ikonElement) ikonElement.innerText = "🔒";
+        if (ikonElement) ikonElement.innerText = "🔓";
         knapp.style.backgroundColor = "#d35400"; // Oransje for ferdigstille
 
 // GJØR IMPORT-KNAPPEN AKTIV IGJEN
