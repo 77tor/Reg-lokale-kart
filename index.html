@@ -332,6 +332,45 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     transform: scale(1.2);
     transition: transform 0.2s;
 }
+
+/* Container for dropdown */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+/* Selve menyboksen */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: white;
+    min-width: 180px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1000;
+    border-radius: 8px;
+    margin-top: 5px;
+    overflow: hidden;
+}
+
+/* Linkene i menyen */
+.dropdown-content a {
+    color: #333;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    font-size: 0.9em;
+    transition: background 0.2s;
+}
+
+.dropdown-content a:hover {
+    background-color: #f1f1f1;
+}
+
+/* Vise menyen */
+.show {
+    display: block;
+}
 </style>
 </head>
 <body>
@@ -343,28 +382,30 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 
 <div class="container no-print" id="mainContent" style="display: none;">
     <div class="top-header-bar no-print">
-    <div class="header-left">
-        <img src="kart_02.png" alt="Logo" class="top-logo">
-        <h1 id="printTittel" style="margin: 0; font-size: 1.2em; color: #2c3e50;"></h1>
-    </div>
+        
+        <div class="header-left">
+            <img src="kart_02.png" alt="Logo" class="top-logo">
+            <h1 id="printTittel" style="margin: 0; font-size: 1.2em; color: #2c3e50;"></h1>
+        </div> <div class="header-right">
+            <button onclick="aapneVeiledning()" title="Lærerveiledning" 
+                    style="background: #007bff; color: white; border: none; cursor: pointer; 
+                           margin-right: 10px; width: 24px; height: 24px; border-radius: 50%; 
+                           font-weight: bold; font-family: serif; font-style: italic; font-size: 14px;
+                           display: flex; align-items: center; justify-content: center;">
+                i
+            </button>
 
-    <div class="header-right">
-
-        <button onclick="aapneVeiledning()" title="Lærerveiledning" 
-        style="background: #007bff; color: white; border: none; cursor: pointer; 
-               margin-right: 10px; width: 22px; height: 22px; border-radius: 50%; 
-               font-weight: bold; font-family: serif; font-style: italic; font-size: 14px;
-               display: flex; align-items: center; justify-content: center;">
-               i
-        </button>
-        <div class="user-pill">
-            👤 <span id="userInfo"></span>
-        </div>
-        <button class="btn btn-admin" onclick="sjekkAdminKode()">Admin</button>
-        <button class="btn btn-logout" onclick="logout()">Logg ut</button>
-    </div>
-</div>
-
+            <div class="dropdown">
+                <div class="user-pill" onclick="toggleDropdown()" style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                    👤 <span id="userInfo"></span> <small>▼</small>
+                </div>
+                
+                <div id="userDropdown" class="dropdown-content">
+                    <a href="#" onclick="aapneKonto()">👤 Min konto</a>
+                    <a href="#" onclick="aapneVeiledning()">📖 Lærerveiledning</a>
+                    <a href="#" id="adminLink" onclick="sjekkAdminKode()" style="display: none; border-top: 1px solid #eee;">🛠 Admin-panel</a>
+                    <a href="#" onclick="logout()" style="color: #d9534f; border-top: 1px solid #eee;">🚪 Logg ut</a>
+                </div> </div> </div> </div> </div> ```
 
 <div id="modalVeiledning" class="modal" style="display:none;">
     <div class="modal-content" style="width: 90% !important; max-width: 800px !important; margin: 1% auto !important;">

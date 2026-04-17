@@ -137,7 +137,38 @@ function registrerInnlogging(user) {
 }
 
 
+// Funksjon for å åpne/lukke menyen
+function toggleDropdown() {
+    document.getElementById("userDropdown").classList.toggle("show");
+}
 
+// Lukk menyen hvis brukeren klikker utenfor
+window.onclick = function(event) {
+    if (!event.target.closest('.dropdown')) {
+        var dropdowns = document.getElementsByClassName("dropdown-content");
+        for (var i = 0; i < dropdowns.length; i++) {
+            var openDropdown = dropdowns[i];
+            if (openDropdown.classList.contains('show')) {
+                openDropdown.classList.remove('show');
+            }
+        }
+    }
+}
+
+// KJØRES VED INNLOGGING: Sjekk om bruker er Admin
+function oppdaterMenyBasertPaaRolle(brukerData) {
+    const adminLink = document.getElementById('adminLink');
+    
+    // Sjekker om trinn-arrayen inneholder "Adm"
+    if (brukerData && brukerData.trinn && brukerData.trinn.includes("Adm")) {
+        adminLink.style.display = 'block';
+    } else {
+        adminLink.style.display = 'none';
+    }
+}
+
+// Eksempel på hvordan du kaller denne (legges der du håndterer innlogging)
+// oppdaterMenyBasertPaaRolle(innloggetBruker);
 
 
 
