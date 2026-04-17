@@ -171,6 +171,49 @@ function oppdaterMenyBasertPaaRolle(brukerData) {
 // oppdaterMenyBasertPaaRolle(innloggetBruker);
 
 
+function aapneKonto() {
+    // 1. Finn brukerdata (vi bruker e-posten som er lagret i systemet ditt nå)
+    const nåværendeEpost = localStorage.getItem('brukerEpost'); // Eller variabelen du bruker
+    const bruker = ansatte.find(a => a.epost === nåværendeEpost || a.paloggingsmail.includes(nåværendeEpost));
+
+    if (!bruker) return;
+
+    // 2. Fyll inn info i modalen
+    document.getElementById('kontoEpost').innerText = nåværendeEpost;
+    document.getElementById('kontoTrinn').innerText = bruker.trinn.join(", ");
+    document.getElementById('kontoKontakt').innerText = bruker.kontaktlaerer || "Ingen";
+
+    // 3. Generer knapper for å bytte konto (paloggingsmail)
+    const listeDiv = document.getElementById('byttEpostListe');
+    listeDiv.innerHTML = ''; // Tøm listen først
+
+    bruker.paloggingsmail.forEach(mail => {
+        if (mail !== nåværendeEpost) {
+            const btn = document.createElement('button');
+            btn.innerText = `Bytt til ${mail}`;
+            btn.style = "padding: 8px; cursor: pointer; border: 1px solid #007bff; background: white; color: #007bff; border-radius: 4px; text-align: left;";
+            btn.onclick = () => byttBrukerEpost(mail);
+            listeDiv.appendChild(btn);
+        }
+    });
+
+    document.getElementById('modalKonto').style.display = 'block';
+}
+
+function lukkKonto() {
+    document.getElementById('modalKonto').style.display = 'none';
+}
+
+function byttBrukerEpost(nyMail) {
+    if (confirm(`Vil du bytte påloggingsadresse til ${nyMail}?`)) {
+        // Her oppdaterer du e-posten i systemet ditt
+        localStorage.setItem('brukerEpost', nyMail);
+        
+        // Kjør dine eksisterende funksjoner for å oppdatere siden
+        location.reload(); // Enkel løsning: Last inn siden på nytt med ny mail
+    }
+}
+
 
 // --- 3. HJELPEFUNKSJONER ---
 function hentOppsett() {
