@@ -137,6 +137,22 @@ function registrerInnlogging(user) {
 }
 
 
+// Funksjon for å lukke konto-modalen
+function lukkKonto() {
+    const modal = document.getElementById('modalKonto');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Funksjon for å lukke veiledning-modalen (siden du også kaller denne)
+function lukkVeiledning() {
+    const modal = document.getElementById('modalVeiledning');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
 // --- INNLOGGINGSMENY ---
 window.addEventListener('click', function(event) {
     const modalKonto = document.getElementById('modalKonto');
