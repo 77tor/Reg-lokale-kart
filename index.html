@@ -339,26 +339,24 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 
 <div class="container no-print" id="mainContent" style="display: none;">
     <div class="top-header-bar no-print">
-        <div class="header-left">
-            <img src="kart_02.png" alt="Logo" class="top-logo">
-            <h1 id="printTittel" style="margin: 0; font-size: 1.2em; color: #2c3e50;"></h1>
-        </div>
-
-        <div class="header-right">
-            <div class="user-pill" style="display: inline-flex; align-items: center; padding-left: 8px;">
-                <button onclick="aapneVeiledning()" title="Lærerveiledning" 
-                        style="background: #007bff; color: white; border: none; cursor: pointer; 
-                               width: 20px; height: 20px; border-radius: 50%; 
-                               font-weight: bold; font-family: serif; font-style: italic; font-size: 13px;
-                               margin-right: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                    i
-                </button>
-                👤 <span id="userInfo"></span>
-            </div>
-            <button class="btn btn-admin" onclick="sjekkAdminKode()">Admin</button>
-            <button class="btn btn-logout" onclick="logout()">Logg ut</button>
-        </div>
+    <div class="header-left">
+        <img src="kart_02.png" alt="Logo" class="top-logo">
+        <h1 id="printTittel" style="margin: 0; font-size: 1.2em; color: #2c3e50;"></h1>
     </div>
+
+<div class="header-right">
+    <div class="user-pill">
+<button onclick="aapneVeiledning()" title="Lærerveiledning" 
+        style="background: #007bff; color: white; border: none; cursor: pointer; 
+               margin-right: 10px; width: 22px; height: 22px; border-radius: 50%; 
+               font-weight: bol; font-family: serif; font-style: italic; font-size: 14px;
+               display: flex; align-items: center; justify-content: center;">
+    i
+</button>
+        👤 <span id="userInfo"></span>
+    </div>
+    <button class="btn btn-admin" onclick="sjekkAdminKode()">Admin</button>
+    <button class="btn btn-logout" onclick="logout()">Logg ut</button>
 </div>
 
 
