@@ -939,7 +939,7 @@ function oppdaterLaererListe() {
 
     let filtrerte = gjeldendeAnsatte.filter(a => 
         a.navn.toLowerCase().includes(sok) || 
-        (Array.isArray(a.paloggingsmail) ? a.paloggingsmail.join(" ").toLowerCase().includes(sok) : (a.paloggingsmail || "").toLowerCase().includes(sok))
+        a.epost.toLowerCase().includes(sok)
     );
 
     filtrerte.sort((a, b) => {
@@ -949,177 +949,165 @@ function oppdaterLaererListe() {
         const erTallA = !isNaN(parseInt(verdiA));
         const erTallB = !isNaN(parseInt(verdiB));
 
+        // A. Prioritering: Tall-trinn (1-10) før tekst (Adm/Permisjon)
         if (erTallA && !erTallB) return -1;
         if (!erTallA && erTallB) return 1;
 
+        // B. Hvis begge er tall-trinn
         if (erTallA && erTallB) {
             const numA = parseInt(verdiA);
             const numB = parseInt(verdiB);
+            
             if (numA !== numB) return numA - numB;
             
             const klasseA = a.kontaktlaerer ? String(a.kontaktlaerer).toLowerCase() : "zzz";
             const klasseB = b.kontaktlaerer ? String(b.kontaktlaerer).toLowerCase() : "zzz";
+            
             if (klasseA !== klasseB) return klasseA.localeCompare(klasseB);
         }
 
+        // C. Hvis begge er tekst-trinn (Adm/Permisjon)
         if (!erTallA && !erTallB) {
             if (verdiA !== verdiB) return verdiA.localeCompare(verdiB);
         }
 
+        // D. Siste utvei: Sorter alfabetisk på navn
         return a.navn.localeCompare(b.navn);
     });
 
+    // 3. Generer HTML Tabell
     let html = `
-        <div style="max-height: 500px; overflow-y: auto; border: 1px solid #ddd;">
-            <table style="width:100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="position: sticky; top: 0; background: #f2f2f2; color: black; z-index: 10;">
-                        <th style="padding:12px; text-align:left; border-bottom:2px solid #2c3e50;">Navn / Påloggingsmail</th>
-                        <th style="padding:12px; text-align:left; border-bottom:2px solid #2c3e50;">Trinn</th>
-                        <th style="padding:12px; text-align:left; border-bottom:2px solid #2c3e50;">Rolle/Klasse</th>
-                    </tr>
-                </thead>
-                <tbody>`;
+        <table style="width:100%; border-collapse: collapse; margin-top:10px;">
+            <thead>
+                <tr style="background:#f2f2f2; text-align:left;">
+                    <th style="padding:12px; border-bottom:2px solid #ddd;">Navn</th>
+                    <th style="padding:12px; border-bottom:2px solid #ddd;">Trinn</th>
+                    <th style="padding:12px; border-bottom:2px solid #ddd;">Rolle/Klasse</th>
+                </tr>
+            </thead>
+            <tbody>`;
 
     filtrerte.forEach(a => {
         const trinnVisning = a.trinn && a.trinn.length > 0 ? a.trinn.join(", ") + ". trinn" : "Ikke satt";
         const rolleVisning = a.kontaktlaerer === "adm" ? "Administrasjon" : (a.kontaktlaerer || "Lærer");
 
-        // NY LOGIKK: Formaterer påloggingsmail (håndterer både tekst og liste/array)
-        let visningsMail = "";
-        if (Array.isArray(a.paloggingsmail)) {
-            visningsMail = a.paloggingsmail.join(", ");
-        } else {
-            visningsMail = a.paloggingsmail || "Mangler";
-        }
-
         html += `
             <tr style="border-bottom:1px solid #eee; cursor:pointer;" onclick="visLaererDetaljer('${a.epost}')" class="laerer-rad">
-                <td style="padding:10px;">
-                    <strong>${a.navn}</strong><br>
-                    <small style="color:#007bff; font-family: monospace;">${visningsMail}</small>
-                </td>
+                <td style="padding:10px;"><strong>${a.navn}</strong><br><small style="color:#666">${a.epost}</small></td>
                 <td style="padding:10px;">${trinnVisning}</td>
                 <td style="padding:10px;">${rolleVisning}</td>
             </tr>`;
     });
 
-    html += `</tbody></table></div>`;
-    container.innerHTML = filtrerte.length > 0 ? html : `<p style="padding:20px; text-align:center;">Ingen ansatte funnet for skoleåret ${valgtAar}.</p>`;
+    html += `</tbody></table>`;
+    container.innerHTML = filtrerte.length > 0 ? html : `<p style="padding:20px;">Ingen ansatte funnet for skoleåret ${valgtAar}.</p>`;
 }
 
 
-// --- LÆRERDETALJER (Endelig korrigert versjon)
-async function visLaererDetaljer(valgtEpost) {
-    // 1. Hent alle tilgjengelige år fra ansatteData
-    const alleAar = Object.keys(window.ansatteData);
-    
-    // 2. Finn læreren og samle alle e-poster de har brukt
-    let mineIder = new Set([valgtEpost.toLowerCase().trim()]);
-    let laererNavn = "";
+// --- LÆRERDETALJER
+async function visLaererDetaljer(epost) {
+    const valgtAar = document.getElementById('valgtAarLaerer').value;
+    const ansatt = window.ansatteData[valgtAar].find(a => a.epost === epost);
+    if (!ansatt) return;
 
-    alleAar.forEach(aar => {
-        const ansattIAar = window.ansatteData[aar].find(a => a.epost === valgtEpost);
-        if (ansattIAar) {
-            if (!laererNavn) laererNavn = ansattIAar.navn;
-            
-            if (ansattIAar.paloggingsmail) {
-                if (Array.isArray(ansattIAar.paloggingsmail)) {
-                    ansattIAar.paloggingsmail.forEach(m => mineIder.add(m.toLowerCase().trim()));
-                } else {
-                    mineIder.add(ansattIAar.paloggingsmail.toLowerCase().trim());
-                }
-            }
-        }
-    });
+    // Henter alle e-poster læreren kan ha brukt (både vanlig epost og påloggings-mailer)
+    const alleIder = Array.isArray(ansatt.paloggingsmail) 
+        ? [...ansatt.paloggingsmail, ansatt.epost] 
+        : [ansatt.paloggingsmail, ansatt.epost];
 
-    if (!laererNavn) return;
-
-    // Oppdater UI
-    document.getElementById('detaljerNavn').innerText = `Statistikk for ${laererNavn}`;
+    // Vis modal og sett navn
+    document.getElementById('detaljerNavn').innerText = `Statistikk for ${ansatt.navn}`;
     document.getElementById('modalLaererDetaljer').style.display = 'block';
 
-    let totaltAntallProever = 0;
+
+// --- 1. TELL INNLOGGINGER ---
+// Vi henter loggen direkte fra noden "systemLogg" som vi ser på bildet ditt
+const loggSnapshot = await db.ref('systemLogg').once('value');
+const loggData = loggSnapshot.val() || {};
+
+// Gjør alle lærerens e-poster til små bokstaver for trygg sammenligning
+const alleIderLower = alleIder.map(id => id.toLowerCase());
+
+const innlogginger = Object.values(loggData).filter(l => {
+    // Sjekker om epost-feltet i loggen (se bilde 2) matcher en av lærerens IDer
+    if (!l.epost) return false;
+    return alleIderLower.includes(l.epost.toLowerCase());
+}).length;
+
+document.getElementById('detaljerInnlogginger').innerText = innlogginger;
+
+    // --- 2. FINN PRØVER VIA "STATUS"-NODEN ---
+    const statusSnapshot = await db.ref(`status/${valgtAar}`).once('value');
+    const statusData = statusSnapshot.val() || {};
+    
+    let antallFullforte = 0;
+
+    // VIKTIG: Her starter vi tabell-variabelen
     let tabellHtml = `
-        <div style="max-height: 450px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
-            <table style="width:100%; border-collapse:collapse;">
-                <thead>
-                    <tr style="position: sticky; top: 0; background:#f2f2f2; color:black; z-index: 10;">
-                        <th style="padding:10px; text-align:left;">Prøve / Skoleår</th>
-                        <th style="padding:10px; text-align:center;">Elever</th>
-                        <th style="padding:10px; text-align:center;">Snitt %</th>
-                        <th style="padding:10px; text-align:center;">Under kritisk</th>
-                        <th style="padding:10px; text-align:left;">Dato</th>
-                    </tr>
-                </thead>
-                <tbody>`;
+        <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+            <thead>
+                <tr style="background:#34495e; color:white; text-align:left;">
+                    <th style="padding:10px;">Prøve / Klasse</th>
+                    <th style="padding:10px; text-align:center;">Snittskår</th>
+                    <th style="padding:10px; text-align:center;">Under kritisk</th>
+                    <th style="padding:10px;">Dato</th>
+                </tr>
+            </thead>
+            <tbody>`;
 
-    // 3. Gå gjennom hvert år (Her var feilen: 'av' er nå endret til 'of')
-    for (const aar of alleAar) {
-        const statusSnapshot = await db.ref(`status/${aar}`).once('value');
-        const statusData = statusSnapshot.val() || {};
+    // Går gjennom status-treet for å finne prøver læreren har ferdigstilt
+    for (let fag in statusData) {
+        for (let periode in statusData[fag]) {
+            for (let trinn in statusData[fag][periode]) {
+                for (let klasse in statusData[fag][periode][trinn]) {
+                    const info = statusData[fag][periode][trinn][klasse];
+                    
+                    if (alleIder.includes(info.endretAv)) {
+                        antallFullforte++;
 
-        for (let fag in statusData) {
-            for (let periode in statusData[fag]) {
-                for (let trinn in statusData[fag][periode]) {
-                    for (let klasse in statusData[fag][periode][trinn]) {
-                        const info = statusData[fag][periode][trinn][klasse];
-                        const registrertAv = (info.endretAv || "").toLowerCase().trim();
+                        // Hent faktiske elevresultater for denne klassen for å beregne snitt
+                        const kartleggingSti = `kartlegging/${valgtAar}/${fag}/${periode}/${trinn}/${klasse}`;
+                        const kartleggingSnapshot = await db.ref(kartleggingSti).once('value');
+                        const elever = kartleggingSnapshot.val() || {};
+                        const elevListe = Object.values(elever).filter(e => !e.slettet);
 
-                        if (mineIder.has(registrertAv)) {
-                            const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
-                            if (!oppsett) continue;
+                        let snittTekst = "Ingen data";
+                        let underKritiskTeller = 0;
+                        let kritiskFarge = "#27ae60"; // Grønn
 
-                            const maksPrElev = oppsett.oppgaver.reduce((s, o) => s + o.maks, 0);
-                            const kritiskGrense = oppsett.grenseTotal;
+                        if (elevListe.length > 0) {
+                            const totalSum = elevListe.reduce((acc, e) => acc + (Number(e.sum) || 0), 0);
+                            snittTekst = (totalSum / elevListe.length).toFixed(1) + " p";
 
-                            const kartSnapshot = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}`).once('value');
-                            const elever = kartSnapshot.val() || {};
+                            underKritiskTeller = elevListe.filter(e => {
+                                const sum = Number(e.sum) || 0;
+                                const grense = Number(e.kritiskGrense) || 15; // Fallback til 15
+                                return sum < grense;
+                            }).length;
 
-                            let totaltIKlassen = Object.keys(elever).length;
-                            let deltakere = 0;
-                            let sumPoeng = 0;
-                            let underKritisk = 0;
-
-                            Object.values(elever).forEach(elev => {
-                                if (elev && elev.sum !== undefined && elev.sum !== "" && elev.sum !== "Ikke deltatt" && !elev.ikkeGjennomfort) {
-                                    const p = parseFloat(elev.sum);
-                                    if (!isNaN(p)) {
-                                        deltakere++;
-                                        sumPoeng += p;
-                                        if (p < kritiskGrense) underKritisk++;
-                                    }
-                                }
-                            });
-
-                            if (deltakere > 0) {
-                                totaltAntallProever++;
-                                const snitt = Math.round((sumPoeng / (deltakere * maksPrElev)) * 100);
-                                
-                                tabellHtml += `
-                                    <tr style="border-bottom:1px solid #ddd;">
-                                        <td style="padding:10px;">
-                                            <strong>${fag}-${trinn}${klasse}-${periode}</strong><br>
-                                            <small style="color: #666;">Skoleår: ${aar}</small>
-                                        </td>
-                                        <td style="padding:10px; text-align:center;">${deltakere} / ${totaltIKlassen}</td>
-                                        <td style="padding:10px; text-align:center; font-weight:bold;">${snitt}%</td>
-                                        <td style="padding:10px; text-align:center; color:${underKritisk > 0 ? '#e74c3c' : '#27ae60'};">
-                                            <strong>${underKritisk}</strong>
-                                        </td>
-                                        <td style="padding:10px;"><small>${info.dato ? info.dato.split(',')[0] : "-"}</small></td>
-                                    </tr>`;
-                            }
+                            if (underKritiskTeller > 0) kritiskFarge = "#e74c3c"; // Rød
                         }
+
+                        tabellHtml += `
+                            <tr style="border-bottom:1px solid #ddd;">
+                                <td style="padding:10px;"><strong>${fag} (${periode})</strong><br><small>${trinn}. trinn - ${klasse}</small></td>
+                                <td style="padding:10px; text-align:center;">${snittTekst}</td>
+                                <td style="padding:10px; text-align:center; color:${kritiskFarge}; font-weight:bold;">${underKritiskTeller} elever</td>
+                                <td style="padding:10px;"><small>${info.dato ? info.dato.split(',')[0] : "Ukjent"}</small></td>
+                            </tr>`;
                     }
                 }
             }
         }
     }
 
-    tabellHtml += `</tbody></table></div>`;
-    document.getElementById('detaljerAntallProever').innerText = totaltAntallProever;
-    document.getElementById('laererProeveListe').innerHTML = totaltAntallProever > 0 ? tabellHtml : "<p style='padding:20px;'>Ingen prøver funnet.</p>";
+    tabellHtml += `</tbody></table>`;
+
+    // Oppdaterer telleren og setter inn tabellen i modalen
+    document.getElementById('detaljerAntallProever').innerText = antallFullforte;
+    document.getElementById('laererProeveListe').innerHTML = antallFullforte > 0 
+        ? tabellHtml 
+        : "<p style='padding:20px; text-align:center; color:#666;'>Ingen ferdigstilte prøver funnet på denne læreren.</p>";
 }
 // ---SLUTT PÅ LÆRERDETALJER
 
