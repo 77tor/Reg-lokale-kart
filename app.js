@@ -137,37 +137,25 @@ function registrerInnlogging(user) {
 }
 
 
-// Denne sørger for at menyen lukkes når du klikker utenfor
-window.onclick = function(event) {
-    // Sjekk om klikket IKKE traff selve user-pill (navnet/pila)
-    if (!event.target.closest('.user-pill')) {
-        var dropdowns = document.getElementsByClassName("dropdown-content");
-        for (var i = 0; i < dropdowns.length; i++) {
-            var openDropdown = dropdowns[i];
-            // Hvis menyen har klassen 'show', fjern den
-            if (openDropdown.classList.contains('show')) {
-                openDropdown.classList.remove('show');
-            }
-        }
-    }
-}
-
-// Funksjon for å lukke konto-modalen
-function lukkKonto() {
-    const modal = document.getElementById('modalKonto');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-// Valgfritt: Lukke modalen hvis man klikker på den mørke bakgrunnen
+// --- INNLOGGINGSMENY ---
 window.addEventListener('click', function(event) {
     const modalKonto = document.getElementById('modalKonto');
     const modalVeiledning = document.getElementById('modalVeiledning');
-    
+    const dropdown = document.getElementById("userDropdown");
+
+    // 1. Lukk dropdown hvis man klikker utenfor navne-boksen
+    if (!event.target.closest('.user-pill')) {
+        if (dropdown && dropdown.classList.contains('show')) {
+            dropdown.classList.remove('show');
+        }
+    }
+
+    // 2. Lukk konto-modal hvis man klikker på det mørke feltet
     if (event.target === modalKonto) {
         lukkKonto();
     }
+    
+    // 3. Lukk veiledning-modal hvis man klikker på det mørke feltet
     if (event.target === modalVeiledning) {
         lukkVeiledning();
     }
