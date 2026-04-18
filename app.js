@@ -167,6 +167,13 @@ function lukkVeiledning() {
     const modal = document.getElementById('modalVeiledning');
     if (modal) {
         modal.style.display = 'none';
+        
+        // Finn videoen inni modalen og sett den på pause
+        const video = modal.querySelector('video');
+        if (video) {
+            video.pause();
+            // Valgfritt: video.currentTime = 0; // Bruk denne hvis du vil at videoen skal starte forfra neste gang
+        }
     }
 }
 
