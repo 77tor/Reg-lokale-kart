@@ -107,20 +107,33 @@ auth.onAuthStateChanged(user => {
         localStorage.setItem('brukerEpost', user.email);
         sjekkVelkomstPopup(user);
 
-        // --- ADMIN-SJEKK MOT ANSATTEDATA ---
+        // --- ADMIN-SJEKK MOT ANSATTEDATA (Basert på e-post) ---
         
-        // 1. Finn riktig skoleår (samme som i aapneKonto)
         const idag = new Date();
         const aar = idag.getFullYear();
         const skoleaar = (idag.getMonth() >= 7) ? `${aar}-${aar + 1}` : `${aar - 1}-${aar}`;
-        
-        // 2. Hent listen fra ansatte.js
         const ansatteListe = window.ansatteData && window.ansatteData[skoleaar];
         
-        // 3. Finn profilen til den som logger inn (matcher på Navn)
-        const brukerProfil = ansatteListe?.find(a => a.navn.toLowerCase() === user.displayName.toLowerCase());
+        // NY LOGIKK FOR Å FINNE BRUKER:
+        // Vi leter etter en match mellom user.email og enten 'epost' eller 'paloggingsmail'
+        const brukerProfil = ansatteListe?.find(a => {
+            const loginMail = user.email.toLowerCase();
+            const hovedMail = a.epost.toLowerCase();
+            
+            // Sjekk mot hoved-epost
+            if (hovedMail === loginMail) return true;
+            
+            // Sjekk mot paloggingsmail (håndterer både tekst og array)
+            if (Array.isArray(a.paloggingsmail)) {
+                return a.paloggingsmail.some(m => m.toLowerCase() === loginMail);
+            } else if (a.paloggingsmail) {
+                return a.paloggingsmail.toLowerCase() === loginMail;
+            }
+            
+            return false;
+        });
 
-        // 4. Send profilen til funksjonen som viser/skjuler Admin-knappen
+        // Nå sender vi den spesifikke profilen som matcher e-posten til rollesjekken
         oppdaterMenyBasertPaaRolle(brukerProfil);
 
         // Resten av dine funksjoner
