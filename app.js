@@ -79,7 +79,10 @@ function login() {
 }
 
 async function logout() { 
-    // Før vi logger ut, prøver vi å oppdatere loggen med varighet
+    // 1. Skjul dropdown-menyen umiddelbart for en raskere brukeropplevelse
+    const dropdown = document.getElementById("userDropdown");
+    if (dropdown) dropdown.classList.remove("show");
+
     const logId = sessionStorage.getItem('currentLogId');
     if (logId) {
         try {
@@ -88,30 +91,38 @@ async function logout() {
             const data = snapshot.val();
             if (data && data.innLogget) {
                 const minutter = Math.round((utTid - data.innLogget) / 60000);
+                // Vi bruker await her så vi er sikre på at loggen lagres før vi kastes ut
                 await db.ref('systemLogg/' + logId).update({
                     utLogget: utTid,
                     varighet: minutter + " min"
                 });
             }
-        } catch (e) { console.log("Kunne ikke oppdatere utlogget-tid"); }
+        } catch (e) { 
+            console.log("Kunne ikke oppdatere utlogget-tid"); 
+        }
     }
-    auth.signOut(); 
+
+    // 2. Logg ut fra Firebase
+    await auth.signOut(); 
+    
+    // 3. Valgfritt: Tving en oppfriskning av siden for å tømme alle variabler helt
+    // window.location.reload(); 
 }
 
 auth.onAuthStateChanged(user => {
     if (user) {
-        // Standard innloggings-oppsett
+        // 1. UI Oppsett
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
         localStorage.setItem('brukerEpost', user.email);
-        sjekkVelkomstPopup(user);
 
-        // --- ADMIN-SJEKK OG PROFIL-FINNER ---
+        // 2. Finn skoleår
         const idag = new Date();
         const aar = idag.getFullYear();
         const skoleaar = (idag.getMonth() >= 7) ? `${aar}-${aar + 1}` : `${aar - 1}-${aar}`;
         const ansatteListe = window.ansatteData && window.ansatteData[skoleaar];
         
+        // 3. Finn profilen basert på e-post (IKKE navn)
         const brukerProfil = ansatteListe?.find(a => {
             const loginMail = user.email.toLowerCase();
             const hovedMail = a.epost.toLowerCase();
@@ -124,22 +135,33 @@ auth.onAuthStateChanged(user => {
             return false;
         });
 
-        // --- HER ER ENDRINGEN ---
-        // Vi setter navnet fra ansatte.js (f.eks. "Tor Pettersen") hvis vi fant en profil.
-        // Hvis ikke (fallback), bruker vi navnet fra Google.
+        // 4. Sett visningsnavn og sjekk admin-rolle
         const visningsNavn = brukerProfil ? brukerProfil.navn : user.displayName;
         document.getElementById('userInfo').innerText = visningsNavn;
-        // ------------------------
-
+        
         oppdaterMenyBasertPaaRolle(brukerProfil);
 
-        // Resten av dine funksjoner
+        // 5. Start resten av systemet
+        sjekkVelkomstPopup(user);
         oppdaterAlleAarsMenyer(); 
         registrerInnlogging(user); 
         hentRegister(); 
         hentData();     
+
     } else {
-        // ... (utloggings-kode)
+        // ... (din else-blokk som nullstiller alt) ...
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('mainContent').style.display = 'none';
+        document.getElementById('userInfo').innerText = "";
+        localStorage.removeItem('brukerEpost');
+        sessionStorage.removeItem('currentLogId');
+        
+        const adminLink = document.getElementById('adminLink');
+        if (adminLink) adminLink.style.display = 'none';
+
+        lukkKonto();
+        lukkVeiledning();
+        // lukkVelkomst(); // Inkluder denne hvis funksjonen eksisterer
     }
 });
 
@@ -184,13 +206,14 @@ function lukkVeiledning() {
     }
 }
 
-// --- INNLOGGINGSMENY ---
+// --- INNLOGGINGSMENY & MODAL-HÅNDTERING ---
 window.addEventListener('click', function(event) {
     const modalKonto = document.getElementById('modalKonto');
     const modalVeiledning = document.getElementById('modalVeiledning');
+    const modalVelkomst = document.getElementById('modalVelkomst'); // Den nye popup-en
     const dropdown = document.getElementById("userDropdown");
 
-    // 1. Lukk dropdown hvis man klikker utenfor navne-boksen
+    // 1. Lukk dropdown hvis man klikker utenfor navne-boksen (user-pill)
     if (!event.target.closest('.user-pill')) {
         if (dropdown && dropdown.classList.contains('show')) {
             dropdown.classList.remove('show');
@@ -205,6 +228,11 @@ window.addEventListener('click', function(event) {
     // 3. Lukk veiledning-modal hvis man klikker på det mørke feltet
     if (event.target === modalVeiledning) {
         lukkVeiledning();
+    }
+
+    // 4. Lukk velkomst-modal hvis man klikker på det mørke feltet
+    if (event.target === modalVelkomst) {
+        lukkVelkomst();
     }
 });
 
