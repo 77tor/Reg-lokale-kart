@@ -151,6 +151,14 @@ input.alert-low {
     font-size: 0.9em;            /* Litt mindre tekst gir bedre oversikt */
 }
 
+/* Stil for deaktivert analyse-knapp */
+.btn-analyse:disabled {
+    opacity: 0.5;
+    filter: grayscale(1);
+    cursor: not-allowed;
+    pointer-events: none; /* Hindrer klikk-funksjonen */
+}
+
 /* --- BILDE-PREVIEW LOGIKK (FIKSET FOR MODAL VENSTRE) --- */
 .hjelpe-ikon-tekst { position: relative; cursor: help; border-bottom: 1px dotted #007bff; display: inline-flex; gap: 5px; align-items: center; color: #333; }
 
@@ -779,9 +787,9 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     <button class="btn btn-print" onclick="forberedPrint()">
         <span class="btn-icon">🖨️</span> Skriv ut
     </button>
-    <button class="btn btn-analyse" onclick="genererKlasseAnalyse()">
-        <span class="btn-icon">📊</span> Analyse
-    </button>
+<button id="btnAnalyse" class="btn btn-analyse" onclick="genererKlasseAnalyse()" disabled>
+    <span class="btn-icon">📊</span> Analyse
+</button>
     <button class="btn btn-excel" onclick="eksporter()">
         <span class="btn-icon">📤</span> Eksport
     </button>

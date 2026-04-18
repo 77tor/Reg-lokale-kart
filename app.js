@@ -391,6 +391,7 @@ function hentData() {
         const statusData = snapshot.val();
         const erLaast = statusData && statusData.laast === true;
         oppdaterLaaseVisning(erLaast); // Denne funksjonen styrer det visuelle
+        oppdaterAnalyseStatus(erLaast); // NY: Styrer analyse-knappen (aktiv/deaktivert)
     });
     // -----------------------------------------------------------
 
@@ -1615,6 +1616,18 @@ async function genererGjennomfoeringsData() {
     }
 }
 
+function oppdaterAnalyseStatus(erFerdig) {
+    const analyseBtn = document.getElementById('btnAnalyse');
+    if (!analyseBtn) return;
+
+    if (erFerdig) {
+        analyseBtn.disabled = false;
+        analyseBtn.title = "Se analyse"; // Tekst når man holder over
+    } else {
+        analyseBtn.disabled = true;
+        analyseBtn.title = "Prøven må ferdigstilles før analyse er tilgjengelig";
+    }
+}
       
 // --- KOMBINERT ANALYSE-KODE (Rettet versjon med alle sjekker) ---
 async function genererKlasseAnalyse() {
