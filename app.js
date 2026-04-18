@@ -103,37 +103,34 @@ auth.onAuthStateChanged(user => {
         // Standard innloggings-oppsett
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
-        document.getElementById('userInfo').innerText = user.displayName;
         localStorage.setItem('brukerEpost', user.email);
         sjekkVelkomstPopup(user);
 
-        // --- ADMIN-SJEKK MOT ANSATTEDATA (Basert på e-post) ---
-        
+        // --- ADMIN-SJEKK OG PROFIL-FINNER ---
         const idag = new Date();
         const aar = idag.getFullYear();
         const skoleaar = (idag.getMonth() >= 7) ? `${aar}-${aar + 1}` : `${aar - 1}-${aar}`;
         const ansatteListe = window.ansatteData && window.ansatteData[skoleaar];
         
-        // NY LOGIKK FOR Å FINNE BRUKER:
-        // Vi leter etter en match mellom user.email og enten 'epost' eller 'paloggingsmail'
         const brukerProfil = ansatteListe?.find(a => {
             const loginMail = user.email.toLowerCase();
             const hovedMail = a.epost.toLowerCase();
-            
-            // Sjekk mot hoved-epost
             if (hovedMail === loginMail) return true;
-            
-            // Sjekk mot paloggingsmail (håndterer både tekst og array)
             if (Array.isArray(a.paloggingsmail)) {
                 return a.paloggingsmail.some(m => m.toLowerCase() === loginMail);
             } else if (a.paloggingsmail) {
                 return a.paloggingsmail.toLowerCase() === loginMail;
             }
-            
             return false;
         });
 
-        // Nå sender vi den spesifikke profilen som matcher e-posten til rollesjekken
+        // --- HER ER ENDRINGEN ---
+        // Vi setter navnet fra ansatte.js (f.eks. "Tor Pettersen") hvis vi fant en profil.
+        // Hvis ikke (fallback), bruker vi navnet fra Google.
+        const visningsNavn = brukerProfil ? brukerProfil.navn : user.displayName;
+        document.getElementById('userInfo').innerText = visningsNavn;
+        // ------------------------
+
         oppdaterMenyBasertPaaRolle(brukerProfil);
 
         // Resten av dine funksjoner
@@ -142,10 +139,7 @@ auth.onAuthStateChanged(user => {
         hentRegister(); 
         hentData();     
     } else {
-        document.getElementById('loginScreen').style.display = 'flex';
-        document.getElementById('mainContent').style.display = 'none';
-        localStorage.removeItem('brukerEpost');
-        sessionStorage.removeItem('currentLogId');
+        // ... (utloggings-kode)
     }
 });
 
@@ -259,9 +253,11 @@ function oppdaterMenyBasertPaaRolle(brukerData) {
 }
 
 function aapneKonto() {
+    // 1. Lukk dropdown
     const dropdown = document.getElementById("userDropdown");
     if (dropdown) dropdown.classList.remove("show");
 
+    // 2. Finn skoleår
     let skoleaar = document.getElementById('velgSkoleaar')?.value;
     if (!skoleaar) {
         const idag = new Date();
@@ -270,32 +266,38 @@ function aapneKonto() {
     }
 
     const ansatteListe = window.ansatteData && window.ansatteData[skoleaar];
-    const innloggetNavn = document.getElementById('userInfo').innerText.trim();
-    const faktiskInnloggetEpost = localStorage.getItem('brukerEpost') || "Ikke registrert";
+    
+    // 3. Hent e-posten som faktisk er logget inn i Google
+    const innloggetEpost = localStorage.getItem('brukerEpost')?.toLowerCase();
 
-    const bruker = ansatteListe?.find(a => a.navn.toLowerCase() === innloggetNavn.toLowerCase());
+    // 4. Finn profilen som har denne e-posten (enten som hovedepost eller i paloggingsliste)
+    const bruker = ansatteListe?.find(a => {
+        const loginMail = innloggetEpost;
+        const hovedMail = a.epost.toLowerCase();
+        
+        if (hovedMail === loginMail) return true;
+        
+        if (Array.isArray(a.paloggingsmail)) {
+            return a.paloggingsmail.some(m => m.toLowerCase() === loginMail);
+        } else if (a.paloggingsmail) {
+            return a.paloggingsmail.toLowerCase() === loginMail;
+        }
+        return false;
+    });
 
     if (!bruker) {
-        alert("Fant ingen profil-data for: " + innloggetNavn);
+        alert("Fant ingen profil-data i ansatte.js for e-post: " + innloggetEpost);
         return;
     }
 
-    // FYLL UT FELTENE
-    document.getElementById('kontoNavn').innerText = bruker.navn; // Henter navnet fra ansatteData
-    document.getElementById('kontoEpost').innerText = faktiskInnloggetEpost;
+    // 5. Fyll ut feltene i modalen med data fra riktig profil
+    document.getElementById('kontoNavn').innerText = bruker.navn; 
+    document.getElementById('kontoEpost').innerText = innloggetEpost;
     document.getElementById('kontoTrinn').innerText = bruker.trinn.join(", ");
     document.getElementById('kontoKontakt').innerText = bruker.kontaktlaerer || "Ingen";
 
+    // 6. Vis modalen
     document.getElementById('modalKonto').style.display = 'block';
-}
-
-// DENNE MÅ DU HA MED FOR AT KNAPPENE SKAL VIRKE:
-function byttBrukerEpost(nyMail) {
-    if (confirm("Vil du endre din foretrukne påloggingsadresse til " + nyMail + "?")) {
-        localStorage.setItem('brukerEpost', nyMail);
-        alert("Valgt e-post er lagret. Den vil brukes ved neste pålogging.");
-        lukkKonto();
-    }
 }
 
 // --- 3. HJELPEFUNKSJONER ---
