@@ -449,6 +449,7 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
                     <a href="#" onclick="aapneKonto()">👤 Min konto</a>
                     <a href="#" onclick="aapneVeiledning()">📖 Lærerveiledning</a>
                     <a href="#" onclick="aapneOppgaveOversikt()">📝 Prøvene</a>
+                    <a href="#" onclick="aapneKontaktAdmin()">✉️ Melding til admin</a>
                     <a href="#" id="adminLink" onclick="aapneAdminPanel()" style="display: none; border-top: 1px solid #eee;">🛠 Admin-panel</a>
                     <a href="#" onclick="logout()" style="color: #d9534f; border-top: 1px solid #eee;">🚪 Logg ut</a>
                 </div> </div> </div> </div>
@@ -474,6 +475,22 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
         
         <div style="text-align: right; border-top: 1px solid #eee; padding: 15px;">
             <button class="btn" onclick="lukkKonto()">Lukk</button>
+        </div>
+    </div>
+</div>
+
+
+<div id="modalKontaktAdmin" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width: 500px; position: relative;">
+        <span class="close" onclick="lukkKontaktAdmin()">&times;</span>
+        <h2>✉️ Send melding til admin</h2>
+        <p>Har du spørsmål eller tilbakemeldinger? Skriv her:</p>
+        
+        <textarea id="adminKontaktTekst" style="width: 100%; height: 150px; padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-family: inherit; margin-bottom: 15px;" placeholder="Skriv din melding her..."></textarea>
+        
+        <div style="text-align: right;">
+            <button class="btn" onclick="lukkKontaktAdmin()" style="background: #ccc; margin-right: 5px;">Avbryt</button>
+            <button id="btnSendAdminMelding" class="btn" onclick="sendMeldingTilAdmin()">Send melding</button>
         </div>
     </div>
 </div>

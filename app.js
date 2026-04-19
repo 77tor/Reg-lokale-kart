@@ -1225,11 +1225,13 @@ function aapneVeiledning() {
     }
 }
 
-// ÉN felles lytter for alle klikk i hele systemet
+// --- ÉN felles lytter for alle klikk i hele systemet ---
 window.addEventListener('click', function(event) {
     const modalKonto = document.getElementById('modalKonto');
     const modalVeiledning = document.getElementById('modalVeiledning');
-    const modalVelkomst = document.getElementById('modalVelkomst'); // Den nye popup-en
+    const modalVelkomst = document.getElementById('modalVelkomst');
+    const modalOppgaver = document.getElementById('modalOppgaver'); // Lagt til
+    const modalKontaktAdmin = document.getElementById('modalKontaktAdmin'); // Lagt til for meldinger
     const dropdown = document.getElementById("userDropdown");
 
     // 1. Lukk dropdown hvis man klikker utenfor .user-pill
@@ -1239,20 +1241,14 @@ window.addEventListener('click', function(event) {
         }
     }
 
-    // 2. Lukk konto-modal hvis man klikker på den mørke bakgrunnen
-    if (event.target === modalKonto) {
-        lukkKonto();
-    }
+    // 2. Lukk modaler hvis man klikker på den mørke bakgrunnen
+    if (event.target === modalKonto) lukkKonto();
+    if (event.target === modalVeiledning) lukkVeiledning();
+    if (event.target === modalVelkomst) lukkVelkomst();
     
-    // 3. Lukk veiledning-modal hvis man klikker på den mørke bakgrunnen
-    if (event.target === modalVeiledning) {
-        lukkVeiledning();
-    }
-
-    // 4. Lukk velkomst-modal hvis man klikker på den mørke bakgrunnen
-    if (event.target === modalVelkomst) {
-        lukkVelkomst();
-    }
+    // 3. Nye sjekker for de siste modalene vi laget
+    if (event.target === modalOppgaver) lukkOppgaveOversikt();
+    if (event.target === modalKontaktAdmin) lukkKontaktAdmin();
 });
 
 // --- LÆRERSIDE ---
@@ -1557,7 +1553,7 @@ function hentAntallEleverIRegister(klasseNavn, aar) {
     return teller;
 }
 
-// --- EMAILJS SOM  ---
+// --- EMAILJS - UT  ---
 function sendEpostViaEmailJS(laererNavn, laererEpost, proeveNavn, sideUrl, stisti) {
     const params = {
         laererNavn: laererNavn,
@@ -1583,6 +1579,58 @@ function sendEpostViaEmailJS(laererNavn, laererEpost, proeveNavn, sideUrl, stist
         .catch((err) => {
             console.error("EmailJS Feil:", err);
             alert("❌ Feil ved sending.");
+        });
+}
+
+// --- EMAILJS - INN ---
+// Åpne og lukke modal
+function aapneKontaktAdmin() {
+    document.getElementById('modalKontaktAdmin').style.display = 'block';
+    const dropdown = document.getElementById("userDropdown");
+    if (dropdown) dropdown.classList.remove("show");
+}
+
+function lukkKontaktAdmin() {
+    document.getElementById('modalKontaktAdmin').style.display = 'none';
+    document.getElementById('adminKontaktTekst').value = ""; // Tøm feltet
+}
+
+// Sende-funksjonen
+function sendMeldingTilAdmin() {
+    const meldingTekst = document.getElementById('adminKontaktTekst').value;
+    const sendKnapp = document.getElementById('btnSendAdminMelding');
+    
+    if (!meldingTekst.trim()) {
+        return alert("Vennligst skriv en melding før du sender.");
+    }
+
+    // Hent navn på innlogget lærer (fra userInfo som vi satte opp i authState)
+    const fraNavn = document.getElementById('userInfo').innerText;
+    const fraEpost = localStorage.getItem('brukerEpost') || "Ukjent e-post";
+
+    sendKnapp.disabled = true;
+    sendKnapp.innerText = "Sender...";
+
+    const params = {
+        fraNavn: fraNavn,
+        fraEpost: fraEpost,
+        melding: meldingTekst
+    };
+
+    // Bruk samme service_id som i din forrige funksjon, 
+    // men bytt til din nye template_id (f.eks. template_admin_melding)
+    emailjs.send("service_paj6cqb", "template_gtjtsmj", params)
+        .then(() => {
+            alert("✅ Meldingen er sendt til administrator.");
+            lukkKontaktAdmin();
+            sendKnapp.disabled = false;
+            sendKnapp.innerText = "Send melding";
+        })
+        .catch((err) => {
+            console.error("EmailJS Feil:", err);
+            alert("❌ Feil ved sending av melding.");
+            sendKnapp.disabled = false;
+            sendKnapp.innerText = "Send melding";
         });
 }
 
