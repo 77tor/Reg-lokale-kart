@@ -211,6 +211,7 @@ window.addEventListener('click', function(event) {
     const modalKonto = document.getElementById('modalKonto');
     const modalVeiledning = document.getElementById('modalVeiledning');
     const modalVelkomst = document.getElementById('modalVelkomst'); // Den nye popup-en
+    const modalOppgaver = document.getElementById('modalOppgaver'); // Den nye modalen
     const dropdown = document.getElementById("userDropdown");
 
     // 1. Lukk dropdown hvis man klikker utenfor navne-boksen (user-pill)
@@ -233,6 +234,11 @@ window.addEventListener('click', function(event) {
     // 4. Lukk velkomst-modal hvis man klikker på det mørke feltet
     if (event.target === modalVelkomst) {
         lukkVelkomst();
+    }
+
+    // 5. Lukk oppgave-modal (Prøvene) hvis man klikker på det mørke feltet
+    if (event.target === modalOppgaver) {
+        lukkOppgaveOversikt();
     }
 });
 
