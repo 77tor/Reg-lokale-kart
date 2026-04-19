@@ -687,31 +687,33 @@ tHead.innerHTML = hode;
             }
 
 // --- HANDLING-KNAPPER (no-print) ---
-rad += `<td class="no-print" style="white-space: nowrap;">`; 
+            rad += `<td class="no-print" style="white-space: nowrap;">`; 
 
-// Vi sjekker 'laast' siden det er det du bruker i admin-panelet/Firebase
-const erFerdigstilt = (klasseData && klasseData.laast === true);
+            const erFerdigstilt = (typeof klasseData !== 'undefined' && klasseData && klasseData.laast === true);
 
-if (erSlettet) {
-    rad += `<button class="btn btn-hent" onclick="gjenopprettElev('${navn}')">Hent</button>`;
-} else {
-    if (d.oppgaver || erIkkeGjennomfort) {
-        rad += `<button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button> `;
-        rad += `<button class="btn btn-nullstill" style="margin-left:5px;" onclick="nullstillElev('${navn}')">Nullstill</button>`;
-        
-        // --- NY KNAPP: Alle resultater ---
-        // Denne dukker nå opp når admin har huket av for "Ferdig"
-        if (erFerdigstilt && d.oppgaver) {
-            rad += `<button class="btn" style="margin-left:5px; background-color: #4a5568; color: white; border: none;" onclick="visElevFagRapport('${navn}', '${vFag}')">📊 Alle resultater</button>`;
-        }
-    } else {
-        rad += `<button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button> `;
-        rad += `<button class="btn btn-slett" style="margin-left:5px;" onclick="slettElev('${navn}')">Slett</button>`;
-    }
-}
-rad += `</td></tr>`;
+            if (erSlettet) {
+                rad += `<button class="btn btn-hent" onclick="gjenopprettElev('${navn}')">Hent</button>`;
+            } else {
+                if (d.oppgaver || erIkkeGjennomfort) {
+                    rad += `<button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button> `;
+                    rad += `<button class="btn btn-nullstill" style="margin-left:5px;" onclick="nullstillElev('${navn}')">Nullstill</button>`;
+                    
+                    if (erFerdigstilt && d.oppgaver) {
+                        rad += `<button class="btn" style="margin-left:5px; background-color: #4a5568; color: white;" onclick="visElevFagRapport('${navn}', '${vFag}')">📊 Alle resultater</button>`;
+                    }
+                } else {
+                    rad += `<button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button> `;
+                    rad += `<button class="btn btn-slett" style="margin-left:5px;" onclick="slettElev('${navn}')">Slett</button>`;
+                }
+            } // Lukker else (erSlettet)
+            rad += `</td></tr>`;
 
-    // 3. Lag Gjennomsnittsrad (hvis det er data)
+            if (erSlettet) slettedeRader += rad;
+            else aktiveRader += rad;
+        } // Lukker if (erRiktigTrinnOgKlasse...)
+    }); // Lukker Object.keys.forEach
+
+    // 3. Lag Gjennomsnittsrad
     let snittHtml = "";
     if (antallAktiveMedData > 0) {
         snittHtml = `<tr class="snitt-rad" style="background:#edf2f7; font-weight:bold;"><td style="text-align:left">Gjennomsnitt ${vTrinn}${vKlasse}</td>`;
@@ -721,10 +723,9 @@ rad += `</td></tr>`;
         snittHtml += `<td> ${(totalSumKlasse / antallAktiveMedData).toFixed(1)} </td><td class="no-print"></td></tr>`;
     }
 
-    // 4. Oppdater tabellen i HTML-en (Aktive elever + Snitt + Slettede elever)
+    // 4. Oppdater tabellen i HTML-en
     tBody.innerHTML = aktiveRader + snittHtml + slettedeRader;
-} 
-// <--- HER SLUTTER FUNKSJONEN. Ingen kode etter dette punktet før neste funksjon starter.
+} // <--- DENNE LUKKER HELE FUNKSJONEN tegnTabell()
 
 
 function nullstillElev(navn) {
