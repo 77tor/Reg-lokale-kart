@@ -1763,15 +1763,25 @@ function oppdaterAnalyseStatus(erFerdig) {
 
     if (erFerdig) {
         analyseBtn.disabled = false;
-        analyseBtn.title = "Se analyse"; // Tekst når man holder over
+        analyseBtn.style.cursor = "pointer"; // Vanlig hånd
+        analyseBtn.style.opacity = "1";
+        analyseBtn.title = "Se klasseanalyse"; 
+        analyseBtn.innerHTML = "📊 Analyse"; // Normal tekst
     } else {
         analyseBtn.disabled = true;
-        analyseBtn.title = "Prøven må ferdigstilles før analyse er tilgjengelig";
+        // HER ER ENDRINGENE:
+        analyseBtn.style.cursor = "not-allowed"; // Forbudt-ikon
+        analyseBtn.style.opacity = "0.6"; // Gjør knappen litt "gråere"
+        analyseBtn.title = "Prøven må settes som 'Ferdigstilt' før Analyse aktiveres";
+        analyseBtn.innerHTML = "🚫 Analyse"; // Legger til forbudt-emoji i knappen
     }
 }
       
 // --- KOMBINERT ANALYSE-KODE (Rettet versjon med alle sjekker) ---
 async function genererKlasseAnalyse() {
+// Sjekk om knappen faktisk er aktiv før vi kjører tung datahenting
+    const analyseBtn = document.getElementById('btnAnalyse');
+    if (analyseBtn && analyseBtn.disabled) return;
     try { 
         // 1. Hent kriterier fra menyene
         const aar = document.getElementById('mAar').value;
