@@ -383,21 +383,6 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 .close:hover {
     color: #000;
 }
-/* Dette vil gjelde alle lukk-kryss i alle modaler */
-.modal-content .close {
-    position: absolute;
-    right: 20px;
-    top: 10px;
-    cursor: pointer;
-    font-size: 28px;
-    font-weight: bold;
-    color: #888;
-    line-height: 1;
-}
-
-.modal-content .close:hover {
-    color: #000;
-}
 
 /* Selve menyboksen */
 .dropdown-content {
@@ -496,7 +481,7 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 
 <div id="modalOppgaver" class="modal">
     <div class="modal-content" style="width: 90% !important; max-width: 600px !important; margin: 1% auto !important;">
-        <span class="close" onclick="lukkVeiledning()">&times;</span>
+        <span class="close" onclick="lukkOppgaveOversikt()" style="position: absolute; right: 20px; top: 10px;">&times;</span>
         <h2>📄 Prøver og fasiter</h2>
         <p>Her finner du alle kartleggingsprøvene og tilhørende fasiter for utskrift.</p>
         
