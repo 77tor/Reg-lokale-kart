@@ -281,6 +281,65 @@ function oppdaterMenyBasertPaaRolle(brukerData) {
 }
 
 
+function aapneOppgaveOversikt() {
+    const modal = document.getElementById('modalOppgaver');
+    const tbody = document.getElementById('oppgaveListeBody');
+    const dropdown = document.getElementById("userDropdown");
+    
+    if (dropdown) dropdown.classList.remove("show");
+    tbody.innerHTML = ""; // Tøm tabellen før vi bygger den
+
+    const fagene = ["lesing", "regning"];
+    const trinnene = [1, 2, 3, 4, 5, 6, 7];
+
+    fagene.forEach(fag => {
+        trinnene.forEach(trinn => {
+            const row = document.createElement('tr');
+            
+            // Kolonne 1: Fag og trinn (f.eks Lesing 1. trinn)
+            const fagNavn = fag.charAt(0).toUpperCase() + fag.slice(1);
+            row.innerHTML = `<td><strong>${fagNavn} ${trinn}. trinn</strong></td>`;
+
+            // Kolonne 2: Høst (Prøve + Fasit)
+            row.appendChild(lagOppgaveCelle(fag, trinn, 'H'));
+
+            // Kolonne 3: Vår (Prøve + Fasit)
+            row.appendChild(lagOppgaveCelle(fag, trinn, 'V'));
+
+            tbody.appendChild(row);
+        });
+    });
+
+    modal.style.display = 'block';
+}
+
+function lagOppgaveCelle(fag, trinn, periode) {
+    const td = document.createElement('td');
+    
+    // Sti til prøve
+    const proveFil = `Oppgaver/Kartlegging_${fag}_${trinn}_${periode}.pdf`;
+    // Sti til fasit
+    const fasitFil = `Fasit/Kartlegging_${fag}_${trinn}_${periode}_Fasit.pdf`;
+
+    let html = `<a href="${proveFil}" target="_blank" class="btn-link">📝 Prøve</a>`;
+    
+    // Spesialhåndtering: Ingen fasit for lesing 1. trinn Høst
+    const harFasit = !(fag === "lesing" && trinn === 1 && periode === "H");
+
+    if (harFasit) {
+        html += `<br><a href="${fasitFil}" target="_blank" class="btn-link fasit-link">🔑 Fasit</a>`;
+    } else {
+        html += `<br><span style="color: #ccc; font-size: 0.8em;">Ingen fasit</span>`;
+    }
+
+    td.innerHTML = html;
+    return td;
+}
+
+function lukkOppgaveOversikt() {
+    document.getElementById('modalOppgaver').style.display = 'none';
+}
+
 // ÅPNE ADMIN
 function aapneAdminPanel() {
     // 1. Vis admin-panelet og skjul hovedskjemaet
