@@ -246,29 +246,6 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     text-decoration: underline;
 }
 
-@media print {
-    /* Skjul alt på hovedsiden */
-    body * {
-        visibility: hidden;
-    }
-    /* Vis kun innholdet i rapport-modalen */
-    #modalEnkeltRapport, #modalEnkeltRapport * {
-        visibility: visible;
-    }
-    #modalEnkeltRapport {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-    }
-    /* Skjul lukk- og printknapper på selve papiret */
-    .no-print {
-        display: none !important;
-    }
-}
-
 /* UTSKRIFT (Beholdt din originale logikk - med fiks for linjer) */
 @media print {
     /* 1. Tvinger farger og linjer */
@@ -745,19 +722,6 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
             </div>
     </div>
 </div>
-
-<div id="modalEnkeltRapport" class="modal">
-    <div class="modal-content" style="max-width: 900px; position: relative; padding: 25px;">
-        <span class="close" onclick="lukkEnkeltRapport()">&times;</span>
-        <div id="enkeltRapportInnhold">
-            </div>
-        <div style="text-align: right; border-top: 1px solid #eee; padding-top: 15px; margin-top: 20px;" class="no-print">
-            <button class="btn" onclick="printEnkeltRapport()" style="background: #27ae60;">🖨️ Skriv ut</button>
-            <button class="btn" onclick="lukkEnkeltRapport()">Lukk</button>
-        </div>
-    </div>
-</div>
-
 
 <div id="modalSammenlign" class="modal no-print" 
      style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">

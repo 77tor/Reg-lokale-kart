@@ -575,25 +575,17 @@ function hentRegister() {
 
 // --- TEGN TABELL (Inkludert gjennomsnitt og håndtering av ikke gjennomført) ---
 function tegnTabell() {
-    // VAKT: Hvis admin-panelet er åpent, skal vi IKKE røre hovedsiden!
+// VAKT: Hvis admin-panelet er åpent, skal vi IKKE røre hovedsiden!
     const adminPanel = document.getElementById('adminPanel');
     if (adminPanel && adminPanel.style.display === 'block') {
         console.log("Blokkerte tegnTabell fordi Admin er åpent.");
-        return; 
+        return; // Avbryter hele funksjonen her
     }
-
-    // 1. Hent verdier fra menyer
     const vAar = document.getElementById('mAar').value;
     const vFag = document.getElementById('mFag').value;
     const vPeriode = document.getElementById('mPeriode').value;
     const vTrinn = document.getElementById('mTrinn').value;
     const vKlasse = document.getElementById('mKlasse').value;
-
-    // --- NYTT: Hent status for den valgte klassen ---
-    // Dette gjør at "erFerdigstilt" lenger ned i koden faktisk fungerer!
-    const statusData = (typeof statuser !== 'undefined') ? statuser : {};
-    const klasseData = statusData[vAar]?.[vFag]?.[vPeriode]?.[vTrinn]?.[vKlasse] || {};
-    // -----------------------------------------------
 
     const tHead = document.getElementById('tHead');
     const tBody = document.getElementById('tBody');
@@ -687,33 +679,29 @@ tHead.innerHTML = hode;
             }
 
 // --- HANDLING-KNAPPER (no-print) ---
-            rad += `<td class="no-print" style="white-space: nowrap;">`; 
-
-            const erFerdigstilt = (typeof klasseData !== 'undefined' && klasseData && klasseData.laast === true);
-
+            rad += `<td class="no-print">`;
+            
             if (erSlettet) {
+                // Vi har nå bare "Hent"-knappen her. 
+                // "Fjern helt" flyttes til admin-delen senere.
                 rad += `<button class="btn btn-hent" onclick="gjenopprettElev('${navn}')">Hent</button>`;
             } else {
                 if (d.oppgaver || erIkkeGjennomfort) {
                     rad += `<button class="btn btn-edit" onclick="visModal('${navn}')">Endre</button> `;
                     rad += `<button class="btn btn-nullstill" style="margin-left:5px;" onclick="nullstillElev('${navn}')">Nullstill</button>`;
-                    
-                    if (erFerdigstilt && d.oppgaver) {
-                        rad += `<button class="btn" style="margin-left:5px; background-color: #4a5568; color: white;" onclick="visElevFagRapport('${navn}', '${vFag}')">📊 Alle resultater</button>`;
-                    }
                 } else {
                     rad += `<button class="btn btn-reg" onclick="visModal('${navn}')">Registrer</button> `;
                     rad += `<button class="btn btn-slett" style="margin-left:5px;" onclick="slettElev('${navn}')">Slett</button>`;
                 }
-            } // Lukker else (erSlettet)
+            }
             rad += `</td></tr>`;
 
             if (erSlettet) slettedeRader += rad;
             else aktiveRader += rad;
-        } // Lukker if (erRiktigTrinnOgKlasse...)
-    }); // Lukker Object.keys.forEach
+        }
+    });
 
-    // 3. Lag Gjennomsnittsrad
+    // 3. Lag Gjennomsnittsrad (hvis det er data)
     let snittHtml = "";
     if (antallAktiveMedData > 0) {
         snittHtml = `<tr class="snitt-rad" style="background:#edf2f7; font-weight:bold;"><td style="text-align:left">Gjennomsnitt ${vTrinn}${vKlasse}</td>`;
@@ -723,9 +711,10 @@ tHead.innerHTML = hode;
         snittHtml += `<td> ${(totalSumKlasse / antallAktiveMedData).toFixed(1)} </td><td class="no-print"></td></tr>`;
     }
 
-    // 4. Oppdater tabellen i HTML-en
+    // 4. Oppdater tabellen i HTML-en (Aktive elever + Snitt + Slettede elever)
     tBody.innerHTML = aktiveRader + snittHtml + slettedeRader;
-} // <--- DENNE LUKKER HELE FUNKSJONEN tegnTabell()
+} 
+// <--- HER SLUTTER FUNKSJONEN. Ingen kode etter dette punktet før neste funksjon starter.
 
 
 function nullstillElev(navn) {
@@ -3858,93 +3847,6 @@ function fullforImport() {
         console.error("Importfeil:", err);
         alert("Det oppstod en feil under lagring.");
     });
-}
-
-
-// ENKEL ELEVRAPPORT I REGSIDEN
-async function visElevFagRapport(navn, valgtFag) {
-    const innhold = document.getElementById('enkeltRapportInnhold');
-    innhold.innerHTML = "<h2>Henter data...</h2>";
-    document.getElementById('modalEnkeltRapport').style.display = 'block';
-
-    try {
-        const snap = await db.ref(`kartlegging`).once('value');
-        const alleData = snap.val() || {};
-        let historikk = [];
-
-        // Loop gjennom for å finne data kun for valgt fag og elev
-        for (let aar in alleData) {
-            if (alleData[aar][valgtFag]) {
-                for (let periode in alleData[aar][valgtFag]) {
-                    for (let trinn in alleData[aar][valgtFag][periode]) {
-                        for (let klasse in alleData[aar][valgtFag][periode][trinn]) {
-                            const e = alleData[aar][valgtFag][periode][trinn][klasse][navn];
-                            if (e && !e.slettet && e.oppgaver) {
-                                historikk.push({
-                                    label: `${trinn}. trinn (${periode} ${aar})`,
-                                    sum: parseFloat(e.sum),
-                                    maks: hentOppsettSpesifikk(aar, valgtFag, periode, trinn)?.oppgaver.reduce((s, o) => s + o.maks, 0) || 100,
-                                    datoSort: aar + (periode === "Høst" ? "1" : "2") // For sortering
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        historikk.sort((a, b) => a.datoSort.localeCompare(b.datoSort));
-
-        // Lag HTML-struktur
-        innhold.innerHTML = `
-            <div style="text-align:center;">
-                <h1 style="margin-bottom:0;">Resultatoversikt: ${valgtFag}</h1>
-                <h2 style="color: #555; margin-top:5px;">${navn}</h2>
-            </div>
-            <div style="height: 300px; margin: 20px 0;">
-                <canvas id="progresjonsChart"></canvas>
-            </div>
-            <div id="tabellOmraade"></div>
-        `;
-
-        // Tegn Linjediagram
-        const ctx = document.getElementById('progresjonsChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: historikk.map(h => h.label),
-                datasets: [{
-                    label: 'Poengsum',
-                    data: historikk.map(h => h.sum),
-                    borderColor: '#3498db',
-                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: { y: { beginAtZero: true } }
-            }
-        });
-
-        // Gjenbruk tabell-logikken din for "Del 1: Historisk oversikt" her...
-        // (Du kan lime inn tabell-genereringen fra din egen kode her, men filtrert på valgtFag)
-
-    } catch (error) {
-        console.error(error);
-        innhold.innerHTML = "Feil ved henting av rapport.";
-    }
-}
-
-function lukkEnkeltRapport() {
-    document.getElementById('modalEnkeltRapport').style.display = 'none';
-}
-
-function printEnkeltRapport() {
-    window.print();
 }
 
 
