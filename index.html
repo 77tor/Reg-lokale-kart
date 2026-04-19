@@ -411,7 +411,7 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
                 <div id="userDropdown" class="dropdown-content">
                     <a href="#" onclick="aapneKonto()">👤 Min konto</a>
                     <a href="#" onclick="aapneVeiledning()">📖 Lærerveiledning</a>
-                    <a href="#" id="adminLink" onclick="sjekkAdminKode()" style="display: none; border-top: 1px solid #eee;">🛠 Admin-panel</a>
+                    <a href="#" id="adminLink" onclick="aapneAdminPanel()" style="display: none; border-top: 1px solid #eee;">🛠 Admin-panel</a>
                     <a href="#" onclick="logout()" style="color: #d9534f; border-top: 1px solid #eee;">🚪 Logg ut</a>
                 </div> </div> </div> </div>
 
@@ -499,7 +499,7 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
                 <div><strong>Skriv ut:</strong> Knappen gjør klar en side av alle resultater for utskrift.</div>
 
                 <img src="knapper/analyse.png" style="height:30px;">
-                <div><strong>Analyse:</strong> Her får du detaljert oversikt over klassens resultater, refleksjonsspørsmål, oversikt over de elevene som skårer under kritisk grense, områder av prøven klassen skårer dårlig på og utviklingen til klassen over tid.</div>
+                <div><strong>Analyse:</strong> Her får du detaljert oversikt over klassens resultater, refleksjonsspørsmål, oversikt over de elevene som skårer under kritisk grense, områder av prøven klassen skårer dårlig på og utviklingen til klassen over tid. Knappen blir tilgjengelig når prøver er satt til "Ferdigstilt".</div>
 
                 <img src="knapper/eksport.png" style="height:30px;">
                 <div><strong>Eksport:</strong> Her kan du eksportere resultatene fra prøven til Excel.</div>

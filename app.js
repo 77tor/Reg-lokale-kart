@@ -280,6 +280,39 @@ function oppdaterMenyBasertPaaRolle(brukerData) {
     }
 }
 
+
+// ÅPNE ADMIN
+function aapneAdminPanel() {
+    // 1. Vis admin-panelet og skjul hovedskjemaet
+    document.getElementById('adminPanel').style.display = 'block'; 
+    document.getElementById('skjemaInnhold').style.display = 'none';
+    
+    // 2. Skjul dropdown-menyen (så den ikke ligger over panelet)
+    const dropdown = document.getElementById("userDropdown");
+    if (dropdown) dropdown.classList.remove("show");
+
+    // 3. Skjul "Legg til ny elev"-boksen hvis den finnes
+    if (document.getElementById('nyElevSeksjon')) {
+        document.getElementById('nyElevSeksjon').style.display = 'none';
+    }
+
+    // 4. Skjul handlingsknapper (Print/Excel/Analyse)
+    const actionBar = document.querySelector('.action-bar');
+    if (actionBar) actionBar.style.display = 'none';
+
+    // 5. Rydd opp i registreringsskjemaet
+    document.getElementById('tHead').innerHTML = "";
+    document.getElementById('tBody').innerHTML = "";
+    
+    // 6. Oppdater overskriften
+    oppdaterOverskrifter("Administrasjon og rapporter");
+
+    // 7. Stopp aktiv lytting på Firebase (viktig for ytelse)
+    db.ref().off();
+    
+    console.log("Admin-panel åpnet via autorisert bruker.");
+}
+
 function aapneKonto() {
     // 1. Lukk dropdown
     const dropdown = document.getElementById("userDropdown");
@@ -2402,36 +2435,6 @@ try {
     } catch (error) {
         console.error("Feil i analyse-generering:", error);
         alert("Feil: " + error.message);
-    }
-}
-
-
-// --- 6. ADMIN-FUNKSJONER ---
-function sjekkAdminKode() {
-    if (prompt("Adminkode:") === "3850") { 
-        // 1. Vis admin-panelet og skjul hovedskjemaet
-        document.getElementById('adminPanel').style.display = 'block'; 
-        document.getElementById('skjemaInnhold').style.display = 'none';
-        
-        // 2. Skjul "Legg til ny elev"-boksen
-        if (document.getElementById('nyElevSeksjon')) {
-            document.getElementById('nyElevSeksjon').style.display = 'none';
-        }
-
-        // 3. Skjul handlingsknapper (Print/Excel)
-        const actionBar = document.querySelector('.action-bar');
-        if (actionBar) actionBar.style.display = 'none';
-
-        // 4. NULLSTILLING AV REGISTRERINGSSKJERMAET (Dette er det nye):
-        // Tømmer tabellen slik at ingenting henger igjen fra forrige klasse
-        document.getElementById('tHead').innerHTML = "";
-        document.getElementById('tBody').innerHTML = "";
-        
-        // Nullstiller overskriften
-        oppdaterOverskrifter("Administrasjon og rapporter");
-
-        // Stopper aktiv lytting på Firebase-data for klassen som var åpen
-        db.ref().off();
     }
 }
 
