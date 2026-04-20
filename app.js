@@ -575,12 +575,12 @@ function hentRegister() {
 
 // --- TEGN TABELL (Inkludert gjennomsnitt og håndtering av ikke gjennomført) ---
 function tegnTabell() {
-// VAKT: Hvis admin-panelet er åpent, skal vi IKKE røre hovedsiden!
+    // VAKT: Hvis admin-panelet er åpent, skal vi IKKE røre hovedsiden!
     const adminPanel = document.getElementById('adminPanel');
     if (adminPanel && adminPanel.style.display === 'block') {
-        console.log("Blokkerte tegnTabell fordi Admin er åpent.");
-        return; // Avbryter hele funksjonen her
+        return; 
     }
+
     const vAar = document.getElementById('mAar').value;
     const vFag = document.getElementById('mFag').value;
     const vPeriode = document.getElementById('mPeriode').value;
@@ -592,43 +592,29 @@ function tegnTabell() {
 
     if (!vAar || !vFag || !vPeriode || !vTrinn || !vKlasse) {
         tBody.innerHTML = "<tr><td colspan='100%'>Vennligst velg alle kriterier...</td></tr>";
+        const nyElevBoks = document.getElementById('nyElevSeksjon');
+        if (nyElevBoks) nyElevBoks.style.display = 'none';
         return;
     }
 
-// --- LOGIKK FOR Å HENTE OPPSETT ---
-    // Vi sjekker om det valgte året finnes i oppsett.js. 
-    // Hvis ikke, bruker vi "2025-2026" som standard mal.
+    // --- LOGIKK FOR Å HENTE OPPSETT ---
     const aarIMal = oppgaveStruktur[vAar] ? vAar : "2025-2026";
-    
-    const oppsett = (oppgaveStruktur[aarIMal] && 
-                     oppgaveStruktur[aarIMal][vFag] && 
-                     oppgaveStruktur[aarIMal][vFag][vPeriode]) 
-                     ? oppgaveStruktur[aarIMal][vFag][vPeriode][vTrinn] 
-                     : null;
+    const oppsett = (oppgaveStruktur[aarIMal] && oppgaveStruktur[aarIMal][vFag] && oppgaveStruktur[aarIMal][vFag][vPeriode]) 
+                    ? oppgaveStruktur[aarIMal][vFag][vPeriode][vTrinn] : null;
 
     if (!oppsett) {
         tBody.innerHTML = `<tr><td colspan='100%'>Fant ikke mal for ${vFag} i ${aarIMal}.</td></tr>`;
         return;
     }
 
-// 1. Lag Tabellhode
-let hode = `<tr><th style="text-align:left">Elevnavn</th>`;
-oppsett.oppgaver.forEach(o => {
-    // Sjekk om oppgaven har bilde for å legge til hover-effekt
-    const overskriftInnhold = o.bilde 
-        ? `<span class="hjelpe-ikon-tekst">${o.navn}
-             <img src="${o.bilde}" class="oppgave-preview-bilde">
-           </span>` 
-        : o.navn;
-
-    hode += `<th style="text-align:center;">${overskriftInnhold}<br><small>max ${o.maks}</small></th>`;
-
-});
-
-// Vi tvinger cellen til å oppføre seg som en standard tabellcelle og gir den 
-hode += `<th>Sum<br><span style="font-weight:normal; font-size:10px; color:black !important; display:block !important;">(Kritisk: ≤${oppsett.grenseTotal})</span></th><th class="no-print">Handling</th></tr>`;
-
-tHead.innerHTML = hode;
+    // 1. Lag Tabellhode
+    let hode = `<tr><th style="text-align:left">Elevnavn</th>`;
+    oppsett.oppgaver.forEach(o => {
+        const overskriftInnhold = o.bilde ? `<span class="hjelpe-ikon-tekst">${o.navn}<img src="${o.bilde}" class="oppgave-preview-bilde"></span>` : o.navn;
+        hode += `<th style="text-align:center;">${overskriftInnhold}<br><small>max ${o.maks}</small></th>`;
+    });
+    hode += `<th>Sum<br><span style="font-size:10px; color:black;">(Kritisk: ≤${oppsett.grenseTotal})</span></th><th class="no-print">Handling</th></tr>`;
+    tHead.innerHTML = hode;
 
     const vStartAarValgt = parseInt(vAar.split('-')[0]);
     let antallAktiveMedData = 0;
@@ -637,29 +623,22 @@ tHead.innerHTML = hode;
     let aktiveRader = "";
     let slettedeRader = "";
 
-// 2. Gå gjennom alle elever i registeret
+    // 2. Gå gjennom alle elever
     Object.keys(elevRegister).sort().forEach(navn => {
         const e = elevRegister[navn];
-        
-        // Beregn hvilket trinn eleven går på i det valgte skoleåret
         const cTrinn = parseInt(e.startTrinn) + (vStartAarValgt - parseInt(e.startAar));
-
-        // --- NY LOGIKK FOR FILTRERING ---
         const harBegynt = vStartAarValgt >= parseInt(e.startAar);
         const harIkkeSluttet = !e.sluttAar || vStartAarValgt <= parseInt(e.sluttAar);
         const erRiktigTrinnOgKlasse = (cTrinn === parseInt(vTrinn) && e.startKlasse === vKlasse);
 
-        // Vi tegner bare raden hvis alle kriterier er oppfylt
         if (erRiktigTrinnOgKlasse && harBegynt && harIkkeSluttet) {
             const d = lagredeResultater[navn] || {};
             const erSlettet = d.slettet === true;
             const erIkkeGjennomfort = d.ikkeGjennomfort === true;
-
             let printKlasse = erSlettet ? 'class="no-print"' : '';
             let radStil = erSlettet ? 'style="color: #a0aec0; background: #f7fafc;"' : (erIkkeGjennomfort ? 'style="background: #fff5f5;"' : '');
 
             let rad = `<tr ${printKlasse} ${radStil}><td style="text-align:left"><b>${navn}</b></td>`;
-
             if (!erSlettet && erIkkeGjennomfort) {
                 rad += `<td colspan="${oppsett.oppgaver.length + 1}" style="color: #c53030; font-style: italic; font-weight: bold;">Ikke gjennomført</td>`;
             } else if (!erSlettet && d.oppgaver) {
@@ -678,12 +657,8 @@ tHead.innerHTML = hode;
                 rad += `<td class="not-registered">-</td>`;
             }
 
-// --- HANDLING-KNAPPER (no-print) ---
             rad += `<td class="no-print">`;
-            
             if (erSlettet) {
-                // Vi har nå bare "Hent"-knappen her. 
-                // "Fjern helt" flyttes til admin-delen senere.
                 rad += `<button class="btn btn-hent" onclick="gjenopprettElev('${navn}')">Hent</button>`;
             } else {
                 if (d.oppgaver || erIkkeGjennomfort) {
@@ -695,35 +670,48 @@ tHead.innerHTML = hode;
                 }
             }
             rad += `</td></tr>`;
-
-            if (erSlettet) slettedeRader += rad;
-            else aktiveRader += rad;
+            if (erSlettet) slettedeRader += rad; else aktiveRader += rad;
         }
     });
 
-    // 3. Lag Gjennomsnittsrad (hvis det er data)
+    // 3. Lag Gjennomsnittsrad
     let snittHtml = "";
     if (antallAktiveMedData > 0) {
-        snittHtml = `<tr class="snitt-rad" style="background:#edf2f7; font-weight:bold;"><td style="text-align:left">Gjennomsnitt ${vTrinn}${vKlasse}</td>`;
-        kolonneSummer.forEach(sum => {
-            snittHtml += `<td> ${(sum / antallAktiveMedData).toFixed(1)} </td>`;
-        });
+        snittHtml = `<tr class="snitt-rad" style="background:#edf2f7; font-weight:bold;"><td style="text-align:left">Snitt ${vTrinn}${vKlasse}</td>`;
+        kolonneSummer.forEach(sum => { snittHtml += `<td> ${(sum / antallAktiveMedData).toFixed(1)} </td>`; });
         snittHtml += `<td> ${(totalSumKlasse / antallAktiveMedData).toFixed(1)} </td><td class="no-print"></td></tr>`;
     }
 
-    // 4. Oppdater tabellen i HTML-en (Aktive elever + Snitt + Slettede elever)
     tBody.innerHTML = aktiveRader + snittHtml + slettedeRader;
-} 
+
+    // --- NY LOGIKK: Sjekk låsestatus ETTER at tabellen er tegnet ---
+    const statusSti = `status/${vAar}/${vFag}/${vPeriode}/${vTrinn}/${vKlasse}`;
+    db.ref(statusSti).once('value').then(snapshot => {
+        const status = snapshot.val();
+        const erLaast = status && status.laast === true;
+        const nyElevBoks = document.getElementById('nyElevSeksjon');
+        
+        if (nyElevBoks) nyElevBoks.style.display = erLaast ? 'none' : 'block';
+        
+        // Denne funksjonen vil nå både oppdatere knappen OG sette "Ferdigstilt"-label på radene
+        oppdaterLaaseVisning(erLaast);
+    });
+}
+
 // <--- HER SLUTTER FUNKSJONEN. Ingen kode etter dette punktet før neste funksjon starter.
 
 
 function nullstillElev(navn) {
     if (confirm(`Vil du tømme alle poeng for ${navn}? Eleven blir stående i listen, men poengene fjernes.`)) {
-        // Vi fjerner hele objektet (inkludert "ikke gjennomført"-status)
         db.ref(hentSti(navn)).remove()
         .then(() => {
             console.log("Data nullstilt for " + navn);
-            tegnTabell(); // Legg til denne for at skjermen oppdateres umiddelbart!
+            // Vi henter data på nytt fra Firebase for å tømme lagredeResultater[navn]
+            if (typeof hentData === "function") {
+                hentData(); // Denne pleier å kalle tegnTabell() til slutt
+            } else {
+                tegnTabell();
+            }
         })
         .catch(error => {
             console.error("Feil ved nullstilling:", error);
@@ -796,13 +784,18 @@ function oppdaterLaaseVisning(erLaast) {
     const importKnapp = document.getElementById('btnImport'); // Henter import-knappen
     const tekstElement = document.getElementById('lockText');
     const ikonElement = knapp.querySelector('.btn-icon');
+    const leggTilElevSeksjon = document.getElementById('nyElevSeksjon');
 
     if (erLaast) {
         tabell.classList.add('is-locked');
         if (tekstElement) tekstElement.innerText = "Ferdigstilt!";
         if (ikonElement) ikonElement.innerText = "🔒";
         knapp.style.backgroundColor = "#27ae60"; // Grønn for gjenåpne
-        
+
+// Skjul seksjonen helt når prøven er ferdigstilt
+        if (leggTilElevSeksjon) {
+            leggTilElevSeksjon.style.display = 'none';
+        }        
 // GJØR IMPORT-KNAPPEN INAKTIV
         if (importKnapp) {
             importKnapp.disabled = true;
@@ -827,6 +820,10 @@ function oppdaterLaaseVisning(erLaast) {
         if (ikonElement) ikonElement.innerText = "🔓";
         knapp.style.backgroundColor = "#d35400"; // Oransje for ferdigstille
 
+// Vis seksjonen igjen når prøven åpnes for redigering
+        if (leggTilElevSeksjon) {
+            leggTilElevSeksjon.style.display = 'block';
+        }
 // GJØR IMPORT-KNAPPEN AKTIV IGJEN
         if (importKnapp) {
             importKnapp.disabled = false;
