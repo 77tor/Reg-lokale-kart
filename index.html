@@ -412,6 +412,18 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     color: #000;
 }
 
+
+/* Sørger for at modal-knappene ser like ut som de andre knappene */
+.modal-footer .btn {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    cursor: pointer;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
 /* Selve menyboksen */
 .dropdown-content {
     display: none;
@@ -555,10 +567,10 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
             </table>
         </div>
 
-        <div class="action-bar" style="justify-content: flex-end; margin-top: 15px;">
-            <button class="btn btn-print no-print" onclick="window.print()">Skriv ut</button>
-            <button class="btn btn-nullstill" onclick="lukkHistorikk()">Lukk</button>
-        </div>
+<div class="modal-footer-bar" style="display: flex; justify-content: flex-end; margin-top: 15px; gap: 10px;">
+    <button class="btn btn-print no-print" onclick="window.print()">Skriv ut</button>
+    <button class="btn btn-nullstill" onclick="lukkHistorikk()">Lukk</button>
+</div>
     </div>
 </div>
 
@@ -929,22 +941,22 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     </div>
     </div>
 
-<div class="action-bar no-print">
+<div class="action-bar no-print" id="actionButtons" style="display: none;">
     <button id="btnFerdigstill" class="btn btn-lock" onclick="toggleFerdigstill()">
         <span class="btn-icon">🔒</span> <span id="lockText">Ferdigstille prøven</span>
     </button>
     <button class="btn btn-print" onclick="forberedPrint()">
         <span class="btn-icon">🖨️</span> Skriv ut
     </button>
-<button id="btnAnalyse" class="btn btn-analyse" onclick="genererKlasseAnalyse()" disabled>
-    <span class="btn-icon">📊</span> Analyse
-</button>
+    <button id="btnAnalyse" class="btn btn-analyse" onclick="genererKlasseAnalyse()" disabled>
+        <span class="btn-icon">📊</span> Analyse
+    </button>
     <button class="btn btn-excel" onclick="eksporter()">
         <span class="btn-icon">📤</span> Eksport
     </button>
-<button id="btnImport" class="btn btn-hent" onclick="document.getElementById('excelInput').click()">
-    <span class="btn-icon">📥</span> Import
-</button>
+    <button id="btnImport" class="btn btn-hent" onclick="document.getElementById('excelInput').click()">
+        <span class="btn-icon">📥</span> Import
+    </button>
     
     <input type="file" id="excelInput" style="display:none" accept=".xlsx, .xls, .csv" onchange="handterExcelFil(this)">
     <span id="dynamiskOverskrift"></span>
