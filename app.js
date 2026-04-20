@@ -652,15 +652,25 @@ async function tegnTabell() {
             const erSlettet = d.slettet === true;
             const erIkkeGjennomfort = d.ikkeGjennomfort === true;
             
-            // LOGIKK FOR KLIKKBARE NAVN VED LÅST PRØVE
-let visningsNavn = `<b>${navn}</b>`;
-if (erLaast && !erSlettet) {
-    // Vi fjerner 'style' herfra og legger på en klasse 'elev-link' isteden
+
+// LOGIKK FOR KLIKKBARE NAVN VED LÅST PRØVE
+let visningsNavn = navn; // Standard: Bare navnet som tekst når prøven er ulåst
+
+if (erSlettet) {
+    // Hvis slettet, vis navnet i grått (eventuelt behold <b> hvis du ønsker)
+    visningsNavn = `<span style="color: #a0aec0;">${navn}</span>`;
+} 
+else if (erLaast) {
+    // KUN når prøven er låst blir det en blå link til historikken
     visningsNavn = `<a href="#" class="elev-link" onclick="visElevHistorikk('${navn}'); return false;">
                         ${navn}
                     </a>`;
+} else {
+    // Når prøven er ÅPEN: Vanlig tekst. 
+    // Du kan bruke <b>${navn}</b> her hvis du vil ha navnene fete uansett,
+    // men uten <a> blir de ikke klikkbare og får ikke blå farge fra CSS-en.
+    visningsNavn = `<b>${navn}</b>`; 
 }
-
             let printKlasse = erSlettet ? 'class="no-print"' : '';
             let radStil = erSlettet ? 'style="color: #a0aec0; background: #f7fafc;"' : (erIkkeGjennomfort ? 'style="background: #fff5f5;"' : '');
 
