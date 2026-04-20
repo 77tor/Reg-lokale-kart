@@ -993,15 +993,16 @@ async function toggleFerdigstill() {
         }
     }
 
-    // LAGRE STATUS I FIREBASE
-    await db.ref(statusSti).set({ 
+// LAGRE STATUS I FIREBASE
+await db.ref(statusSti).set({ 
     laast: skalLaase, 
-    endretAv: firebase.auth().currentUser.email, // Lagrer e-posten til den som trykket
-    dato: new Date().toLocaleString()           // Lagrer tidspunktet
+    endretAv: firebase.auth().currentUser.email,
+    dato: new Date().toLocaleString()
 });
-    
-    // Oppdater det visuelle (knapper og tekst)
-    oppdaterLaaseVisning(skalLaase);
+
+// Dette kallet alene vil nå oppdatere BÅDE navnene (linkene) 
+// OG knappene/fargene (siden tegnTabell kaller oppdaterLaaseVisning)
+await tegnTabell();
 }
 
 function oppdaterLaaseVisning(erLaast) {
