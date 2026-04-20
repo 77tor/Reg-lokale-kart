@@ -589,13 +589,29 @@ function tegnTabell() {
 
     const tHead = document.getElementById('tHead');
     const tBody = document.getElementById('tBody');
+    const actionButtons = document.getElementById('actionButtons'); // Referanse til knapperaden
 
+    // SJEKK: Hvis ikke alle valg er tatt
     if (!vAar || !vFag || !vPeriode || !vTrinn || !vKlasse) {
         tBody.innerHTML = "<tr><td colspan='100%'>Vennligst velg alle kriterier...</td></tr>";
+        if (actionButtons) actionButtons.style.display = 'none';
         const nyElevBoks = document.getElementById('nyElevSeksjon');
         if (nyElevBoks) nyElevBoks.style.display = 'none';
         return;
     }
+
+    // 1. HENT STATUS FØRST (For å vite om navn skal være linker)
+    const statusSti = `status/${vAar}/${vFag}/${vPeriode}/${vTrinn}/${vKlasse}`;
+    const statusSnap = await db.ref(statusSti).once('value');
+    const status = statusSnap.val();
+    const erLaast = status && status.laast === true;
+
+    // Oppdater UI-klasser og vis knapperaden
+    if (erLaast) document.body.classList.add('is-locked'); 
+    else document.body.classList.remove('is-locked');
+    
+    if (actionButtons) actionButtons.style.display = 'flex';
+    oppdaterLaaseVisning(erLaast);
 
     // --- LOGIKK FOR Å HENTE OPPSETT ---
     const aarIMal = oppgaveStruktur[vAar] ? vAar : "2025-2026";
@@ -607,7 +623,7 @@ function tegnTabell() {
         return;
     }
 
-    // 1. Lag Tabellhode
+    // 2. LAG TABELLHODE
     let hode = `<tr><th style="text-align:left">Elevnavn</th>`;
     oppsett.oppgaver.forEach(o => {
         const overskriftInnhold = o.bilde ? `<span class="hjelpe-ikon-tekst">${o.navn}<img src="${o.bilde}" class="oppgave-preview-bilde"></span>` : o.navn;
@@ -623,7 +639,7 @@ function tegnTabell() {
     let aktiveRader = "";
     let slettedeRader = "";
 
-    // 2. Gå gjennom alle elever
+    // 3. GÅ GJENNOM ALLE ELEVER
     Object.keys(elevRegister).sort().forEach(navn => {
         const e = elevRegister[navn];
         const cTrinn = parseInt(e.startTrinn) + (vStartAarValgt - parseInt(e.startAar));
@@ -635,10 +651,21 @@ function tegnTabell() {
             const d = lagredeResultater[navn] || {};
             const erSlettet = d.slettet === true;
             const erIkkeGjennomfort = d.ikkeGjennomfort === true;
+            
+            // LOGIKK FOR KLIKKBARE NAVN VED LÅST PRØVE
+            let visningsNavn = `<b>${navn}</b>`;
+            if (erLaast && !erSlettet) {
+                visningsNavn = `<a href="#" onclick="visElevHistorikk('${navn}'); return false;" 
+                                   style="color: #2980b9; text-decoration: underline; cursor: pointer;">
+                                   ${navn}
+                                </a>`;
+            }
+
             let printKlasse = erSlettet ? 'class="no-print"' : '';
             let radStil = erSlettet ? 'style="color: #a0aec0; background: #f7fafc;"' : (erIkkeGjennomfort ? 'style="background: #fff5f5;"' : '');
 
-            let rad = `<tr ${printKlasse} ${radStil}><td style="text-align:left"><b>${navn}</b></td>`;
+            let rad = `<tr ${printKlasse} ${radStil}><td style="text-align:left">${visningsNavn}</td>`;
+            
             if (!erSlettet && erIkkeGjennomfort) {
                 rad += `<td colspan="${oppsett.oppgaver.length + 1}" style="color: #c53030; font-style: italic; font-weight: bold;">Ikke gjennomført</td>`;
             } else if (!erSlettet && d.oppgaver) {
@@ -674,7 +701,7 @@ function tegnTabell() {
         }
     });
 
-    // 3. Lag Gjennomsnittsrad
+    // 4. LAG GJENNOMSNITTSRAD
     let snittHtml = "";
     if (antallAktiveMedData > 0) {
         snittHtml = `<tr class="snitt-rad" style="background:#edf2f7; font-weight:bold;"><td style="text-align:left">Snitt ${vTrinn}${vKlasse}</td>`;
@@ -684,22 +711,119 @@ function tegnTabell() {
 
     tBody.innerHTML = aktiveRader + snittHtml + slettedeRader;
 
-    // --- NY LOGIKK: Sjekk låsestatus ETTER at tabellen er tegnet ---
-    const statusSti = `status/${vAar}/${vFag}/${vPeriode}/${vTrinn}/${vKlasse}`;
-    db.ref(statusSti).once('value').then(snapshot => {
-        const status = snapshot.val();
-        const erLaast = status && status.laast === true;
-        const nyElevBoks = document.getElementById('nyElevSeksjon');
-        
-        if (nyElevBoks) nyElevBoks.style.display = erLaast ? 'none' : 'block';
-        
-        // Denne funksjonen vil nå både oppdatere knappen OG sette "Ferdigstilt"-label på radene
-        oppdaterLaaseVisning(erLaast);
-    });
+    // 5. NY ELEV SEKSJON VISNING
+    const nyElevBoks = document.getElementById('nyElevSeksjon');
+    if (nyElevBoks) nyElevBoks.style.display = erLaast ? 'none' : 'block';
 }
 
 // <--- HER SLUTTER FUNKSJONEN. Ingen kode etter dette punktet før neste funksjon starter.
 
+
+let historikkChart = null; // Lagrer chart-objektet globalt
+
+async function visElevHistorikk(navn) {
+    const vAar = document.getElementById('mAar').value;
+    const vFag = document.getElementById('mFag').value;
+    const vTrinn = document.getElementById('mTrinn').value;
+    
+    const historikkData = [];
+    const perioder = ["Høst", "Vinter", "Vår"]; // Juster etter dine periodenavn
+
+    // 1. Hent data for alle perioder
+    for (const p of perioder) {
+        const sti = `resultater/${vAar}/${vFag}/${p}/${vTrinn}`;
+        const snap = await db.ref(sti).once('value');
+        const data = snap.val();
+        
+        // Hent også status for å få gjennomsnittet for klassen
+        const statusSnap = await db.ref(`status/${vAar}/${vFag}/${p}/${vTrinn}`).once('value');
+        
+        if (data && data[navn]) {
+            // Finn malen for å vite makspoeng og kritisk grense
+            const oppsett = oppgaveStruktur[vAar][vFag][p][vTrinn];
+            const elevData = data[navn];
+            
+            // Beregn klassens snitt for denne prøven
+            let sumAlle = 0;
+            let antall = 0;
+            Object.values(data).forEach(d => {
+                if(d.sum) { sumAlle += d.sum; antall++; }
+            });
+            const klasseSnittProsent = ((sumAlle / antall) / oppsett.maksTotal) * 100;
+
+            historikkData.push({
+                periode: p,
+                poeng: elevData.sum,
+                maks: oppsett.maksTotal,
+                grense: oppsett.grenseTotal,
+                prosent: (elevData.sum / oppsett.maksTotal) * 100,
+                snittProsent: klasseSnittProsent
+            });
+        }
+    }
+
+    // 2. Tegn Tabellen
+    const tbody = document.getElementById('historikkTabellBody');
+    tbody.innerHTML = historikkData.map(d => `
+        <tr>
+            <td>${d.periode}</td>
+            <td>${d.poeng}</td>
+            <td>${d.maks}</td>
+            <td>${d.grense}</td>
+            <td style="font-weight:bold; color: ${d.prosent <= (d.grense/d.maks)*100 ? 'red' : 'black'}">
+                ${d.prosent.toFixed(1)}%
+            </td>
+        </tr>
+    `).join('');
+
+    document.getElementById('historikkNavn').innerText = `Historikk for ${navn} - ${vFag}`;
+    document.getElementById('historikkModal').style.display = 'flex';
+
+    // 3. Tegn Diagrammet
+    oppdaterHistorikkChart(historikkData);
+}
+
+function oppdaterHistorikkChart(data) {
+    const ctx = document.getElementById('historikkChart').getContext('2d');
+    
+    if (historikkChart) historikkChart.destroy();
+
+    historikkChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.map(d => d.periode),
+            datasets: [
+                {
+                    label: 'Elevens skår (%)',
+                    data: data.map(d => d.prosent),
+                    borderColor: '#2980b9',
+                    backgroundColor: 'rgba(41, 128, 185, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                },
+                {
+                    label: 'Klassens snitt (%)',
+                    data: data.map(d => d.snittProsent),
+                    borderColor: '#e67e22',
+                    borderDash: [5, 5], // Stiplet strek
+                    fill: false,
+                    pointStyle: 'none'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { min: 0, max: 100, title: { display: true, text: 'Prosent (%)' } }
+            }
+        }
+    });
+}
+
+function lukkHistorikk() {
+    document.getElementById('historikkModal').style.display = 'none';
+}
 
 function nullstillElev(navn) {
     if (confirm(`Vil du tømme alle poeng for ${navn}? Eleven blir stående i listen, men poengene fjernes.`)) {
