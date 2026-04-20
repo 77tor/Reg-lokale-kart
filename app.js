@@ -796,7 +796,53 @@ async function visElevHistorikk(navn) {
     // Tegn grafen hvis funksjonen eksisterer
     if (window.oppdaterHistorikkChart) oppdaterHistorikkChart(historikkData);
 }
-// <--- HER SLUTTER ELEVHISTORIKK
+
+// <--- HER BEGYNNER CHARTELEVHISTORIKK
+function oppdaterHistorikkChart(historikkData) {
+    const ctx = document.getElementById('historikkChart').getContext('2d');
+    
+    // Hvis det finnes en graf fra før, slett den for å unngå flimring
+    if (historikkChart) {
+        historikkChart.destroy();
+    }
+
+    const labels = historikkData.map(d => `${d.p} ${d.aar.split('-')[0]}`); // F.eks "Høst 2024"
+    const elevSkår = historikkData.map(d => d.prosent);
+    
+    // Vi setter en fast verdi på 100 på Y-aksen så det er lett å lese
+    historikkChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Elevens skår (%)',
+                data: elevSkår,
+                borderColor: '#3182ce',
+                backgroundColor: 'rgba(49, 130, 206, 0.1)',
+                borderWidth: 3,
+                pointRadius: 5,
+                pointBackgroundColor: '#3182ce',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: { display: true, text: 'Prosent (%)' }
+                }
+            },
+            plugins: {
+                legend: { position: 'top' }
+            }
+        }
+    });
+}
+// <--- HER SLUTTER ELEVHISTORIKK MED CHART
 
 function nullstillElev(navn) {
     if (confirm(`Vil du tømme alle poeng for ${navn}? Eleven blir stående i listen, men poengene fjernes.`)) {
