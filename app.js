@@ -860,6 +860,20 @@ function oppdaterHistorikkChart(historikkData) {
         }
     });
 }
+
+
+function lukkHistorikk() {
+    const modal = document.getElementById('historikkModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+
+    // Viktig: Rydd opp i grafen så den kan tegnes på nytt senere
+    if (historikkChart) {
+        historikkChart.destroy();
+        historikkChart = null;
+    }
+}
 // <--- HER SLUTTER ELEVHISTORIKK MED CHART
 
 function nullstillElev(navn) {
@@ -1390,6 +1404,7 @@ window.addEventListener('click', function(event) {
     const modalVelkomst = document.getElementById('modalVelkomst');
     const modalOppgaver = document.getElementById('modalOppgaver'); // Lagt til
     const modalKontaktAdmin = document.getElementById('modalKontaktAdmin'); // Lagt til for meldinger
+    const modalHistorikk = document.getElementById('historikkModal');
     const dropdown = document.getElementById("userDropdown");
 
     // 1. Lukk dropdown hvis man klikker utenfor .user-pill
@@ -1407,6 +1422,7 @@ window.addEventListener('click', function(event) {
     // 3. Nye sjekker for de siste modalene vi laget
     if (event.target === modalOppgaver) lukkOppgaveOversikt();
     if (event.target === modalKontaktAdmin) lukkKontaktAdmin();
+    if (event.target === modalHistorikk) lukkHistorikk();
 });
 
 // --- LÆRERSIDE ---
