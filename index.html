@@ -307,54 +307,7 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     text-decoration: underline;
 }
 
-@media print {
-    /* 1. Skjul alt annet på siden */
-    body * {
-        visibility: hidden;
-    }
 
-    /* 2. Gjør modalen og dens innhold synlig */
-    #historikkModal, #historikkModal * {
-        visibility: visible;
-    }
-
-    /* 3. Nullstill modalens posisjon så den dekker hele arket */
-    #historikkModal {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: auto;
-        display: block !important;
-        background: white;
-    }
-
-    /* 4. Fjern rullefelt og tving innholdet til full høyde */
-    .modal-content {
-        width: 100% !important;
-        max-width: none !important;
-        box-shadow: none !important;
-        border: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    .modal-body-scroll {
-        overflow: visible !important; /* Viktig: Fjerner scroll så alt vises */
-        height: auto !important;     /* Tvinger full høyde på tabellen */
-    }
-
-    /* 5. Skjul knapper (bruker din 'no-print' klasse) */
-    .no-print, .btn-nullstill, .close {
-        display: none !important;
-    }
-
-    /* 6. Sørg for at grafen (canvas) fyller bredden */
-    #historikkChart {
-        max-width: 100% !important;
-        height: auto !important;
-    }
-}
 
 
 /* UTSKRIFT (Beholdt din originale logikk - med fiks for linjer) */
