@@ -915,6 +915,15 @@ label: 'Klassens snitt (%)',
     });
 }
 
+function skrivUtHistorikk() {
+    // 1. Bekreft at klassen er på body
+    document.body.classList.add('historikk-modus');
+    
+    // 2. Vent 250ms så Chart.js og CSS rekker å oppdatere seg
+    setTimeout(() => {
+        window.print();
+    }, 250);
+}
 
 function lukkHistorikk() {
     const modal = document.getElementById('historikkModal');
