@@ -736,6 +736,7 @@ async function visElevHistorikk(navn) {
     tbody.innerHTML = "<tr><td colspan='5'>Søker etter data...</td></tr>";
     document.getElementById('historikkNavn').innerText = `Historikk for ${navn}`;
     document.getElementById('historikkModal').style.display = 'flex';
+    document.body.classList.add('historikk-modus');
 
     const vFag = document.getElementById('mFag').value;
     const tilgjengeligeAar = ["2024-2025", "2025-2026"];
@@ -918,6 +919,7 @@ label: 'Klassens snitt (%)',
 function lukkHistorikk() {
     const modal = document.getElementById('historikkModal');
     if (modal) modal.style.display = 'none';
+    document.body.classList.remove('historikk-modus');
 
     // VIKTIG: Slett grafen slik at den kan tegnes på nytt for neste elev
     if (window.historikkChart instanceof Chart) {
