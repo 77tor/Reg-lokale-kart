@@ -727,42 +727,57 @@ async function visElevHistorikk(navn) {
     const vTrinn = document.getElementById('mTrinn').value;
     
     const historikkData = [];
-    const perioder = ["Høst", "Vinter", "Vår"]; // Juster etter dine periodenavn
+    const perioder = ["Høst",  "Vår"]; // DOBBELTSJEKK AT DISSE MATCHER FIREBASE
 
-    // 1. Hent data for alle perioder
+    console.log("Henter historikk for:", navn, vAar, vFag);
+
     for (const p of perioder) {
-        const sti = `resultater/${vAar}/${vFag}/${p}/${vTrinn}`;
-        const snap = await db.ref(sti).once('value');
-        const data = snap.val();
-        
-        // Hent også status for å få gjennomsnittet for klassen
-        const statusSnap = await db.ref(`status/${vAar}/${vFag}/${p}/${vTrinn}`).once('value');
-        
-        if (data && data[navn]) {
-            // Finn malen for å vite makspoeng og kritisk grense
-            const oppsett = oppgaveStruktur[vAar][vFag][p][vTrinn];
-            const elevData = data[navn];
+        // Vi må gå dypere i stien for å finne malen (oppsettet)
+        try {
+            const sti = `resultater/${vAar}/${vFag}/${p}/${vTrinn}`;
+            const snap = await db.ref(sti).once('value');
+            const alleResultaterIPeriode = snap.val();
             
-            // Beregn klassens snitt for denne prøven
-            let sumAlle = 0;
-            let antall = 0;
-            Object.values(data).forEach(d => {
-                if(d.sum) { sumAlle += d.sum; antall++; }
-            });
-            const klasseSnittProsent = ((sumAlle / antall) / oppsett.maksTotal) * 100;
+            // Hent malen for denne perioden for å få maksTotal og grenseTotal
+            const oppsett = (oppgaveStruktur[vAar] && oppgaveStruktur[vAar][vFag] && oppgaveStruktur[vAar][vFag][p]) 
+                            ? oppgaveStruktur[vAar][vFag][p][vTrinn] : null;
 
-            historikkData.push({
-                periode: p,
-                poeng: elevData.sum,
-                maks: oppsett.maksTotal,
-                grense: oppsett.grenseTotal,
-                prosent: (elevData.sum / oppsett.maksTotal) * 100,
-                snittProsent: klasseSnittProsent
-            });
+            if (alleResultaterIPeriode && alleResultaterIPeriode[navn] && oppsett) {
+                const elevData = alleResultaterIPeriode[navn];
+                
+                // Beregn klassens snitt for denne perioden
+                let sumAlle = 0;
+                let antall = 0;
+                Object.values(alleResultaterIPeriode).forEach(d => {
+                    if (d.sum !== undefined && !d.slettet) { 
+                        sumAlle += d.sum; 
+                        antall++; 
+                    }
+                });
+                
+                const klasseSnittProsent = antall > 0 ? ((sumAlle / antall) / oppsett.maksTotal) * 100 : 0;
+                const elevProsent = (elevData.sum / oppsett.maksTotal) * 100;
+
+                historikkData.push({
+                    periode: p,
+                    poeng: elevData.sum,
+                    maks: oppsett.maksTotal,
+                    grense: oppsett.grenseTotal,
+                    prosent: elevProsent,
+                    snittProsent: klasseSnittProsent
+                });
+            }
+        } catch (feil) {
+            console.error("Feil ved henting av periode " + p, feil);
         }
     }
 
-    // 2. Tegn Tabellen
+    if (historikkData.length === 0) {
+        alert("Fant ingen historiske data for denne eleven i " + vFag);
+        return;
+    }
+
+    // Oppdater Tabellen
     const tbody = document.getElementById('historikkTabellBody');
     tbody.innerHTML = historikkData.map(d => `
         <tr>
@@ -770,7 +785,7 @@ async function visElevHistorikk(navn) {
             <td>${d.poeng}</td>
             <td>${d.maks}</td>
             <td>${d.grense}</td>
-            <td style="font-weight:bold; color: ${d.prosent <= (d.grense/d.maks)*100 ? 'red' : 'black'}">
+            <td style="font-weight:bold; color: ${d.poeng <= d.grense ? '#c53030' : '#2d3748'}">
                 ${d.prosent.toFixed(1)}%
             </td>
         </tr>
@@ -779,7 +794,7 @@ async function visElevHistorikk(navn) {
     document.getElementById('historikkNavn').innerText = `Historikk for ${navn} - ${vFag}`;
     document.getElementById('historikkModal').style.display = 'flex';
 
-    // 3. Tegn Diagrammet
+    // Tegn Diagrammet
     oppdaterHistorikkChart(historikkData);
 }
 
