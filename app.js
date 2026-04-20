@@ -631,14 +631,28 @@ function tegnTabell() {
         const harIkkeSluttet = !e.sluttAar || vStartAarValgt <= parseInt(e.sluttAar);
         const erRiktigTrinnOgKlasse = (cTrinn === parseInt(vTrinn) && e.startKlasse === vKlasse);
 
-        if (erRiktigTrinnOgKlasse && harBegynt && harIkkeSluttet) {
-            const d = lagredeResultater[navn] || {};
-            const erSlettet = d.slettet === true;
-            const erIkkeGjennomfort = d.ikkeGjennomfort === true;
-            let printKlasse = erSlettet ? 'class="no-print"' : '';
-            let radStil = erSlettet ? 'style="color: #a0aec0; background: #f7fafc;"' : (erIkkeGjennomfort ? 'style="background: #fff5f5;"' : '');
+        // --- Inni loopen for hver elev ---
+if (erRiktigTrinnOgKlasse && harBegynt && harIkkeSluttet) {
+    const d = lagredeResultater[navn] || {};
+    const erSlettet = d.slettet === true;
+    const erIkkeGjennomfort = d.ikkeGjennomfort === true;
+    const erTabellLaast = document.body.classList.contains('is-locked'); 
+    
+    let visningsNavn = `<b>${navn}</b>`;
+    
+    if (erTabellLaast && !erSlettet) {
+        visningsNavn = `<a href="#" onclick="visElevHistorikk('${navn}'); return false;" 
+                           style="color: #2980b9; text-decoration: underline; cursor: pointer;">
+                           ${navn}
+                        </a>`;
+    }
 
-            let rad = `<tr ${printKlasse} ${radStil}><td style="text-align:left"><b>${navn}</b></td>`;
+    let printKlasse = erSlettet ? 'class="no-print"' : '';
+    let radStil = erSlettet ? 'style="color: #a0aec0; background: #f7fafc;"' : (erIkkeGjennomfort ? 'style="background: #fff5f5;"' : '');
+
+    // Bruk visningsNavn istedenfor bare b-taggen her:
+    let rad = `<tr ${printKlasse} ${radStil}><td style="text-align:left">${visningsNavn}</td>`;
+
             if (!erSlettet && erIkkeGjennomfort) {
                 rad += `<td colspan="${oppsett.oppgaver.length + 1}" style="color: #c53030; font-style: italic; font-weight: bold;">Ikke gjennomført</td>`;
             } else if (!erSlettet && d.oppgaver) {
@@ -718,6 +732,113 @@ function nullstillElev(navn) {
         });
     }
 }
+
+let historikkChart = null; // Lagrer chart-objektet globalt
+
+async function visElevHistorikk(navn) {
+    const vAar = document.getElementById('mAar').value;
+    const vFag = document.getElementById('mFag').value;
+    const vTrinn = document.getElementById('mTrinn').value;
+    
+    const historikkData = [];
+    const perioder = ["Høst", "Vinter", "Vår"]; // Juster etter dine periodenavn
+
+    // 1. Hent data for alle perioder
+    for (const p of perioder) {
+        const sti = `resultater/${vAar}/${vFag}/${p}/${vTrinn}`;
+        const snap = await db.ref(sti).once('value');
+        const data = snap.val();
+        
+        // Hent også status for å få gjennomsnittet for klassen
+        const statusSnap = await db.ref(`status/${vAar}/${vFag}/${p}/${vTrinn}`).once('value');
+        
+        if (data && data[navn]) {
+            // Finn malen for å vite makspoeng og kritisk grense
+            const oppsett = oppgaveStruktur[vAar][vFag][p][vTrinn];
+            const elevData = data[navn];
+            
+            // Beregn klassens snitt for denne prøven
+            let sumAlle = 0;
+            let antall = 0;
+            Object.values(data).forEach(d => {
+                if(d.sum) { sumAlle += d.sum; antall++; }
+            });
+            const klasseSnittProsent = ((sumAlle / antall) / oppsett.maksTotal) * 100;
+
+            historikkData.push({
+                periode: p,
+                poeng: elevData.sum,
+                maks: oppsett.maksTotal,
+                grense: oppsett.grenseTotal,
+                prosent: (elevData.sum / oppsett.maksTotal) * 100,
+                snittProsent: klasseSnittProsent
+            });
+        }
+    }
+
+    // 2. Tegn Tabellen
+    const tbody = document.getElementById('historikkTabellBody');
+    tbody.innerHTML = historikkData.map(d => `
+        <tr>
+            <td>${d.periode}</td>
+            <td>${d.poeng}</td>
+            <td>${d.maks}</td>
+            <td>${d.grense}</td>
+            <td style="font-weight:bold; color: ${d.prosent <= (d.grense/d.maks)*100 ? 'red' : 'black'}">
+                ${d.prosent.toFixed(1)}%
+            </td>
+        </tr>
+    `).join('');
+
+    document.getElementById('historikkNavn').innerText = `Historikk for ${navn} - ${vFag}`;
+    document.getElementById('historikkModal').style.display = 'flex';
+
+    // 3. Tegn Diagrammet
+    oppdaterHistorikkChart(historikkData);
+}
+
+function oppdaterHistorikkChart(data) {
+    const ctx = document.getElementById('historikkChart').getContext('2d');
+    
+    if (historikkChart) historikkChart.destroy();
+
+    historikkChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.map(d => d.periode),
+            datasets: [
+                {
+                    label: 'Elevens skår (%)',
+                    data: data.map(d => d.prosent),
+                    borderColor: '#2980b9',
+                    backgroundColor: 'rgba(41, 128, 185, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                },
+                {
+                    label: 'Klassens snitt (%)',
+                    data: data.map(d => d.snittProsent),
+                    borderColor: '#e67e22',
+                    borderDash: [5, 5], // Stiplet strek
+                    fill: false,
+                    pointStyle: 'none'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { min: 0, max: 100, title: { display: true, text: 'Prosent (%)' } }
+            }
+        }
+    });
+}
+
+function lukkHistorikk() {
+    document.getElementById('historikkModal').style.display = 'none';
+}
+
 
 async function toggleFerdigstill() {
     const tabell = document.getElementById('hovedTabell');
