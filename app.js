@@ -740,38 +740,46 @@ async function visElevHistorikk(navn) {
                 const snap = await db.ref(sti).once('value');
                 const data = snap.val();
 
-                if (data) {
-                    Object.keys(data).forEach(trinn => {
-                        Object.keys(data[trinn]).forEach(klasse => {
-                            const alleIDenneKlassen = data[trinn][klasse];
-                            const e = alleIDenneKlassen[navn];
-                            
-                            if (e && !e.slettet) {
-                                const o = typeof hentOppsettSpesifikk === 'function' 
-                                          ? hentOppsettSpesifikk(aar, vFag, p, trinn) 
-                                          : null;
+if (data) {
+    Object.keys(data).forEach(trinn => {
+        Object.keys(data[trinn]).forEach(klasse => {
+            const alleIDenneKlassen = data[trinn][klasse];
+            const e = alleIDenneKlassen[navn];
+            
+            if (e && !e.slettet) {
+                const o = typeof hentOppsettSpesifikk === 'function' 
+                          ? hentOppsettSpesifikk(aar, vFag, p, trinn) 
+                          : null;
 
-                                if (o) {
-                                    const maksTotal = o.oppgaver.reduce((s, op) => s + op.maks, 0);
-                                    
-                                    // --- NY BEREGNING: KLASSENS SNITT ---
-                                    let sumKlasse = 0, antallKlasse = 0;
-                                    Object.values(alleIDenneKlassen).forEach(elev => {
-                                        if (elev.sum !== undefined && !elev.slettet) {
-                                            sumKlasse += elev.sum;
-                                            antallKlasse++;
-                                        }
-                                    });
-                                    const snitt = antallKlasse > 0 ? (sumKlasse / antallKlasse / maksTotal) * 100 : 0;
-                                    // ------------------------------------
+                if (o) {
+                    const maksTotal = o.oppgaver.reduce((s, op) => s + op.maks, 0);
+                    
+                    // --- NY SJEKK: ER PRØVEN GJENNOMFØRT? ---
+                    // Vi sjekker flagget fra databasen
+                    const erUtfort = e.ikkeGjennomfort !== true; 
 
-                                    historikkData.push({
-                                        aar, p, trinn, klasse,
-                                        poeng: e.sum,
-                                        maks: maksTotal,
-                                        grense: o.grenseTotal,
-                                        prosent: Math.round((e.sum / maksTotal) * 100),
-                                        snittProsent: Math.round(snitt) // Sendes til grafen
+                    // --- BEREGNING: KLASSENS SNITT (kun for de som har gjennomført) ---
+                    let sumKlasse = 0, antallKlasse = 0;
+                    Object.values(alleIDenneKlassen).forEach(elev => {
+                        if (elev.sum !== undefined && !elev.slettet && elev.ikkeGjennomfort !== true) {
+                            sumKlasse += elev.sum;
+                            antallKlasse++;
+                        }
+                    });
+                    const snitt = antallKlasse > 0 ? (sumKlasse / antallKlasse / maksTotal) * 100 : 0;
+
+                    // Legg til i historikk-listen
+                    historikkData.push({
+                        aar, p, trinn, klasse,
+                        // Hvis ikke utført, setter vi poeng til en tekststreng så tabellen kan vise det
+                        poeng: erUtfort ? e.sum : "Ikke utført",
+                        maks: maksTotal,
+                        grense: o.grenseTotal,
+                        // VIKTIG: Sett prosent til null hvis ikke utført. 
+                        // Chart.js tegner da ikke dette punktet (linjen brytes).
+                        prosent: erUtfort ? Math.round((e.sum / maksTotal) * 100) : null,
+                        snittProsent: Math.round(snitt),
+                        statusTekst: erUtfort ? "" : "Ikke gjennomført"
                                     });
                                 }
                             }
@@ -792,20 +800,33 @@ async function visElevHistorikk(navn) {
     // Sortering (Trinn -> Periode)
     historikkData.sort((a, b) => a.trinn - b.trinn || (a.p === "Høst" ? -1 : 1));
 
-    // Oppdater tabell
-    tbody.innerHTML = historikkData.map(d => `
-        <tr>
-            <td style="text-align:left;"><b>${d.p} ${d.aar}</b><br><small>Trinn ${d.trinn}${d.klasse}</small></td>
-            <td>${d.poeng}</td>
-            <td>${d.maks}</td>
-            <td>${d.grense}</td>
-            <td style="font-weight:bold; color: ${d.poeng <= d.grense ? '#e53e3e' : '#38a169'}">${d.prosent}%</td>
-        </tr>
-    `).join('');
+// Oppdater tabell
+    tbody.innerHTML = historikkData.map(d => {
+        const erUtfort = d.prosent !== null;
+        
+        // Bestem farge på skår: Grå hvis ikke utført, rød hvis under grense, grønn hvis over
+        let farge = '#7f8c8d'; // Grå (standard)
+        if (erUtfort) {
+            farge = d.poeng <= d.grense ? '#e53e3e' : '#38a169';
+        }
 
-    // Tegn grafen (Nå med både elevens prosent og klassens snitt)
+        return `
+            <tr>
+                <td style="text-align:left;"><b>${d.p} ${d.aar}</b><br><small>Trinn ${d.trinn}${d.klasse}</small></td>
+                <td>${d.poeng}</td>
+                <td>${d.maks}</td>
+                <td>${d.grense}</td>
+                <td style="font-weight:bold; color: ${farge}">
+                    ${erUtfort ? d.prosent + '%' : 'Ikke gjennomført'}
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    // Tegn grafen
     if (window.oppdaterHistorikkChart) oppdaterHistorikkChart(historikkData);
 }
+
 // <--- HER BEGYNNER CHARTELEVHISTORIKK
 function oppdaterHistorikkChart(historikkData) {
     const ctx = document.getElementById('historikkChart').getContext('2d');
@@ -864,14 +885,12 @@ function oppdaterHistorikkChart(historikkData) {
 
 function lukkHistorikk() {
     const modal = document.getElementById('historikkModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
+    if (modal) modal.style.display = 'none';
 
-    // Viktig: Rydd opp i grafen så den kan tegnes på nytt senere
-    if (historikkChart) {
-        historikkChart.destroy();
-        historikkChart = null;
+    // VIKTIG: Slett grafen slik at den kan tegnes på nytt for neste elev
+    if (window.historikkChart instanceof Chart) {
+        window.historikkChart.destroy();
+        window.historikkChart = null;
     }
 }
 // <--- HER SLUTTER ELEVHISTORIKK MED CHART
