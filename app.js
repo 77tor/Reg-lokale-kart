@@ -653,13 +653,13 @@ async function tegnTabell() {
             const erIkkeGjennomfort = d.ikkeGjennomfort === true;
             
             // LOGIKK FOR KLIKKBARE NAVN VED LÅST PRØVE
-            let visningsNavn = `<b>${navn}</b>`;
-            if (erLaast && !erSlettet) {
-                visningsNavn = `<a href="#" onclick="visElevHistorikk('${navn}'); return false;" 
-                                   style="color: #2980b9; text-decoration: underline; cursor: pointer;">
-                                   ${navn}
-                                </a>`;
-            }
+let visningsNavn = `<b>${navn}</b>`;
+if (erLaast && !erSlettet) {
+    // Vi fjerner 'style' herfra og legger på en klasse 'elev-link' isteden
+    visningsNavn = `<a href="#" class="elev-link" onclick="visElevHistorikk('${navn}'); return false;">
+                        ${navn}
+                    </a>`;
+}
 
             let printKlasse = erSlettet ? 'class="no-print"' : '';
             let radStil = erSlettet ? 'style="color: #a0aec0; background: #f7fafc;"' : (erIkkeGjennomfort ? 'style="background: #fff5f5;"' : '');
