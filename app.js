@@ -574,9 +574,13 @@ function hentRegister() {
 
 
 // --- TEGN TABELL (Optimalisert med async/await og historikk-linker) ---
+// --- TEGN TABELL (Komplett versjon med historikk-linker og dynamisk knapperad) ---
 async function tegnTabell() {
+    // VAKT: Hvis admin-panelet er åpent, skal vi IKKE røre hovedsiden!
     const adminPanel = document.getElementById('adminPanel');
-    if (adminPanel && adminPanel.style.display === 'block') return;
+    if (adminPanel && adminPanel.style.display === 'block') {
+        return; 
+    }
 
     const vAar = document.getElementById('mAar').value;
     const vFag = document.getElementById('mFag').value;
@@ -584,32 +588,33 @@ async function tegnTabell() {
     const vTrinn = document.getElementById('mTrinn').value;
     const vKlasse = document.getElementById('mKlasse').value;
 
-    const tBody = document.getElementById('tBody');
     const tHead = document.getElementById('tHead');
+    const tBody = document.getElementById('tBody');
+    const actionButtons = document.getElementById('actionButtons'); // Referanse til knapperaden
 
+    // SJEKK: Hvis ikke alle valg er tatt
     if (!vAar || !vFag || !vPeriode || !vTrinn || !vKlasse) {
         tBody.innerHTML = "<tr><td colspan='100%'>Vennligst velg alle kriterier...</td></tr>";
-        if (document.getElementById('nyElevSeksjon')) document.getElementById('nyElevSeksjon').style.display = 'none';
+        if (actionButtons) actionButtons.style.display = 'none';
+        const nyElevBoks = document.getElementById('nyElevSeksjon');
+        if (nyElevBoks) nyElevBoks.style.display = 'none';
         return;
     }
 
-    // 1. HENT STATUS FØRST (Viktig for å vite om vi skal lage linker)
+    // 1. HENT STATUS FØRST (For å vite om navn skal være linker)
     const statusSti = `status/${vAar}/${vFag}/${vPeriode}/${vTrinn}/${vKlasse}`;
     const statusSnap = await db.ref(statusSti).once('value');
     const status = statusSnap.val();
     const erLaast = status && status.laast === true;
 
-    // Oppdater UI-klasser med en gang
-    if (erLaast) {
-        document.body.classList.add('is-locked');
-    } else {
-        document.body.classList.remove('is-locked');
-    }
+    // Oppdater UI-klasser og vis knapperaden
+    if (erLaast) document.body.classList.add('is-locked'); 
+    else document.body.classList.remove('is-locked');
     
-    // Oppdater knapp og labels via din eksisterende funksjon
+    if (actionButtons) actionButtons.style.display = 'flex';
     oppdaterLaaseVisning(erLaast);
 
-    // 2. HENTE OPPSETT/MAL
+    // --- LOGIKK FOR Å HENTE OPPSETT ---
     const aarIMal = oppgaveStruktur[vAar] ? vAar : "2025-2026";
     const oppsett = (oppgaveStruktur[aarIMal] && oppgaveStruktur[aarIMal][vFag] && oppgaveStruktur[aarIMal][vFag][vPeriode]) 
                     ? oppgaveStruktur[aarIMal][vFag][vPeriode][vTrinn] : null;
@@ -619,7 +624,7 @@ async function tegnTabell() {
         return;
     }
 
-    // 3. LAG TABELLHODE
+    // 2. LAG TABELLHODE
     let hode = `<tr><th style="text-align:left">Elevnavn</th>`;
     oppsett.oppgaver.forEach(o => {
         const overskriftInnhold = o.bilde ? `<span class="hjelpe-ikon-tekst">${o.navn}<img src="${o.bilde}" class="oppgave-preview-bilde"></span>` : o.navn;
@@ -635,7 +640,7 @@ async function tegnTabell() {
     let aktiveRader = "";
     let slettedeRader = "";
 
-    // 4. GÅ GJENNOM ELEVER
+    // 3. GÅ GJENNOM ALLE ELEVER
     Object.keys(elevRegister).sort().forEach(navn => {
         const e = elevRegister[navn];
         const cTrinn = parseInt(e.startTrinn) + (vStartAarValgt - parseInt(e.startAar));
@@ -648,7 +653,7 @@ async function tegnTabell() {
             const erSlettet = d.slettet === true;
             const erIkkeGjennomfort = d.ikkeGjennomfort === true;
             
-            // Bruk den hentede 'erLaast' variabelen direkte
+            // LOGIKK FOR KLIKKBARE NAVN VED LÅST PRØVE
             let visningsNavn = `<b>${navn}</b>`;
             if (erLaast && !erSlettet) {
                 visningsNavn = `<a href="#" onclick="visElevHistorikk('${navn}'); return false;" 
@@ -693,12 +698,11 @@ async function tegnTabell() {
                 }
             }
             rad += `</td></tr>`;
-            
             if (erSlettet) slettedeRader += rad; else aktiveRader += rad;
         }
     });
 
-    // 5. SNITTRAD OG UTTEGNING
+    // 4. LAG GJENNOMSNITTSRAD
     let snittHtml = "";
     if (antallAktiveMedData > 0) {
         snittHtml = `<tr class="snitt-rad" style="background:#edf2f7; font-weight:bold;"><td style="text-align:left">Snitt ${vTrinn}${vKlasse}</td>`;
@@ -708,11 +712,10 @@ async function tegnTabell() {
 
     tBody.innerHTML = aktiveRader + snittHtml + slettedeRader;
 
-    // Skjul/vis ny elev-seksjon basert på lås
+    // 5. NY ELEV SEKSJON VISNING
     const nyElevBoks = document.getElementById('nyElevSeksjon');
     if (nyElevBoks) nyElevBoks.style.display = erLaast ? 'none' : 'block';
 }
-
 // <--- HER SLUTTER FUNKSJONEN. Ingen kode etter dette punktet før neste funksjon starter.
 
 
