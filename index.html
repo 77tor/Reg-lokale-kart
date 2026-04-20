@@ -308,6 +308,7 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 }
 
 /* UTSKRIFT (Beholdt din originale logikk - med fiks for linjer og historikk) */
+/* UTSKRIFT (Beholdt din originale logikk - med fiks for linjer og historikk) */
 @media print {
     /* 1. Tvinger farger og linjer */
     * { 
@@ -318,30 +319,38 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     @page { size: landscape; margin: 0.5cm; }
     
     /* 2. Skjul elementer */
-    /* Beholder din liste, men fjerner .modal herfra for å styre den mer presist under */
+    /* VIKTIG: Vi fjerner .modal herfra og styrer den med logikken rett under */
     .no-print, .btn, .header-grid, .action-bar, .top-header-bar { 
         display: none !important; 
     }
 
-    /* --- NY SPESIFIKK MODAL-LOGIKK --- */
-    .modal { display: none !important; } /* Skjuler alle modaler (inkl. velkomst) */
+    /* --- MODAL LOGIKK SOM FAKTISK VIRKER --- */
+    /* Denne gjelder når vi skriver ut VANLIG tabell (ikke historikk) */
+    body:not(.historikk-modus) .modal {
+        display: none !important;
+    }
 
-    /* Unntak: Hvis body har klassen 'historikk-modus', tving frem KUN historikk-modalen */
-    body.historikk-modus #historikkModal {
+    /* Denne gjelder når vi skriver ut HISTORIKK */
+    body.historikk-modus .modal#historikkModal {
         display: block !important;
         position: absolute !important;
         top: 0 !important;
         left: 0 !important;
         width: 100% !important;
-        background: white !important;
         z-index: 9999 !important;
+        background: white !important;
     }
 
-    /* Skjul hovedtabellen i bakgrunnen kun når vi skriver ut historikk */
+    /* Skjul andre modaler (som velkomst) selv om vi er i historikk-modus */
+    body.historikk-modus .modal:not(#historikkModal) {
+        display: none !important;
+    }
+
+    /* Skjul hovedcontaineren når historikken skrives ut */
     body.historikk-modus .container {
         display: none !important;
     }
-    /* -------------------------------- */
+    /* -------------------------------------- */
 
     /* 2. FJERNER GRÅFARGE OG SKYGGER UTENFOR TABELLEN */
     body { 
@@ -363,15 +372,15 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     table { 
         width: 100% !important; 
         font-size: 8.5pt !important; 
-        border-collapse: collapse !important; /* Denne er kritisk for linjer */
+        border-collapse: collapse !important; 
         border: 1px solid black !important;
     }
 
-    /* 4. Tving linjer på alle celler - også overskrifter (th) */
+    /* 4. Tving linjer på alle celler */
     th, td { 
         border: 1px solid black !important; 
-        box-shadow: none !important; /* Fjerner skygger som kan skjule streker */
-        position: static !important; /* Hindrer 'sticky' i å ødelegge utskrift */
+        box-shadow: none !important; 
+        position: static !important; 
     }
 
     /* Spesifikk fiks for overskrifts-bakgrunn */
@@ -380,7 +389,7 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
         -webkit-print-color-adjust: exact !important;
     }
 
-    /* Fiks for at modal-innholdet skal fylle arket */
+    /* Sørger for at modal-innholdet pakkes ut */
     body.historikk-modus .modal-content {
         width: 100% !important;
         max-width: none !important;
