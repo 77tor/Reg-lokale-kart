@@ -916,12 +916,24 @@ label: 'Klassens snitt (%)',
 }
 
 function skrivUtHistorikk() {
-    // 1. Bekreft at klassen er på body
+    const modal = document.getElementById('historikkModal');
+    
+    // Tving klassen på body
     document.body.classList.add('historikk-modus');
     
-    // 2. Vent 250ms så Chart.js og CSS rekker å oppdatere seg
+    // Fjern inline "display:flex" midlertidig så CSS-print kan styre fritt
+    modal.style.display = 'block'; 
+    
     setTimeout(() => {
         window.print();
+        
+        // Sett den tilbake til flex etter at utskriftsvinduet er lukket 
+        // slik at den ser riktig ut på skjermen igjen
+        setTimeout(() => {
+            if (document.body.classList.contains('historikk-modus')) {
+                modal.style.display = 'flex';
+            }
+        }, 500);
     }, 250);
 }
 
