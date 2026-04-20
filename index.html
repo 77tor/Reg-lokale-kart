@@ -309,7 +309,6 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 
 
 /* UTSKRIFT (Beholdt din originale logikk - med fiks for linjer og historikk) */
-/* UTSKRIFT (Beholdt din originale logikk - med fiks for linjer og historikk) */
 @media print {
     /* 1. Tvinger farger og linjer */
     * { 
@@ -320,30 +319,35 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     @page { size: landscape; margin: 0.5cm; }
     
     /* 2. Skjul elementer */
-    /* FJERN .modal fra denne lista slik at den ikke blir permanent låst til display:none */
     .no-print, .btn, .header-grid, .action-bar, .top-header-bar { 
         display: none !important; 
     }
 
-    /* 2b. Spesifikk kontroll på modaler */
-    .modal { display: none !important; } /* Skjuler alle modaler som standard (f.eks. Velkommen) */
+    /* --- VIKTIG ENDRING HER: --- */
+    
+    /* 1. Skjul alle modaler som standard (f.eks. Velkommen) */
+    .modal { display: none !important; } 
 
-    /* UNNTAK: Hvis vi er i historikk-modus, vis historikk-modalen */
+    /* 2. TVING frem historikk-modalen KUN hvis historikk-modus er aktiv */
+    /* Vi bruker "body.historikk-modus" for å være mer spesifikke */
     body.historikk-modus #historikkModal {
         display: block !important;
+        visibility: visible !important;
         position: absolute !important;
         left: 0 !important;
         top: 0 !important;
         width: 100% !important;
-        z-index: 9999 !important;
+        z-index: 99999 !important;
     }
 
-    /* Skjul hovedtabellen kun når vi faktisk skriver ut historikk */
+    /* 3. Skjul hovedtabellen kun når vi skriver ut historikk */
     body.historikk-modus .container {
         display: none !important;
     }
+    
+    /* --------------------------- */
 
-    /* 2c. FJERNER GRÅFARGE OG SKYGGER UTENFOR TABELLEN */
+    /* 2. FJERNER GRÅFARGE OG SKYGGER UTENFOR TABELLEN */
     body { 
         background: white !important; 
         background-color: white !important;
@@ -374,13 +378,12 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
         position: static !important; 
     }
 
-    /* Spesifikk fiks for overskrifts-bakgrunn */
     th {
         background-color: #f8f9fa !important;
         -webkit-print-color-adjust: exact !important;
     }
 
-    /* Fiks for at modal-innholdet skal fylle hele arket */
+    /* Fiks for modal-innholdet */
     body.historikk-modus .modal-content {
         width: 100% !important;
         max-width: none !important;
@@ -388,10 +391,17 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
         box-shadow: none !important;
         margin: 0 !important;
         padding: 0 !important;
+        display: block !important;
     }
 
     body.historikk-modus .modal-body-scroll {
         overflow: visible !important;
+        height: auto !important;
+    }
+
+    /* Sørg for at grafen (canvas) faktisk tegnes */
+    canvas {
+        max-width: 100% !important;
         height: auto !important;
     }
 
