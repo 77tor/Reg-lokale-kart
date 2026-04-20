@@ -722,124 +722,79 @@ async function tegnTabell() {
 let historikkChart = null; // Lagrer chart-objektet globalt
 
 async function visElevHistorikk(navn) {
-    const vAar = document.getElementById('mAar').value;
-    const vFag = document.getElementById('mFag').value;
-    const vTrinn = document.getElementById('mTrinn').value;
-    const vKlasse = document.getElementById('mKlasse').value;
-    
-    const historikkData = [];
-    // Viktig: Firebase er case-sensitive. Sørg for at disse matcher valgene i dropdown (Høst/Vår)
-    const perioder = ["Høst", "Vår"]; 
-
-    for (const p of perioder) {
-        // OPPDATERT STI basert på bildet ditt: kartlegging -> år -> fag -> periode -> trinn -> klasse
-        const sti = `kartlegging/${vAar}/${vFag}/${p}/${vTrinn}/${vKlasse}`;
-        
-        try {
-            const snap = await db.ref(sti).once('value');
-            const alleResultaterIPeriode = snap.val();
-            
-            // Henter oppsett for å få maksTotal (Sjekk at oppgaveStruktur bruker samme sti!)
-            const oppsett = (oppgaveStruktur[vAar] && oppgaveStruktur[vAar][vFag] && oppgaveStruktur[vAar][vFag][p]) 
-                            ? oppgaveStruktur[vAar][vFag][p][vTrinn] : null;
-
-            if (alleResultaterIPeriode && alleResultaterIPeriode[navn] && oppsett) {
-                const elevData = alleResultaterIPeriode[navn];
-                
-                // Beregn snitt
-                let sumAlle = 0;
-                let antall = 0;
-                Object.values(alleResultaterIPeriode).forEach(d => {
-                    if (d && typeof d.sum === 'number' && !d.slettet) { 
-                        sumAlle += d.sum; 
-                        antall++; 
-                    }
-                });
-                
-                const klasseSnittProsent = antall > 0 ? ((sumAlle / antall) / oppsett.maksTotal) * 100 : 0;
-                const elevProsent = (elevData.sum / oppsett.maksTotal) * 100;
-
-                historikkData.push({
-                    periode: p,
-                    poeng: elevData.sum,
-                    maks: oppsett.maksTotal,
-                    grense: oppsett.grenseTotal,
-                    prosent: elevProsent,
-                    snittProsent: klasseSnittProsent
-                });
-            }
-        } catch (err) {
-            console.error("Kunne ikke hente data for " + p, err);
-        }
-    }
-
-    if (historikkData.length === 0) {
-        alert(`Fant ingen historiske data for ${navn} i ${vFag} under stien: kartlegging/${vAar}/${vFag}/...`);
-        return;
-    }
-
-    // --- Tabell og Chart-tegning (samme som før) ---
+    // 1. Vis modalen og sett lastestatus
     const tbody = document.getElementById('historikkTabellBody');
-    tbody.innerHTML = historikkData.map(d => `
-        <tr>
-            <td>${d.periode}</td>
-            <td>${d.poeng}</td>
-            <td>${d.maks}</td>
-            <td>${d.grense}</td>
-            <td style="font-weight:bold; color: ${d.poeng <= d.grense ? '#c53030' : '#2d3748'}">
-                ${d.prosent.toFixed(1)}%
-            </td>
-        </tr>
-    `).join('');
-
-    document.getElementById('historikkNavn').innerText = `Historikk for ${navn} - ${vFag}`;
+    tbody.innerHTML = "<tr><td colspan='5'>Henter historikk...</td></tr>";
+    document.getElementById('historikkNavn').innerText = `Historikk for ${navn}`;
     document.getElementById('historikkModal').style.display = 'flex';
 
-    if (typeof oppdaterHistorikkChart === 'function') {
-        oppdaterHistorikkChart(historikkData);
-    }
-}
+    try {
+        // 2. Hent ALL data fra kartlegging (samme som i elevrapporten din)
+        const snap = await db.ref(`kartlegging`).once('value');
+        const alleData = snap.val() || {};
+        let historikkData = [];
 
-function oppdaterHistorikkChart(data) {
-    const ctx = document.getElementById('historikkChart').getContext('2d');
-    
-    if (historikkChart) historikkChart.destroy();
+        // 3. Bruk din dype loop-logikk for å finne alle resultater for denne eleven
+        for (let aar in alleData) {
+            for (let fag in alleData[aar]) {
+                for (let periode in alleData[aar][fag]) {
+                    for (let trinn in alleData[aar][fag][periode]) {
+                        for (let klasse in alleData[aar][fag][periode][trinn]) {
+                            const e = alleData[aar][fag][periode][trinn][klasse][navn];
+                            
+                            // Finn malen ved å bruke din hjelpefunksjon
+                            const o = hentOppsettSpesifikk(aar, fag, periode, trinn);
+                            
+                            if (e && !e.slettet && o) {
+                                // Beregn maksTotal slik du gjør i rapporten
+                                const maksTotal = o.oppgaver.reduce((sum, op) => sum + op.maks, 0);
+                                const prosent = Math.round((e.sum / maksTotal) * 100);
 
-    historikkChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: data.map(d => d.periode),
-            datasets: [
-                {
-                    label: 'Elevens skår (%)',
-                    data: data.map(d => d.prosent),
-                    borderColor: '#2980b9',
-                    backgroundColor: 'rgba(41, 128, 185, 0.1)',
-                    fill: true,
-                    tension: 0.3
-                },
-                {
-                    label: 'Klassens snitt (%)',
-                    data: data.map(d => d.snittProsent),
-                    borderColor: '#e67e22',
-                    borderDash: [5, 5], // Stiplet strek
-                    fill: false,
-                    pointStyle: 'none'
+                                historikkData.push({
+                                    aar, fag, periode, trinn, klasse,
+                                    poeng: e.sum,
+                                    grense: o.grenseTotal,
+                                    maks: maksTotal,
+                                    prosent: prosent,
+                                    etikett: `${fag} (${periode} ${trinn}${klasse})`
+                                });
+                            }
+                        }
+                    }
                 }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { min: 0, max: 100, title: { display: true, text: 'Prosent (%)' } }
             }
         }
-    });
-}
 
-function lukkHistorikk() {
-    document.getElementById('historikkModal').style.display = 'none';
+        if (historikkData.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='5'>Fant ingen historiske data.</td></tr>";
+            return;
+        }
+
+        // 4. Sortering (samme logikk som du allerede har)
+        historikkData.sort((a, b) => {
+            if (a.trinn !== b.trinn) return a.trinn - b.trinn;
+            const periodeVekt = { "Høst": 0, "Vår": 1 };
+            return (periodeVekt[a.periode] || 0) - (periodeVekt[b.periode] || 0);
+        });
+
+        // 5. Tegn tabellen i modalen
+        tbody.innerHTML = historikkData.map(d => `
+            <tr>
+                <td style="text-align:left;"><b>${d.fag}</b><br><small>${d.periode} ${d.aar} (${d.trinn}${d.klasse})</small></td>
+                <td>${d.poeng}</td>
+                <td>${d.maks}</td>
+                <td>${d.grense}</td>
+                <td style="font-weight:bold; color: ${d.poeng <= d.grense ? 'red' : 'green'}">${d.prosent}%</td>
+            </tr>
+        `).join('');
+
+        // 6. Oppdater grafen med de nye dataene
+        oppdaterHistorikkChart(historikkData);
+
+    } catch (error) {
+        console.error("Feil i visElevHistorikk:", error);
+        tbody.innerHTML = "<tr><td colspan='5'>Det oppstod en feil ved henting av data.</td></tr>";
+    }
 }
 
 function nullstillElev(navn) {
