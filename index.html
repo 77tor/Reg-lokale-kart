@@ -42,10 +42,25 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 .action-bar { display: flex; gap: 10px; margin-bottom: 20px; }
 select, input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
 
-/* TABELL-CSS */
+/* TABELL-CSS - Optimalisert for skjerm */
 table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em; }
-th, td { border: 1px solid #dee2e6; padding: 8px; text-align: center; }
-th { background: #f8f9fa; position: sticky; top: 0; z-index: 10; overflow: visible !important; }
+
+th, td { 
+    border: 1px solid #dee2e6; 
+    padding: 4px 8px; /* Mindre luft topp/bunn */
+    text-align: center; 
+    line-height: 1.2; /* Tettere tekstlinjer */
+}
+
+th { 
+    background: #f8f9fa; 
+    position: sticky; 
+    top: 0; 
+    z-index: 10; 
+    overflow: visible !important; 
+    box-shadow: 0 1px 1px rgba(0,0,0,0.1); /* Liten kant under sticky header */
+}
+
 tr:hover { background-color: #f1f1f1; }
 
 /* --- KNAPPE-STILER (Alle dine kategorier bevart) --- */
