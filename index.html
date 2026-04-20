@@ -412,6 +412,16 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     color: #000;
 }
 
+#historikkTabellBody td {
+    padding: 4px 8px !important; /* Mindre avstand over og under teksten */
+    vertical-align: middle;      /* Sentrerer teksten i de lave radene */
+    font-size: 0.9rem;           /* Gjøre skriften litt mindre hvis det blir trangt */
+}
+
+#historikkTabellBody tr:hover {
+    background-color: #f7fafc;   /* Gir en svak farge når man fører musa over */
+}
+
 
 /* Sørger for at modal-knappene ser like ut som de andre knappene */
 .modal-footer .btn {

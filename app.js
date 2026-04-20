@@ -801,30 +801,34 @@ if (data) {
     // Sortering (Trinn -> Periode)
     historikkData.sort((a, b) => a.trinn - b.trinn || (a.p === "Høst" ? -1 : 1));
 
+
 // Oppdater tabell
     tbody.innerHTML = historikkData.map(d => {
         const erUtfort = d.prosent !== null;
         
-        // Logikk for fargekoding
-        let skårFarge = '#7f8c8d'; // Grå for "Ikke gjennomført"
-        let poengStil = ''; // Standard stil
+        // Fargekoding
+        let skårFarge = '#7f8c8d'; 
+        let poengStil = 'padding: 4px 8px;'; // Mindre padding for å spare plass
         
         if (erUtfort) {
-            // Skår (%) farge
             skårFarge = d.poeng <= d.grense ? '#e53e3e' : '#38a169';
-            
-            // NYTT: Hvis poeng er under eller lik kritisk grense, gjør cellen rød og fet
             if (d.poeng <= d.grense) {
-                poengStil = 'background-color: #fff5f5; color: #e53e3e; font-weight: bold;';
+                poengStil += 'background-color: #fff5f5; color: #e53e3e; font-weight: bold;';
             }
         }
 
+        // Ny tekstformatering: "Regning-1C-Høst 2024-2025"
+        const infoTekst = `${vFag}-${d.trinn}${d.klasse}-${d.p} ${d.aar}`;
+
         return `
-            <tr>
-                <td style="text-align:left;"><b>${d.p} ${d.aar}</b><br><small>Trinn ${d.trinn}${d.klasse}</small></td>
+            <tr style="line-height: 1.2;">
+                <td style="text-align:left; padding: 4px 8px; white-space: nowrap;">
+                    ${infoTekst}
+                </td>
                 <td style="${poengStil}">${d.poeng}</td>
-                <td>${d.grense}</td> <td>${d.maks}</td>
-                <td style="font-weight:bold; color: ${skårFarge}">
+                <td style="padding: 4px 8px;">${d.grense}</td>
+                <td style="padding: 4px 8px;">${d.maks}</td>
+                <td style="font-weight:bold; color: ${skårFarge}; padding: 4px 8px;">
                     ${erUtfort ? d.prosent + '%' : 'Ikke gjennomført'}
                 </td>
             </tr>
