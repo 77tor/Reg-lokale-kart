@@ -778,6 +778,7 @@ if (data) {
                         // VIKTIG: Sett prosent til null hvis ikke utført. 
                         // Chart.js tegner da ikke dette punktet (linjen brytes).
                         prosent: erUtfort ? Math.round((e.sum / maksTotal) * 100) : null,
+                        grenseProsent: Math.round((o.grenseTotal / maksTotal) * 100), // NY: Grensen omgjort til %
                         snittProsent: Math.round(snitt),
                         statusTekst: erUtfort ? "" : "Ikke gjennomført"
                                     });
@@ -852,23 +853,33 @@ function oppdaterHistorikkChart(historikkData) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'Elevens skår (%)',
-                data: elevSkår,
-                borderColor: '#3182ce',
-                backgroundColor: 'rgba(49, 130, 206, 0.1)',
-                borderWidth: 3,
-                pointRadius: 5,
-                pointBackgroundColor: '#3182ce',
-                fill: true,
-                tension: 0.3
-            },
+label: 'Elevens skår (%)',
+        data: historikkData.map(d => d.prosent),
+        borderColor: '#3182ce',
+        backgroundColor: 'rgba(49, 130, 206, 0.1)',
+        borderWidth: 3,
+        pointRadius: 5,
+        fill: true,
+        tension: 0.3,
+        spanGaps: false // Sikrer brudd ved "Ikke gjennomført"
+    },
 {
-        label: 'Klassens snitt (%)',
-        data: historikkData.map(d => d.snittProsent), // Henter snittet vi beregnet
+label: 'Klassens snitt (%)',
+        data: historikkData.map(d => d.snittProsent),
         borderColor: '#ed8936',
-        borderDash: [5, 5], // Gjør linjen stiplet
+        borderDash: [5, 5],
         fill: false,
-        pointRadius: 0 // Skjuler punktene for å holde det ryddig
+        pointRadius: 0
+    },
+{
+        label: 'Kritisk grense (%)',
+        data: historikkData.map(d => d.grenseProsent),
+        borderColor: '#e53e3e', // Rød farge
+        borderWidth: 2,
+        borderDash: [2, 2], // Kortstiplet linje
+        fill: false,
+        pointRadius: 0,
+        order: 1 // Legger denne litt i bakgrunnen
     }
 ]
         },
