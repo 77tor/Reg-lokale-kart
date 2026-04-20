@@ -725,31 +725,32 @@ async function visElevHistorikk(navn) {
     const vAar = document.getElementById('mAar').value;
     const vFag = document.getElementById('mFag').value;
     const vTrinn = document.getElementById('mTrinn').value;
+    const vKlasse = document.getElementById('mKlasse').value;
     
     const historikkData = [];
-    const perioder = ["Høst",  "Vår"]; // DOBBELTSJEKK AT DISSE MATCHER FIREBASE
-
-    console.log("Henter historikk for:", navn, vAar, vFag);
+    // Viktig: Firebase er case-sensitive. Sørg for at disse matcher valgene i dropdown (Høst/Vår)
+    const perioder = ["Høst", "Vår"]; 
 
     for (const p of perioder) {
-        // Vi må gå dypere i stien for å finne malen (oppsettet)
+        // OPPDATERT STI basert på bildet ditt: kartlegging -> år -> fag -> periode -> trinn -> klasse
+        const sti = `kartlegging/${vAar}/${vFag}/${p}/${vTrinn}/${vKlasse}`;
+        
         try {
-            const sti = `resultater/${vAar}/${vFag}/${p}/${vTrinn}`;
             const snap = await db.ref(sti).once('value');
             const alleResultaterIPeriode = snap.val();
             
-            // Hent malen for denne perioden for å få maksTotal og grenseTotal
+            // Henter oppsett for å få maksTotal (Sjekk at oppgaveStruktur bruker samme sti!)
             const oppsett = (oppgaveStruktur[vAar] && oppgaveStruktur[vAar][vFag] && oppgaveStruktur[vAar][vFag][p]) 
                             ? oppgaveStruktur[vAar][vFag][p][vTrinn] : null;
 
             if (alleResultaterIPeriode && alleResultaterIPeriode[navn] && oppsett) {
                 const elevData = alleResultaterIPeriode[navn];
                 
-                // Beregn klassens snitt for denne perioden
+                // Beregn snitt
                 let sumAlle = 0;
                 let antall = 0;
                 Object.values(alleResultaterIPeriode).forEach(d => {
-                    if (d.sum !== undefined && !d.slettet) { 
+                    if (d && typeof d.sum === 'number' && !d.slettet) { 
                         sumAlle += d.sum; 
                         antall++; 
                     }
@@ -767,17 +768,17 @@ async function visElevHistorikk(navn) {
                     snittProsent: klasseSnittProsent
                 });
             }
-        } catch (feil) {
-            console.error("Feil ved henting av periode " + p, feil);
+        } catch (err) {
+            console.error("Kunne ikke hente data for " + p, err);
         }
     }
 
     if (historikkData.length === 0) {
-        alert("Fant ingen historiske data for denne eleven i " + vFag);
+        alert(`Fant ingen historiske data for ${navn} i ${vFag} under stien: kartlegging/${vAar}/${vFag}/...`);
         return;
     }
 
-    // Oppdater Tabellen
+    // --- Tabell og Chart-tegning (samme som før) ---
     const tbody = document.getElementById('historikkTabellBody');
     tbody.innerHTML = historikkData.map(d => `
         <tr>
@@ -794,8 +795,9 @@ async function visElevHistorikk(navn) {
     document.getElementById('historikkNavn').innerText = `Historikk for ${navn} - ${vFag}`;
     document.getElementById('historikkModal').style.display = 'flex';
 
-    // Tegn Diagrammet
-    oppdaterHistorikkChart(historikkData);
+    if (typeof oppdaterHistorikkChart === 'function') {
+        oppdaterHistorikkChart(historikkData);
+    }
 }
 
 function oppdaterHistorikkChart(data) {
