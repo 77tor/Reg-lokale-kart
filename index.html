@@ -306,6 +306,32 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 .admin-table a:hover {
     text-decoration: underline;
 }
+@media print {
+    /* Skjul alt på hovedsiden */
+    body * {
+        visibility: hidden;
+    }
+
+    /* Gjør modalen og alt inni den synlig */
+    #historikkModal, #historikkModal * {
+        visibility: visible;
+    }
+
+    /* Posisjoner modalen helt øverst i venstre hjørne for utskrift */
+    #historikkModal {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        display: block !important;
+        background: white;
+    }
+
+    /* Skjul knapper som ikke skal være med på papiret (f.eks. "Lukk" og "Skriv ut"-knappen) */
+    .no-print, .modal-footer, .close-btn {
+        display: none !important;
+    }
+}
 
 /* UTSKRIFT (Beholdt din originale logikk - med fiks for linjer) */
 @media print {
