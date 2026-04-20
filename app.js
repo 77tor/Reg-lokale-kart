@@ -733,35 +733,45 @@ async function visElevHistorikk(navn) {
     
     let historikkData = [];
 
-    // Vi bruker en try-catch inne i loopen så én manglende mappe ikke stopper alt
     for (const aar of tilgjengeligeAar) {
         for (const p of perioder) {
             try {
-                // Vi henter data bredt for faget/perioden
                 const sti = `kartlegging/${aar}/${vFag}/${p}`;
                 const snap = await db.ref(sti).once('value');
                 const data = snap.val();
 
                 if (data) {
-                    // Vi må lete manuelt gjennom trinn og klasser
                     Object.keys(data).forEach(trinn => {
                         Object.keys(data[trinn]).forEach(klasse => {
-                            const e = data[trinn][klasse][navn];
+                            const alleIDenneKlassen = data[trinn][klasse];
+                            const e = alleIDenneKlassen[navn];
                             
                             if (e && !e.slettet) {
-                                // Bruk din egen funksjon for å hente malen
                                 const o = typeof hentOppsettSpesifikk === 'function' 
                                           ? hentOppsettSpesifikk(aar, vFag, p, trinn) 
                                           : null;
 
                                 if (o) {
                                     const maksTotal = o.oppgaver.reduce((s, op) => s + op.maks, 0);
+                                    
+                                    // --- NY BEREGNING: KLASSENS SNITT ---
+                                    let sumKlasse = 0, antallKlasse = 0;
+                                    Object.values(alleIDenneKlassen).forEach(elev => {
+                                        if (elev.sum !== undefined && !elev.slettet) {
+                                            sumKlasse += elev.sum;
+                                            antallKlasse++;
+                                        }
+                                    });
+                                    const snitt = antallKlasse > 0 ? (sumKlasse / antallKlasse / maksTotal) * 100 : 0;
+                                    // ------------------------------------
+
                                     historikkData.push({
                                         aar, p, trinn, klasse,
                                         poeng: e.sum,
                                         maks: maksTotal,
                                         grense: o.grenseTotal,
-                                        prosent: Math.round((e.sum / maksTotal) * 100)
+                                        prosent: Math.round((e.sum / maksTotal) * 100),
+                                        snittProsent: Math.round(snitt) // Sendes til grafen
                                     });
                                 }
                             }
@@ -793,10 +803,9 @@ async function visElevHistorikk(navn) {
         </tr>
     `).join('');
 
-    // Tegn grafen hvis funksjonen eksisterer
+    // Tegn grafen (Nå med både elevens prosent og klassens snitt)
     if (window.oppdaterHistorikkChart) oppdaterHistorikkChart(historikkData);
 }
-
 // <--- HER BEGYNNER CHARTELEVHISTORIKK
 function oppdaterHistorikkChart(historikkData) {
     const ctx = document.getElementById('historikkChart').getContext('2d');
@@ -824,7 +833,16 @@ function oppdaterHistorikkChart(historikkData) {
                 pointBackgroundColor: '#3182ce',
                 fill: true,
                 tension: 0.3
-            }]
+            },
+{
+        label: 'Klassens snitt (%)',
+        data: historikkData.map(d => d.snittProsent), // Henter snittet vi beregnet
+        borderColor: '#ed8936',
+        borderDash: [5, 5], // Gjør linjen stiplet
+        fill: false,
+        pointRadius: 0 // Skjuler punktene for å holde det ryddig
+    }
+]
         },
         options: {
             responsive: true,
