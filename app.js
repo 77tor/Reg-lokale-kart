@@ -718,45 +718,52 @@ async function tegnTabell() {
 
 // <--- HER SLUTTER FUNKSJONEN. Ingen kode etter dette punktet før neste funksjon starter.
 
-
+// <--- HER BEGYNNER ELEVHISTORIKK
 let historikkChart = null; // Lagrer chart-objektet globalt
-
+// <--- Egen kode for nullstill over
 async function visElevHistorikk(navn) {
-    // 1. Vis modalen og sett lastestatus
     const tbody = document.getElementById('historikkTabellBody');
     tbody.innerHTML = "<tr><td colspan='5'>Henter historikk...</td></tr>";
     document.getElementById('historikkNavn').innerText = `Historikk for ${navn}`;
     document.getElementById('historikkModal').style.display = 'flex';
 
-    try {
-        // 2. Hent ALL data fra kartlegging (samme som i elevrapporten din)
-        const snap = await db.ref(`kartlegging`).once('value');
-        const alleData = snap.val() || {};
-        let historikkData = [];
+    // Hent nåværende valg fra menyene for å vite hva vi skal lete etter
+    const vFag = document.getElementById('mFag').value;
+    const tilgjengeligeAar = ["2024-2025", "2025-2026"]; // Legg til flere år her hvis nødvendig
+    const perioder = ["Høst", "Vår"];
+    
+    let historikkData = [];
 
-        // 3. Bruk din dype loop-logikk for å finne alle resultater for denne eleven
-        for (let aar in alleData) {
-            for (let fag in alleData[aar]) {
-                for (let periode in alleData[aar][fag]) {
-                    for (let trinn in alleData[aar][fag][periode]) {
-                        for (let klasse in alleData[aar][fag][periode][trinn]) {
-                            const e = alleData[aar][fag][periode][trinn][klasse][navn];
+    try {
+        // Vi går gjennom år og perioder systematisk i stedet for å hente "alt"
+        for (const aar of tilgjengeligeAar) {
+            for (const p of perioder) {
+                // Vi henter data for alle trinn og klasser for dette faget/perioden
+                // Dette er mer effektivt enn å hente hele databasen
+                const sti = `kartlegging/${aar}/${vFag}/${p}`;
+                const snap = await db.ref(sti).once('value');
+                const trinnData = snap.val();
+
+                if (trinnData) {
+                    // Gå gjennom trinn (1, 2, 3...)
+                    for (let trinn in trinnData) {
+                        // Gå gjennom klasser (A, B, C...)
+                        for (let klasse in trinnData[trinn]) {
+                            const e = trinnData[trinn][klasse][navn];
                             
-                            // Finn malen ved å bruke din hjelpefunksjon
-                            const o = hentOppsettSpesifikk(aar, fag, periode, trinn);
-                            
+                            // Bruk din eksisterende hjelpefunksjon for malen
+                            const o = hentOppsettSpesifikk(aar, vFag, p, trinn);
+
                             if (e && !e.slettet && o) {
-                                // Beregn maksTotal slik du gjør i rapporten
                                 const maksTotal = o.oppgaver.reduce((sum, op) => sum + op.maks, 0);
                                 const prosent = Math.round((e.sum / maksTotal) * 100);
 
                                 historikkData.push({
-                                    aar, fag, periode, trinn, klasse,
+                                    aar, fag: vFag, periode: p, trinn, klasse,
                                     poeng: e.sum,
                                     grense: o.grenseTotal,
                                     maks: maksTotal,
-                                    prosent: prosent,
-                                    etikett: `${fag} (${periode} ${trinn}${klasse})`
+                                    prosent: prosent
                                 });
                             }
                         }
@@ -766,21 +773,21 @@ async function visElevHistorikk(navn) {
         }
 
         if (historikkData.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='5'>Fant ingen historiske data.</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='5'>Fant ingen historiske data for " + navn + " i " + vFag + ".</td></tr>";
             return;
         }
 
-        // 4. Sortering (samme logikk som du allerede har)
+        // Sortering: Trinn -> Periode
         historikkData.sort((a, b) => {
             if (a.trinn !== b.trinn) return a.trinn - b.trinn;
-            const periodeVekt = { "Høst": 0, "Vår": 1 };
-            return (periodeVekt[a.periode] || 0) - (periodeVekt[b.periode] || 0);
+            const pVekt = { "Høst": 0, "Vår": 1 };
+            return pVekt[a.periode] - pVekt[b.periode];
         });
 
-        // 5. Tegn tabellen i modalen
+        // Tegn tabellen
         tbody.innerHTML = historikkData.map(d => `
             <tr>
-                <td style="text-align:left;"><b>${d.fag}</b><br><small>${d.periode} ${d.aar} (${d.trinn}${d.klasse})</small></td>
+                <td style="text-align:left;"><b>${d.periode} ${d.aar}</b><br><small>Trinn ${d.trinn}${d.klasse}</small></td>
                 <td>${d.poeng}</td>
                 <td>${d.maks}</td>
                 <td>${d.grense}</td>
@@ -788,14 +795,15 @@ async function visElevHistorikk(navn) {
             </tr>
         `).join('');
 
-        // 6. Oppdater grafen med de nye dataene
+        // Oppdater grafen
         oppdaterHistorikkChart(historikkData);
 
     } catch (error) {
-        console.error("Feil i visElevHistorikk:", error);
-        tbody.innerHTML = "<tr><td colspan='5'>Det oppstod en feil ved henting av data.</td></tr>";
+        console.error("Historikk-feil:", error);
+        tbody.innerHTML = "<tr><td colspan='5'>Kunne ikke koble til databasen.</td></tr>";
     }
 }
+// <--- HER SLUTTER ELEVHISTORIKK
 
 function nullstillElev(navn) {
     if (confirm(`Vil du tømme alle poeng for ${navn}? Eleven blir stående i listen, men poengene fjernes.`)) {
