@@ -81,17 +81,19 @@ tr:hover { background-color: #f1f1f1; }
 .btn-bok { background-color: white !important; color: #2980b9 !important; }
 .btn-bok:hover { background-color: #808080 !important; color: white !important; }
 
-/* Styling for elevnavn-linker i tabellen */
-#laererListeContainer a {
+
+/* Styling for elevnavn-linker */
+.elev-link {
     text-decoration: none !important; /* Fjerner understreken */
     font-weight: bold !important;    /* Gjør teksten fet */
-    color: #2980b9;                 /* Beholder en fin blåfarge (fra din .btn-edit) */
+    color: #2980b9 !important;      /* Den blå fargen du ønsket */
+    cursor: pointer;
     display: inline-block;
 }
 
-#laererListeContainer a:hover {
-    color: #3498db;                 /* Litt lysere blåfarge når man holder over */
-    text-decoration: none !important; /* Sikrer at understreken ikke kommer tilbake ved hover */
+.elev-link:hover {
+    color: #3498db !important;      /* Litt lysere blå ved hover */
+    text-decoration: none !important; 
 }
 
 /* --- MODAL SYSTEM (FIKSET) --- */
