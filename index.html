@@ -137,12 +137,6 @@ input.alert-low {
     border: 2px solid #e53e3e !important;
 }
 
-td a {
-    transition: color 0.2s;
-}
-td a:hover {
-    color: #e67e22 !important; /* Skifter farge til oransje når man holder over */
-}
 
 .input-error-msg {
     color: #d32f2f;
@@ -407,8 +401,6 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     margin-top: 15px;
 }
 
-
-
 .close {
     cursor: pointer; /* Gjør at pilen blir til en hånd */
     float: right;
@@ -515,38 +507,6 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     </div>
 </div>
 
-<div id="historikkModal" class="modal">
-    <div class="modal-content" style="width: 80%; max-width: 900px;">
-        <div class="top-header-bar">
-            <h2 id="historikkNavn">Elevhistorikk</h2>
-            <span class="close" onclick="lukkHistorikk()">&times;</span>
-        </div>
-        
-        <div class="modal-body-scroll">
-            <div style="height: 300px; margin-bottom: 30px;">
-                <canvas id="historikkChart"></canvas>
-            </div>
-
-            <table class="admin-table">
-                <thead>
-                    <tr>
-                        <th>Prøve (Periode)</th>
-                        <th>Poeng</th>
-                        <th>Maks</th>
-                        <th>Kritisk grense</th>
-                        <th>Skår (%)</th>
-                    </tr>
-                </thead>
-                <tbody id="historikkTabellBody"></tbody>
-            </table>
-        </div>
-
-        <div class="action-bar" style="justify-content: flex-end; margin-top: 15px;">
-            <button class="btn btn-print no-print" onclick="window.print()">Skriv ut</button>
-            <button class="btn btn-nullstill" onclick="lukkHistorikk()">Lukk</button>
-        </div>
-    </div>
-</div>
 
 <div id="modalKontaktAdmin" class="modal" style="display:none;">
     <div class="modal-content" style="width: 90% !important; max-width: 500px !important; margin: 1% auto !important; position: relative; padding: 25px;">
