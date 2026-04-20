@@ -804,19 +804,26 @@ if (data) {
     tbody.innerHTML = historikkData.map(d => {
         const erUtfort = d.prosent !== null;
         
-        // Bestem farge på skår: Grå hvis ikke utført, rød hvis under grense, grønn hvis over
-        let farge = '#7f8c8d'; // Grå (standard)
+        // Logikk for fargekoding
+        let skårFarge = '#7f8c8d'; // Grå for "Ikke gjennomført"
+        let poengStil = ''; // Standard stil
+        
         if (erUtfort) {
-            farge = d.poeng <= d.grense ? '#e53e3e' : '#38a169';
+            // Skår (%) farge
+            skårFarge = d.poeng <= d.grense ? '#e53e3e' : '#38a169';
+            
+            // NYTT: Hvis poeng er under eller lik kritisk grense, gjør cellen rød og fet
+            if (d.poeng <= d.grense) {
+                poengStil = 'background-color: #fff5f5; color: #e53e3e; font-weight: bold;';
+            }
         }
 
         return `
             <tr>
                 <td style="text-align:left;"><b>${d.p} ${d.aar}</b><br><small>Trinn ${d.trinn}${d.klasse}</small></td>
-                <td>${d.poeng}</td>
-                <td>${d.maks}</td>
-                <td>${d.grense}</td>
-                <td style="font-weight:bold; color: ${farge}">
+                <td style="${poengStil}">${d.poeng}</td>
+                <td>${d.grense}</td> <td>${d.maks}</td>
+                <td style="font-weight:bold; color: ${skårFarge}">
                     ${erUtfort ? d.prosent + '%' : 'Ikke gjennomført'}
                 </td>
             </tr>
