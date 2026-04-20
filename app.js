@@ -574,7 +574,7 @@ function hentRegister() {
 
 
 // --- TEGN TABELL (Inkludert gjennomsnitt og håndtering av ikke gjennomført) ---
-function tegnTabell() {
+async function tegnTabell() {
     // VAKT: Hvis admin-panelet er åpent, skal vi IKKE røre hovedsiden!
     const adminPanel = document.getElementById('adminPanel');
     if (adminPanel && adminPanel.style.display === 'block') {
