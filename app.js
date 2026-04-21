@@ -899,19 +899,43 @@ label: 'Klassens snitt (%)',
 ]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100,
-                    title: { display: true, text: 'Prosent (%)' }
-                }
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+        y: {
+            beginAtZero: true,
+            // 1. Vi setter max til 110 for å gi god plass til punkter på 100%
+            max: 110, 
+            title: { 
+                display: true, 
+                text: 'Prosent (%)' 
             },
-            plugins: {
-                legend: { position: 'top' }
+            ticks: {
+                // 2. Vi tvinger aksen til å bare vise tall opp til 100
+                // Dette fjerner "110"-merket så diagrammet ser ryddig ut
+                callback: function(value) {
+                    if (value <= 100) return value + '%';
+                },
+                // Valgfritt: Tvinger faste hopp (0, 20, 40, 60, 80, 100)
+                stepSize: 20 
             }
         }
+    },
+    plugins: {
+        legend: { 
+            position: 'top',
+            // 3. Legger til litt ekstra avstand mellom merkelappene og selve grafen
+            labels: {
+                padding: 20
+            }
+        }
+    },
+    // 4. Legger til padding i selve tegneområdet for å unngå at linjen berører kanten
+    layout: {
+        padding: {
+            top: 10 
+        }
+    }
     });
 }
 
