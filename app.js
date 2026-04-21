@@ -917,32 +917,47 @@ label: 'Klassens snitt (%)',
 
 function skrivUtHistorikk() {
     const modalInnhold = document.querySelector('#historikkModal .modal-body-scroll');
-    const hovedContainer = document.querySelector('.container');
-    
-    if (!modalInnhold || !hovedContainer) {
+    if (!modalInnhold) {
         alert("Fant ikke historikk-data");
         return;
     }
 
-    // 1. Lag en midlertidig kopi av innholdet
-    const printKopi = document.createElement('div');
+    // 1. KLON hele innholdet (inkludert grafer/canvas)
+    const printKopi = modalInnhold.cloneNode(true);
     printKopi.id = "temp-print-historikk";
-    printKopi.innerHTML = "<h1>Historikkoversikt</h1>" + modalInnhold.innerHTML;
+
+    // 2. Spesialhåndtering for grafer (Canvas må kopieres manuelt)
+    const originaleCanvaser = modalInnhold.querySelectorAll('canvas');
+    const kopierteCanvaser = printKopi.querySelectorAll('canvas');
     
-    // 2. Skjul den vanlige containeren og legg til kopien i body
+    originaleCanvaser.forEach((origCanvas, index) => {
+        const destCanvas = kopierteCanvaser[index];
+        const destCtx = destCanvas.getContext('2d');
+        // Tegner bildet fra den originale grafen over i kopien
+        destCtx.drawImage(origCanvas, 0, 0);
+    });
+
+    // 3. Legg til en overskrift øverst i kopien
+    const overskrift = document.createElement('h1');
+    overskrift.innerText = "Historikkoversikt";
+    printKopi.prepend(overskrift);
+    
+    // 4. Skjul resten og legg kopien til på siden
     document.body.classList.add('historikk-modus');
     document.body.appendChild(printKopi);
 
-    // 3. Print
+    // 5. Print (vi venter litt så nettleseren får plassert kopien)
     setTimeout(() => {
         window.print();
         
-        // 4. Rydd opp: Fjern kopien og gå tilbake til normalen
+        // 6. Rydd opp
         setTimeout(() => {
-            document.body.removeChild(printKopi);
+            if (document.getElementById('temp-print-historikk')) {
+                document.body.removeChild(printKopi);
+            }
             document.body.classList.remove('historikk-modus');
         }, 500);
-    }, 800);
+    }, 500);
 }
 
 function lukkHistorikk() {
