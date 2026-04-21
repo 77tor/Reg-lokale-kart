@@ -307,78 +307,77 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     text-decoration: underline;
 }
 
-
 /* UTSKRIFT (Beholdt din originale logikk - med fiks for linjer og historikk) */
 @media print {
-    /* 1. Grunnleggende (Beholdt din logikk) */
+    /* 1. Tving farger */
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     @page { size: landscape; margin: 0.5cm; }
-    
-    /* 2. Skjul standard ting */
-    .no-print, .btn, .header-grid, .action-bar, .top-header-bar, .close { 
-        display: none !important; 
-    }
 
-    /* 3. MODAL-LOGIKK (DENNE MÅ VÆRE SLIK) */
-    
-    /* Skjul alle modaler først */
-    .modal { display: none !important; } 
-
-    /* Tving frem historikk-modalen */
-    /* Vi bruker body-klassen og ID for å overvinne inline style="display:flex" */
-    body.historikk-modus div#historikkModal.modal {
-        display: block !important; /* MÅ være block for utskrift */
-        visibility: visible !important;
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100% !important;
-        height: auto !important;
-        background: white !important;
-        opacity: 1 !important;
-    }
-
-    /* Skjul hovedcontaineren så den ikke lager tomme sider */
-    body.historikk-modus .container {
+    /* 2. SKJUL ALT som ikke er historikk når vi er i historikk-modus */
+    body.historikk-modus .container, 
+    body.historikk-modus .no-print,
+    body.historikk-modus .btn,
+    body.historikk-modus .header-grid,
+    body.historikk-modus .action-bar,
+    body.historikk-modus .top-header-bar,
+    body.historikk-modus .close,
+    body.historikk-modus .modal-footer-bar {
         display: none !important;
     }
 
-    /* 4. Tabell og Graf (Din originale logikk for linjer) */
-    body { background: white !important; }
-    
+    /* 3. TVING HISTORIKK-MODALEN TIL Å BLI SELVE SIDEN */
+    body.historikk-modus #historikkModal {
+        display: block !important;
+        position: relative !important; /* IKKE absolute eller fixed */
+        width: 100% !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        left: auto !important;
+        top: auto !important;
+    }
+
+    /* Fjern modal-styling (skygger, sentrering osv) */
+    body.historikk-modus .modal-content {
+        display: block !important;
+        position: relative !important;
+        width: 100% !important;
+        max-width: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* La innholdet flyte naturlig nedover siden */
+    body.historikk-modus .modal-body-scroll {
+        overflow: visible !important;
+        display: block !important;
+        height: auto !important;
+    }
+
+    /* 4. Tabell-styling (Sikrer linjer) */
     table { 
         width: 100% !important; 
         border-collapse: collapse !important; 
         border: 1px solid black !important;
-        font-size: 8.5pt !important;
     }
-
     th, td { 
         border: 1px solid black !important; 
-        padding: 4px !important; 
-        position: static !important;
+        padding: 6px !important; 
     }
-
     th { background-color: #f8f9fa !important; }
 
-    /* Strekk ut innholdet i modalen */
-    body.historikk-modus .modal-content {
-        width: 100% !important;
-        max-width: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        border: none !important;
-        box-shadow: none !important;
-        display: block !important;
+    /* Grafen */
+    canvas {
+        max-width: 100% !important;
+        height: 300px !important; /* Tvinger høyden på grafen */
     }
-
-    body.historikk-modus .modal-body-scroll {
-        overflow: visible !important;
-        height: auto !important;
-    }
-
-    canvas { max-width: 100% !important; }
 }
+
 
 /* --- HEADER LAYOUT (Inspirert av forside.jpg) --- */
 .top-header-bar {

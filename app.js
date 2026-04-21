@@ -918,21 +918,22 @@ label: 'Klassens snitt (%)',
 function skrivUtHistorikk() {
     const modal = document.getElementById('historikkModal');
     
-    // Tving klassen på body
+    // 1. Sett modus
     document.body.classList.add('historikk-modus');
     
-    // Fjern inline "display:flex" midlertidig så CSS-print kan styre fritt
-    modal.style.display = 'block'; 
+    // 2. Fjern ALL inline-styling midlertidig
+    // Dette fjerner "display: flex" og "width: 80%" som ligger i HTML-taggen
+    const originalStyle = modal.getAttribute('style');
+    modal.removeAttribute('style'); 
     
+    // 3. Vent på at grafen og layout lander
     setTimeout(() => {
         window.print();
         
-        // Sett den tilbake til flex etter at utskriftsvinduet er lukket 
-        // slik at den ser riktig ut på skjermen igjen
+        // 4. Rydd opp etterpå
         setTimeout(() => {
-            if (document.body.classList.contains('historikk-modus')) {
-                modal.style.display = 'flex';
-            }
+            modal.setAttribute('style', originalStyle);
+            modal.style.display = 'flex'; // Tving den tilbake til skjermvisning
         }, 500);
     }, 250);
 }
