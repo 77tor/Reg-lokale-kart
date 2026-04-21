@@ -916,22 +916,27 @@ label: 'Klassens snitt (%)',
 }
 
 function skrivUtHistorikk() {
-    // 1. Aktiver historikk-modus
+    // 1. Merk body så CSS-en vet hva som skal skje
     document.body.classList.add('historikk-modus');
     
-    // 2. Finn modalen og tving den til block layout
+    // 2. Finn modalen
     const modal = document.getElementById('historikkModal');
+    if (!modal) return;
+
+    // 3. Tving modalen til å være synlig (overstyrer inline style="display:none")
     const originalStyle = modal.style.display;
     modal.style.display = 'block';
 
+    // 4. VIKTIG: Gi nettleseren tid til å "tegne" modalen før print-vinduet låser alt
     setTimeout(() => {
         window.print();
         
-        // 3. RYDD OPP UMIDDELBART
-        // Dette er viktig for at den vanlige klasselisten skal fungere etterpå
-        modal.style.display = originalStyle;
-        document.body.classList.remove('historikk-modus');
-    }, 250);
+        // 5. Rydd opp etterpå
+        setTimeout(() => {
+            modal.style.display = originalStyle;
+            document.body.classList.remove('historikk-modus'); // Fjern denne så vanlig print funker igjen!
+        }, 500);
+    }, 300); // Økt litt til 300ms for sikkerhets skyld
 }
 
 function lukkHistorikk() {
