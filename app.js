@@ -916,26 +916,33 @@ label: 'Klassens snitt (%)',
 }
 
 function skrivUtHistorikk() {
-    const modal = document.getElementById('historikkModal');
-    if (!modal) return;
-
-    // Legg til klassen som fjerner alt annet og gjør bakgrunnen hvit i CSS
-    document.body.classList.add('historikk-modus');
+    const modalInnhold = document.querySelector('#historikkModal .modal-body-scroll');
+    const hovedContainer = document.querySelector('.container');
     
-    // Lagre og vis
-    const originalStyle = modal.style.display;
-    modal.style.display = 'block';
+    if (!modalInnhold || !hovedContainer) {
+        alert("Fant ikke historikk-data");
+        return;
+    }
 
-    // Bruk en litt lengre pause (500ms) for å være helt sikker på at 
-    // nettleseren har svelget CSS-endringene før print-vinduet låser alt.
+    // 1. Lag en midlertidig kopi av innholdet
+    const printKopi = document.createElement('div');
+    printKopi.id = "temp-print-historikk";
+    printKopi.innerHTML = "<h1>Historikkoversikt</h1>" + modalInnhold.innerHTML;
+    
+    // 2. Skjul den vanlige containeren og legg til kopien i body
+    document.body.classList.add('historikk-modus');
+    document.body.appendChild(printKopi);
+
+    // 3. Print
     setTimeout(() => {
         window.print();
         
+        // 4. Rydd opp: Fjern kopien og gå tilbake til normalen
         setTimeout(() => {
-            modal.style.display = originalStyle;
+            document.body.removeChild(printKopi);
             document.body.classList.remove('historikk-modus');
         }, 500);
-    }, 500);
+    }, 300);
 }
 
 function lukkHistorikk() {
