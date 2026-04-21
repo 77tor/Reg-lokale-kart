@@ -942,7 +942,7 @@ function skrivUtHistorikk() {
             document.body.removeChild(printKopi);
             document.body.classList.remove('historikk-modus');
         }, 500);
-    }, 300);
+    }, 800);
 }
 
 function lukkHistorikk() {
