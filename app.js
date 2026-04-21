@@ -763,9 +763,29 @@ async function visElevHistorikk(navn) {
     document.body.classList.add('historikk-modus');
 
     const vFag = document.getElementById('mFag').value;
-    const tilgjengeligeAar = ["2024-2025", "2025-2026"];
-    const perioder = ["Høst", "Vår"];
     
+// --- DYNAMISK GENERERING AV ÅRSTALL ---
+    // Vi finner minste startAar og største sluttAar i hele registeret
+    let minAar = 2024; // Sett en fornuftig standard bunn
+    let maksAar = new Date().getFullYear() + 1; // Går til inneværende år + 1
+
+    Object.values(elevRegister).forEach(e => {
+        if (e.startAar && e.startAar < minAar) minAar = e.startAar;
+        // Vi bruker nåværende år som tak, slik at vi ikke leter i 2033 før vi er der
+        let innevaerendeAar = new Date().getFullYear();
+        if (e.sluttAar && e.sluttAar > innevaerendeAar) {
+            maksAar = innevaerendeAar + 1; 
+        }
+    });
+
+    // Lag en liste med skoleår-strenger: ["2024-2025", "2025-2026", ...]
+    const tilgjengeligeAar = [];
+    for (let aar = minAar; aar <= maksAar; aar++) {
+        tilgjengeligeAar.push(`${aar}-${aar + 1}`);
+    }
+    // --------------------------------------
+
+    const perioder = ["Høst", "Vår"];
     let alleHistorikkData = [];
 
     // --- DATASAMLING (Samme som før) ---
