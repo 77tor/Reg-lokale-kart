@@ -916,22 +916,25 @@ label: 'Klassens snitt (%)',
 }
 
 function skrivUtHistorikk() {
-    // 1. Legg til klassen som CSS-en over leter etter
+    // 1. Aktiver print-modus i CSS
     document.body.classList.add('historikk-modus');
     
-    // 2. Finn modalen og tving den til 'block' layout for utskrift
+    // 2. Finn modalen og lagre nåværende stil
     const modal = document.getElementById('historikkModal');
-    const originalStyle = modal.style.display;
+    const originalStyle = modal.style.display; // Lagret som 'originalStyle'
     modal.style.display = 'block';
 
-    // 3. Vent litt så nettleseren skjønner at den skal tegne historikken, ikke velkomsten
+    // 3. Vent på at nettleseren tegner om siden (250ms)
     setTimeout(() => {
         window.print();
         
-        // 4. Rydd opp
+        // 4. Rydd opp etter utskriftsdialogen er lukket
         setTimeout(() => {
-            modal.style.display = originalDisplay;
-            // Vi fjerner ikke historikk-modus her, den fjernes når du lukker modalen manuelt
+            // FIKS: Bruk samme variabelnavn som i steg 2
+            modal.style.display = originalStyle; 
+            
+            // VALGFRITT: Hvis du vil at hovedsiden skal vises igjen med en gang:
+            // document.body.classList.remove('historikk-modus');
         }, 500);
     }, 250);
 }
