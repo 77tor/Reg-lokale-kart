@@ -324,76 +324,31 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
    ========================================================== */
 
 @media print {
+    /* 1. Grunnleggende */
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    @page { size: landscape; margin: 0.5cm; }
+    body { background: white !important; }
 
-    * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-
-    @page {
-        size: landscape;
-        margin: 0.5cm;
-    }
-
-    body {
-        background: white !important;
-    }
-
-    /* Elementer som aldri skal printes */
-    .no-print,
-    .btn,
-    .action-bar,
-    .header-grid,
-    .top-header-bar,
-    .close {
+    /* 2. Skjul standard ting */
+    .no-print, .btn, .action-bar, .header-grid, .top-header-bar, .close, .modal-footer-bar {
         display: none !important;
     }
 
-    /* Tabeller – felles */
-    table {
-        width: 100% !important;
-        border-collapse: collapse !important;
-        border: 1px solid black !important;
-        font-size: 8.5pt !important;
+    /* 3. HISTORIKK-MODUS SPESIFIKT */
+    /* Skjul hovedcontaineren (tabellen i bakgrunnen) kun når vi printer historikk */
+    body.historikk-modus .container { 
+        display: none !important; 
     }
 
-    th,
-    td {
-        border: 1px solid black !important;
-        padding: 4px !important;
-        position: static !important;
-    }
-
-    th {
-        background-color: #f8f9fa !important;
-    }
-
-    canvas {
-        max-width: 100% !important;
-    }
-}
-
-/* ==========================================================
-   HISTORIKK-UTSKRIFT (KUN når historikk-modus er aktiv)
-   ========================================================== */
-
-@media print {
-
-    /* 🔒 Skjul ALT unntatt historikk-modalen */
-    body.historikk-modus > *:not(#historikkModal) {
-        display: none !important;
-    }
-
-    /* ✅ Vis historikk-modalen */
+    /* Tving historikk-modalen til å vises som hovedinnhold */
     body.historikk-modus #historikkModal {
         display: block !important;
-        position: absolute !important;
-        inset: 0 !important;
+        position: relative !important; /* 'relative' er ofte tryggere enn 'absolute' for flere sider */
         width: 100% !important;
-        background: white !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
 
-    /* ✅ Layout tilpasset print */
     body.historikk-modus .modal-content {
         width: 100% !important;
         max-width: none !important;
@@ -401,7 +356,6 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
         padding: 0 !important;
         border: none !important;
         box-shadow: none !important;
-        display: block !important;
     }
 
     body.historikk-modus .modal-body-scroll {
@@ -409,12 +363,19 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
         height: auto !important;
     }
 
-    /* ❌ Ingen knapper på print */
-    body.historikk-modus .modal-footer-bar {
-        display: none !important;
+    /* 4. Tabell og Graf (Sikrer linjer og farger) */
+    table { 
+        width: 100% !important; 
+        border-collapse: collapse !important; 
+        border: 1px solid black !important;
     }
+    th, td { 
+        border: 1px solid black !important; 
+        padding: 4px !important; 
+    }
+    th { background-color: #f8f9fa !important; }
+    canvas { max-width: 100% !important; height: auto !important; }
 }
-
 
 
 

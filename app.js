@@ -921,14 +921,30 @@ label: 'Klassens snitt (%)',
 }
 
 function skrivUtHistorikk() {
+    // 1. Aktiver print-modus i CSS
     document.body.classList.add('historikk-modus');
-    window.print();
+    
+    // 2. En bitteliten pause (250ms) sikrer at nettleseren rekker å 
+    // skjule bakgrunnen og klargjøre modalen for utskrift.
+    setTimeout(() => {
+        window.print();
+        
+        // Valgfritt: Fjern klassen igjen etter print så 
+        // bakgrunnen kommer tilbake på skjermen
+        setTimeout(() => {
+            document.body.classList.remove('historikk-modus');
+        }, 1000);
+    }, 250);
 }
-
 
 function lukkHistorikk() {
     const modal = document.getElementById('historikkModal');
-    if (modal) modal.classList.remove('vis');
+    
+    // Siden du bruker klassen 'vis' for å styre modalen:
+    modal.classList.remove('vis');
+    
+    // Vi må også sørge for at den skjules manuelt hvis 'vis' ikke har CSS-regler
+    modal.style.display = 'none'; 
 
     document.body.classList.remove('historikk-modus');
 
