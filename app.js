@@ -916,26 +916,21 @@ label: 'Klassens snitt (%)',
 }
 
 function skrivUtHistorikk() {
-    // 1. Aktiver print-modus i CSS
+    // 1. Aktiver historikk-modus
     document.body.classList.add('historikk-modus');
     
-    // 2. Finn modalen og lagre nåværende stil
+    // 2. Finn modalen og tving den til block layout
     const modal = document.getElementById('historikkModal');
-    const originalStyle = modal.style.display; // Lagret som 'originalStyle'
+    const originalStyle = modal.style.display;
     modal.style.display = 'block';
 
-    // 3. Vent på at nettleseren tegner om siden (250ms)
     setTimeout(() => {
         window.print();
         
-        // 4. Rydd opp etter utskriftsdialogen er lukket
-        setTimeout(() => {
-            // FIKS: Bruk samme variabelnavn som i steg 2
-            modal.style.display = originalStyle; 
-            
-            // VALGFRITT: Hvis du vil at hovedsiden skal vises igjen med en gang:
-            // document.body.classList.remove('historikk-modus');
-        }, 500);
+        // 3. RYDD OPP UMIDDELBART
+        // Dette er viktig for at den vanlige klasselisten skal fungere etterpå
+        modal.style.display = originalStyle;
+        document.body.classList.remove('historikk-modus');
     }, 250);
 }
 
@@ -4582,6 +4577,9 @@ function eksporter() {
 
 // function forberedPrint() { window.print(); }
 async function forberedPrint() {
+    // 1. SIKKERHET: Fjern historikk-modus så den ikke blokkerer vanlig utskrift
+    document.body.classList.remove('historikk-modus');
+    
     const utskriftArea = document.getElementById('utskriftRapportArea');
     const vTrinn = document.getElementById('mTrinn').value;
     const vKlasse = document.getElementById('mKlasse').value;
@@ -4666,21 +4664,17 @@ async function forberedPrint() {
         }
         snittHtml += `</tr>`;
 
-let html = `
+        let html = `
             <style>
-                /* Denne blokken tvinger rammene til å vises i overskriften */
-                #utskriftRapportArea table { border-collapse: collapse !important; }
-                #utskriftRapportArea th, #utskriftRapportArea td { 
-                    border: 1px solid #000 !important; 
-                }
+                #utskriftRapportArea table { border-collapse: collapse !important; width: 100% !important; }
+                #utskriftRapportArea th, #utskriftRapportArea td { border: 1px solid #000 !important; }
                 @media print {
-                    th { background-color: #f1f1f1 !important; -webkit-print-color-adjust: exact; }
+                    th { background-color: #f1f1f1 !important; -webkit-print-color-adjust: exact !important; }
                 }
             </style>
             <div style="padding: 5px; font-family: Arial, sans-serif;">
                 <h2 style="text-align:center; margin: 0 0 5px 0; font-size: 16px; letter-spacing:1px;">KLASSERESULTATER</h2>
                 <h3 style="text-align:center; margin: 0 0 12px 0; font-size: 13px; color: #444;">${vFag.toUpperCase()} &nbsp;|&nbsp; ${vTrinn}${vKlasse} &nbsp;|&nbsp; ${vPeriode} ${vAar}</h3>
-                
                 <table style="width:100%; text-align:center; font-size: 10.5px; line-height: 1.2;">
                     <thead>
                         <tr style="background-color: #f1f1f1;">
@@ -4707,8 +4701,16 @@ let html = `
         `;
 
         utskriftArea.innerHTML = html;
-        setTimeout(() => { window.print(); }, 500);
-        window.onafterprint = function() { utskriftArea.innerHTML = ""; };
+        
+        // Timeout for å sikre at DOM er tegnet
+        setTimeout(() => { 
+            window.print(); 
+        }, 500);
+
+        // Rydd opp etterpå
+        window.onafterprint = function() { 
+            utskriftArea.innerHTML = ""; 
+        };
 
     } catch (error) {
         console.error("Utskriftsfeil:", error);
