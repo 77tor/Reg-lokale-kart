@@ -921,19 +921,18 @@ label: 'Klassens snitt (%)',
 }
 
 function skrivUtHistorikk() {
-    // 1. Aktiver print-modus i CSS
+    // 1. Fortell CSS at vi skal printe historikk
     document.body.classList.add('historikk-modus');
     
-    // 2. En bitteliten pause (250ms) sikrer at nettleseren rekker å 
-    // skjule bakgrunnen og klargjøre modalen for utskrift.
+    // 2. Vi må gi nettleseren et "pustehull" for å tegne om siden
+    // før utskriftsdialogen dukker opp.
     setTimeout(() => {
         window.print();
         
-        // Valgfritt: Fjern klassen igjen etter print så 
-        // bakgrunnen kommer tilbake på skjermen
+        // 3. Fjern klassen etter at dialogen er lukket
         setTimeout(() => {
             document.body.classList.remove('historikk-modus');
-        }, 1000);
+        }, 500);
     }, 250);
 }
 
