@@ -915,30 +915,13 @@ label: 'Klassens snitt (%)',
     });
 }
 
+
 function skrivUtHistorikk() {
-    const modal = document.getElementById('historikkModal');
-    
-    // 1. Legg til modus-klassen på body
     document.body.classList.add('historikk-modus');
-    
-    // 2. Lagre nåværende display (sannsynligvis 'flex')
-    const originalDisplay = modal.style.display;
-    
-    // 3. Endre til 'block' så utskriftsmotoren forstår layouten
-    modal.style.display = 'block';
-    
-    // 4. Vent litt så nettleseren rekker å tegne grafen på nytt i den nye layouten
-    setTimeout(() => {
-        window.print();
-        
-        // 5. Rydd opp etter at utskriftsdialogen er lukket
-        setTimeout(() => {
-            modal.style.display = originalDisplay;
-            // Vi fjerner IKKE historikk-modus her automatisk, 
-            // det gjøres i lukkHistorikk() funksjonen din.
-        }, 500);
-    }, 250);
+    window.print();
 }
+
+
 
 function lukkHistorikk() {
     const modal = document.getElementById('historikkModal');
