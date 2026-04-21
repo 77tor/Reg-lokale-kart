@@ -378,13 +378,13 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
         visibility: visible !important;
     }
 /* Tving grafen/canvas til å vises */
-    canvas {
-        display: block !important;
-        max-width: 100% !important;
-        height: auto !important;
-        /* Noen nettlesere trenger denne for canvas spesifikt */
-        visibility: visible !important;
-    }
+canvas {
+    display: block !important;
+    max-width: 100% !important;
+    min-height: 300px !important; /* Legg til denne om grafen blir borte */
+    height: auto !important;
+    visibility: visible !important;
+}
 
     /* Sørg for at beholderen til grafen ikke begrenser høyden */
     .modal-body-scroll {
