@@ -308,76 +308,91 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 }
 
 /* UTSKRIFT (Beholdt din originale logikk - med fiks for linjer og historikk) */
+/* UTSKRIFT (Beholdt din originale logikk - med fiks for linjer) */
 @media print {
-    /* 1. Tving farger */
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    @page { size: landscape; margin: 0.5cm; }
-
-    /* 2. SKJUL ALT som ikke er historikk når vi er i historikk-modus */
-    body.historikk-modus .container, 
-    body.historikk-modus .no-print,
-    body.historikk-modus .btn,
-    body.historikk-modus .header-grid,
-    body.historikk-modus .action-bar,
-    body.historikk-modus .top-header-bar,
-    body.historikk-modus .close,
-    body.historikk-modus .modal-footer-bar {
-        display: none !important;
+    /* 1. Tvinger farger og linjer */
+    * { 
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important; 
     }
 
-    /* 3. TVING HISTORIKK-MODALEN TIL Å BLI SELVE SIDEN */
+    @page { size: landscape; margin: 0.5cm; }
+    
+    /* 2. Skjul elementer */
+    /* .modal er fjernet fra listen under slik at vi kan tvinge den frem ved behov */
+    .no-print, .btn, .header-grid, .action-bar, .top-header-bar { 
+        display: none !important; 
+    }
+
+    /* Standard oppførsel: Skjul alle modaler */
+    .modal { display: none !important; }
+
+    /* --- NYTT TILLEGG FOR HISTORIKK --- */
+    /* Hvis body har klassen 'historikk-modus', skjul hovedinnholdet og vis kun modalen */
+    body.historikk-modus .container { display: none !important; }
+    
     body.historikk-modus #historikkModal {
         display: block !important;
-        position: relative !important; /* IKKE absolute eller fixed */
+        position: relative !important;
         width: 100% !important;
-        height: auto !important;
-        margin: 0 !important;
-        padding: 0 !important;
         background: white !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        left: auto !important;
-        top: auto !important;
     }
 
-    /* Fjern modal-styling (skygger, sentrering osv) */
     body.historikk-modus .modal-content {
-        display: block !important;
-        position: relative !important;
         width: 100% !important;
         max-width: none !important;
         border: none !important;
         box-shadow: none !important;
         margin: 0 !important;
+    }
+
+    body.historikk-modus .modal-body-scroll {
+        overflow: visible !important;
+        height: auto !important;
+    }
+    /* ---------------------------------- */
+
+    /* 2. FJERNER GRÅFARGE OG SKYGGER UTENFOR TABELLEN */
+    body { 
+        background: white !important; 
+        background-color: white !important;
+    }
+
+    .container { 
+        background: white !important; 
+        box-shadow: none !important; 
+        border: none !important;
+        max-width: none !important;
+        width: 100% !important;
+        margin: 0 !important;
         padding: 0 !important;
     }
 
-    /* La innholdet flyte naturlig nedover siden */
-    body.historikk-modus .modal-body-scroll {
-        overflow: visible !important;
-        display: block !important;
-        height: auto !important;
-    }
-
-    /* 4. Tabell-styling (Sikrer linjer) */
+    /* 3. Tabell-kontroll */
     table { 
         width: 100% !important; 
+        font-size: 8.5pt !important; 
         border-collapse: collapse !important; 
         border: 1px solid black !important;
     }
+
+    /* 4. Tving linjer på alle celler */
     th, td { 
         border: 1px solid black !important; 
-        padding: 6px !important; 
+        box-shadow: none !important; 
+        position: static !important; 
     }
-    th { background-color: #f8f9fa !important; }
 
-    /* Grafen */
-    canvas {
-        max-width: 100% !important;
-        height: 300px !important; /* Tvinger høyden på grafen */
+    th {
+        background-color: #f8f9fa !important;
+        -webkit-print-color-adjust: exact !important;
     }
+
+    .oppgave-preview-bilde { display: none !important; }
+    
+    /* Sikrer at grafen vises */
+    canvas { max-width: 100% !important; }
 }
-
 
 /* --- HEADER LAYOUT (Inspirert av forside.jpg) --- */
 .top-header-bar {
