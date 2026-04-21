@@ -916,20 +916,33 @@ label: 'Klassens snitt (%)',
 }
 
 function skrivUtHistorikk() {
-    document.body.classList.add('historikk-modus');
-    const modal = document.getElementById('historikkModal');
-    const originalStyle = modal.style.display;
-    modal.style.display = 'block';
+    const modalInnhold = document.querySelector('#historikkModal .modal-body-scroll');
+    const hovedContainer = document.querySelector('.container');
+    
+    if (!modalInnhold || !hovedContainer) {
+        alert("Fant ikke historikk-data");
+        return;
+    }
 
-    // VIKTIG: 1000ms (1 sekund) gir grafen tid til å tegne seg ferdig
+    // 1. Lag en midlertidig kopi av innholdet
+    const printKopi = document.createElement('div');
+    printKopi.id = "temp-print-historikk";
+    printKopi.innerHTML = "<h1>Historikkoversikt</h1>" + modalInnhold.innerHTML;
+    
+    // 2. Skjul den vanlige containeren og legg til kopien i body
+    document.body.classList.add('historikk-modus');
+    document.body.appendChild(printKopi);
+
+    // 3. Print
     setTimeout(() => {
         window.print();
         
+        // 4. Rydd opp: Fjern kopien og gå tilbake til normalen
         setTimeout(() => {
-            modal.style.display = originalStyle;
+            document.body.removeChild(printKopi);
             document.body.classList.remove('historikk-modus');
         }, 500);
-    }, 1000); 
+    }, 800);
 }
 
 function lukkHistorikk() {
