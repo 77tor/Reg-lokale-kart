@@ -869,15 +869,17 @@ async function visElevHistorikk(navn) {
         const infoTekst = `${vFag}-${d.trinn}${d.klasse}-${d.p} ${d.aar}`;
 
         return `
-            <tr style="line-height: 1.2;">
-                <td style="text-align:left; padding: 4px 8px; white-space: nowrap;">${infoTekst}</td>
-                <td style="${poengStil}">${d.poeng}</td>
-                <td style="padding: 4px 8px;">${d.grense}</td>
-                <td style="padding: 4px 8px;">${d.maks}</td>
-                <td style="font-weight:bold; color: ${skårFarge}; padding: 4px 8px;">
-                    ${erUtfort ? d.prosent + '%' : 'Ikke gjennomført'}
-                </td>
-            </tr>
+         <tr style="line-height: 1.2;">
+        <td style="text-align:left; padding: 4px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            ${infoTekst}
+        </td>
+        <td style="text-align:center; ${poengStil}">${d.poeng}</td>
+        <td style="text-align:center; padding: 4px 8px;">${d.grense}</td>
+        <td style="text-align:center; padding: 4px 8px;">${d.maks}</td>
+        <td style="text-align:center; font-weight:bold; color: ${skårFarge}; padding: 4px 8px;">
+            ${erUtfort ? d.prosent + '%' : 'Ikke gjennomført'}
+        </td>
+    </tr>
         `;
     }).join('');
 
