@@ -916,27 +916,26 @@ label: 'Klassens snitt (%)',
 }
 
 function skrivUtHistorikk() {
-    // 1. Merk body så CSS-en vet hva som skal skje
-    document.body.classList.add('historikk-modus');
-    
-    // 2. Finn modalen
     const modal = document.getElementById('historikkModal');
     if (!modal) return;
 
-    // 3. Tving modalen til å være synlig (overstyrer inline style="display:none")
+    // Legg til klassen som fjerner alt annet og gjør bakgrunnen hvit i CSS
+    document.body.classList.add('historikk-modus');
+    
+    // Lagre og vis
     const originalStyle = modal.style.display;
     modal.style.display = 'block';
 
-    // 4. VIKTIG: Gi nettleseren tid til å "tegne" modalen før print-vinduet låser alt
+    // Bruk en litt lengre pause (500ms) for å være helt sikker på at 
+    // nettleseren har svelget CSS-endringene før print-vinduet låser alt.
     setTimeout(() => {
         window.print();
         
-        // 5. Rydd opp etterpå
         setTimeout(() => {
             modal.style.display = originalStyle;
-            document.body.classList.remove('historikk-modus'); // Fjern denne så vanlig print funker igjen!
+            document.body.classList.remove('historikk-modus');
         }, 500);
-    }, 300); // Økt litt til 300ms for sikkerhets skyld
+    }, 500);
 }
 
 function lukkHistorikk() {
