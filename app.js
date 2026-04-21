@@ -729,12 +729,36 @@ else if (erLaast) {
 // <--- HER SLUTTER FUNKSJONEN. Ingen kode etter dette punktet før neste funksjon starter.
 
 // <--- HER BEGYNNER ELEVHISTORIKK
+function beregnVekt(aarStreng, periode) {
+    // aarStreng er f.eks. "2024-2025", vi henter ut "2024"
+    const aar = parseInt(aarStreng.split('-')[0]);
+    // Høst får 1 poeng, Vår får 2 poeng
+    const periodeVekt = (periode === 'Høst') ? 1 : 2;
+    // Returnerer et tall, f.eks. 20241 eller 20242
+    return (aar * 10) + periodeVekt;
+}
+
+
 let historikkChart = null; // Lagrer chart-objektet globalt
 // <--- Egen kode for nullstill over
 async function visElevHistorikk(navn) {
     const tbody = document.getElementById('historikkTabellBody');
     tbody.innerHTML = "<tr><td colspan='5'>Søker etter data...</td></tr>";
-    document.getElementById('historikkNavn').innerText = `Historikk for ${navn}`;
+    
+    // 1. Hent nåværende valg fra hovedmenyen for filtrering
+    const valgtAar = document.getElementById('mAar').value;
+    const valgtPeriode = document.getElementById('mPeriode').value;
+
+    // Hjelpefunksjon for å sammenligne tid (f.eks. 20241 for Høst 2024)
+    const hentVekt = (aarStreng, pStreng) => {
+        const aar = parseInt(aarStreng.split('-')[0]);
+        const pVekt = (pStreng === "Høst") ? 1 : 2;
+        return (aar * 10) + pVekt;
+    };
+
+    const terskelVekt = hentVekt(valgtAar, valgtPeriode);
+
+    document.getElementById('historikkNavn').innerText = `Historikk for ${navn} (frem til ${valgtPeriode} ${valgtAar})`;
     document.getElementById('historikkModal').style.display = 'flex';
     document.body.classList.add('historikk-modus');
 
@@ -742,8 +766,9 @@ async function visElevHistorikk(navn) {
     const tilgjengeligeAar = ["2024-2025", "2025-2026"];
     const perioder = ["Høst", "Vår"];
     
-    let historikkData = [];
+    let alleHistorikkData = [];
 
+    // --- DATASAMLING (Samme som før) ---
     for (const aar of tilgjengeligeAar) {
         for (const p of perioder) {
             try {
@@ -751,47 +776,39 @@ async function visElevHistorikk(navn) {
                 const snap = await db.ref(sti).once('value');
                 const data = snap.val();
 
-if (data) {
-    Object.keys(data).forEach(trinn => {
-        Object.keys(data[trinn]).forEach(klasse => {
-            const alleIDenneKlassen = data[trinn][klasse];
-            const e = alleIDenneKlassen[navn];
-            
-            if (e && !e.slettet) {
-                const o = typeof hentOppsettSpesifikk === 'function' 
-                          ? hentOppsettSpesifikk(aar, vFag, p, trinn) 
-                          : null;
+                if (data) {
+                    Object.keys(data).forEach(trinn => {
+                        Object.keys(data[trinn]).forEach(klasse => {
+                            const alleIDenneKlassen = data[trinn][klasse];
+                            const e = alleIDenneKlassen[navn];
+                            
+                            if (e && !e.slettet) {
+                                const o = typeof hentOppsettSpesifikk === 'function' 
+                                          ? hentOppsettSpesifikk(aar, vFag, p, trinn) 
+                                          : null;
 
-                if (o) {
-                    const maksTotal = o.oppgaver.reduce((s, op) => s + op.maks, 0);
-                    
-                    // --- NY SJEKK: ER PRØVEN GJENNOMFØRT? ---
-                    // Vi sjekker flagget fra databasen
-                    const erUtfort = e.ikkeGjennomfort !== true; 
+                                if (o) {
+                                    const maksTotal = o.oppgaver.reduce((s, op) => s + op.maks, 0);
+                                    const erUtfort = e.ikkeGjennomfort !== true; 
 
-                    // --- BEREGNING: KLASSENS SNITT (kun for de som har gjennomført) ---
-                    let sumKlasse = 0, antallKlasse = 0;
-                    Object.values(alleIDenneKlassen).forEach(elev => {
-                        if (elev.sum !== undefined && !elev.slettet && elev.ikkeGjennomfort !== true) {
-                            sumKlasse += elev.sum;
-                            antallKlasse++;
-                        }
-                    });
-                    const snitt = antallKlasse > 0 ? (sumKlasse / antallKlasse / maksTotal) * 100 : 0;
+                                    let sumKlasse = 0, antallKlasse = 0;
+                                    Object.values(alleIDenneKlassen).forEach(elev => {
+                                        if (elev.sum !== undefined && !elev.slettet && elev.ikkeGjennomfort !== true) {
+                                            sumKlasse += elev.sum;
+                                            antallKlasse++;
+                                        }
+                                    });
+                                    const snitt = antallKlasse > 0 ? (sumKlasse / antallKlasse / maksTotal) * 100 : 0;
 
-                    // Legg til i historikk-listen
-                    historikkData.push({
-                        aar, p, trinn, klasse,
-                        // Hvis ikke utført, setter vi poeng til en tekststreng så tabellen kan vise det
-                        poeng: erUtfort ? e.sum : "Ikke utført",
-                        maks: maksTotal,
-                        grense: o.grenseTotal,
-                        // VIKTIG: Sett prosent til null hvis ikke utført. 
-                        // Chart.js tegner da ikke dette punktet (linjen brytes).
-                        prosent: erUtfort ? Math.round((e.sum / maksTotal) * 100) : null,
-                        grenseProsent: Math.round((o.grenseTotal / maksTotal) * 100), // NY: Grensen omgjort til %
-                        snittProsent: Math.round(snitt),
-                        statusTekst: erUtfort ? "" : "Ikke gjennomført"
+                                    alleHistorikkData.push({
+                                        aar, p, trinn, klasse,
+                                        poeng: erUtfort ? e.sum : "Ikke utført",
+                                        maks: maksTotal,
+                                        grense: o.grenseTotal,
+                                        prosent: erUtfort ? Math.round((e.sum / maksTotal) * 100) : null,
+                                        grenseProsent: Math.round((o.grenseTotal / maksTotal) * 100),
+                                        snittProsent: Math.round(snitt),
+                                        statusTekst: erUtfort ? "" : "Ikke gjennomført"
                                     });
                                 }
                             }
@@ -804,22 +821,26 @@ if (data) {
         }
     }
 
+    // --- NYTT: FILTRERING ---
+    // Her fjerner vi alt som ligger "frem i tid" i forhold til valgt prøve i menyen
+    let historikkData = alleHistorikkData.filter(d => {
+        return hentVekt(d.aar, d.p) <= terskelVekt;
+    });
+
     if (historikkData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan='5'>Ingen historikk funnet for ${navn} i ${vFag}.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan='5'>Ingen historikk funnet for ${navn} frem til ${valgtPeriode} ${valgtAar}.</td></tr>`;
+        if (window.oppdaterHistorikkChart) oppdaterHistorikkChart([]); // Tøm grafen
         return;
     }
 
     // Sortering (Trinn -> Periode)
     historikkData.sort((a, b) => a.trinn - b.trinn || (a.p === "Høst" ? -1 : 1));
 
-
-// Oppdater tabell
+    // Oppdater tabell (samme logikk som du hadde)
     tbody.innerHTML = historikkData.map(d => {
         const erUtfort = d.prosent !== null;
-        
-        // Fargekoding
         let skårFarge = '#7f8c8d'; 
-        let poengStil = 'padding: 4px 8px;'; // Mindre padding for å spare plass
+        let poengStil = 'padding: 4px 8px;';
         
         if (erUtfort) {
             skårFarge = d.poeng <= d.grense ? '#e53e3e' : '#38a169';
@@ -828,14 +849,11 @@ if (data) {
             }
         }
 
-        // Ny tekstformatering: "Regning-1C-Høst 2024-2025"
         const infoTekst = `${vFag}-${d.trinn}${d.klasse}-${d.p} ${d.aar}`;
 
         return `
             <tr style="line-height: 1.2;">
-                <td style="text-align:left; padding: 4px 8px; white-space: nowrap;">
-                    ${infoTekst}
-                </td>
+                <td style="text-align:left; padding: 4px 8px; white-space: nowrap;">${infoTekst}</td>
                 <td style="${poengStil}">${d.poeng}</td>
                 <td style="padding: 4px 8px;">${d.grense}</td>
                 <td style="padding: 4px 8px;">${d.maks}</td>
@@ -846,7 +864,7 @@ if (data) {
         `;
     }).join('');
 
-    // Tegn grafen
+    // Tegn grafen med de filtrerte dataene
     if (window.oppdaterHistorikkChart) oppdaterHistorikkChart(historikkData);
 }
 
@@ -937,7 +955,7 @@ label: 'Klassens snitt (%)',
         }
     }
 }
-    });
+});
 }
 
 function skrivUtHistorikk() {
