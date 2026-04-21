@@ -95,17 +95,6 @@ tr:hover { background-color: #f1f1f1; }
     text-decoration: none !important;
 }
 
-
-/* --- MODAL HISTORIKK --- */
-.modal {
-    display: none;
-}
-
-.modal.vis {
-    display: flex;
-}
-
-
 /* --- MODAL SYSTEM (FIKSET) --- */
 .modal { 
     /* Vi bruker 'flex' for å kunne sentrere innholdet */
@@ -319,69 +308,92 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 }
 
 
-/* ==========================================================
-   UTSKRIFT – FELLES REGLER (ALLE UTSKRIFTER)
-   ========================================================== */
-
+/* UTSKRIFT (Beholdt din originale logikk - med fiks for linjer) */
 @media print {
-    /* 1. Grunnleggende oppsett */
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    /* 1. Tvinger farger og linjer */
+    * { 
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important; 
+    }
+
     @page { size: landscape; margin: 0.5cm; }
-    body { background: white !important; }
-
-    /* 2. Skjul ALT som standard (inkludert alle modaler) */
-    .no-print, .btn, .action-bar, .header-grid, .top-header-bar, .close, .modal-footer-bar, .modal {
-        display: none !important;
-    }
-
-    /* 3. KUN når vi er i historikk-modus: */
     
-    /* Skjul hovedtabellen i bakgrunnen */
-    body.historikk-modus .container {
-        display: none !important;
+    /* 2. Skjul elementer */
+    /* .modal er fjernet fra listen under slik at vi kan tvinge den frem ved behov */
+    .no-print, .btn, .header-grid, .action-bar, .top-header-bar { 
+        display: none !important; 
     }
 
-    /* TVING frem historikk-modalen og ingenting annet */
+    /* Standard oppførsel: Skjul alle modaler */
+    .modal { display: none !important; }
+
+    /* --- NYTT TILLEGG FOR HISTORIKK --- */
+    /* Hvis body har klassen 'historikk-modus', skjul hovedinnholdet og vis kun modalen */
+    body.historikk-modus .container:not(#historikkModal):not(:has(#historikkModal)) { display: none !important; }
+
+    
     body.historikk-modus #historikkModal {
         display: block !important;
         position: relative !important;
         width: 100% !important;
-        visibility: visible !important;
-        opacity: 1 !important;
+        background: white !important;
     }
 
-    /* Gjør modal-innholdet flatt (fjern ruller og skygger) */
     body.historikk-modus .modal-content {
-        display: block !important;
         width: 100% !important;
         max-width: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
         border: none !important;
         box-shadow: none !important;
+        margin: 0 !important;
     }
 
     body.historikk-modus .modal-body-scroll {
         overflow: visible !important;
-        display: block !important;
         height: auto !important;
     }
+    /* ---------------------------------- */
 
-    /* 4. Tabell-kontroll (Behold dine linjer) */
+    /* 2. FJERNER GRÅFARGE OG SKYGGER UTENFOR TABELLEN */
+    body { 
+        background: white !important; 
+        background-color: white !important;
+    }
+
+    .container { 
+        background: white !important; 
+        box-shadow: none !important; 
+        border: none !important;
+        max-width: none !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* 3. Tabell-kontroll */
     table { 
         width: 100% !important; 
+        font-size: 8.5pt !important; 
         border-collapse: collapse !important; 
         border: 1px solid black !important;
     }
+
+    /* 4. Tving linjer på alle celler */
     th, td { 
         border: 1px solid black !important; 
-        padding: 4px !important; 
+        box-shadow: none !important; 
+        position: static !important; 
     }
-    th { background-color: #f8f9fa !important; }
-    canvas { max-width: 100% !important; height: auto !important; }
+
+    th {
+        background-color: #f8f9fa !important;
+        -webkit-print-color-adjust: exact !important;
+    }
+
+    .oppgave-preview-bilde { display: none !important; }
+    
+    /* Sikrer at grafen vises */
+    canvas { max-width: 100% !important; }
 }
-
-
 
 /* --- HEADER LAYOUT (Inspirert av forside.jpg) --- */
 .top-header-bar {
@@ -605,7 +617,7 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 </div>
 
 
-<div id="historikkModal" class="modal">
+<div id="historikkModal" class="modal" style="display:none;">
     <div class="modal-content" style="width: 80%; max-width: 900px;">
         <div class="top-header-bar">
             <h2 id="historikkNavn">Elevhistorikk</h2>

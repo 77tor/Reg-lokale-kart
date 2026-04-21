@@ -731,21 +731,16 @@ else if (erLaast) {
 // <--- HER BEGYNNER ELEVHISTORIKK
 let historikkChart = null; // Lagrer chart-objektet globalt
 // <--- Egen kode for nullstill over
-
 async function visElevHistorikk(navn) {
     const tbody = document.getElementById('historikkTabellBody');
     tbody.innerHTML = "<tr><td colspan='5'>Søker etter data...</td></tr>";
-
     document.getElementById('historikkNavn').innerText = `Historikk for ${navn}`;
-
-    const modal = document.getElementById('historikkModal');
-    modal.classList.add('vis');              // ✅ én måte å vise
-    document.body.classList.add('historikk-modus'); // ✅ én gang
+    document.getElementById('historikkModal').style.display = 'flex';
+    document.body.classList.add('historikk-modus');
 
     const vFag = document.getElementById('mFag').value;
     const tilgjengeligeAar = ["2024-2025", "2025-2026"];
     const perioder = ["Høst", "Vår"];
-
     
     let historikkData = [];
 
@@ -921,40 +916,37 @@ label: 'Klassens snitt (%)',
 }
 
 function skrivUtHistorikk() {
-    // 1. Aktiver print-modus i CSS
+    // 1. Legg til klassen som CSS-en over leter etter
     document.body.classList.add('historikk-modus');
     
-    // 2. En bitteliten pause (250ms) sikrer at nettleseren rekker å 
-    // skjule bakgrunnen og klargjøre modalen for utskrift.
+    // 2. Finn modalen og tving den til 'block' layout for utskrift
+    const modal = document.getElementById('historikkModal');
+    const originalStyle = modal.style.display;
+    modal.style.display = 'block';
+
+    // 3. Vent litt så nettleseren skjønner at den skal tegne historikken, ikke velkomsten
     setTimeout(() => {
         window.print();
         
-        // Valgfritt: Fjern klassen igjen etter print så 
-        // bakgrunnen kommer tilbake på skjermen
+        // 4. Rydd opp
         setTimeout(() => {
-            document.body.classList.remove('historikk-modus');
-        }, 1000);
+            modal.style.display = originalDisplay;
+            // Vi fjerner ikke historikk-modus her, den fjernes når du lukker modalen manuelt
+        }, 500);
     }, 250);
 }
 
 function lukkHistorikk() {
     const modal = document.getElementById('historikkModal');
-    
-    // Siden du bruker klassen 'vis' for å styre modalen:
-    modal.classList.remove('vis');
-    
-    // Vi må også sørge for at den skjules manuelt hvis 'vis' ikke har CSS-regler
-    modal.style.display = 'none'; 
-
+    if (modal) modal.style.display = 'none';
     document.body.classList.remove('historikk-modus');
 
+    // VIKTIG: Slett grafen slik at den kan tegnes på nytt for neste elev
     if (window.historikkChart instanceof Chart) {
         window.historikkChart.destroy();
         window.historikkChart = null;
     }
 }
-
-
 // <--- HER SLUTTER ELEVHISTORIKK MED CHART
 
 function nullstillElev(navn) {
