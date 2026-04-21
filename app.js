@@ -2068,12 +2068,29 @@ async function genererGjennomfoeringsData() {
     const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
     const totalTabellDiv = document.getElementById('gjennomfoeringTabellContainer');
     
+    // --- DATO-LOGIKK FOR FILTRERING ---
+    const nå = new Date();
+    const nåværendeÅr = nå.getFullYear();
+    const nåværendeMåned = nå.getMonth() + 1; // 1-12
+    
+    // Finn ut hvilken termin vi er i nå
+    // 8-12 = Høst, 1-7 = Vår
+    const nåværendeTermin = (nåværendeMåned >= 8) ? "Høst" : "Vår";
+    
+    // Konstruer skoleåret-strengen (f.eks "2025-2026")
+    let aktivtSkoleårStreng = "";
+    if (nåværendeMåned >= 8) {
+        aktivtSkoleårStreng = `${nåværendeÅr}-${nåværendeÅr + 1}`;
+    } else {
+        aktivtSkoleårStreng = `${nåværendeÅr - 1}-${nåværendeÅr}`;
+    }
+
     let htmlIkkeFerdigBody = ""; 
     let htmlTotalBody = "";
     let fantData = false;
     let harApneTotalt = false;
 
-    ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Henter data fra databasen...</p>";
+    ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Henter data...</p>";
     
     try {
         const [statusSnapshot, kartleggingSnapshot, loggSnapshot] = await Promise.all([
@@ -2086,39 +2103,42 @@ async function genererGjennomfoeringsData() {
         const statuser = statusSnapshot.val() || {};
         const kartlegging = kartleggingSnapshot.val() || {};
 
-        for (let aar in kartlegging) {
-            for (let fag in kartlegging[aar]) {
-                for (let periode in kartlegging[aar][fag]) {
-                    let nivå = kartlegging[aar][fag][periode];
-                    Object.keys(nivå).forEach(nøkkel => {
-                        let objekt = nivå[nøkkel];
-                        const førsteBarnKey = Object.keys(objekt)[0];
-                        const erTrinnNivå = objekt[førsteBarnKey] && typeof objekt[førsteBarnKey] === 'object' && !objekt[førsteBarnKey].hasOwnProperty('sum');
+        for (let aar in statuser) {
+            // 1. SJEKK: Er prøve-året etter nåværende skoleår? Skip.
+            if (aar > aktivtSkoleårStreng) continue;
 
-                        let res;
-                        if (erTrinnNivå) {
-                            for (let klasseNavn in objekt) {
-                                res = behandleKlasseData(aar, fag, periode, nøkkel, klasseNavn, objekt[klasseNavn], statuser, alleLogger);
+            for (let fag in statuser[aar]) {
+                for (let periode in statuser[aar][fag]) {
+                    
+                    // 2. SJEKK: Hvis vi er i samme skoleår, men det er høst og prøven er "Vår"? Skip.
+                    if (aar === aktivtSkoleårStreng && nåværendeTermin === "Høst" && periode === "Vår") {
+                        continue;
+                    }
+
+                    for (let trinn in statuser[aar][fag][periode]) {
+                        for (let klasseNavn in statuser[aar][fag][periode][trinn]) {
+                            
+                            const klasseData = (kartlegging[aar]?.[fag]?.[periode]?.[trinn]) 
+                                               ? kartlegging[aar][fag][periode][trinn][klasseNavn] || {} 
+                                               : {};
+
+                            const res = behandleKlasseData(aar, fag, periode, trinn, klasseNavn, klasseData, statuser, alleLogger);
+                            
+                            if (res) {
                                 htmlTotalBody += res.htmlTotal;
                                 htmlIkkeFerdigBody += res.htmlIkkeFerdig;
                                 if (res.harApne) harApneTotalt = true;
-                                if (res.htmlTotal) fantData = true;
+                                fantData = true;
                             }
-                        } else {
-                            res = behandleKlasseData(aar, fag, periode, nøkkel.replace(/\D/g,''), nøkkel, objekt, statuser, alleLogger);
-                            htmlTotalBody += res.htmlTotal;
-                            htmlIkkeFerdigBody += res.htmlIkkeFerdig;
-                            if (res.harApne) harApneTotalt = true;
-                            if (res.htmlTotal) fantData = true;
                         }
-                    });
+                    }
                 }
             }
         }
 
-        // --- TEGN RESULTATET ---
+        // --- TEGN RESULTATET (samme som før) ---
         if (!fantData) {
-            ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Ingen data funnet i databasen.</p>";
+            ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Ingen aktive prøver for gjeldende termin.</p>";
             totalTabellDiv.innerHTML = "";
         } else {
             const headerIkkeFerdig = `<table class="admin-table"><thead><tr><th style="text-align:left;">Prøve</th><th>Kontaktlærer</th><th>Status/Logg</th></tr></thead><tbody>`;
@@ -2126,14 +2146,14 @@ async function genererGjennomfoeringsData() {
 
             ikkeFerdigDiv.innerHTML = harApneTotalt ? 
                 headerIkkeFerdig + htmlIkkeFerdigBody + "</tbody></table>" : 
-                `<p style='text-align:center; padding:20px; color:green; font-weight:bold;'>Alle prøver er ferdigstilt! 🎉</p>`;
+                `<p style='text-align:center; padding:20px; color:green; font-weight:bold;'>Alle prøver for ${nåværendeTermin} ${aktivtSkoleårStreng} er ferdigstilt! 🎉</p>`;
             
             totalTabellDiv.innerHTML = headerTotal + htmlTotalBody + "</tbody></table>";
         }
 
     } catch (error) {
-        console.error("Feil i gjennomføringsmodul:", error);
-        ikkeFerdigDiv.innerHTML = `<p style='color:red;'>Feil ved henting: ${error.message}</p>`;
+        console.error("Feil:", error);
+        ikkeFerdigDiv.innerHTML = `<p style='color:red;'>Feil: ${error.message}</p>`;
     }
 }
 
