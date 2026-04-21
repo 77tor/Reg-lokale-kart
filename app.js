@@ -936,6 +936,7 @@ label: 'Klassens snitt (%)',
             top: 10 
         }
     }
+}
     });
 }
 
