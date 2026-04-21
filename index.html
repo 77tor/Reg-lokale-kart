@@ -307,7 +307,7 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     text-decoration: underline;
 }
 
-/* UTSKRIFT (Beholdt din originale logikk - med fiks for linjer og historikk) */
+
 /* UTSKRIFT (Beholdt din originale logikk - med fiks for linjer) */
 @media print {
     /* 1. Tvinger farger og linjer */
@@ -329,7 +329,8 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 
     /* --- NYTT TILLEGG FOR HISTORIKK --- */
     /* Hvis body har klassen 'historikk-modus', skjul hovedinnholdet og vis kun modalen */
-    body.historikk-modus .container { display: none !important; }
+    body.historikk-modus .container:not(#historikkModal):not(:has(#historikkModal)) { display: none !important; }
+
     
     body.historikk-modus #historikkModal {
         display: block !important;
