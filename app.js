@@ -904,15 +904,15 @@ label: 'Klassens snitt (%)',
     scales: {
         y: {
             beginAtZero: true,
-            // 1. Vi setter max til 105 for å gi god plass til punkter på 100%
-            max: 105, 
+            // 1. Vi setter max til 110 for å gi god plass til punkter på 100%
+            max: 110, 
             title: { 
                 display: true, 
                 text: 'Prosent (%)' 
             },
             ticks: {
                 // 2. Vi tvinger aksen til å bare vise tall opp til 100
-                // Dette fjerner "105"-merket så diagrammet ser ryddig ut
+                // Dette fjerner "110"-merket så diagrammet ser ryddig ut
                 callback: function(value) {
                     if (value <= 100) return value + '%';
                 },
