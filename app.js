@@ -731,16 +731,21 @@ else if (erLaast) {
 // <--- HER BEGYNNER ELEVHISTORIKK
 let historikkChart = null; // Lagrer chart-objektet globalt
 // <--- Egen kode for nullstill over
+
 async function visElevHistorikk(navn) {
     const tbody = document.getElementById('historikkTabellBody');
     tbody.innerHTML = "<tr><td colspan='5'>Søker etter data...</td></tr>";
+
     document.getElementById('historikkNavn').innerText = `Historikk for ${navn}`;
-    document.getElementById('historikkModal').style.display = 'flex';
-    document.body.classList.add('historikk-modus');
+
+    const modal = document.getElementById('historikkModal');
+    modal.classList.add('vis');              // ✅ én måte å vise
+    document.body.classList.add('historikk-modus'); // ✅ én gang
 
     const vFag = document.getElementById('mFag').value;
     const tilgjengeligeAar = ["2024-2025", "2025-2026"];
     const perioder = ["Høst", "Vår"];
+
     
     let historikkData = [];
 
@@ -915,25 +920,25 @@ label: 'Klassens snitt (%)',
     });
 }
 
-
 function skrivUtHistorikk() {
     document.body.classList.add('historikk-modus');
     window.print();
 }
 
 
-
 function lukkHistorikk() {
     const modal = document.getElementById('historikkModal');
-    if (modal) modal.style.display = 'none';
+    if (modal) modal.classList.remove('vis');
+
     document.body.classList.remove('historikk-modus');
 
-    // VIKTIG: Slett grafen slik at den kan tegnes på nytt for neste elev
     if (window.historikkChart instanceof Chart) {
         window.historikkChart.destroy();
         window.historikkChart = null;
     }
 }
+
+
 // <--- HER SLUTTER ELEVHISTORIKK MED CHART
 
 function nullstillElev(navn) {
