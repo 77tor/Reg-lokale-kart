@@ -869,7 +869,7 @@ async function visElevHistorikk(navn) {
         const infoTekst = `${vFag}-${d.trinn}${d.klasse}-${d.p} ${d.aar}`;
 
         return `
-         <tr style="line-height: 1.2;">
+        <tr style="line-height: 1.2;">
         <td style="text-align:left; padding: 4px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
             ${infoTekst}
         </td>
