@@ -2616,7 +2616,7 @@ if (!harSvakheter) {
 htmlSide3 += `</div>`;
 // --- SLUTT PÅ SIDE 3 ---
 
-// --- SIDE 4: UTVIKLING OVER TID (Renset og korrekt) ---
+// --- SIDE 4: UTVIKLING OVER TID (Nå med historisk akkumulert prøvesnitt) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
 try {
     const histSnap = await db.ref(`kartlegging`).once('value');
@@ -2647,32 +2647,35 @@ try {
             const trinnDataAkkuratNaa = fData[pKey][historiskTrinn];
             if (!trinnDataAkkuratNaa) continue;
 
-            // --- GLOBALT PRØVESNITT (Går på tvers av alle år i DB) ---
+            // --- NY BEREGNING: GLOBALT PRØVESNITT (Akkumulert frem til DETTE året) ---
             let globalSum = 0;
             let globalAntall = 0;
             
             Object.keys(alleData).forEach(yearKey => {
-                const yearData = alleData[yearKey][fag];
-                if (yearData && yearData[pKey] && yearData[pKey][historiskTrinn]) {
-                    const spesifikkProveData = yearData[pKey][historiskTrinn];
-                    const aOppsettGlobal = oppgaveStruktur[yearKey] ? oppgaveStruktur[yearKey][fag][pKey][historiskTrinn] : null;
-                    
-                    if (aOppsettGlobal) {
-                        const aMaksGlobal = aOppsettGlobal.oppgaver.reduce((s, o) => s + (o.maks || 0), 0);
-                        Object.values(spesifikkProveData).forEach(klasseMappe => {
-                            Object.values(klasseMappe).forEach(e => {
-                                if (!e.slettet && !e.ikkeGjennomfort && e.sum !== undefined) {
-                                    globalSum += (e.sum / aMaksGlobal);
-                                    globalAntall++;
-                                }
+                // VIKTIG ENDRING: Vi tar bare med år som er lik eller tidligere enn aKey (året for denne raden)
+                if (yearKey <= aKey) { 
+                    const yearData = alleData[yearKey][fag];
+                    if (yearData && yearData[pKey] && yearData[pKey][historiskTrinn]) {
+                        const spesifikkProveData = yearData[pKey][historiskTrinn];
+                        const aOppsettGlobal = oppgaveStruktur[yearKey] ? oppgaveStruktur[yearKey][fag][pKey][historiskTrinn] : null;
+                        
+                        if (aOppsettGlobal) {
+                            const aMaksGlobal = aOppsettGlobal.oppgaver.reduce((s, o) => s + (o.maks || 0), 0);
+                            Object.values(spesifikkProveData).forEach(klasseMappe => {
+                                Object.values(klasseMappe).forEach(e => {
+                                    if (!e.slettet && !e.ikkeGjennomfort && e.sum !== undefined) {
+                                        globalSum += (e.sum / aMaksGlobal);
+                                        globalAntall++;
+                                    }
+                                });
                             });
-                        });
+                        }
                     }
                 }
             });
-            const globalProveSnittProsent = globalAntall > 0 ? (globalSum / globalAntall) * 100 : 0;
+            const akkumulertProveSnitt = globalAntall > 0 ? (globalSum / globalAntall) * 100 : 0;
 
-            // --- LOKALE BEREGNINGER (Denne spesifikke årgangen) ---
+            // --- RESTEN AV BEREGNINGENE (Klasse og Trinn for gjeldende år) ---
             const aOppsett = oppgaveStruktur[aKey] ? oppgaveStruktur[aKey][fag][pKey][historiskTrinn] : null;
             if (!aOppsett) continue;
             const aMaks = aOppsett.oppgaver.reduce((s, o) => s + (o.maks || 0), 0);
@@ -2702,7 +2705,7 @@ try {
                     tittel: `${historiskTrinn}${klasse}`,
                     klasseProsent: ((klasseSum / klasseAntall) / aMaks) * 100,
                     trinnProsent: ((trinnSum / trinnAntall) / aMaks) * 100,
-                    globalProsent: globalProveSnittProsent,
+                    globalProsent: akkumulertProveSnitt, // Nå er denne historisk korrekt for hvert år!
                     kritiske: klasseKritiske, 
                     lavMestring: klasseLavMestring,
                     sort: aKey + (pKey === "Høst" ? "1" : "2")
@@ -2710,6 +2713,7 @@ try {
             }
         }
     }
+
     
     historikkRader.sort((a,b) => a.sort.localeCompare(b.sort));
 
