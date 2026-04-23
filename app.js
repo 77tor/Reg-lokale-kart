@@ -1013,7 +1013,7 @@ function skrivUtHistorikk() {
     overskrift.style.marginBottom = "20px";
     
     // Her setter vi tittelen slik du ønsker:
-    overskrift.innerText = `Historikkoversikt - ${elevNavn}`;
+    overskrift.innerText = `${elevNavn}`;
     
     printKopi.prepend(overskrift);
     
