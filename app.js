@@ -745,11 +745,16 @@ async function visElevHistorikk(navn) {
     const tbody = document.getElementById('historikkTabellBody');
     tbody.innerHTML = "<tr><td colspan='5'>Søker etter data...</td></tr>";
     
-    // 1. Hent nåværende valg fra hovedmenyen for filtrering
+    // --- NY NAVNE-VASKER (Snu navn og fjerne komma) ---
+    let visningsNavn = navn;
+    if (navn.includes(',')) {
+        const deler = navn.split(',');
+        visningsNavn = `${deler[1].trim()} ${deler[0].trim()}`;
+    }
+
     const valgtAar = document.getElementById('mAar').value;
     const valgtPeriode = document.getElementById('mPeriode').value;
 
-    // Hjelpefunksjon for å sammenligne tid (f.eks. 20241 for Høst 2024)
     const hentVekt = (aarStreng, pStreng) => {
         const aar = parseInt(aarStreng.split('-')[0]);
         const pVekt = (pStreng === "Høst") ? 1 : 2;
@@ -758,12 +763,14 @@ async function visElevHistorikk(navn) {
 
     const terskelVekt = hentVekt(valgtAar, valgtPeriode);
 
+    // Oppdatert visning: Navnet er i fokus, (frem til...) er nøytral
     document.getElementById('historikkNavn').innerHTML = 
-    `Historikk for ${navn} <span style="font-weight: normal; font-size: 0.9em;">(frem til ${valgtPeriode} ${valgtAar})</span>`;
+    `Historikk for ${visningsNavn} <span style="font-weight: normal; font-size: 0.85em; opacity: 0.8;">(frem til ${valgtPeriode} ${valgtAar})</span>`;
+    
     document.getElementById('historikkModal').style.display = 'flex';
     document.body.classList.add('historikk-modus');
 
-    const vFag = document.getElementById('mFag').value;
+ const vFag = document.getElementById('mFag').value;
     
 // --- DYNAMISK GENERERING AV ÅRSTALL ---
     let minAar = 2024; 
@@ -936,7 +943,8 @@ label: 'Klassens snitt (%)',
     }
 ]
         },
-        options: {
+
+ options: {
     responsive: true,
     maintainAspectRatio: false,
     scales: {
@@ -985,52 +993,59 @@ function skrivUtHistorikk() {
         return;
     }
 
-    // --- NYTT: Hent elevnavn fra modal-headeren ---
-    // Her antar jeg at navnet står i h2-tagen i #historikkModal
-    const elevNavnElement = document.querySelector('#historikkModal h2');
-    const elevNavn = elevNavnElement ? elevNavnElement.innerText : "";
+    // Henter navnet som vi allerede har snudd i visElevHistorikk
+    const navneFelt = document.querySelector('#historikkNavn');
+    let formatertNavn = "Elevhistorikk";
+    
+    if (navneFelt) {
+        // Vi henter teksten og stopper før "(frem til...)"
+        // Vi fjerner også "Historikk for " fra starten
+        let råTekst = navneFelt.innerText;
+        formatertNavn = råTekst.split('(')[0].replace("Historikk for ", "").trim();
+    }
 
-    // 1. KLON hele innholdet
+    // 1. KLON
     const printKopi = modalInnhold.cloneNode(true);
     printKopi.id = "temp-print-historikk";
+    printKopi.style.maxHeight = "none";
+    printKopi.style.overflow = "visible";
 
-    // 2. Spesialhåndtering for grafer
+    // 2. Grafer
     const originaleCanvaser = modalInnhold.querySelectorAll('canvas');
     const kopierteCanvaser = printKopi.querySelectorAll('canvas');
     
     originaleCanvaser.forEach((origCanvas, index) => {
         const destCanvas = kopierteCanvaser[index];
         if (destCanvas) {
+            destCanvas.width = origCanvas.width;
+            destCanvas.height = origCanvas.height;
+            destCanvas.style.width = "100%";
+            destCanvas.style.height = "auto"; 
+            destCanvas.style.maxHeight = "280px"; // Litt lavere for å sikre 1 side
+
             const destCtx = destCanvas.getContext('2d');
             destCtx.drawImage(origCanvas, 0, 0);
         }
     });
 
-    // 3. Legg til en overskrift øverst i kopien med elevens navn
-    const overskrift = document.createElement('h1');
-    overskrift.style.color = "#8e44ad";
+    // 3. Ren overskrift til print
+    const overskrift = document.createElement('h3');
+    overskrift.style.color = "#2c3e50";
     overskrift.style.textAlign = "center";
-    overskrift.style.marginBottom = "20px";
-    
-    // Her setter vi tittelen slik du ønsker:
-    overskrift.innerText = `${elevNavn}`;
-    
+    overskrift.style.margin = "0 0 10px 0";
+    overskrift.style.fontSize = "18px";
+    overskrift.innerText = `Historikk for ${formatertNavn}`;
     printKopi.prepend(overskrift);
-    
-    // 4. Skjul resten og legg kopien til på siden
+
+    // 4. Print-gjennomføring
     document.body.classList.add('historikk-modus');
     document.body.appendChild(printKopi);
 
-    // 5. Print
     setTimeout(() => {
         window.print();
-        
-        // 6. Rydd opp
         setTimeout(() => {
-            const kopiSomSkalFjernes = document.getElementById('temp-print-historikk');
-            if (kopiSomSkalFjernes) {
-                document.body.removeChild(kopiSomSkalFjernes);
-            }
+            const kopi = document.getElementById('temp-print-historikk');
+            if (kopi) document.body.removeChild(kopi);
             document.body.classList.remove('historikk-modus');
         }, 500);
     }, 500);
