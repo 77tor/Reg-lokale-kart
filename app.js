@@ -2794,7 +2794,8 @@ let yAkseTall = "";
 });
 
 htmlSide4 += `<div style="text-align:center; margin: 20px 0 40px 0;">
-    <svg width="${w}" height="${h + toppMarg + 45}" viewBox="0 0 ${w} ${h + toppMarg + 45}">
+    <svg width="${w}" height="${h + toppMarg + 45}" viewBox="0 0 ${w} ${h + toppMarg + 45}" 
+         style="shape-rendering: geometricPrecision; text-rendering: optimizeLegibility;">
         ${tegnforklaring}
         ${yAkseTall}
         
