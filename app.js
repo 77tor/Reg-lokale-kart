@@ -936,52 +936,45 @@ label: 'Klassens snitt (%)',
     }
 ]
         },
-
-options: {
+        options: {
     responsive: true,
     maintainAspectRatio: false,
     scales: {
-        x: {
-            ticks: {
-                // NYTT: Gjør teksten på X-aksen (Høst 24 osv) litt mindre 
-                // så 14 punkter ikke overlapper hverandre
-                font: { size: 10 } 
-            }
-        },
         y: {
             beginAtZero: true,
+            // 1. Vi setter max til 110 for å gi god plass til punkter på 100%
             max: 110, 
             title: { 
                 display: true, 
-                text: 'Prosent (%)',
-                font: { size: 11 }
+                text: 'Prosent (%)' 
             },
             ticks: {
+                // 2. Vi tvinger aksen til å bare vise tall opp til 100
+                // Dette fjerner "110"-merket så diagrammet ser ryddig ut
                 callback: function(value) {
                     if (value <= 100) return value + '%';
                 },
-                stepSize: 20,
-                font: { size: 10 }
+                // Valgfritt: Tvinger faste hopp (0, 20, 40, 60, 80, 100)
+                stepSize: 20 
             }
         }
     },
     plugins: {
         legend: { 
             position: 'top',
+            // 3. Legger til litt ekstra avstand mellom merkelappene og selve grafen
             labels: {
-                padding: 10, // Litt mindre padding enn 20 for å spare vertikal plass
-                font: { size: 11 },
-                boxWidth: 12 // Smalere fargebokser i tegnforklaringen
+                padding: 20
             }
         }
     },
+    // 4. Legger til padding i selve tegneområdet for å unngå at linjen berører kanten
     layout: {
         padding: {
-            top: 5 // Litt mindre topp-padding for å vinne plass
+            top: 10 
         }
     }
 }
-
 });
 }
 
@@ -992,47 +985,39 @@ function skrivUtHistorikk() {
         return;
     }
 
-    const elevNavnElement = document.querySelector('#historikkNavn');
-    const elevNavn = elevNavnElement ? elevNavnElement.innerText.split('(')[0].trim() : "Elevhistorikk";
+    // --- NYTT: Hent elevnavn fra modal-headeren ---
+    // Her antar jeg at navnet står i h2-tagen i #historikkModal
+    const elevNavnElement = document.querySelector('#historikkModal h2');
+    const elevNavn = elevNavnElement ? elevNavnElement.innerText : "";
 
     // 1. KLON hele innholdet
     const printKopi = modalInnhold.cloneNode(true);
     printKopi.id = "temp-print-historikk";
 
-    // Viktig for utskrift: Fjern begrensninger
-    printKopi.style.maxHeight = "none";
-    printKopi.style.overflow = "visible";
-
-    // 2. Spesialhåndtering for grafer (Canvas)
+    // 2. Spesialhåndtering for grafer
     const originaleCanvaser = modalInnhold.querySelectorAll('canvas');
     const kopierteCanvaser = printKopi.querySelectorAll('canvas');
     
     originaleCanvaser.forEach((origCanvas, index) => {
         const destCanvas = kopierteCanvaser[index];
         if (destCanvas) {
-            // VIKTIG: Sett fysisk oppløsning lik originalen så skriften ikke forsvinner/blir uklar
-            destCanvas.width = origCanvas.width;
-            destCanvas.height = origCanvas.height;
-            
-            // Vi fjerner den faste CSS-høyden som "strakk" grafen i forrige forsøk
-            destCanvas.style.width = "100%";
-            destCanvas.style.height = "auto"; 
-            destCanvas.style.maxHeight = "300px"; // Kontrollerer at den ikke blir for stor
-
             const destCtx = destCanvas.getContext('2d');
             destCtx.drawImage(origCanvas, 0, 0);
         }
     });
 
-    // 3. Overskrift
-    const overskrift = document.createElement('h2');
+    // 3. Legg til en overskrift øverst i kopien med elevens navn
+    const overskrift = document.createElement('h1');
     overskrift.style.color = "#8e44ad";
     overskrift.style.textAlign = "center";
-    overskrift.style.margin = "0 0 10px 0";
-    overskrift.innerText = elevNavn;
+    overskrift.style.marginBottom = "20px";
+    
+    // Her setter vi tittelen slik du ønsker:
+    overskrift.innerText = `${elevNavn}`;
+    
     printKopi.prepend(overskrift);
-
-    // 4. Legg til kopien på siden
+    
+    // 4. Skjul resten og legg kopien til på siden
     document.body.classList.add('historikk-modus');
     document.body.appendChild(printKopi);
 
