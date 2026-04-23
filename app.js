@@ -985,38 +985,51 @@ function skrivUtHistorikk() {
         return;
     }
 
-    // 1. KLON hele innholdet (inkludert grafer/canvas)
+    // --- NYTT: Hent elevnavn fra modal-headeren ---
+    // Her antar jeg at navnet står i h2-tagen i #historikkModal
+    const elevNavnElement = document.querySelector('#historikkModal h2');
+    const elevNavn = elevNavnElement ? elevNavnElement.innerText : "";
+
+    // 1. KLON hele innholdet
     const printKopi = modalInnhold.cloneNode(true);
     printKopi.id = "temp-print-historikk";
 
-    // 2. Spesialhåndtering for grafer (Canvas må kopieres manuelt)
+    // 2. Spesialhåndtering for grafer
     const originaleCanvaser = modalInnhold.querySelectorAll('canvas');
     const kopierteCanvaser = printKopi.querySelectorAll('canvas');
     
     originaleCanvaser.forEach((origCanvas, index) => {
         const destCanvas = kopierteCanvaser[index];
-        const destCtx = destCanvas.getContext('2d');
-        // Tegner bildet fra den originale grafen over i kopien
-        destCtx.drawImage(origCanvas, 0, 0);
+        if (destCanvas) {
+            const destCtx = destCanvas.getContext('2d');
+            destCtx.drawImage(origCanvas, 0, 0);
+        }
     });
 
-    // 3. Legg til en overskrift øverst i kopien
+    // 3. Legg til en overskrift øverst i kopien med elevens navn
     const overskrift = document.createElement('h1');
-    overskrift.innerText = "Historikkoversikt";
+    overskrift.style.color = "#8e44ad";
+    overskrift.style.textAlign = "center";
+    overskrift.style.marginBottom = "20px";
+    
+    // Her setter vi tittelen slik du ønsker:
+    overskrift.innerText = `Historikkoversikt - ${elevNavn}`;
+    
     printKopi.prepend(overskrift);
     
     // 4. Skjul resten og legg kopien til på siden
     document.body.classList.add('historikk-modus');
     document.body.appendChild(printKopi);
 
-    // 5. Print (vi venter litt så nettleseren får plassert kopien)
+    // 5. Print
     setTimeout(() => {
         window.print();
         
         // 6. Rydd opp
         setTimeout(() => {
-            if (document.getElementById('temp-print-historikk')) {
-                document.body.removeChild(printKopi);
+            const kopiSomSkalFjernes = document.getElementById('temp-print-historikk');
+            if (kopiSomSkalFjernes) {
+                document.body.removeChild(kopiSomSkalFjernes);
             }
             document.body.classList.remove('historikk-modus');
         }, 500);
