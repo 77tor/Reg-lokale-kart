@@ -2746,35 +2746,56 @@ try {
     historikkRader.sort((a,b) => a.sort.localeCompare(b.sort));
 
     if (historikkRader.length > 0) {
-// --- SVG GRAF (Med Y-akse etiketter) ---
-const w = 750; const h = 100; const pad = 45;
-const minVal = 50; const maxVal = 100; const range = maxVal - minVal;
+
+// --- SVG GRAF (Med margin i topp og differensiert Y-akse) ---
+const w = 750; 
+const h = 100; 
+const toppMarg = 15; // Gir plass så "100%" ikke blir kuttet
+const pad = 45;
+const minVal = 50; 
+const maxVal = 100; 
+const range = maxVal - minVal;
 const step = (w - (pad * 2)) / (Math.max(historikkRader.length - 1, 1));
 
 let pK = ""; let pT = ""; let dots = "";
 historikkRader.forEach((r, i) => {
     const x = pad + (i * step);
-    const yK = h - ((Math.max(r.klasseProsent, minVal) - minVal) * (h / range));
-    const yT = h - ((Math.max(r.trinnProsent, minVal) - minVal) * (h / range));
-    pK += `${x},${yK} `; pT += `${x},${yT} `;
-    dots += `<circle cx="${x}" cy="${yK}" r="4.5" fill="white" stroke="#3498db" stroke-width="1" />
+    // Vi legger til toppMarg i y-beregningen for å flytte alt ned fra kanten
+    const yK = (h - ((Math.max(r.klasseProsent, minVal) - minVal) * (h / range))) + toppMarg;
+    const yT = (h - ((Math.max(r.trinnProsent, minVal) - minVal) * (h / range))) + toppMarg;
+    
+    pK += `${x},${yK} `; 
+    pT += `${x},${yT} `;
+    
+    dots += `<circle cx="${x}" cy="${yK}" r="4.5" fill="white" stroke="#3498db" stroke-width="1.5" />
              <circle cx="${x}" cy="${yK}" r="2.5" fill="#3498db" />
-             <text x="${x}" y="${h+18}" font-size="8.5" font-weight="bold" text-anchor="middle" transform="rotate(-18 ${x} ${h+18})">${r.visning}</text>`;
+             <text x="${x}" y="${h + toppMarg + 22}" font-size="9" font-weight="bold" text-anchor="middle" fill="#2c3e50" transform="rotate(-18 ${x} ${h + toppMarg + 22})">${r.visning}</text>`;
 });
 
-// NYTT: Generer tall for Y-aksen (50, 75, 100)
+// Generer tall for Y-aksen (50, 75, 100) med ulik styling
 let yAkseTall = "";
 [50, 75, 100].forEach(val => {
-    const yPos = h - ((val - minVal) * (h / range));
-    yAkseTall += `<text x="${pad - 10}" y="${yPos + 3}" font-size="9" fill="#999" text-anchor="end">${val}%</text>
-                  <line x1="${pad}" y1="${yPos}" x2="${w-pad}" y2="${yPos}" stroke="#eee" stroke-width="0.5" />`;
+    const yPos = (h - ((val - minVal) * (h / range))) + toppMarg;
+    
+    // Spesialstyling for 75%
+    const er75 = val === 75;
+    const fontStr = er75 ? "8" : "10";
+    const opasitet = er75 ? "0.4" : "0.7";
+    const vekt = er75 ? "normal" : "bold";
+
+    yAkseTall += `
+        <text x="${pad - 10}" y="${yPos + 3}" font-size="${fontStr}" font-weight="${vekt}" fill="#2c3e50" opacity="${opasitet}" text-anchor="end">${val}%</text>
+        <line x1="${pad}" y1="${yPos}" x2="${w - pad}" y2="${yPos}" stroke="#000" stroke-width="${er75 ? '0.3' : '0.5'}" opacity="${er75 ? '0.1' : '0.2'}" />
+    `;
 });
 
-htmlSide4 += `<div style="text-align:center; margin: 25px 0 45px 0;">
-    <svg width="${w}" height="${h+40}" viewBox="0 0 ${w} ${h+40}">
-        ${yAkseTall} <line x1="${pad}" y1="${h}" x2="${w-pad}" y2="${h}" stroke="#ccc" stroke-width="1" />
-        <polyline points="${pT}" fill="none" stroke="#999" stroke-width="2.5" stroke-dasharray="6,4" opacity="0.7" />
-        <polyline points="${pK}" fill="none" stroke="#3498db" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+htmlSide4 += `<div style="text-align:center; margin: 30px 0 50px 0;">
+    <svg width="${w}" height="${h + toppMarg + 45}" viewBox="0 0 ${w} ${h + toppMarg + 45}">
+        ${yAkseTall}
+        <line x1="${pad}" y1="${h + toppMarg}" x2="${w - pad}" y2="${h + toppMarg}" stroke="#ccc" stroke-width="1" />
+        
+        <polyline points="${pT}" fill="none" stroke="#999" stroke-width="2" stroke-dasharray="6,4" opacity="0.5" />
+        <polyline points="${pK}" fill="none" stroke="#3498db" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
         ${dots}
     </svg>
 </div>`;
