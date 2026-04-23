@@ -4992,6 +4992,19 @@ function tegnUtviklingsGraf(canvasId, fag, perioder, data, filterValg = 'alle') 
     if (fag === "Lesing" && devChartLesing) devChartLesing.destroy();
     if (fag === "Regning" && devChartRegning) devChartRegning.destroy();
 
+ // --- NYTT: Plugin for hvit bakgrunn (viktig for ren eksport) ---
+    const whiteBackgroundPlugin = {
+        id: 'custom_canvas_background_color',
+        beforeDraw: (chart) => {
+            const {ctx} = chart;
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-over';
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, chart.width, chart.height);
+            ctx.restore();
+        }
+    };   
+
     const trinnFarger = { "1":"#3498db", "2":"#e74c3c", "3":"#2ecc71", "4":"#f1c40f", "5":"#9b59b6", "6":"#e67e22", "7":"#1abc9c" };
     const datasets = [];
 
@@ -5056,6 +5069,7 @@ function tegnUtviklingsGraf(canvasId, fag, perioder, data, filterValg = 'alle') 
         type: 'bar',
         data: { labels: perioder, datasets: datasets },
         options: {
+            devicePixelRatio: 3,
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
@@ -5079,7 +5093,7 @@ function tegnUtviklingsGraf(canvasId, fag, perioder, data, filterValg = 'alle') 
                 } 
             }
         },
-        plugins: [ChartDataLabels]
+        plugins: [ChartDataLabels, whiteBackgroundPlugin]
     });
 
     if (fag === "Lesing") devChartLesing = chart; else devChartRegning = chart;
@@ -5150,11 +5164,11 @@ let html = `<table style="width:100%; border-collapse: collapse; font-size: 13px
 function printUtvikling() {
     const canvasLesing = document.getElementById('chartUtviklingLesing');
     const canvasRegning = document.getElementById('chartUtviklingRegning');
-    // HENT UT TABELL-HTML OGSÅ:
     const tabellHtml = document.getElementById('utviklingTabellContainer').innerHTML;
 
-    const bildeLesing = canvasLesing.toDataURL("image/png");
-    const bildeRegning = canvasRegning.toDataURL("image/png");
+    // Vi eksporterer med høyeste kvalitet. PNG er tapsfritt.
+    const bildeLesing = canvasLesing.toDataURL("image/png", 1.0);
+    const bildeRegning = canvasRegning.toDataURL("image/png", 1.0);
 
     const printVindu = window.open('', '_blank');
     printVindu.document.write(`
@@ -5162,13 +5176,30 @@ function printUtvikling() {
             <head>
                 <title>Skolens utvikling over tid</title>
                 <style>
-                    body { font-family: sans-serif; text-align: center; padding: 20px; }
-                    img { max-width: 100%; height: auto; margin-bottom: 20px; border: 1px solid #eee; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
-                    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-                    th { background-color: #8e44ad; color: white; }
-                    h1 { color: #8e44ad; }
-                    .fag-rad { background: #f1f1f1; font-weight: bold; text-align: left !important; }
+                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: center; padding: 40px; color: #333; }
+                    
+                    /* TVINGER bildene til å se skarpe ut og bevare proporsjoner */
+                    img { 
+                        max-width: 100%; 
+                        height: auto; 
+                        margin-bottom: 30px; 
+                        border: 1px solid #eee; 
+                        /* Viktig for skarphet: */
+                        image-rendering: -webkit-optimize-contrast; 
+                        image-rendering: crisp-edges;
+                    }
+
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 11px; }
+                    th, td { border: 1px solid #ddd; padding: 6px; text-align: center; }
+                    th { background-color: #8e44ad !important; color: white !important; -webkit-print-color-adjust: exact; }
+                    h1 { color: #8e44ad; margin-bottom: 5px; }
+                    .dato { font-size: 12px; color: #666; margin-bottom: 30px; }
+                    h3 { border-bottom: 2px solid #8e44ad; display: inline-block; padding-bottom: 5px; margin-top: 40px; }
+                    
+                    @media print {
+                        body { padding: 0; }
+                        .no-print { display: none; }
+                    }
                 </style>
             </head>
             <body>
@@ -5176,15 +5207,26 @@ function printUtvikling() {
                 <div class="dato">Utskrift generert: ${new Date().toLocaleDateString('no-NO')}</div>
                 
                 <h3>Grafisk oversikt</h3>
-                <img src="${bildeLesing}">
-                <img src="${bildeRegning}">
+                <div>
+                    <img src="${bildeLesing}">
+                </div>
+                <div>
+                    <img src="${bildeRegning}">
+                </div>
                 
                 <div style="page-break-before: always;"></div>
                 <h3>Detaljerte tallverdier</h3>
-                ${tabellHtml} <script>
+                <div style="margin-top: 20px;">
+                    ${tabellHtml}
+                </div>
+
+                <script>
                     window.onload = function() {
-                        window.print();
-                        window.onafterprint = function() { window.close(); };
+                        // Litt forsinkelse for å sikre at store bilder er rendret i minnet
+                        setTimeout(function() {
+                            window.print();
+                            window.onafterprint = function() { window.close(); };
+                        }, 500);
                     };
                 </script>
             </body>
