@@ -2616,8 +2616,7 @@ if (!harSvakheter) {
 htmlSide3 += `</div>`;
 // --- SLUTT PÅ SIDE 3 ---
 
-
-// --- SIDE 4: UTVIKLING OVER TID (Korrigerte snitt-beregninger) ---
+// --- SIDE 4: UTVIKLING OVER TID (Renset og korrekt) ---
 let htmlSide4 = fellesHeader + `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Utvikling over tid</h2>`;
 try {
     const histSnap = await db.ref(`kartlegging`).once('value');
@@ -2628,80 +2627,82 @@ try {
     const naaAarStart = parseInt(aar.split('-')[0]);
 
     for (const aKey of Object.keys(alleData)) {
-        if (aKey > aar) continue;
+        if (aKey > aar) continue; 
+        
         const fData = alleData[aKey][fag];
         if (!fData) continue;
 
         const histAarStart = parseInt(aKey.split('-')[0]);
-        const histAarSlutt = parseInt(aKey.split('-')[1]); // Lagt til for å hente sluttår (f.eks 2025)
+        const histAarSlutt = parseInt(aKey.split('-')[1]);
         const aarDiff = naaAarStart - histAarStart;
         const historiskTrinn = (naaTrinnTall - aarDiff).toString();
 
         if (parseInt(historiskTrinn) < 1) continue;
 
-        // Sorter perioder så Høst kommer før Vår i historikken
         const perioder = Object.keys(fData).sort((a, b) => a.localeCompare(b));
 
         for (const pKey of perioder) {
             if (aKey === aar && pKey === "Vår" && periode === "Høst") continue;
             
-            const trinnData = fData[pKey][historiskTrinn];
-            if (!trinnData) continue;
+            const trinnDataAkkuratNaa = fData[pKey][historiskTrinn];
+            if (!trinnDataAkkuratNaa) continue;
 
+            // --- GLOBALT PRØVESNITT (Går på tvers av alle år i DB) ---
+            let globalSum = 0;
+            let globalAntall = 0;
+            
+            Object.keys(alleData).forEach(yearKey => {
+                const yearData = alleData[yearKey][fag];
+                if (yearData && yearData[pKey] && yearData[pKey][historiskTrinn]) {
+                    const spesifikkProveData = yearData[pKey][historiskTrinn];
+                    const aOppsettGlobal = oppgaveStruktur[yearKey] ? oppgaveStruktur[yearKey][fag][pKey][historiskTrinn] : null;
+                    
+                    if (aOppsettGlobal) {
+                        const aMaksGlobal = aOppsettGlobal.oppgaver.reduce((s, o) => s + (o.maks || 0), 0);
+                        Object.values(spesifikkProveData).forEach(klasseMappe => {
+                            Object.values(klasseMappe).forEach(e => {
+                                if (!e.slettet && !e.ikkeGjennomfort && e.sum !== undefined) {
+                                    globalSum += (e.sum / aMaksGlobal);
+                                    globalAntall++;
+                                }
+                            });
+                        });
+                    }
+                }
+            });
+            const globalProveSnittProsent = globalAntall > 0 ? (globalSum / globalAntall) * 100 : 0;
+
+            // --- LOKALE BEREGNINGER (Denne spesifikke årgangen) ---
             const aOppsett = oppgaveStruktur[aKey] ? oppgaveStruktur[aKey][fag][pKey][historiskTrinn] : null;
             if (!aOppsett) continue;
             const aMaks = aOppsett.oppgaver.reduce((s, o) => s + (o.maks || 0), 0);
 
-            let klasseSum = 0; 
-            let klasseAntall = 0; 
-            let klasseKritiske = 0; 
-            let klasseLavMestring = 0; 
-            let totalProveSum = 0; 
-            let totalProveAntall = 0; 
+            let klasseSum = 0, klasseAntall = 0, klasseKritiske = 0, klasseLavMestring = 0;
+            let trinnSum = 0, trinnAntall = 0;
 
-            Object.keys(trinnData).forEach(kNavn => {
-                const kData = trinnData[kNavn];
-                
-                Object.keys(kData).forEach(n => {
-                    const elevResultat = kData[n];
-                    
-                    // --- VIKTIG FILTER: Tell kun elever som har gjennomført og ikke er slettet ---
-                    if (elevResultat.slettet || elevResultat.ikkeGjennomfort || elevResultat.sum === undefined) {
-                        return; // Hopper over denne eleven i snittberegningen
-                    }
+            Object.keys(trinnDataAkkuratNaa).forEach(kNavn => {
+                Object.values(trinnDataAkkuratNaa[kNavn]).forEach(e => {
+                    if (e.slettet || e.ikkeGjennomfort || e.sum === undefined) return;
+                    trinnSum += e.sum;
+                    trinnAntall++;
 
-                    const eSum = elevResultat.sum || 0;
-                    const eProsent = (eSum / aMaks) * 100;
-                    
-                    // Data for trinnsnitt (alle klasser)
-                    totalProveSum += eSum;
-                    totalProveAntall++;
-
-                    // Data for den spesifikke klassen (f.eks "A")
                     if (kNavn === klasse) {
-                        klasseSum += eSum;
+                        klasseSum += e.sum;
                         klasseAntall++;
-                        
-                        // Kritiske grenser
-                        if (eSum <= aOppsett.grenseTotal) {
-                            klasseKritiske++;
-                        } else if (eProsent < 70) {
-                            klasseLavMestring++;
-                        }
+                        if (e.sum <= aOppsett.grenseTotal) klasseKritiske++;
+                        else if ((e.sum / aMaks * 100) < 70) klasseLavMestring++;
                     }
                 });
             });
 
-            // Legg kun til rader hvis det faktisk finnes gjennomførte prøver
             if (klasseAntall > 0) {
-                // ENDRING: Bruker startår for Høst og sluttår for Vår
                 const korrektAar = pKey === "Høst" ? histAarStart : histAarSlutt;
-                
                 historikkRader.push({ 
                     visning: `${pKey} ${korrektAar.toString().slice(-2)}`, 
                     tittel: `${historiskTrinn}${klasse}`,
                     klasseProsent: ((klasseSum / klasseAntall) / aMaks) * 100,
-                    proveProsent: ((totalProveSum / totalProveAntall) / aMaks) * 100,
+                    trinnProsent: ((trinnSum / trinnAntall) / aMaks) * 100,
+                    globalProsent: globalProveSnittProsent,
                     kritiske: klasseKritiske, 
                     lavMestring: klasseLavMestring,
                     sort: aKey + (pKey === "Høst" ? "1" : "2")
@@ -2710,50 +2711,50 @@ try {
         }
     }
     
-    // Sortering og tegning av diagram/tabell fortsetter som før...
     historikkRader.sort((a,b) => a.sort.localeCompare(b.sort));
 
     if (historikkRader.length > 0) {
-        // --- SVG LINJEDIAGRAM (Samme visuelle stil som sist) ---
+        // --- SVG GRAF ---
         const w = 750; const h = 100; const pad = 45;
         const minVal = 50; const maxVal = 100; const range = maxVal - minVal;
         const step = (w - (pad * 2)) / (Math.max(historikkRader.length - 1, 1));
         
-        let pK = ""; let pP = ""; let dots = "";
+        let pK = ""; let pT = ""; let dots = "";
         historikkRader.forEach((r, i) => {
             const x = pad + (i * step);
             const yK = h - ((Math.max(r.klasseProsent, minVal) - minVal) * (h / range));
-            const yP = h - ((Math.max(r.proveProsent, minVal) - minVal) * (h / range));
-            pK += `${x},${yK} `; pP += `${x},${yP} `;
-            dots += `
-                <circle cx="${x}" cy="${yK}" r="4.5" fill="white" stroke="#3498db" stroke-width="1" />
-                <circle cx="${x}" cy="${yK}" r="2.5" fill="#3498db" />
-                <text x="${x}" y="${h+18}" font-size="8.5" font-weight="bold" text-anchor="middle" transform="rotate(-18 ${x} ${h+18})">${r.visning}</text>
-            `;
+            const yT = h - ((Math.max(r.trinnProsent, minVal) - minVal) * (h / range));
+            pK += `${x},${yK} `; pT += `${x},${yT} `;
+            dots += `<circle cx="${x}" cy="${yK}" r="4.5" fill="white" stroke="#3498db" stroke-width="1" />
+                     <circle cx="${x}" cy="${yK}" r="2.5" fill="#3498db" />
+                     <text x="${x}" y="${h+18}" font-size="8.5" font-weight="bold" text-anchor="middle" transform="rotate(-18 ${x} ${h+18})">${r.visning}</text>`;
         });
 
-        htmlSide4 += `<div style="text-align:center; margin: 25px 0 45px 0;"><svg width="${w}" height="${h+40}" viewBox="0 0 ${w} ${h+40}"><line x1="${pad}" y1="0" x2="${w-pad}" y2="0" stroke="#eee" stroke-width="1" /><line x1="${pad}" y1="${h/2}" x2="${w-pad}" y2="${h/2}" stroke="#f5f5f5" stroke-width="1" stroke-dasharray="2" /><line x1="${pad}" y1="${h}" x2="${w-pad}" y2="${h}" stroke="#ccc" stroke-width="1" /><text x="${pad-8}" y="8" font-size="9" text-anchor="end" fill="#999">100%</text><text x="${pad-8}" y="${h/2+3}" font-size="8" text-anchor="end" fill="#ccc">75%</text><text x="${pad-8}" y="${h}" font-size="9" text-anchor="end" fill="#999">50%</text><polyline points="${pP}" fill="none" stroke="#999" stroke-width="2.5" stroke-dasharray="6,4" opacity="0.7" /><polyline points="${pK}" fill="none" stroke="#3498db" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />${dots}</svg></div>`;
+        htmlSide4 += `<div style="text-align:center; margin: 25px 0 45px 0;"><svg width="${w}" height="${h+40}" viewBox="0 0 ${w} ${h+40}">
+            <line x1="${pad}" y1="0" x2="${w-pad}" y2="0" stroke="#eee" stroke-width="1" />
+            <line x1="${pad}" y1="${h}" x2="${w-pad}" y2="${h}" stroke="#ccc" stroke-width="1" />
+            <polyline points="${pT}" fill="none" stroke="#999" stroke-width="2.5" stroke-dasharray="6,4" opacity="0.7" />
+            <polyline points="${pK}" fill="none" stroke="#3498db" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+            ${dots}</svg></div>`;
 
         // --- TABELL ---
-        htmlSide4 += `<table><thead><tr><th>Periode</th><th>Trinn</th><th>Klasse (%)</th><th>Prøve (%)</th><th>Diff.</th><th>Lav</th><th>Kritisk</th></tr></thead><tbody>`;
+        htmlSide4 += `<table><thead><tr>
+            <th>Periode</th><th>Trinn</th><th>Klasse (%)</th><th>Trinn (%)</th><th style="background:#f0f4f8;">Prøve (%)</th><th>Diff.</th><th>Lav</th><th>Kritisk</th>
+        </tr></thead><tbody>`;
 
         historikkRader.forEach(r => {
             const aktiv = r.visning === `${periode} ${aar.split('-')[periode === "Høst" ? 0 : 1].slice(-2)}` ? 'style="background:#e8f4fd; font-weight:bold;"' : '';
-            const diff = r.klasseProsent - r.proveProsent;
-            htmlSide4 += `
-                <tr ${aktiv}>
-                    <td>${r.visning}</td>
-                    <td>${r.tittel}</td>
-                    <td>${r.klasseProsent.toFixed(1)}%</td>
-                    <td style="color:#666;">${r.proveProsent.toFixed(1)}%</td>
-                    <td style="color:${diff >= 0 ? 'green':'red'}; font-weight:bold;">${diff >= 0 ? '+':''}${diff.toFixed(1)}%</td>
-                    <td>${r.lavMestring}</td>
-                    <td>${r.kritiske}</td>
-                </tr>`;
+            const diff = r.klasseProsent - r.trinnProsent;
+            htmlSide4 += `<tr ${aktiv}>
+                <td>${r.visning}</td><td>${r.tittel}</td><td>${r.klasseProsent.toFixed(1)}%</td><td style="color:#666;">${r.trinnProsent.toFixed(1)}%</td>
+                <td style="background:#f0f4f8; font-weight:bold;">${r.globalProsent.toFixed(1)}%</td>
+                <td style="color:${diff >= 0 ? 'green':'red'}; font-weight:bold;">${diff >= 0 ? '+':''}${diff.toFixed(1)}%</td>
+                <td>${r.lavMestring}</td><td>${r.kritiske}</td>
+            </tr>`;
         });
         htmlSide4 += `</tbody></table>`;
 
-        // --- TEKST-BOKSER ---
+        // --- OPPSUMMERINGSTEKST ---
         const siste = historikkRader[historikkRader.length - 1];
         let utviklingTekst = "Første måling.";
         if (historikkRader.length > 1) {
@@ -2761,10 +2762,14 @@ try {
             const endring = siste.klasseProsent - forrige.klasseProsent;
             utviklingTekst = endring > 3 ? `<b>Fremgang:</b> +${endring.toFixed(1)}% siden ${forrige.visning}.` : (endring < -3 ? `<b>Nedgang:</b> ${endring.toFixed(1)}% siden ${forrige.visning}.` : `Stabil utvikling.`);
         }
-        const diffMotProve = siste.klasseProsent - siste.proveProsent;
-        let sammenligningTekst = diffMotProve > 2 ? `Klassen presterer over gjennomsnittet.` : (diffMotProve < -2 ? `Klassen presterer under gjennomsnittet.` : `Klassen følger snittet.`);
+        
+        const diffMotGlobal = siste.klasseProsent - siste.globalProsent;
+        let sammenligningTekst = diffMotGlobal > 2 ? `Klassen presterer over det historiske snittet for denne prøven.` : (diffMotGlobal < -2 ? `Klassen presterer under det historiske snittet for denne prøven.` : `Klassen følger det historiske snittet.`);
 
-        htmlSide4 += `<div style="margin-top:20px; display: flex; gap: 15px;"><div style="flex: 1; padding:12px; border-left:5px solid #3498db; background:#f9f9f9;"><h4 style="margin:0 0 5px 0;">Intern utvikling</h4><p style="margin:0; font-size:13px;">${utviklingTekst}</p></div><div style="flex: 1; padding:12px; border-left:5px solid #2c3e50; background:#f9f9f9;"><h4 style="margin:0 0 5px 0;">Mot prøvesnitt</h4><p style="margin:0; font-size:13px;">${sammenligningTekst}</p></div></div>`;
+        htmlSide4 += `<div style="margin-top:20px; display: flex; gap: 15px;">
+            <div style="flex: 1; padding:12px; border-left:5px solid #3498db; background:#f9f9f9;"><h4 style="margin:0 0 5px 0;">Intern utvikling</h4><p style="margin:0; font-size:13px;">${utviklingTekst}</p></div>
+            <div style="flex: 1; padding:12px; border-left:5px solid #2c3e50; background:#f9f9f9;"><h4 style="margin:0 0 5px 0;">Mot historisk snitt</h4><p style="margin:0; font-size:13px;">${sammenligningTekst}</p></div>
+        </div>`;
     }
 } catch(err) { console.error(err); }
 
