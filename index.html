@@ -372,11 +372,18 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
 }
 
 /* Denne treffer diagrammene i Analyse-delen (og andre steder) */
-/* Vi fjerner min-height herfra så de får beholde sine originale proporsjoner */
 .modal-body canvas, 
 .analyse-seksjon canvas {
-    max-width: 100% !important;
+    max-width: 98% !important; /* Redusert litt fra 100% for å gi plass til tall på siden */
     height: auto !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    display: block !important;
+}
+
+/* VIKTIG: Spesifikk fiks for å hindre at venstresiden (Y-aksen) blir kuttet */
+.analyse-seksjon, .modal-body {
+    padding-left: 10px !important; 
 }
 
     /* Tabell-kontroll: Kun for historikk-kopien */
