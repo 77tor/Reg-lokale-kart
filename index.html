@@ -307,9 +307,10 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     text-decoration: underline;
 }
 
-/* UTSKRIFT (Beholdt din originale logikk - med fiks for linjer og historikk) */
+
+/* UTSKRIFT - Optimalisert for Historikk (14 prøver på en side) */
 @media print {
-    /* 1. Tving hvit bakgrunn på ALT og fjern skygger */
+    /* 1. Generelle utskriftsinnstillinger */
     html, body {
         background: white !important;
         background-color: white !important;
@@ -319,22 +320,21 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
         print-color-adjust: exact !important;
     }
 
-    /* 2. Standard: Skjul knapper og modaler. 
-       VIKTIG ENDRING: Vi legger til :not(#historikkModal) så vi ikke dreper historikken med en gang */
+    /* 2. Skjul standardelementer som ikke skal på papir */
     .no-print, .btn, .header-grid, .action-bar, .top-header-bar, .modal:not(#historikkModal) {
         display: none !important;
     }
 
-    /* 3. KUN når vi er i historikk-modus */
-    /* Hvis vi IKKE er i historikk-modus, må vi også skjule historikkModal */
+    /* 3. Kontroll på historikk-modus */
     body:not(.historikk-modus) #historikkModal {
         display: none !important;
     }
 
     body.historikk-modus .container {
-        display: none !important; /* Skjul hovedinnholdet (det som forberedPrint vanligvis viser) */
+        display: none !important;
     }
 
+    /* Denne regelen gjelder selve modalen hvis den skrives ut direkte */
     body.historikk-modus #historikkModal {
         display: block !important;
         visibility: visible !important;
@@ -342,56 +342,57 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
         top: 0 !important;
         left: 0 !important;
         width: 100% !important;
-        height: auto !important;
-        margin: 0 !important;
-        padding: 0 !important;
         background: white !important;
-        z-index: 99999 !important;
     }
 
-    body.historikk-modus .modal-content {
+    /* 4. SPESIFIKK STYLING FOR UTVIKLINGSHISTORIKK (Kopien) */
+    /* Vi bruker ID-en #temp-print-historikk for å unngå å påvirke andre modaler */
+    
+    #temp-print-historikk {
         display: block !important;
         width: 100% !important;
-        max-width: none !important;
-        border: none !important;
-        box-shadow: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
     }
 
-    body.historikk-modus .modal-body-scroll {
+    /* Tvinger scroll-beholderen til å vise alt innhold */
+    #temp-print-historikk .modal-body-scroll,
+    .modal-body-scroll {
         overflow: visible !important; 
         height: auto !important;
         max-height: none !important;
-    }
-
-    /* 4. Tabell-kontroll (Sikrer linjer og synlighet) */
-    table {
-        width: 100% !important;
-        border-collapse: collapse !important;
-        border: 1px solid black !important;
-    }
-
-    th, td {
-        border: 1px solid black !important;
-        padding: 4px !important;
-        visibility: visible !important;
-    }
-/* Tving grafen/canvas til å vises */
-canvas {
-    display: block !important;
-    max-width: 100% !important;
-    min-height: 300px !important; /* Legg til denne om grafen blir borte */
-    height: auto !important;
-    visibility: visible !important;
-}
-
-    /* Sørg for at beholderen til grafen ikke begrenser høyden */
-    .modal-body-scroll {
-        overflow: visible !important;
         display: block !important;
     }
 
+    /* Diagram-kontroll: Kun for historikk-kopien */
+    #temp-print-historikk canvas {
+        display: block !important;
+        max-width: 100% !important;
+        /* Vi fjerner min-height: 300px her for å hindre strekking */
+        height: auto !important;
+        max-height: 280px !important; /* Begrenser høyden så tabellen får plass */
+        visibility: visible !important;
+        margin-bottom: 10px !important;
+    }
+
+    /* Tabell-kontroll: Kun for historikk-kopien */
+    #temp-print-historikk table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        border: 1px solid black !important;
+        font-size: 11px !important; /* Litt mindre skrift for å få plass til 14 rader */
+    }
+
+    #temp-print-historikk th, 
+    #temp-print-historikk td {
+        border: 1px solid black !important;
+        padding: 3px 5px !important; /* Kompakt padding */
+        visibility: visible !important;
+    }
+
+    /* Standard tabell-regler for andre modaler (hvis de skrives ut) */
+    body:not(.historikk-modus) table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
 }
 
 /* --- HEADER LAYOUT (Inspirert av forside.jpg) --- */
