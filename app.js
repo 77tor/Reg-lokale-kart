@@ -2747,20 +2747,31 @@ try {
 
     if (historikkRader.length > 0) {
 
-// --- SVG GRAF (Med margin i topp og differensiert Y-akse) ---
+
+// --- SVG GRAF (Med tegnforklaring og ren Y-akse) ---
 const w = 750; 
 const h = 100; 
-const toppMarg = 15; // Gir plass så "100%" ikke blir kuttet
+const toppMarg = 25; // Litt ekstra plass til tegnforklaringen øverst
 const pad = 45;
 const minVal = 50; 
 const maxVal = 100; 
 const range = maxVal - minVal;
 const step = (w - (pad * 2)) / (Math.max(historikkRader.length - 1, 1));
 
+// 1. TEGNFORKLARING (Legende)
+const tegnforklaring = `
+    <g transform="translate(${w/2 - 100}, 10)">
+        <line x1="0" y1="0" x2="20" y2="0" stroke="#3498db" stroke-width="3" />
+        <text x="25" y="4" font-size="10" fill="#2c3e50" font-weight="bold">Klassen</text>
+        
+        <line x1="90" y1="0" x2="110" y2="0" stroke="#999" stroke-width="2" stroke-dasharray="4,2" opacity="0.7" />
+        <text x="115" y="4" font-size="10" fill="#666">Trinnsnitt</text>
+    </g>
+`;
+
 let pK = ""; let pT = ""; let dots = "";
 historikkRader.forEach((r, i) => {
     const x = pad + (i * step);
-    // Vi legger til toppMarg i y-beregningen for å flytte alt ned fra kanten
     const yK = (h - ((Math.max(r.klasseProsent, minVal) - minVal) * (h / range))) + toppMarg;
     const yT = (h - ((Math.max(r.trinnProsent, minVal) - minVal) * (h / range))) + toppMarg;
     
@@ -2772,26 +2783,21 @@ historikkRader.forEach((r, i) => {
              <text x="${x}" y="${h + toppMarg + 22}" font-size="9" font-weight="bold" text-anchor="middle" fill="#2c3e50" transform="rotate(-18 ${x} ${h + toppMarg + 22})">${r.visning}</text>`;
 });
 
-// Generer tall for Y-aksen (50, 75, 100) med ulik styling
+// 2. Y-AKSE (Kun 50% og 100%)
 let yAkseTall = "";
-[50, 75, 100].forEach(val => {
+[50, 100].forEach(val => {
     const yPos = (h - ((val - minVal) * (h / range))) + toppMarg;
-    
-    // Spesialstyling for 75%
-    const er75 = val === 75;
-    const fontStr = er75 ? "8" : "10";
-    const opasitet = er75 ? "0.4" : "0.7";
-    const vekt = er75 ? "normal" : "bold";
-
     yAkseTall += `
-        <text x="${pad - 10}" y="${yPos + 3}" font-size="${fontStr}" font-weight="${vekt}" fill="#2c3e50" opacity="${opasitet}" text-anchor="end">${val}%</text>
-        <line x1="${pad}" y1="${yPos}" x2="${w - pad}" y2="${yPos}" stroke="#000" stroke-width="${er75 ? '0.3' : '0.5'}" opacity="${er75 ? '0.1' : '0.2'}" />
+        <text x="${pad - 10}" y="${yPos + 3}" font-size="10" font-weight="bold" fill="#2c3e50" opacity="0.7" text-anchor="end">${val}%</text>
+        <line x1="${pad}" y1="${yPos}" x2="${w - pad}" y2="${yPos}" stroke="#eee" stroke-width="0.8" />
     `;
 });
 
-htmlSide4 += `<div style="text-align:center; margin: 30px 0 50px 0;">
+htmlSide4 += `<div style="text-align:center; margin: 20px 0 40px 0;">
     <svg width="${w}" height="${h + toppMarg + 45}" viewBox="0 0 ${w} ${h + toppMarg + 45}">
+        ${tegnforklaring}
         ${yAkseTall}
+        
         <line x1="${pad}" y1="${h + toppMarg}" x2="${w - pad}" y2="${h + toppMarg}" stroke="#ccc" stroke-width="1" />
         
         <polyline points="${pT}" fill="none" stroke="#999" stroke-width="2" stroke-dasharray="6,4" opacity="0.5" />
