@@ -936,45 +936,52 @@ label: 'Klassens snitt (%)',
     }
 ]
         },
-        options: {
+
+options: {
     responsive: true,
     maintainAspectRatio: false,
     scales: {
+        x: {
+            ticks: {
+                // NYTT: Gjør teksten på X-aksen (Høst 24 osv) litt mindre 
+                // så 14 punkter ikke overlapper hverandre
+                font: { size: 10 } 
+            }
+        },
         y: {
             beginAtZero: true,
-            // 1. Vi setter max til 110 for å gi god plass til punkter på 100%
             max: 110, 
             title: { 
                 display: true, 
-                text: 'Prosent (%)' 
+                text: 'Prosent (%)',
+                font: { size: 11 }
             },
             ticks: {
-                // 2. Vi tvinger aksen til å bare vise tall opp til 100
-                // Dette fjerner "110"-merket så diagrammet ser ryddig ut
                 callback: function(value) {
                     if (value <= 100) return value + '%';
                 },
-                // Valgfritt: Tvinger faste hopp (0, 20, 40, 60, 80, 100)
-                stepSize: 20 
+                stepSize: 20,
+                font: { size: 10 }
             }
         }
     },
     plugins: {
         legend: { 
             position: 'top',
-            // 3. Legger til litt ekstra avstand mellom merkelappene og selve grafen
             labels: {
-                padding: 20
+                padding: 10, // Litt mindre padding enn 20 for å spare vertikal plass
+                font: { size: 11 },
+                boxWidth: 12 // Smalere fargebokser i tegnforklaringen
             }
         }
     },
-    // 4. Legger til padding i selve tegneområdet for å unngå at linjen berører kanten
     layout: {
         padding: {
-            top: 10 
+            top: 5 // Litt mindre topp-padding for å vinne plass
         }
     }
 }
+
 });
 }
 
@@ -985,14 +992,18 @@ function skrivUtHistorikk() {
         return;
     }
 
-    // --- NYTT: Hent elevnavn fra modal-headeren ---
-    // Her antar jeg at navnet står i h2-tagen i #historikkModal
-    const elevNavnElement = document.querySelector('#historikkModal h2');
-    const elevNavn = elevNavnElement ? elevNavnElement.innerText : "";
+    // Hent elevnavn (fjerner eventuell info i parentes hvis det finnes)
+    const elevNavnElement = document.querySelector('#historikkNavn');
+    const elevNavn = elevNavnElement ? elevNavnElement.innerText.split('(')[0].trim() : "Elevhistorikk";
 
     // 1. KLON hele innholdet
     const printKopi = modalInnhold.cloneNode(true);
     printKopi.id = "temp-print-historikk";
+
+    // --- VIKTIG: Tving kopien til å fjerne scroll og makshøyde ---
+    printKopi.style.maxHeight = "none";
+    printKopi.style.overflow = "visible";
+    printKopi.style.display = "block";
 
     // 2. Spesialhåndtering for grafer
     const originaleCanvaser = modalInnhold.querySelectorAll('canvas');
@@ -1001,23 +1012,24 @@ function skrivUtHistorikk() {
     originaleCanvaser.forEach((origCanvas, index) => {
         const destCanvas = kopierteCanvaser[index];
         if (destCanvas) {
+            // Tvinger grafen til en fornuftig utskriftshøyde (ca 30-35% av siden)
+            destCanvas.style.height = "320px"; 
+            destCanvas.style.width = "100%";
+            
             const destCtx = destCanvas.getContext('2d');
             destCtx.drawImage(origCanvas, 0, 0);
         }
     });
 
-    // 3. Legg til en overskrift øverst i kopien med elevens navn
-    const overskrift = document.createElement('h1');
+    // 3. Legg til en kompakt overskrift
+    const overskrift = document.createElement('h2'); // Bruker h2 for å spare plass
     overskrift.style.color = "#8e44ad";
     overskrift.style.textAlign = "center";
-    overskrift.style.marginBottom = "20px";
-    
-    // Her setter vi tittelen slik du ønsker:
-    overskrift.innerText = `${elevNavn}`;
-    
+    overskrift.style.margin = "0 0 15px 0"; // Liten marg under
+    overskrift.innerText = elevNavn;
     printKopi.prepend(overskrift);
-    
-    // 4. Skjul resten og legg kopien til på siden
+
+    // 4. Legg til kopien på siden (historikk-modus skjuler resten via CSS)
     document.body.classList.add('historikk-modus');
     document.body.appendChild(printKopi);
 
