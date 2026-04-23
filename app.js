@@ -992,7 +992,6 @@ function skrivUtHistorikk() {
         return;
     }
 
-    // Hent elevnavn (fjerner eventuell info i parentes hvis det finnes)
     const elevNavnElement = document.querySelector('#historikkNavn');
     const elevNavn = elevNavnElement ? elevNavnElement.innerText.split('(')[0].trim() : "Elevhistorikk";
 
@@ -1000,36 +999,40 @@ function skrivUtHistorikk() {
     const printKopi = modalInnhold.cloneNode(true);
     printKopi.id = "temp-print-historikk";
 
-    // --- VIKTIG: Tving kopien til å fjerne scroll og makshøyde ---
+    // Viktig for utskrift: Fjern begrensninger
     printKopi.style.maxHeight = "none";
     printKopi.style.overflow = "visible";
-    printKopi.style.display = "block";
 
-    // 2. Spesialhåndtering for grafer
+    // 2. Spesialhåndtering for grafer (Canvas)
     const originaleCanvaser = modalInnhold.querySelectorAll('canvas');
     const kopierteCanvaser = printKopi.querySelectorAll('canvas');
     
     originaleCanvaser.forEach((origCanvas, index) => {
         const destCanvas = kopierteCanvaser[index];
         if (destCanvas) {
-            // Tvinger grafen til en fornuftig utskriftshøyde (ca 30-35% av siden)
-            destCanvas.style.height = "320px"; 
-            destCanvas.style.width = "100%";
+            // VIKTIG: Sett fysisk oppløsning lik originalen så skriften ikke forsvinner/blir uklar
+            destCanvas.width = origCanvas.width;
+            destCanvas.height = origCanvas.height;
             
+            // Vi fjerner den faste CSS-høyden som "strakk" grafen i forrige forsøk
+            destCanvas.style.width = "100%";
+            destCanvas.style.height = "auto"; 
+            destCanvas.style.maxHeight = "300px"; // Kontrollerer at den ikke blir for stor
+
             const destCtx = destCanvas.getContext('2d');
             destCtx.drawImage(origCanvas, 0, 0);
         }
     });
 
-    // 3. Legg til en kompakt overskrift
-    const overskrift = document.createElement('h2'); // Bruker h2 for å spare plass
+    // 3. Overskrift
+    const overskrift = document.createElement('h2');
     overskrift.style.color = "#8e44ad";
     overskrift.style.textAlign = "center";
-    overskrift.style.margin = "0 0 15px 0"; // Liten marg under
+    overskrift.style.margin = "0 0 10px 0";
     overskrift.innerText = elevNavn;
     printKopi.prepend(overskrift);
 
-    // 4. Legg til kopien på siden (historikk-modus skjuler resten via CSS)
+    // 4. Legg til kopien på siden
     document.body.classList.add('historikk-modus');
     document.body.appendChild(printKopi);
 
