@@ -371,19 +371,20 @@ th .oppgave-preview-bilde, td .oppgave-preview-bilde { left: 50%; transform: tra
     visibility: visible !important;
 }
 
-/* Denne treffer diagrammene i Analyse-delen (og andre steder) */
+/* Denne treffer diagrammene i Analyse-delen */
 .modal-body canvas, 
 .analyse-seksjon canvas {
-    max-width: 98% !important; /* Redusert litt fra 100% for å gi plass til tall på siden */
-    height: auto !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
     display: block !important;
+    max-width: 95% !important; /* Mer plass til venstre */
+    height: 350px !important;  /* TVINGER en høyde så aksene får plass */
+    margin: 0 auto !important;
+    padding-left: 20px !important; /* Gir fysisk plass til tallene på Y-aksen */
 }
 
-/* VIKTIG: Spesifikk fiks for å hindre at venstresiden (Y-aksen) blir kuttet */
+/* Sørg for at beholderen ikke klipper innholdet */
 .analyse-seksjon, .modal-body {
-    padding-left: 10px !important; 
+    overflow: visible !important;
+    padding-left: 10px !important;
 }
 
     /* Tabell-kontroll: Kun for historikk-kopien */
