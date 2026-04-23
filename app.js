@@ -5033,14 +5033,14 @@ function genererUtviklingsTabell(data) {
     });
     const sorterteAar = Array.from(aarSet).sort();
 
-    let html = `<table style="width:100%; border-collapse: collapse; font-size: 13px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+let html = `<table style="width:100%; border-collapse: collapse; font-size: 13px; background: white; border: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
         <thead>
-            <tr style="background: #8e44ad; color: white;">
-                <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Prøve / Trinn</th>`;
+            <tr style="background-color: #8e44ad !important; color: white !important; -webkit-print-color-adjust: exact;">
+                <th style="padding: 12px; border: 1px solid #ddd; text-align: left; color: white;">Prøve / Trinn</th>`;
     
     // Legg til skoleår som kolonner
     sorterteAar.forEach(aar => {
-        html += `<th style="padding: 10px; border: 1px solid #ddd; text-align: center;">20${aar}</th>`;
+        html += `<th style="padding: 12px; border: 1px solid #ddd; text-align: center; color: white;">20${aar}</th>`;
     });
     html += `</tr></thead><tbody>`;
 
