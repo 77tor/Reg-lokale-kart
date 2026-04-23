@@ -758,7 +758,8 @@ async function visElevHistorikk(navn) {
 
     const terskelVekt = hentVekt(valgtAar, valgtPeriode);
 
-    document.getElementById('historikkNavn').innerText = `Historikk for ${navn} (frem til ${valgtPeriode} ${valgtAar})`;
+    document.getElementById('historikkNavn').innerHTML = 
+    `Historikk for ${navn} <span style="font-weight: normal; font-size: 0.9em;">(frem til ${valgtPeriode} ${valgtAar})</span>`;
     document.getElementById('historikkModal').style.display = 'flex';
     document.body.classList.add('historikk-modus');
 
