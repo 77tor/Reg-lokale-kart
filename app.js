@@ -4909,7 +4909,7 @@ async function aapneUtviklingsModal() {
         return a.includes("Høst") ? -1 : 1;
     });
     globalUtviklingData = resultater;
-
+    genererUtviklingsTabell(resultater);
     oppdaterUtviklingFilter('alle');
 }
 
@@ -5018,11 +5018,74 @@ function tegnUtviklingsGraf(canvasId, fag, perioder, data, filterValg = 'alle') 
     if (fag === "Lesing") devChartLesing = chart; else devChartRegning = chart;
 }
 
+
+function genererUtviklingsTabell(data) {
+    const container = document.getElementById('utviklingTabellContainer');
+    if (!data) return;
+
+    // 1. Finn alle skoleår som finnes i dataene
+    const alleSkoleAar = [];
+    // Vi henter årstallene fra periodenavnet (f.eks. "Høst 24" -> vi vil ha tak i de unike årstallene)
+    const aarSet = new Set();
+    globalUtviklingPerioder.forEach(p => {
+        const aarDel = p.split(' ')[1];
+        aarSet.add(aarDel);
+    });
+    const sorterteAar = Array.from(aarSet).sort();
+
+    let html = `<table style="width:100%; border-collapse: collapse; font-size: 13px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+        <thead>
+            <tr style="background: #8e44ad; color: white;">
+                <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Prøve / Trinn</th>`;
+    
+    // Legg til skoleår som kolonner
+    sorterteAar.forEach(aar => {
+        html += `<th style="padding: 10px; border: 1px solid #ddd; text-align: center;">20${aar}</th>`;
+    });
+    html += `</tr></thead><tbody>`;
+
+    // 2. Definer rekkefølgen på radene (Fag -> Trinn -> Periode)
+    const fagene = ["Lesing", "Regning"];
+    const perioderTyper = ["Høst", "Vår"];
+
+    fagene.forEach(fag => {
+        // Overskrift for faget
+        html += `<tr style="background: #f1f1f1; font-weight: bold;"><td colspan="${sorterteAar.length + 1}" style="padding: 8px; border: 1px solid #ddd;">${fag}</td></tr>`;
+
+        for (let t = 1; t <= 7; t++) {
+            perioderTyper.forEach(pType => {
+                let radHarData = false;
+                let radHtml = `<tr><td style="padding: 8px; border: 1px solid #ddd; padding-left: 20px;">${t}. trinn - ${pType}</td>`;
+
+                sorterteAar.forEach(aar => {
+                    const pKey = `${pType} ${aar}`;
+                    const verdier = data[fag][pKey]?.[t] || [];
+                    
+                    if (verdier.length > 0) {
+                        const snitt = Math.round(verdier.reduce((a, b) => a + b, 0) / verdier.length);
+                        radHtml += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center; font-weight: bold;">${snitt}%</td>`;
+                        radHarData = true;
+                    } else {
+                        radHtml += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center; color: #ccc;">-</td>`;
+                    }
+                });
+
+                radHtml += `</tr>`;
+                if (radHarData) html += radHtml; // Legg bare til raden hvis det finnes resultater for det trinnet
+            });
+        }
+    });
+
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+}
+
 function printUtvikling() {
     const canvasLesing = document.getElementById('chartUtviklingLesing');
     const canvasRegning = document.getElementById('chartUtviklingRegning');
+    // HENT UT TABELL-HTML OGSÅ:
+    const tabellHtml = document.getElementById('utviklingTabellContainer').innerHTML;
 
-    // Gjør om canvas til bilder (viktig fordi canvas ofte forsvinner i print-vinduer)
     const bildeLesing = canvasLesing.toDataURL("image/png");
     const bildeRegning = canvasRegning.toDataURL("image/png");
 
@@ -5033,23 +5096,25 @@ function printUtvikling() {
                 <title>Skolens utvikling over tid</title>
                 <style>
                     body { font-family: sans-serif; text-align: center; padding: 20px; }
-                    img { max-width: 100%; height: auto; margin-bottom: 40px; border: 1px solid #eee; }
+                    img { max-width: 100%; height: auto; margin-bottom: 20px; border: 1px solid #eee; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+                    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+                    th { background-color: #8e44ad; color: white; }
                     h1 { color: #8e44ad; }
-                    .dato { font-size: 0.9em; color: #666; margin-bottom: 30px; }
+                    .fag-rad { background: #f1f1f1; font-weight: bold; text-align: left !important; }
                 </style>
             </head>
             <body>
                 <h1>Skolens utvikling over tid</h1>
                 <div class="dato">Utskrift generert: ${new Date().toLocaleDateString('no-NO')}</div>
                 
-                <h3>Lesing</h3>
+                <h3>Grafisk oversikt</h3>
                 <img src="${bildeLesing}">
-                
-                <h3>Regning</h3>
                 <img src="${bildeRegning}">
                 
-                <script>
-                    // Vent til bildene er lastet, så åpne print-dialogen
+                <div style="page-break-before: always;"></div>
+                <h3>Detaljerte tallverdier</h3>
+                ${tabellHtml} <script>
                     window.onload = function() {
                         window.print();
                         window.onafterprint = function() { window.close(); };
