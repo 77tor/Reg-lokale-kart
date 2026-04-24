@@ -5154,7 +5154,7 @@ let html = `<table style="width:100%; border-collapse: collapse; font-size: 13px
                     const verdier = data[fag][pKey]?.[t] || [];
                     
                     if (verdier.length > 0) {
-                        const snitt = Math.round(verdier.reduce((a, b) => a + b, 0) / verdier.length);
+                        const snitt = (verdier.reduce((a, b) => a + b, 0) / verdier.length).toFixed(1);
                         radHtml += `<td style="padding: 8px; border: 1px solid #ddd; text-align: center; font-weight: bold;">${snitt}%</td>`;
                         radHarData = true;
                     } else {
