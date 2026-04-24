@@ -2748,42 +2748,43 @@ try {
     if (historikkRader.length > 0) {
 
 
-// --- SVG GRAF (Med tegnforklaring og ren Y-akse) ---
+
+// --- SVG GRAF (Med fast Prøvesnitt-linje) ---
 const w = 750; 
 const h = 100; 
-const toppMarg = 25; // Litt ekstra plass til tegnforklaringen øverst
+const toppMarg = 25; 
 const pad = 45;
 const minVal = 50; 
 const maxVal = 100; 
 const range = maxVal - minVal;
 const step = (w - (pad * 2)) / (Math.max(historikkRader.length - 1, 1));
 
-// 1. TEGNFORKLARING (Legende)
+// Finn Y-posisjonen for det faste prøvesnittet (f.eks. 78%)
+const yProveSnitt = (h - ((Math.max(proveSnitt, minVal) - minVal) * (h / range))) + toppMarg;
+
+// 1. OPPDATERT TEGNFORKLARING
 const tegnforklaring = `
-    <g transform="translate(${w/2 - 100}, 10)">
+    <g transform="translate(${w/2 - 105}, 10)">
         <line x1="0" y1="0" x2="20" y2="0" stroke="#3498db" stroke-width="3" />
         <text x="25" y="4" font-size="10" fill="#2c3e50" font-weight="bold">Klassen</text>
         
-        <line x1="90" y1="0" x2="110" y2="0" stroke="#999" stroke-width="2" stroke-dasharray="4,2" opacity="0.7" />
-        <text x="115" y="4" font-size="10" fill="#666">Trinnsnitt</text>
+        <line x1="95" y1="0" x2="115" y2="0" stroke="#999" stroke-width="2" stroke-dasharray="4,2" opacity="0.8" />
+        <text x="120" y="4" font-size="10" fill="#666">Prøvesnitt (${proveSnitt}%)</text>
     </g>
 `;
 
-let pK = ""; let pT = ""; let dots = "";
+let pK = ""; let dots = "";
 historikkRader.forEach((r, i) => {
     const x = pad + (i * step);
     const yK = (h - ((Math.max(r.klasseProsent, minVal) - minVal) * (h / range))) + toppMarg;
-    const yT = (h - ((Math.max(r.trinnProsent, minVal) - minVal) * (h / range))) + toppMarg;
     
     pK += `${x},${yK} `; 
-    pT += `${x},${yT} `;
-    
     dots += `<circle cx="${x}" cy="${yK}" r="4.5" fill="white" stroke="#3498db" stroke-width="1.5" />
              <circle cx="${x}" cy="${yK}" r="2.5" fill="#3498db" />
              <text x="${x}" y="${h + toppMarg + 22}" font-size="9" font-weight="bold" text-anchor="middle" fill="#2c3e50" transform="rotate(-18 ${x} ${h + toppMarg + 22})">${r.visning}</text>`;
 });
 
-// 2. Y-AKSE (Kun 50% og 100%)
+// 2. Y-AKSE (50 og 100)
 let yAkseTall = "";
 [50, 100].forEach(val => {
     const yPos = (h - ((val - minVal) * (h / range))) + toppMarg;
@@ -2794,14 +2795,15 @@ let yAkseTall = "";
 });
 
 htmlSide4 += `<div style="text-align:center; margin: 20px 0 40px 0;">
-    <svg width="${w}" height="${h + toppMarg + 45}" viewBox="0 0 ${w} ${h + toppMarg + 45}" 
-         style="shape-rendering: geometricPrecision; text-rendering: optimizeLegibility;">
+    <svg width="${w}" height="${h + toppMarg + 45}" viewBox="0 0 ${w} ${h + toppMarg + 45}" style="shape-rendering: geometricPrecision;">
         ${tegnforklaring}
         ${yAkseTall}
         
+        <line x1="${pad}" y1="${yProveSnitt}" x2="${w - pad}" y2="${yProveSnitt}" 
+              stroke="#999" stroke-width="2" stroke-dasharray="6,4" opacity="0.6" />
+
         <line x1="${pad}" y1="${h + toppMarg}" x2="${w - pad}" y2="${h + toppMarg}" stroke="#ccc" stroke-width="1" />
         
-        <polyline points="${pT}" fill="none" stroke="#999" stroke-width="2" stroke-dasharray="6,4" opacity="0.5" />
         <polyline points="${pK}" fill="none" stroke="#3498db" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
         ${dots}
     </svg>
