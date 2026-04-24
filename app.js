@@ -2821,7 +2821,7 @@ htmlSide4 += `<div style="text-align:center; margin: 20px 0 40px 0;">
 
         // --- TABELL ---
         htmlSide4 += `<table><thead><tr>
-            <th>Periode</th><th>Trinn</th><th>Klasse (%)</th><th>Trinn (%)</th><th style="background:#f0f4f8;">Prøve (%)</th><th>Diff.</th><th>Lav</th><th>Kritisk</th>
+            <th>Periode</th><th>Trinn</th><th>Klasse (%)</th><th>Trinn (%)</th><th style="background:#f0f4f8;">Prøve (%)</th><th>Diff. trinn</th><th>Lav</th><th>Kritisk</th>
         </tr></thead><tbody>`;
 
         historikkRader.forEach(r => {
