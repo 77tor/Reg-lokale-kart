@@ -1997,8 +1997,8 @@ function sendMeldingTilAdmin() {
         });
 }
 
-
 // --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
+// Denne står nå utenfor, slik at den er ryddig og lett å lese
 function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, statuser, alleLogger) {
     let resultat = { htmlTotal: "", htmlIkkeFerdig: "", harApne: false };
     
@@ -2008,8 +2008,8 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
     }
 
     const totaltAntallElever = hentAntallEleverIRegister(fulltKlasseNavn.trim().toUpperCase(), aar);
+    if (!eleverObjekt) return resultat; 
 
-    // Variabler for poengberegning defineres her (slik at de eksisterer uansett)
     let antallGjennomfoert = 0;
     let sumOppnaaddPoeng = 0;
     let maksMuligPoengForKlassen = 0;
@@ -2017,42 +2017,37 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
     // Hent makspoeng fra oppsett.js
     let infoFraOppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
     let korrektMaksPoengPerElev = 30; // Fallback
+
     if (infoFraOppsett && infoFraOppsett.oppgaver) {
         korrektMaksPoengPerElev = infoFraOppsett.oppgaver.reduce((acc, oppg) => acc + (oppg.maks || 0), 0);
     }
 
-    // Sjekk om vi faktisk har elevdata i databasen
-    const dataEksisterer = eleverObjekt && Object.keys(eleverObjekt).length > 0;
+    Object.entries(eleverObjekt).forEach(([id, node]) => {
+        if (id === "laast" || id === "ferdigstilt" || typeof node !== 'object') return;
 
-    if (dataEksisterer) {
-        Object.entries(eleverObjekt).forEach(([id, node]) => {
-            if (id === "laast" || id === "ferdigstilt" || typeof node !== 'object') return;
+        let råPoeng = node.sum;
+        const markertSomIkkeGjennomfoert = node.ikkeGjennomfort === true;
 
-            let råPoeng = node.sum;
-            const markertSomIkkeGjennomfoert = node.ikkeGjennomfort === true;
+        const harGyldigResultat = (
+            råPoeng !== undefined && 
+            råPoeng !== null && 
+            råPoeng !== "" && 
+            råPoeng !== "undefined" &&
+            råPoeng !== 0 && 
+            råPoeng !== "0" &&
+            !markertSomIkkeGjennomfoert
+        );
 
-            const harGyldigResultat = (
-                råPoeng !== undefined && 
-                råPoeng !== null && 
-                råPoeng !== "" && 
-                råPoeng !== "undefined" &&
-                råPoeng !== 0 && 
-                råPoeng !== "0" &&
-                !markertSomIkkeGjennomfoert
-            );
-
-            if (harGyldigResultat) {
-                const p = parseFloat(råPoeng);
-                if (!isNaN(p)) {
-                    antallGjennomfoert++;
-                    sumOppnaaddPoeng += p;
-                    maksMuligPoengForKlassen += korrektMaksPoengPerElev;
-                }
+        if (harGyldigResultat) {
+            const p = parseFloat(råPoeng);
+            if (!isNaN(p)) {
+                antallGjennomfoert++;
+                sumOppnaaddPoeng += p;
+                maksMuligPoengForKlassen += korrektMaksPoengPerElev;
             }
-        });
-    }
+        }
+    });
 
-    // Resten av koden din fortsetter her (snittberegning, lærerinfo, HTML-bygging)
     let snittVisning = "0%"; 
     if (maksMuligPoengForKlassen > 0) {
         snittVisning = Math.round((sumOppnaaddPoeng / maksMuligPoengForKlassen) * 100) + "%";
@@ -2060,11 +2055,12 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
 
     const laerer = finnKontaktlaererForKlasse(fulltKlasseNavn, aar);
     const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
-    const laererEpost = laerer ? laerer.epost : ""; 
+    const laererEpost = laerer ? laerer.epost : ""; // Viktig for purre-knappen
     const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
     const erLaast = statusObj.laast || false;
     const statusTekst = erLaast ? "<span style='color:green; font-weight:bold;'>✅ Ferdig</span>" : "<span style='color:red; font-weight:bold;'>⚠️ Pågår</span>";
 
+    // Bygg rad for hovedtabellen
     resultat.htmlTotal = `<tr>
         <td style="text-align:left;">${fag} - ${periode} ${aar}</td>
         <td><b>${fulltKlasseNavn}</b></td>
@@ -2074,6 +2070,7 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
         <td>${statusTekst}</td>
     </tr>`;
 
+    // Bygg rad for purrelisten hvis ikke ferdig
     if (!erLaast) {
         resultat.harApne = true;
         const stisti = `${aar}/${fag}/${periode}/${trinn}/${klasse}`;
@@ -2102,49 +2099,61 @@ async function genererGjennomfoeringsData() {
     const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
     const totalTabellDiv = document.getElementById('gjennomfoeringTabellContainer');
     
-    ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Henter ferske data...</p>";
+    // --- DATO-LOGIKK FOR FILTRERING ---
+    const nå = new Date();
+    const nåværendeÅr = nå.getFullYear();
+    const nåværendeMåned = nå.getMonth() + 1; // 1-12
+    
+    // Finn ut hvilken termin vi er i nå
+    // 8-12 = Høst, 1-7 = Vår
+    const nåværendeTermin = (nåværendeMåned >= 8) ? "Høst" : "Vår";
+    
+    // Konstruer skoleåret-strengen (f.eks "2025-2026")
+    let aktivtSkoleårStreng = "";
+    if (nåværendeMåned >= 8) {
+        aktivtSkoleårStreng = `${nåværendeÅr}-${nåværendeÅr + 1}`;
+    } else {
+        aktivtSkoleårStreng = `${nåværendeÅr - 1}-${nåværendeÅr}`;
+    }
+
+    let htmlIkkeFerdigBody = ""; 
+    let htmlTotalBody = "";
+    let fantData = false;
+    let harApneTotalt = false;
+
+    ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Henter data...</p>";
     
     try {
-        // Hent alle data på nytt for å være sikker
-        const snapshots = await Promise.all([
+        const [statusSnapshot, kartleggingSnapshot, loggSnapshot] = await Promise.all([
             db.ref('status').once('value'),
             db.ref('kartlegging').once('value'),
             db.ref('purrelogg').once('value')
         ]);
         
-        const statuser = snapshots[0].val() || {};
-        const kartlegging = snapshots[1].val() || {};
-        const alleLogger = snapshots[2].val() || {};
+        const alleLogger = loggSnapshot.val() || {};
+        const statuser = statusSnapshot.val() || {};
+        const kartlegging = kartleggingSnapshot.val() || {};
 
-        // SJEKK: Hvis oppgaveStruktur mangler, må vi kanskje vente på den
-        if (typeof oppgaveStruktur === 'undefined') {
-            console.error("KRISE: oppgaveStruktur er ikke tilgjengelig!");
-            ikkeFerdigDiv.innerHTML = "Systemfeil: Oppsett mangler. Prøv refresh.";
-            return;
-        }
-
-        let htmlIkkeFerdigBody = ""; 
-        let htmlTotalBody = "";
-        let fantData = false;
-        let harApneTotalt = false;
-
-        // Vi looper gjennom kartlegging-dataene i stedet for status, 
-        // for å fange opp alt som er startet på men ikke ferdigstilt
-        for (let aar in kartlegging) {
-            // (Dato-logikk som du hadde før...)
-            const nå = new Date();
-            const aktivtSkoleårStreng = (nå.getMonth() + 1 >= 8) ? `${nå.getFullYear()}-${nå.getFullYear() + 1}` : `${nå.getFullYear() - 1}-${nå.getFullYear()}`;
+        for (let aar in statuser) {
+            // 1. SJEKK: Er prøve-året etter nåværende skoleår? Skip.
             if (aar > aktivtSkoleårStreng) continue;
 
-            for (let fag in kartlegging[aar]) {
-                for (let periode in kartlegging[aar][fag]) {
-                    for (let trinn in kartlegging[aar][fag][periode]) {
-                        for (let klasseNavn in kartlegging[aar][fag][periode][trinn]) {
+            for (let fag in statuser[aar]) {
+                for (let periode in statuser[aar][fag]) {
+                    
+                    // 2. SJEKK: Hvis vi er i samme skoleår, men det er høst og prøven er "Vår"? Skip.
+                    if (aar === aktivtSkoleårStreng && nåværendeTermin === "Høst" && periode === "Vår") {
+                        continue;
+                    }
+
+                    for (let trinn in statuser[aar][fag][periode]) {
+                        for (let klasseNavn in statuser[aar][fag][periode][trinn]) {
                             
-                            const eleverObjekt = kartlegging[aar][fag][periode][trinn][klasseNavn];
-                            
-                            // Kjør behandlingen
-                            const res = behandleKlasseData(aar, fag, periode, trinn, klasseNavn, eleverObjekt, statuser, alleLogger);
+                            const klasseData = (kartlegging[aar]?.[fag]?.[periode]?.[trinn]) 
+                                               ? kartlegging[aar][fag][periode][trinn][klasseNavn] || {} 
+                                               : {};
+
+                            const res = behandleKlasseData(aar, fag, periode, trinn, klasseNavn, klasseData, statuser, alleLogger);
                             
                             if (res) {
                                 htmlTotalBody += res.htmlTotal;
@@ -2158,20 +2167,24 @@ async function genererGjennomfoeringsData() {
             }
         }
 
-        // --- TEGN RESULTATET ---
+        // --- TEGN RESULTATET (samme som før) ---
         if (!fantData) {
-            ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Ingen data funnet for gjeldende periode.</p>";
+            ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Ingen aktive prøver for gjeldende termin.</p>";
+            totalTabellDiv.innerHTML = "";
         } else {
+            const headerIkkeFerdig = `<table class="admin-table"><thead><tr><th style="text-align:left;">Prøve</th><th>Kontaktlærer</th><th>Status/Logg</th></tr></thead><tbody>`;
+            const headerTotal = `<table class="admin-table"><thead><tr><th style="text-align:left;">Prøve</th><th>Klasse</th><th>Kontaktlærer</th><th>Gjennomført</th><th>Snitt (%)</th><th>Status</th></tr></thead><tbody>`;
+
             ikkeFerdigDiv.innerHTML = harApneTotalt ? 
-                `<table class="admin-table"><thead><tr><th>Prøve</th><th>Kontaktlærer</th><th>Status/Logg</th></tr></thead><tbody>${htmlIkkeFerdigBody}</tbody></table>` : 
-                `<p style='color:green; font-weight:bold; padding:20px;'>Alt er ferdigstilt! 🎉</p>`;
+                headerIkkeFerdig + htmlIkkeFerdigBody + "</tbody></table>" : 
+                `<p style='text-align:center; padding:20px; color:green; font-weight:bold;'>Alle prøver for ${nåværendeTermin} ${aktivtSkoleårStreng} er ferdigstilt! 🎉</p>`;
             
-            totalTabellDiv.innerHTML = `<table class="admin-table"><thead><tr><th>Prøve</th><th>Klasse</th><th>Kontaktlærer</th><th>Gjennomført</th><th>Snitt</th><th>Status</th></tr></thead><tbody>${htmlTotalBody}</tbody></table>`;
+            totalTabellDiv.innerHTML = headerTotal + htmlTotalBody + "</tbody></table>";
         }
 
     } catch (error) {
-        console.error("Feil i genererGjennomfoeringsData:", error);
-        ikkeFerdigDiv.innerHTML = "Feil ved henting av data.";
+        console.error("Feil:", error);
+        ikkeFerdigDiv.innerHTML = `<p style='color:red;'>Feil: ${error.message}</p>`;
     }
 }
 
