@@ -1997,8 +1997,8 @@ function sendMeldingTilAdmin() {
         });
 }
 
+
 // --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
-// Denne står nå utenfor, slik at den er ryddig og lett å lese
 function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, statuser, alleLogger) {
     let resultat = { htmlTotal: "", htmlIkkeFerdig: "", harApne: false };
     
@@ -2008,8 +2008,8 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
     }
 
     const totaltAntallElever = hentAntallEleverIRegister(fulltKlasseNavn.trim().toUpperCase(), aar);
-    if (!eleverObjekt) return resultat; 
 
+    // Variabler for poengberegning defineres her (slik at de eksisterer uansett)
     let antallGjennomfoert = 0;
     let sumOppnaaddPoeng = 0;
     let maksMuligPoengForKlassen = 0;
@@ -2017,37 +2017,42 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
     // Hent makspoeng fra oppsett.js
     let infoFraOppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
     let korrektMaksPoengPerElev = 30; // Fallback
-
     if (infoFraOppsett && infoFraOppsett.oppgaver) {
         korrektMaksPoengPerElev = infoFraOppsett.oppgaver.reduce((acc, oppg) => acc + (oppg.maks || 0), 0);
     }
 
-    Object.entries(eleverObjekt).forEach(([id, node]) => {
-        if (id === "laast" || id === "ferdigstilt" || typeof node !== 'object') return;
+    // Sjekk om vi faktisk har elevdata i databasen
+    const dataEksisterer = eleverObjekt && Object.keys(eleverObjekt).length > 0;
 
-        let råPoeng = node.sum;
-        const markertSomIkkeGjennomfoert = node.ikkeGjennomfort === true;
+    if (dataEksisterer) {
+        Object.entries(eleverObjekt).forEach(([id, node]) => {
+            if (id === "laast" || id === "ferdigstilt" || typeof node !== 'object') return;
 
-        const harGyldigResultat = (
-            råPoeng !== undefined && 
-            råPoeng !== null && 
-            råPoeng !== "" && 
-            råPoeng !== "undefined" &&
-            råPoeng !== 0 && 
-            råPoeng !== "0" &&
-            !markertSomIkkeGjennomfoert
-        );
+            let råPoeng = node.sum;
+            const markertSomIkkeGjennomfoert = node.ikkeGjennomfort === true;
 
-        if (harGyldigResultat) {
-            const p = parseFloat(råPoeng);
-            if (!isNaN(p)) {
-                antallGjennomfoert++;
-                sumOppnaaddPoeng += p;
-                maksMuligPoengForKlassen += korrektMaksPoengPerElev;
+            const harGyldigResultat = (
+                råPoeng !== undefined && 
+                råPoeng !== null && 
+                råPoeng !== "" && 
+                råPoeng !== "undefined" &&
+                råPoeng !== 0 && 
+                råPoeng !== "0" &&
+                !markertSomIkkeGjennomfoert
+            );
+
+            if (harGyldigResultat) {
+                const p = parseFloat(råPoeng);
+                if (!isNaN(p)) {
+                    antallGjennomfoert++;
+                    sumOppnaaddPoeng += p;
+                    maksMuligPoengForKlassen += korrektMaksPoengPerElev;
+                }
             }
-        }
-    });
+        });
+    }
 
+    // Resten av koden din fortsetter her (snittberegning, lærerinfo, HTML-bygging)
     let snittVisning = "0%"; 
     if (maksMuligPoengForKlassen > 0) {
         snittVisning = Math.round((sumOppnaaddPoeng / maksMuligPoengForKlassen) * 100) + "%";
@@ -2055,12 +2060,11 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
 
     const laerer = finnKontaktlaererForKlasse(fulltKlasseNavn, aar);
     const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
-    const laererEpost = laerer ? laerer.epost : ""; // Viktig for purre-knappen
+    const laererEpost = laerer ? laerer.epost : ""; 
     const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
     const erLaast = statusObj.laast || false;
     const statusTekst = erLaast ? "<span style='color:green; font-weight:bold;'>✅ Ferdig</span>" : "<span style='color:red; font-weight:bold;'>⚠️ Pågår</span>";
 
-    // Bygg rad for hovedtabellen
     resultat.htmlTotal = `<tr>
         <td style="text-align:left;">${fag} - ${periode} ${aar}</td>
         <td><b>${fulltKlasseNavn}</b></td>
@@ -2070,7 +2074,6 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
         <td>${statusTekst}</td>
     </tr>`;
 
-    // Bygg rad for purrelisten hvis ikke ferdig
     if (!erLaast) {
         resultat.harApne = true;
         const stisti = `${aar}/${fag}/${periode}/${trinn}/${klasse}`;
