@@ -2096,8 +2096,12 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
 
 // --- HOVEDFUNKSJON FOR MODAL ---
 async function genererGjennomfoeringsData() {
-    const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
-    const totalTabellDiv = document.getElementById('gjennomfoeringTabellContainer');
+  const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
+     const totalTabellDiv = document.getElementById('gjennomfoeringTabellContainer');
+    
+    // Tving tømming med en gang for å unngå visuelle rester
+    ikkeFerdigDiv.innerHTML = "<p>Henter ferske data...</p>";
+    totalTabellDiv.innerHTML = "";
     
     // --- DATO-LOGIKK FOR FILTRERING ---
     const nå = new Date();
