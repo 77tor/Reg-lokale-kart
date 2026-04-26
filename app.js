@@ -1225,16 +1225,28 @@ async function aapneLoggModal() {
     const snapshot = await db.ref('systemLogg').once('value');
     const loggData = snapshot.val() || {};
     
-    // Sorterer slik at nyeste er først for tabellen
     const loggArray = Object.values(loggData).sort((a, b) => b.innLogget - a.innLogget);
-    
-    // Lagre dataen globalt så diagram-knappene får tak i den uten å spørre databasen på nytt
     window.gjeldendeLoggData = loggArray;
 
     const totalt = loggArray.length;
     const sjuDagerSiden = Date.now() - (7 * 24 * 60 * 60 * 1000);
     const sisteUke = loggArray.filter(l => l.innLogget > sjuDagerSiden).length;
-    const unikeBrukere = [...new Set(loggArray.map(l => l.epost))].length;
+
+    // --- LOGIKK FOR UNIKE BRUKERE ---
+    // Vi lager et objekt hvor hver e-post er en nøkkel for å finne siste aktivitet
+    const unikeMap = {};
+    loggArray.forEach(l => {
+        if (!unikeMap[l.epost]) {
+            unikeMap[l.epost] = {
+                navn: l.navn,
+                sistInne: l.innLogget,
+                antall: 0
+            };
+        }
+        unikeMap[l.epost].antall++;
+    });
+    const unikeBrukereListe = Object.values(unikeMap).sort((a, b) => b.sistInne - a.sistInne);
+    const antallUnike = unikeBrukereListe.length;
 
     let html = `
         <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 15px;">
@@ -1254,11 +1266,24 @@ async function aapneLoggModal() {
         <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center;">
             <div><small>Totalt antall besøk</small><br><strong>${totalt}</strong></div>
             <div><small>Siste 7 dager</small><br><strong>${sisteUke}</strong></div>
-            <div><small>Unike brukere</small><br><strong>${unikeBrukere}</strong></div>
+            <div><small>Unike brukere</small><br><strong>${antallUnike}</strong></div>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <label style="font-size: 0.85em; font-weight: bold; color: #4a5568; display: block; margin-bottom: 5px;">Brukere som har vært pålogget:</label>
+            <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin;">
+                ${unikeBrukereListe.map(u => `
+                    <div style="flex: 0 0 auto; background: white; border: 1px solid #cbd5e0; padding: 6px 10px; border-radius: 20px; font-size: 0.8em; display: flex; align-items: center; gap: 5px;">
+                        <div style="width: 8px; height: 8px; border-radius: 50%; background: ${ (Date.now() - u.sistInne < 600000) ? '#48bb78' : '#cbd5e0' };"></div>
+                        <strong>${u.navn}</strong> 
+                        <span style="color: #718096;">(${u.antall})</span>
+                    </div>
+                `).join('')}
+            </div>
         </div>
         
         <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <input type="text" id="loggSok" placeholder="Søk på navn eller e-post..." 
+            <input type="text" id="loggSok" placeholder="Søk i full historikk..." 
                 style="flex-grow: 1; margin-bottom: 0;" onkeyup="filtrerLogg()">
             <button class="btn btn-danger" onclick="slettHeleLoggen()" style="font-size: 0.85em;">Tøm logg</button>
         </div>
@@ -1270,6 +1295,7 @@ async function aapneLoggModal() {
                 </thead>
                 <tbody>`;
 
+    // Tabell-generering (samme som før)
     if (totalt > 0) {
         loggArray.forEach(log => {
             const dato = new Date(log.innLogget).toLocaleString('no-NO');
@@ -1286,10 +1312,8 @@ async function aapneLoggModal() {
     html += `</tbody></table></div>`;
     document.getElementById('loggListe').innerHTML = html;
 
-    // Tegn diagrammet (venter litt så canvas rekker å bli synlig)
     setTimeout(() => oppdaterLoggDiagram('uke'), 50);
 }
-
 
 
 let loggChartInstance = null; // Holder styr på diagrammet så vi kan slette det gamle
