@@ -5369,33 +5369,49 @@ function printUtvikling() {
     printVindu.document.close();
 }
 
-function sjekkUrlParametere() {
+async function sjekkUrlParametere() {
     const params = new URLSearchParams(window.location.search);
     
     if (params.has('aar') && params.has('fag')) {
-        console.log("URL-parameter funnet. Overstyrer standardvalg...");
+        console.log("Link-modus aktivert for:", params.get('aar'));
         
-        // Sett verdiene direkte (uten timeout først, siden menyen er klar)
-        document.getElementById('mAar').value = params.get('aar');
-        document.getElementById('mPeriode').value = params.get('periode');
-        document.getElementById('mFag').value = params.get('fag');
-        document.getElementById('mTrinn').value = params.get('trinn');
-        document.getElementById('mKlasse').value = params.get('klasse');
+        const feltMappings = [
+            { id: 'mAar', verdi: params.get('aar') },
+            { id: 'mFag', verdi: params.get('fag') },
+            { id: 'mPeriode', verdi: params.get('periode') },
+            { id: 'mTrinn', verdi: params.get('trinn') },
+            { id: 'mKlasse', verdi: params.get('klasse') }
+        ];
 
-        // Kjør hentData etter et lite pust i bakken (100ms) 
-        // for å la DOM-en registrere endringene
+        for (const felt of feltMappings) {
+            const el = document.getElementById(felt.id);
+            if (el && felt.verdi) {
+                // Sjekk om alternativet faktisk finnes i menyen før vi setter det
+                // Hvis menyen fylles dynamisk, kan det hende vi må vente litt her
+                el.value = felt.verdi;
+                el.dispatchEvent(new Event('change'));
+                
+                // Gir nettleseren tid til å tegne menyer og kjøre onchange-logikk
+                await new Promise(r => setTimeout(r, 100)); 
+            }
+        }
+
+        // Kjør hentData til slutt (bruker en liten timeout for å være 100% sikker)
         setTimeout(() => {
-            hentData();
-            
-            // Rens URL
-            const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-            window.history.replaceState({path: cleanUrl}, '', cleanUrl);
-        }, 100);
+            if (typeof hentData === "function") {
+                console.log("Henter data basert på URL-parametre...");
+                hentData();
+            }
+        }, 150);
+
+        // Rens URL slik at man ikke lander på samme historikk ved "Refresh"
+        const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        window.history.replaceState({path: cleanUrl}, '', cleanUrl);
     }
 }
 
-
 // Kjør sjekken når siden har lastet ferdig
 window.addEventListener('load', sjekkUrlParametere);
+
 window.aapneLaererModal = aapneLaererModal;
 window.oppdaterLaererListe = oppdaterLaererListe;
