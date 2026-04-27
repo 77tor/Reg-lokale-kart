@@ -663,7 +663,7 @@ async function oppdaterHistorikk(epost) {
                     </div>`;
             });
         } else {
-            historikkHtml = '<p style="color: #999; font-size: 0.85em; padding: 15px; text-align: center;">Ingen fullførte prøver funnet.</p>';
+            historikkHtml = '<p style="color: #999; font-size: 0.85em; padding: 15px; text-align: center;">Du er ikke registret som kontaktlærer, og/eller du har ingen fullførte prøver.</p>';
         }
 
     } catch (error) {
