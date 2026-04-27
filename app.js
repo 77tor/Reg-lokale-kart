@@ -580,11 +580,11 @@ async function oppdaterHistorikk(epost) {
     const historikkListe = document.getElementById('historikkListe');
     if (!historikkSeksjon || !historikkListe) return;
 
-    historikkListe.innerHTML = '<p style="text-align:center; padding:10px;">Henter oversikt...</p>';
+    historikkListe.innerHTML = '<p style="text-align:center; padding:10px; font-size: 0.8em; color: #666;">Henter oversikt...</p>';
     let historikkHtml = "";
     const mineKlasser = [];
 
-    // 1. Finn alle steder brukeren er/har vært kontaktlærer i ansatteData
+    // 1. Finn alle steder brukeren er/har vært kontaktlærer
     for (const aar in window.ansatteData) {
         const liste = window.ansatteData[aar];
         if (Array.isArray(liste)) {
@@ -606,16 +606,15 @@ async function oppdaterHistorikk(epost) {
     historikkSeksjon.style.display = "block";
 
     try {
-        // 2. Hent status-loggen fra Firebase
-        // Bruker 'once' (get) for å hente dataene én gang
+        // 2. Hent status fra Firebase
         const snapshot = await firebase.database().ref('status').once('value');
         const statusData = snapshot.val();
 
-        if (!statusData) throw new Error("Ingen data i Firebase");
+        if (!statusData) throw new Error("Ingen data");
 
         const funneProever = [];
 
-        // 3. Bla gjennom Firebase-strukturen: år -> fag -> periode -> trinn -> klasse
+        // 3. Bla gjennom strukturen: år -> fag -> periode -> trinn -> klasse
         for (const aar in statusData) {
             for (const fag in statusData[aar]) {
                 for (const periode in statusData[aar][fag]) {
@@ -624,19 +623,18 @@ async function oppdaterHistorikk(epost) {
                         
                         for (const klasseBokstav in klasserITrinn) {
                             const data = klasserITrinn[klasseBokstav];
-                            const fulltKlasseNavn = trinn + klasseBokstav; // Eks: "1" + "A" = "1A"
+                            const fulltKlasseNavn = trinn + klasseBokstav; 
 
-                            // Sjekk om dette er en av mine klasser OG om den er låst
                             const erMinKlasse = mineKlasser.some(k => 
                                 k.skoleaar === aar && 
                                 k.klasse.toUpperCase() === fulltKlasseNavn.toUpperCase()
                             );
 
+                            // Legger til i listen kun hvis den er låst
                             if (erMinKlasse && data.laast === true) {
                                 funneProever.push({
-                                    navn: `${fag} ${fulltKlasseNavn} (${periode})`,
-                                    skoleaar: aar,
-                                    dato: data.dato || ""
+                                    navn: `${fag}-${fulltKlasseNavn}-${periode}`,
+                                    skoleaar: aar
                                 });
                             }
                         }
@@ -647,26 +645,25 @@ async function oppdaterHistorikk(epost) {
 
         // 4. Bygg listen
         if (funneProever.length > 0) {
-            // Sorter etter år (nyeste først)
+            // Sorterer slik at nyeste skoleår kommer først
             funneProever.sort((a, b) => b.skoleaar.localeCompare(a.skoleaar));
 
             funneProever.forEach(p => {
                 historikkHtml += `
-                    <div style="padding: 8px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; display: flex; align-items: center; justify-content: space-between;">
-                        <div>
-                            <span style="font-weight: 500; display: block;">${p.navn}</span>
-                            <small style="color: #888;">${p.dato}</small>
-                        </div>
-                        <span style="font-size: 10px; color: #27ae60; background: #e8f5e9; padding: 2px 6px; border-radius: 10px; border: 1px solid #c8e6c9; font-weight: bold;">${p.skoleaar}</span>
+                    <div style="padding: 10px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-weight: 500; color: #2c3e50;">${p.navn}</span>
+                        <span style="font-size: 10px; color: #27ae60; background: #e8f5e9; padding: 2px 8px; border-radius: 12px; border: 1px solid #c8e6c9; font-weight: bold; white-space: nowrap;">
+                            ${p.skoleaar}
+                        </span>
                     </div>`;
             });
         } else {
-            historikkHtml = '<p style="color: #999; font-size: 0.85em; padding: 15px; text-align: center;">Du er kontaktlærer, men ingen prøver er markert som ferdige (låst) ennå.</p>';
+            historikkHtml = '<p style="color: #999; font-size: 0.85em; padding: 15px; text-align: center;">Ingen fullførte prøver funnet for dine klasser.</p>';
         }
 
     } catch (error) {
-        console.error("Firebase-feil:", error);
-        historikkHtml = '<p style="color: red; font-size: 0.85em; padding: 15px; text-align: center;">Kunne ikke hente data fra Firebase.</p>';
+        console.error("Feil ved henting av historikk:", error);
+        historikkHtml = '<p style="color: #e74c3c; font-size: 0.85em; padding: 15px; text-align: center;">Kunne ikke koble til databasen.</p>';
     }
 
     historikkListe.innerHTML = historikkHtml;
