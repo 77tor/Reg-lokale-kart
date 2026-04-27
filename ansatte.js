@@ -50,9 +50,10 @@ window.ansatteData = {
     "2024-2025": [
         { navn: "Janne Braadland", epost: "janne.braadland@kristiansand.kommune.no", paloggingsmail: "72janne@ikrs.no", kontaktlaerer: "adm", trinn: [] },
         { navn: "Tor Skarprud", epost: "tor.skarprud@kristiansand.kommune.no", paloggingsmail: "77tor@ikrs.no", kontaktlaerer: "adm", trinn: [] },
+        { navn: "Tor Pettersen", epost: "tor.skarprud@kristiansand.kommune.no", paloggingsmail: ["tor.skarprud@gmail.com"], kontaktlaerer: "1A", trinn: [1] },
         { navn: "Thomas Dyrdahl", epost: "thomas.dyrdahl@kristiansand.kommune.no", paloggingsmail: "75thomas@ikrs.no", kontaktlaerer: "adm", trinn: [] },
         { navn: "Marit Frivoll", epost: "marit.frivoll@kristiansand.kommune.no", paloggingsmail: "62marit3@ikrs.no", kontaktlaerer: "adm", trinn: [] },
-        { navn: "Anders Lossius", epost: "anders.lossius@kristiansand.kommune.no", paloggingsmail: "95anders5@ikrs.no", kontaktlaerer: "1A", trinn: [1] },
+        { navn: "Anders Lossius", epost: "anders.lossius@kristiansand.kommune.no", paloggingsmail: "95anders5@ikrs.no", kontaktlaerer: "", trinn: [1] },
         { navn: "Christine Sørli", epost: "christine.sorli2@kristiansand.kommune.no", paloggingsmail: "94christine1@ikrs.no", kontaktlaerer: "1B", trinn: [1] },
         { navn: "Silje Merete Vigemyr-Karlsen", epost: "silje.merete.vigemyr.karlsen@kristiansand.kommune.no", paloggingsmail: "82silje2@ikrs.no", kontaktlaerer: "1C", trinn: [1] },
         { navn: "Markus Sundgot Kristiansen", epost: "markus.sundgot.kristiansen@kristiansand.kommune.no", paloggingsmail: "93markus1@ikrs.no", kontaktlaerer: "", trinn: [1] },
