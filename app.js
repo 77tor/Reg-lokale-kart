@@ -575,87 +575,102 @@ function hentRegister() {
     });
 }
 
-function oppdaterHistorikk(epost) {
+async function oppdaterHistorikk(epost) {
     const historikkSeksjon = document.getElementById('historikkSeksjon');
     const historikkListe = document.getElementById('historikkListe');
     if (!historikkSeksjon || !historikkListe) return;
 
+    historikkListe.innerHTML = '<p style="text-align:center; padding:10px;">Henter oversikt...</p>';
     let historikkHtml = "";
-    const gjennomfoerteKlasser = [];
-    const innloggetEpostClean = epost ? epost.toLowerCase() : "";
+    const mineKlasser = [];
 
-    // 1. Bla gjennom alle år i ansatteData
+    // 1. Finn alle steder brukeren er/har vært kontaktlærer i ansatteData
     for (const aar in window.ansatteData) {
-        const listeForAar = window.ansatteData[aar];
-        if (Array.isArray(listeForAar)) {
-            listeForAar.forEach(ansatt => {
+        const liste = window.ansatteData[aar];
+        if (Array.isArray(liste)) {
+            liste.forEach(a => {
+                const match = a.epost.toLowerCase() === epost.toLowerCase() || 
+                             (Array.isArray(a.paloggingsmail) && a.paloggingsmail.some(m => m.toLowerCase() === epost.toLowerCase()));
                 
-                // --- SIKKER SJEKK AV E-POST ---
-                let erMatch = false;
-                
-                // Sjekk hoved-epost
-                if (ansatt.epost && ansatt.epost.toLowerCase() === innloggetEpostClean) {
-                    erMatch = true;
-                }
-                
-                // Sjekk paloggingsmail (håndterer både Array og String)
-                if (!erMatch && ansatt.paloggingsmail) {
-                    if (Array.isArray(ansatt.paloggingsmail)) {
-                        erMatch = ansatt.paloggingsmail.some(m => m && m.toLowerCase() === innloggetEpostClean);
-                    } else if (typeof ansatt.paloggingsmail === 'string') {
-                        erMatch = ansatt.paloggingsmail.toLowerCase() === innloggetEpostClean;
-                    }
-                }
-
-                // Hvis match og vedkommende er kontaktlærer
-                if (erMatch && ansatt.kontaktlaerer && ansatt.kontaktlaerer !== "Ingen") {
-                    gjennomfoerteKlasser.push({ 
-                        skoleaar: aar, 
-                        klasse: ansatt.kontaktlaerer 
-                    });
+                if (match && a.kontaktlaerer && a.kontaktlaerer !== "Ingen") {
+                    mineKlasser.push({ skoleaar: aar, klasse: a.kontaktlaerer });
                 }
             });
         }
     }
 
-    // 2. Vis/skjul seksjonen
-    if (gjennomfoerteKlasser.length === 0) {
+    if (mineKlasser.length === 0) {
         historikkSeksjon.style.display = "none";
         return;
     }
     historikkSeksjon.style.display = "block";
 
-    // 3. Hent prøver fra localStorage
-    const alleLagrede = JSON.parse(localStorage.getItem('alleAnalyser') || "[]");
-    
-    const relevante = alleLagrede.filter(p => {
-        return gjennomfoerteKlasser.some(k => 
-            p.klasse && k.klasse && 
-            p.klasse.toLowerCase() === k.klasse.toLowerCase() && 
-            p.skoleaar === k.skoleaar
-        );
-    });
+    try {
+        // 2. Hent status-loggen fra Firebase
+        // Bruker 'once' (get) for å hente dataene én gang
+        const snapshot = await firebase.database().ref('status').once('value');
+        const statusData = snapshot.val();
 
-    // 4. Bygg listen
-    if (relevante.length > 0) {
-        // Sorterer slik at nyeste skoleår kommer øverst
-        relevante.sort((a, b) => b.skoleaar.localeCompare(a.skoleaar));
+        if (!statusData) throw new Error("Ingen data i Firebase");
 
-        relevante.forEach(p => {
-            const navn = `${p.fag}-${p.klasse}-${p.periode === 'H' ? 'Høst' : 'Vår'}-${p.aarstall}`;
-            historikkHtml += `
-                <div style="padding: 8px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; display: flex; align-items: center; justify-content: space-between;">
-                    <span style="font-weight: 500;">${navn}</span>
-                    <span style="font-size: 10px; color: #27ae60; background: #e8f5e9; padding: 2px 6px; border-radius: 10px; border: 1px solid #c8e6c9; font-weight: bold;">${p.skoleaar}</span>
-                </div>`;
-        });
-    } else {
-        historikkHtml = '<p style="color: #999; font-size: 0.85em; padding: 15px; text-align: center;">Du er registrert som kontaktlærer, men det er ikke lagret noen analyser for dine klasser i systemet ennå.</p>';
+        const funneProever = [];
+
+        // 3. Bla gjennom Firebase-strukturen: år -> fag -> periode -> trinn -> klasse
+        for (const aar in statusData) {
+            for (const fag in statusData[aar]) {
+                for (const periode in statusData[aar][fag]) {
+                    for (const trinn in statusData[aar][fag][periode]) {
+                        const klasserITrinn = statusData[aar][fag][periode][trinn];
+                        
+                        for (const klasseBokstav in klasserITrinn) {
+                            const data = klasserITrinn[klasseBokstav];
+                            const fulltKlasseNavn = trinn + klasseBokstav; // Eks: "1" + "A" = "1A"
+
+                            // Sjekk om dette er en av mine klasser OG om den er låst
+                            const erMinKlasse = mineKlasser.some(k => 
+                                k.skoleaar === aar && 
+                                k.klasse.toUpperCase() === fulltKlasseNavn.toUpperCase()
+                            );
+
+                            if (erMinKlasse && data.laast === true) {
+                                funneProever.push({
+                                    navn: `${fag} ${fulltKlasseNavn} (${periode})`,
+                                    skoleaar: aar,
+                                    dato: data.dato || ""
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. Bygg listen
+        if (funneProever.length > 0) {
+            // Sorter etter år (nyeste først)
+            funneProever.sort((a, b) => b.skoleaar.localeCompare(a.skoleaar));
+
+            funneProever.forEach(p => {
+                historikkHtml += `
+                    <div style="padding: 8px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <span style="font-weight: 500; display: block;">${p.navn}</span>
+                            <small style="color: #888;">${p.dato}</small>
+                        </div>
+                        <span style="font-size: 10px; color: #27ae60; background: #e8f5e9; padding: 2px 6px; border-radius: 10px; border: 1px solid #c8e6c9; font-weight: bold;">${p.skoleaar}</span>
+                    </div>`;
+            });
+        } else {
+            historikkHtml = '<p style="color: #999; font-size: 0.85em; padding: 15px; text-align: center;">Du er kontaktlærer, men ingen prøver er markert som ferdige (låst) ennå.</p>';
+        }
+
+    } catch (error) {
+        console.error("Firebase-feil:", error);
+        historikkHtml = '<p style="color: red; font-size: 0.85em; padding: 15px; text-align: center;">Kunne ikke hente data fra Firebase.</p>';
     }
 
     historikkListe.innerHTML = historikkHtml;
 }
-
 
 // --- TEGN TABELL (Inkludert gjennomsnitt og håndtering av ikke gjennomført) ---
 async function tegnTabell() {
