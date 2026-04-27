@@ -5372,55 +5372,24 @@ function sjekkUrlParametere() {
     const params = new URLSearchParams(window.location.search);
     
     if (params.has('aar') && params.has('fag')) {
-        const aarFraUrl = params.get('aar');
-        console.log("Prøver å tvinge skoleår til:", aarFraUrl);
+        console.log("URL-parameter funnet. Overstyrer standardvalg...");
         
-        const mAar = document.getElementById('mAar');
-        
-        // Funksjon som setter verdiene og kjører hentData
-        const settVerdierOgHent = () => {
-            const feltMappings = {
-                'mAar': aarFraUrl,
-                'mPeriode': params.get('periode'),
-                'mFag': params.get('fag'),
-                'mTrinn': params.get('trinn'),
-                'mKlasse': params.get('klasse')
-            };
+        // Sett verdiene direkte (uten timeout først, siden menyen er klar)
+        document.getElementById('mAar').value = params.get('aar');
+        document.getElementById('mPeriode').value = params.get('periode');
+        document.getElementById('mFag').value = params.get('fag');
+        document.getElementById('mTrinn').value = params.get('trinn');
+        document.getElementById('mKlasse').value = params.get('klasse');
 
-            for (const [id, verdi] of Object.entries(feltMappings)) {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.value = verdi;
-                    // Trigger en 'change' event manuelt i tilfelle andre script lytter
-                    element.dispatchEvent(new Event('change'));
-                }
-            }
-
-            // Kjør hentData etter en liten pause så alt rekker å sette seg
-            setTimeout(() => {
-                if (typeof hentData === "function") {
-                    console.log("Henter data for spesifikt år fra URL...");
-                    hentData();
-                }
-                
-                // Rens URL til slutt
-                const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-                window.history.replaceState({path: cleanUrl}, '', cleanUrl);
-            }, 200);
-        };
-
-        // Hvis mAar-menyen er tom eller fortsatt laster, vent litt på den
-        if (mAar && mAar.options.length <= 1) {
-            console.log("Venter på at år-menyen skal fylles...");
-            const sjekkIntervall = setInterval(() => {
-                if (mAar.options.length > 1) {
-                    clearInterval(sjekkIntervall);
-                    settVerdierOgHent();
-                }
-            }, 100);
-        } else {
-            settVerdierOgHent();
-        }
+        // Kjør hentData etter et lite pust i bakken (100ms) 
+        // for å la DOM-en registrere endringene
+        setTimeout(() => {
+            hentData();
+            
+            // Rens URL
+            const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.replaceState({path: cleanUrl}, '', cleanUrl);
+        }, 100);
     }
 }
 
