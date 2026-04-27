@@ -584,7 +584,6 @@ async function oppdaterHistorikk(epost) {
     let historikkHtml = "";
     const mineKlasser = [];
 
-    // 1. Finn alle steder brukeren er/har vært kontaktlærer
     for (const aar in window.ansatteData) {
         const liste = window.ansatteData[aar];
         if (Array.isArray(liste)) {
@@ -606,21 +605,17 @@ async function oppdaterHistorikk(epost) {
     historikkSeksjon.style.display = "block";
 
     try {
-        // 2. Hent status fra Firebase
         const snapshot = await firebase.database().ref('status').once('value');
         const statusData = snapshot.val();
-
         if (!statusData) throw new Error("Ingen data");
 
         const funneProever = [];
 
-        // 3. Bla gjennom strukturen: år -> fag -> periode -> trinn -> klasse
         for (const aar in statusData) {
             for (const fag in statusData[aar]) {
                 for (const periode in statusData[aar][fag]) {
                     for (const trinn in statusData[aar][fag][periode]) {
                         const klasserITrinn = statusData[aar][fag][periode][trinn];
-                        
                         for (const klasseBokstav in klasserITrinn) {
                             const data = klasserITrinn[klasseBokstav];
                             const fulltKlasseNavn = trinn + klasseBokstav; 
@@ -630,11 +625,15 @@ async function oppdaterHistorikk(epost) {
                                 k.klasse.toUpperCase() === fulltKlasseNavn.toUpperCase()
                             );
 
-                            // Legger til i listen kun hvis den er låst
                             if (erMinKlasse && data.laast === true) {
                                 funneProever.push({
                                     navn: `${fag}-${fulltKlasseNavn}-${periode}`,
-                                    skoleaar: aar
+                                    skoleaar: aar,
+                                    // Lagrer detaljer for URL-generering
+                                    fag: fag,
+                                    periode: periode,
+                                    trinn: trinn,
+                                    klasseBokstav: klasseBokstav
                                 });
                             }
                         }
@@ -643,29 +642,34 @@ async function oppdaterHistorikk(epost) {
             }
         }
 
-        // 4. Bygg listen
         if (funneProever.length > 0) {
-            // Sorterer slik at nyeste skoleår kommer først
             funneProever.sort((a, b) => b.skoleaar.localeCompare(a.skoleaar));
 
             funneProever.forEach(p => {
+                // Lager URL-en med parametere
+                const url = `index.html?aar=${encodeURIComponent(p.skoleaar)}&periode=${encodeURIComponent(p.periode)}&fag=${encodeURIComponent(p.fag)}&trinn=${encodeURIComponent(p.trinn)}&klasse=${encodeURIComponent(p.klasseBokstav)}`;
+
                 historikkHtml += `
                     <div style="padding: 10px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; display: flex; align-items: center; justify-content: space-between;">
-                        <span style="font-weight: 500; color: #2c3e50;">${p.navn}</span>
-                        <span style="font-size: 10px; color: #27ae60; background: #e8f5e9; padding: 2px 8px; border-radius: 12px; border: 1px solid #c8e6c9; font-weight: bold; white-space: nowrap;">
+                        <a href="${url}" style="text-decoration: none; color: #1a73e8; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+                            <span>📄</span>
+                            <span style="border-bottom: 1px solid transparent;" onmouseover="this.style.borderBottom='1px solid #1a73e8'" onmouseout="this.style.borderBottom='1px solid transparent'">
+                                ${p.navn}
+                            </span>
+                        </a>
+                        <span style="font-size: 10px; color: #27ae60; background: #e8f5e9; padding: 2px 8px; border-radius: 12px; border: 1px solid #c8e6c9; font-weight: bold;">
                             ${p.skoleaar}
                         </span>
                     </div>`;
             });
         } else {
-            historikkHtml = '<p style="color: #999; font-size: 0.85em; padding: 15px; text-align: center;">Ingen fullførte prøver funnet for dine klasser.</p>';
+            historikkHtml = '<p style="color: #999; font-size: 0.85em; padding: 15px; text-align: center;">Ingen fullførte prøver funnet.</p>';
         }
 
     } catch (error) {
-        console.error("Feil ved henting av historikk:", error);
+        console.error("Feil:", error);
         historikkHtml = '<p style="color: #e74c3c; font-size: 0.85em; padding: 15px; text-align: center;">Kunne ikke koble til databasen.</p>';
     }
-
     historikkListe.innerHTML = historikkHtml;
 }
 
@@ -5342,5 +5346,33 @@ function printUtvikling() {
     printVindu.document.close();
 }
 
+
+function sjekkUrlParametere() {
+    const params = new URLSearchParams(window.location.search);
+    
+    // Sjekk om vi har de nødvendige parameterne
+    if (params.has('aar') && params.has('fag')) {
+        console.log("Fant prøve-link i URL, laster data...");
+        
+        // 1. Sett verdiene i dropdown-menyene dine
+        if (document.getElementById('mAar'))     document.getElementById('mAar').value = params.get('aar');
+        if (document.getElementById('mPeriode')) document.getElementById('mPeriode').value = params.get('periode');
+        if (document.getElementById('mFag'))     document.getElementById('mFag').value = params.get('fag');
+        if (document.getElementById('mTrinn'))   document.getElementById('mTrinn').value = params.get('trinn');
+        if (document.getElementById('mKlasse'))  document.getElementById('mKlasse').value = params.get('klasse');
+
+        // 2. Lukk modalen hvis den er åpen (valgfritt)
+        if (typeof lukkKonto === "function") lukkKonto();
+
+        // 3. Kjør din eksisterende funksjon for å hente data
+        // Bruk en liten timeout for å sikre at alle dropdowns har rukket å laste (hvis de hentes dynamisk)
+        setTimeout(() => {
+            hentData();
+        }, 300);
+    }
+}
+
+// Kjør sjekken når siden har lastet ferdig
+window.addEventListener('load', sjekkUrlParametere);
 window.aapneLaererModal = aapneLaererModal;
 window.oppdaterLaererListe = oppdaterLaererListe;
