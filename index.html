@@ -604,16 +604,23 @@ svg {
             <span class="close" onclick="lukkKonto()" style="cursor:pointer; font-size:24px;">&times;</span>
         </div>
 
-        <div style="padding: 20px; font-family: sans-serif;">
+        <div style="padding: 20px 20px 10px 20px; font-family: sans-serif;">
             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
                 <p style="font-size: 1.2em; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">
                     <strong>Navn:</strong> <span id="kontoNavn"></span>
                 </p>
-                
                 <p><strong>Logget inn med:</strong> <span id="kontoEpost"></span></p>
                 <p><strong>Trinn:</strong> <span id="kontoTrinn"></span></p>
                 <p><strong>Kontaktlærer:</strong> <span id="kontoKontakt"></span></p>
             </div>
+        </div>
+        
+        <div id="historikkSeksjon" style="display: none; padding: 0 20px 20px 20px; font-family: sans-serif;">
+            <h3 style="font-size: 0.9em; margin-bottom: 8px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px;">
+                📚 Dine prøver (Kontaktlærer)
+            </h3>
+            <div id="historikkListe" style="max-height: 160px; overflow-y: auto; background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 5px;">
+                </div>
         </div>
         
         <div style="text-align: right; border-top: 1px solid #eee; padding: 15px;">

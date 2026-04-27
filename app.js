@@ -424,6 +424,9 @@ function aapneKonto() {
 
     // 6. Vis modalen
     document.getElementById('modalKonto').style.display = 'block';
+
+// 7. NYTT: Oppdater historikken for kontaktlærer
+    oppdaterHistorikk(innloggetEpost);
 }
 
 // --- 3. HJELPEFUNKSJONER ---
@@ -570,6 +573,71 @@ function hentRegister() {
         tegnTabell();
         oppdaterElevListe();
     });
+}
+
+function oppdaterHistorikk(epost) {
+    const historikkSeksjon = document.getElementById('historikkSeksjon');
+    const historikkListe = document.getElementById('historikkListe');
+    if (!historikkSeksjon || !historikkListe) return;
+
+    let historikkHtml = "";
+    const gjennomfoerteKlasser = [];
+    
+    // 1. Bla gjennom hele ansatteData (alle årstall)
+    // ansatteData er objektet fra ansatt.js
+    for (const aar in window.ansatteData) {
+        const listeForAar = window.ansatteData[aar];
+        if (Array.isArray(listeForAar)) {
+            listeForAar.forEach(ansatt => {
+                // Sjekk om e-posten matcher hoved-epost eller paloggingsmail
+                const erMatch = ansatt.epost.toLowerCase() === epost || 
+                               (Array.isArray(ansatt.paloggingsmail) && ansatt.paloggingsmail.some(m => m.toLowerCase() === epost)) ||
+                               (ansatt.paloggingsmail && ansatt.paloggingsmail.toLowerCase() === epost);
+
+                // Hvis match og vedkommende er kontaktlærer dette året
+                if (erMatch && ansatt.kontaktlaerer && ansatt.kontaktlaerer !== "Ingen") {
+                    gjennomfoerteKlasser.push({ 
+                        skoleaar: aar, 
+                        klasse: ansatt.kontaktlaerer 
+                    });
+                }
+            });
+        }
+    }
+
+    // 2. Vis/skjul seksjonen basert på om de er/har vært kontaktlærer
+    if (gjennomfoerteKlasser.length === 0) {
+        historikkSeksjon.style.display = "none";
+        return;
+    }
+    historikkSeksjon.style.display = "block";
+
+    // 3. Hent prøver fra din lagring (eks: localStorage.getItem('alleAnalyser'))
+    // MERK: Sørg for at 'alleAnalyser' inneholder objekter med .skoleaar og .klasse
+    const alleLagrede = JSON.parse(localStorage.getItem('alleAnalyser') || "[]");
+    
+    const relevante = alleLagrede.filter(p => {
+        return gjennomfoerteKlasser.some(k => 
+            p.klasse.toLowerCase() === k.klasse.toLowerCase() && 
+            p.skoleaar === k.skoleaar
+        );
+    });
+
+    // 4. Bygg listen
+    if (relevante.length > 0) {
+        relevante.forEach(p => {
+            const navn = `${p.fag}-${p.klasse}-${p.periode === 'H' ? 'Høst' : 'Vår'}-${p.aarstall}`;
+            historikkHtml += `
+                <div style="padding: 8px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-weight: 500;">${navn}</span>
+                    <span style="font-size: 10px; color: #666; background: #e8f5e9; padding: 2px 6px; border-radius: 10px; border: 1px solid #c8e6c9;">${p.skoleaar}</span>
+                </div>`;
+        });
+    } else {
+        historikkHtml = '<p style="color: #999; font-size: 0.85em; padding: 15px; text-align: center;">Kontaktlærer-data funnet, men ingen analyser er lagret for disse klassene ennå.</p>';
+    }
+
+    historikkListe.innerHTML = historikkHtml;
 }
 
 
