@@ -5346,31 +5346,43 @@ function printUtvikling() {
     printVindu.document.close();
 }
 
-
 function sjekkUrlParametere() {
     const params = new URLSearchParams(window.location.search);
     
-    // Sjekk om vi har de nødvendige parameterne
     if (params.has('aar') && params.has('fag')) {
-        console.log("Fant prøve-link i URL, laster data...");
+        console.log("Fant prøve-link, setter verdier...");
         
-        // 1. Sett verdiene i dropdown-menyene dine
-        if (document.getElementById('mAar'))     document.getElementById('mAar').value = params.get('aar');
-        if (document.getElementById('mPeriode')) document.getElementById('mPeriode').value = params.get('periode');
-        if (document.getElementById('mFag'))     document.getElementById('mFag').value = params.get('fag');
-        if (document.getElementById('mTrinn'))   document.getElementById('mTrinn').value = params.get('trinn');
-        if (document.getElementById('mKlasse'))  document.getElementById('mKlasse').value = params.get('klasse');
+        const feltMappings = {
+            'mAar': params.get('aar'),
+            'mPeriode': params.get('periode'),
+            'mFag': params.get('fag'),
+            'mTrinn': params.get('trinn'),
+            'mKlasse': params.get('klasse')
+        };
 
-        // 2. Lukk modalen hvis den er åpen (valgfritt)
-        if (typeof lukkKonto === "function") lukkKonto();
+        for (const [id, verdi] of Object.entries(feltMappings)) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.value = verdi;
+            }
+        }
 
-        // 3. Kjør din eksisterende funksjon for å hente data
-        // Bruk en liten timeout for å sikre at alle dropdowns har rukket å laste (hvis de hentes dynamisk)
+        // Trigger henting av data
         setTimeout(() => {
-            hentData();
+            if (typeof hentData === "function") {
+                hentData();
+            }
+            
+            // --- NYTT: RENS ADRESSELINJEN ---
+            // Dette fjerner ?aar=... osv fra URL-en så den blir "ren" igjen
+            const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.replaceState({path: cleanUrl}, '', cleanUrl);
+            console.log("URL er nå renset.");
+            
         }, 300);
     }
 }
+
 
 // Kjør sjekken når siden har lastet ferdig
 window.addEventListener('load', sjekkUrlParametere);
