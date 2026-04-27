@@ -1225,28 +1225,16 @@ async function aapneLoggModal() {
     const snapshot = await db.ref('systemLogg').once('value');
     const loggData = snapshot.val() || {};
     
+    // Sorterer slik at nyeste er først for tabellen
     const loggArray = Object.values(loggData).sort((a, b) => b.innLogget - a.innLogget);
+    
+    // Lagre dataen globalt så diagram-knappene får tak i den uten å spørre databasen på nytt
     window.gjeldendeLoggData = loggArray;
 
     const totalt = loggArray.length;
     const sjuDagerSiden = Date.now() - (7 * 24 * 60 * 60 * 1000);
     const sisteUke = loggArray.filter(l => l.innLogget > sjuDagerSiden).length;
-
-    // --- LOGIKK FOR UNIKE BRUKERE ---
-    // Vi lager et objekt hvor hver e-post er en nøkkel for å finne siste aktivitet
-    const unikeMap = {};
-    loggArray.forEach(l => {
-        if (!unikeMap[l.epost]) {
-            unikeMap[l.epost] = {
-                navn: l.navn,
-                sistInne: l.innLogget,
-                antall: 0
-            };
-        }
-        unikeMap[l.epost].antall++;
-    });
-    const unikeBrukereListe = Object.values(unikeMap).sort((a, b) => b.sistInne - a.sistInne);
-    const antallUnike = unikeBrukereListe.length;
+    const unikeBrukere = [...new Set(loggArray.map(l => l.epost))].length;
 
     let html = `
         <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 15px;">
@@ -1266,24 +1254,11 @@ async function aapneLoggModal() {
         <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center;">
             <div><small>Totalt antall besøk</small><br><strong>${totalt}</strong></div>
             <div><small>Siste 7 dager</small><br><strong>${sisteUke}</strong></div>
-            <div><small>Unike brukere</small><br><strong>${antallUnike}</strong></div>
-        </div>
-
-        <div style="margin-bottom: 15px;">
-            <label style="font-size: 0.85em; font-weight: bold; color: #4a5568; display: block; margin-bottom: 5px;">Brukere som har vært pålogget:</label>
-            <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin;">
-                ${unikeBrukereListe.map(u => `
-                    <div style="flex: 0 0 auto; background: white; border: 1px solid #cbd5e0; padding: 6px 10px; border-radius: 20px; font-size: 0.8em; display: flex; align-items: center; gap: 5px;">
-                        <div style="width: 8px; height: 8px; border-radius: 50%; background: ${ (Date.now() - u.sistInne < 600000) ? '#48bb78' : '#cbd5e0' };"></div>
-                        <strong>${u.navn}</strong> 
-                        <span style="color: #718096;">(${u.antall})</span>
-                    </div>
-                `).join('')}
-            </div>
+            <div><small>Unike brukere</small><br><strong>${unikeBrukere}</strong></div>
         </div>
         
         <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <input type="text" id="loggSok" placeholder="Søk i full historikk..." 
+            <input type="text" id="loggSok" placeholder="Søk på navn eller e-post..." 
                 style="flex-grow: 1; margin-bottom: 0;" onkeyup="filtrerLogg()">
             <button class="btn btn-danger" onclick="slettHeleLoggen()" style="font-size: 0.85em;">Tøm logg</button>
         </div>
@@ -1295,7 +1270,6 @@ async function aapneLoggModal() {
                 </thead>
                 <tbody>`;
 
-    // Tabell-generering (samme som før)
     if (totalt > 0) {
         loggArray.forEach(log => {
             const dato = new Date(log.innLogget).toLocaleString('no-NO');
@@ -1312,8 +1286,10 @@ async function aapneLoggModal() {
     html += `</tbody></table></div>`;
     document.getElementById('loggListe').innerHTML = html;
 
+    // Tegn diagrammet (venter litt så canvas rekker å bli synlig)
     setTimeout(() => oppdaterLoggDiagram('uke'), 50);
 }
+
 
 
 let loggChartInstance = null; // Holder styr på diagrammet så vi kan slette det gamle
@@ -2881,138 +2857,152 @@ htmlSide4 += `<div style="text-align:center; margin: 20px 0 40px 0;">
 
 // --- SIDE 4 FERDIG ---
 
+
 // --- GENERER ENDELIG HTML ---
-const win = window.open('', '_blank');
-const f_clean = fag.toLowerCase(); 
-const t_clean = trinn.replace(/\D/g, ''); 
-const p_clean = periode.charAt(0).toUpperCase(); // H eller V
-const oppgaveSti = `Oppgaver/Kartlegging_${f_clean}_${t_clean}_${p_clean}.pdf`;
-const fasitSti = `Fasit/Kartlegging_${f_clean}_${t_clean}_${p_clean}_Fasit.pdf`;
-const harFasit = !(f_clean === "lesing" && t_clean === "1" && p_clean === "H");
+        const win = window.open('', '_blank');
+        const f_clean = fag.toLowerCase(); 
+        const t_clean = trinn.replace(/\D/g, ''); 
+        const p_clean = periode.charAt(0).toUpperCase(); // H eller V
+        const oppgaveSti = `Oppgaver/Kartlegging_${f_clean}_${t_clean}_${p_clean}.pdf`;
+        const fasitSti = `Fasit/Kartlegging_${f_clean}_${t_clean}_${p_clean}_Fasit.pdf`;
+        const harFasit = !(f_clean === "lesing" && t_clean === "1" && p_clean === "H");
 
-const fullHtml = `
-    <html>
-    <head>
-        <title>Analyse ${trinn}${klasse}</title>
-        <link rel="icon" type="image/png" href="${window.location.origin}${window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'))}/analyse.png">
-        <style>
-            @page { size: A4 landscape; margin: 0; }
-            body { font-family: sans-serif; background:#f0f2f5; margin:0; padding:20px; display:flex; flex-direction:column; align-items:center; }
-            .analyse-section { 
-                background:white; width:297mm; height:210mm; padding:10mm 12mm; 
-                margin-bottom:30px; box-shadow:0 4px 15px rgba(0,0,0,0.15); 
-                box-sizing:border-box; page-break-after:always; position: relative; overflow: hidden;
-            }
-            .side-header { border-bottom:2px solid #2c3e50; margin-bottom:15px; font-size:16px; font-weight:bold; color:#2c3e50; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 15px; table-layout: fixed; }
-            th, td { border: 1px solid #333; padding: 4px 2px; text-align: center; font-size: 9px; overflow: hidden; }
-            th { background: #f8f9fa; }
-            .col-navn { width: 180px !important; text-align: left !important; white-space: nowrap; text-overflow: ellipsis; padding-left: 8px !important; }
-            .col-tall { width: 60px !important; }
-            
-            /* Modal-stiler for Multi-visning */
-            #multiModal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
-            .multi-content { background: white; margin: 2% auto; padding: 20px; width: 90%; height: 90%; border-radius: 10px; display: flex; gap: 20px; overflow: hidden; }
-            .multi-meny { width: 300px; overflow-y: auto; border-right: 1px solid #ddd; padding-right: 10px; }
-            .multi-visning { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #555; border-radius: 5px; position: relative; }
-            .multi-visning img { max-height: 100%; max-width: 100%; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-            .kapittel-overskrift { background: #f3f4f6; padding: 8px; font-weight: bold; margin-top: 10px; border-radius: 4px; font-size: 13px; }
-            .emne-knapp { display: block; width: 100%; text-align: left; padding: 6px 10px; border: none; background: none; cursor: pointer; font-size: 12px; border-bottom: 1px solid #eee; }
-            .emne-knapp:hover { background: #e0e7ff; }
+        // VIKTIG: Her tildeler vi strengen til variabelen fullHtml
+        const fullHtml = `
+            <html>
+            <head>
+                <title>Analyse ${trinn}${klasse}</title>
+                                          <link rel="icon" type="image/png" href="${window.location.origin}${window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'))}/analyse.png">
+<style>
+    @page { size: A4 landscape; margin: 0; }
+    body { font-family: sans-serif; background:#f0f2f5; margin:0; padding:20px; display:flex; flex-direction:column; align-items:center; }
+    .analyse-section { 
+        background:white; width:297mm; height:210mm; padding:10mm 12mm; 
+        margin-bottom:30px; box-shadow:0 4px 15px rgba(0,0,0,0.15); 
+        box-sizing:border-box; page-break-after:always; position: relative; overflow: hidden;
+    }
+    .side-header { border-bottom:2px solid #2c3e50; margin-bottom:15px; font-size:16px; font-weight:bold; color:#2c3e50; }
 
-            .chart-container { display:flex; height:200px; align-items:flex-end; border-bottom:2px solid #333; margin-bottom:50px; padding-bottom: 30px; }
-            .bar-track { background: #eee; width: 35px; height: 150px; position: relative; border: 1px solid #ccc; display: flex; flex-direction: column-reverse; margin: 0 auto; }
-            .bar-fill { background:#3498db; width:100%; }
-            .toolbar { margin-bottom:20px; background:white; padding:10px; border-radius:50px; display:flex; gap:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; }
-            .btn-tool { padding:8px 15px; border-radius:5px; text-decoration:none; font-weight:bold; color:white !important; border:none; cursor:pointer; font-size:12px; display: flex; align-items: center; gap: 5px; }
-            .btn-grey { background: #95a5a6; }
-            
-            @media print { 
-                .toolbar, #multiModal { display:none !important; } 
-                body { background: white; padding:0; } 
-                .analyse-section { box-shadow:none; margin:0; width: 297mm; height: 210mm; -webkit-print-color-adjust: exact; } 
-            }
-        </style>
-    </head>
-    <body>
-        <div class="toolbar">
-            <button onclick="window.print()" style="background:#2980b9;" class="btn-tool">🖨️ Skriv ut / Lagre PDF</button>
-            <a href="${oppgaveSti}" target="_blank" style="background:#8e44ad;" class="btn-tool">📄 Se prøve</a>
-            ${harFasit ? `<a href="${fasitSti}" target="_blank" style="background:#2c3e50;" class="btn-tool">✅ Se fasit</a>` : ''}
-            
-            ${f_clean.includes("regning") || f_clean.includes("matte") ? 
-                `<button onclick="aapneMultiModal()" style="background:#27ae60;" class="btn-tool">📚 Se Multi</button>` : ''}
+    /* --- VIKTIG ENDRING FOR Å HOLDE TABELLEN INNENFOR ARKET --- */
+    table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        margin-bottom: 15px; 
+        table-layout: fixed; /* Tvinger tabellen til å holde seg innenfor arkets bredde */
+    }
+    th, td { 
+        border: 1px solid #333; 
+        padding: 4px 2px; 
+        text-align: center; 
+        font-size: 9px; /* Litt mindre skrift gir plass til flere kolonner */
+        overflow: hidden; /* Skjuler tekst som går utenfor cellen */
+    }
+    th { background: #f8f9fa; }
 
-            <button onclick="window.close()" class="btn-tool btn-grey">Lukk</button>
-        </div>
+    /* Justert navnekolonne (litt smalere for å gi plass til oppgaver) */
+    .col-navn { 
+        width: 180px !important; 
+        text-align: left !important; 
+        white-space: nowrap; 
+        text-overflow: ellipsis; 
+        padding-left: 8px !important;
+    }
 
-        <div class="analyse-section">${htmlSide1}</div>
-        <div class="analyse-section">${htmlSide2}</div>
-        <div class="analyse-section">${htmlSide3}</div>
-        <div class="analyse-section">${htmlSide4}</div>
+    /* Statisk bredde for tall/prosent-kolonner (f.eks. Side 2) */
+    .col-tall { 
+        width: 60px !important; 
+    }
 
-        <div id="multiModal">
-            <div class="multi-content">
-                <div class="multi-meny" id="multiMenyInnhold"></div>
-                <div class="multi-visning">
-                    <div style="position: absolute; top: 10px; right: 10px; z-index: 10;">
-                        <button onclick="lukkMulti()" class="btn-tool btn-grey">Lukk Multi-visning</button>
-                    </div>
-                    <img id="multiBildeVisning" src="" alt="Velg en side fra menyen">
+
+/* Legg gjerne til dette i <style> blokken din */
+.analyse-side-3 div[style*="display: grid"]:hover {
+    background-color: #fcfcfc !important;
+}
+
+/* Sørg for at overskriften på side 3 ikke blir med på neste side ved et uhell */
+.analyse-side-3 {
+    page-break-inside: avoid;
+}
+
+.hover-bilde {
+    display: none; /* Skjult som standard */
+    position: absolute;
+    z-index: 100;
+    border: 3px solid #2c3e50;
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    width: 400px; /* Juster størrelsen på forhåndsvisningen her */
+    left: 20px;
+    top: 25px;
+}
+/* Vis bildet ved hover på skjerm */
+.bilde-container:hover .hover-bilde {
+    display: block;
+}
+    /* Brukes for alle oppgave-kolonner slik at de deler resten av plassen */
+    .col-oppgave {
+        width: auto;
+    }
+    /* -------------------------------------------------------- */
+
+    .chart-container { display:flex; height:200px; align-items:flex-end; border-bottom:2px solid #333; margin-bottom:50px; padding-bottom: 30px; }
+    .bar-wrapper { flex:1; display:flex; flex-direction:column; align-items:center; position:relative; }
+    .bar-track { 
+    background: #eee; 
+    width: 35px; /* Endret fra 20px til 35px for tykkere søyler */
+    height: 150px; 
+    position: relative; 
+    border: 1px solid #ccc; 
+    display: flex; 
+    flex-direction: column-reverse; 
+    margin: 0 auto; /* Sikrer at søylen sentreres i sitt område */
+}
+    .bar-fill { background:#3498db; width:100%; }
+    .total-fill { background:#2ecc71; }
+    .target-line { position:absolute; width:100%; border-top:2px dashed red; z-index:5; }
+    .bar-label { font-size:8px; margin-top:10px; font-weight:bold; }
+    .toolbar { margin-bottom:20px; background:white; padding:10px; border-radius:50px; display:flex; gap:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; }
+    .btn-tool { padding:8px 15px; border-radius:5px; text-decoration:none; font-weight:bold; color:white !important; border:none; cursor:pointer; font-size:12px; }
+    .btn-grey { background: #95a5a6; }
+    
+    @media print { 
+        .toolbar { display:none; } 
+        body { background: white; padding:0; } 
+/* Skjul KI-knappene ved utskrift, da de ikke gir mening på papir */
+    .btn { display: none !important; }
+    /* Sørg for at de røde boksene på side 3 ikke blir grå (tving farger) */
+    .analyse-section { -webkit-print-color-adjust: exact; }
+.hover-bilde {
+        display: none !important;}
+        .analyse-section { box-shadow:none; margin:0; width: 297mm; height: 210mm; } 
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } 
+    }
+</style>
+            </head>
+            <body>
+                <div class="toolbar">
+                    <button onclick="window.print()" style="background:#2980b9;" class="btn-tool">🖨️ Skriv ut / Lagre PDF</button>
+                    <a href="${oppgaveSti}" target="_blank" style="background:#8e44ad;" class="btn-tool">📄 Se prøve</a>
+                    ${harFasit ? `<a href="${fasitSti}" target="_blank" style="background:#2c3e50;" class="btn-tool">✅ Se fasit</a>` : ''}
+                    <button onclick="window.close()" class="btn-tool btn-grey">Lukk</button>
                 </div>
-            </div>
-        </div>
+                <div class="analyse-section">${htmlSide1}</div>
+                <div class="analyse-section">${htmlSide2}</div>
+                <div class="analyse-section">${htmlSide3}</div>
+                <div class="analyse-section">${htmlSide4}</div>
+            </body>
+            </html>`;
 
-        <script>
-            const multiData = ${JSON.stringify(matteData_multi)};
-            const aktivtTrinn = "trinn${t_clean}";
+        win.document.write(fullHtml);
+        win.document.close();
 
-            function aapneMultiModal() {
-                const modal = document.getElementById('multiModal');
-                const meny = document.getElementById('multiMenyInnhold');
-                modal.style.display = 'block';
+    } catch (error) {
+        console.error("Feil i analyse-generering:", error);
+        alert("Feil: " + error.message);
+    }
+}
 
-                if (meny.innerHTML === "") {
-                    let menyHtml = "<h3>Multi " + aktivtTrinn.replace('trinn', '') + ". trinn</h3>";
-                    ["grunnbokA", "grunnbokB"].forEach(bokKey => {
-                        if (!multiData[aktivtTrinn] || !multiData[aktivtTrinn][bokKey]) return;
-                        const bok = multiData[aktivtTrinn][bokKey];
-                        menyHtml += '<div style="color:#27ae60; font-weight:bold; margin-top:20px; border-bottom: 2px solid #27ae60;">' + bok.tittel + '</div>';
-                        bok.innhold.forEach(kap => {
-                            menyHtml += '<div class="kapittel-overskrift">Kap ' + kap.kapittel + ': ' + kap.tittel + '</div>';
-                            kap.emner.forEach(emne => {
-                                menyHtml += '<button class="emne-knapp" onclick="visMultiSide(\\'' + bokKey + '\\', ' + emne.side + ')">' + 
-                                             '<span style="color:#666; width: 35px; display:inline-block;">s. ' + emne.side + '</span> ' + emne.navn + '</button>';
-                            });
-                        });
-                    });
-                    meny.innerHTML = menyHtml || "<p>Ingen Multi-data funnet.</p>";
-                }
-            }
-
-            function visMultiSide(bokKey, side) {
-                const trinnNum = aktivtTrinn.replace('trinn', '');
-                const bokstav = bokKey.endsWith('A') ? 'A' : 'B';
-                const mappe = "Multi_" + trinnNum + bokstav;
-                const filnavn = mappe + "_side_" + side.toString().padStart(3, '0') + ".jpg";
-                const sti = "Multi/" + mappe + "/" + filnavn;
-                document.getElementById('multiBildeVisning').src = sti;
-            }
-
-            function lukkMulti() {
-                document.getElementById('multiModal').style.display = 'none';
-            }
-
-            window.onclick = function(event) {
-                if (event.target == document.getElementById('multiModal')) lukkMulti();
-            }
-        </script>
-    </body>
-    </html>`;
-
-win.document.write(fullHtml);
-win.document.close();
-// --- ANALYSE FERDIG!---
 
 function lukkAdmin() {
     // 1. Skjul admin-panelene og grafen
