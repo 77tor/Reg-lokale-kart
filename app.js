@@ -116,19 +116,30 @@ auth.onAuthStateChanged(user => {
         document.getElementById('mainContent').style.display = 'block';
         localStorage.setItem('brukerEpost', user.email);
 
-        // 2. Finn skoleår
-        const idag = new Date();
-        const aar = idag.getFullYear();
-        const skoleaar = (idag.getMonth() >= 7) ? `${aar}-${aar + 1}` : `${aar - 1}-${aar}`;
-        const ansatteListe = window.ansatteData && window.ansatteData[skoleaar];
+        // 2. Finn skoleår (Sjekker URL først, deretter dagens dato)
+        const params = new URLSearchParams(window.location.search);
+        let valgtSkoleaar;
+
+        if (params.has('aar')) {
+            valgtSkoleaar = params.get('aar'); // Bruk året fra lenken
+            console.log("Bruker skoleår fra URL:", valgtSkoleaar);
+        } else {
+            const idag = new Date();
+            const aar = idag.getFullYear();
+            valgtSkoleaar = (idag.getMonth() >= 7) ? `${aar}-${aar + 1}` : `${aar - 1}-${aar}`;
+            console.log("Bruker beregnet skoleår:", valgtSkoleaar);
+        }
+
+        const ansatteListe = window.ansatteData && window.ansatteData[valgtSkoleaar];
         
-        // 3. Finn profilen basert på e-post (IKKE navn)
+        // 3. Finn profilen basert på e-post
         const brukerProfil = ansatteListe?.find(a => {
             const loginMail = user.email.toLowerCase();
-            const hovedMail = a.epost.toLowerCase();
+            const hovedMail = a.epost ? a.epost.toLowerCase() : "";
             if (hovedMail === loginMail) return true;
+            
             if (Array.isArray(a.paloggingsmail)) {
-                return a.paloggingsmail.some(m => m.toLowerCase() === loginMail);
+                return a.paloggingsmail.some(m => m && m.toLowerCase() === loginMail);
             } else if (a.paloggingsmail) {
                 return a.paloggingsmail.toLowerCase() === loginMail;
             }
@@ -146,10 +157,18 @@ auth.onAuthStateChanged(user => {
         oppdaterAlleAarsMenyer(); 
         registrerInnlogging(user); 
         hentRegister(); 
-        hentData();     
+        
+        // --- VIKTIG ENDRING HER ---
+        // Hvis vi har URL-parametre, la sjekkUrlParametere styre hentData
+        // Hvis ikke, kjør hentData som vanlig for standard-valg
+        if (params.has('aar')) {
+            sjekkUrlParametere(); 
+        } else {
+            hentData();      
+        }
 
     } else {
-        // ... (din else-blokk som nullstiller alt) ...
+        // ... din eksisterende else-blokk ...
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('mainContent').style.display = 'none';
         document.getElementById('userInfo').innerText = "";
@@ -161,7 +180,6 @@ auth.onAuthStateChanged(user => {
 
         lukkKonto();
         lukkVeiledning();
-        // lukkVelkomst(); // Inkluder denne hvis funksjonen eksisterer
     }
 });
 
@@ -5350,36 +5368,55 @@ function sjekkUrlParametere() {
     const params = new URLSearchParams(window.location.search);
     
     if (params.has('aar') && params.has('fag')) {
-        console.log("Fant prøve-link, setter verdier...");
+        const aarFraUrl = params.get('aar');
+        console.log("Prøver å tvinge skoleår til:", aarFraUrl);
         
-        const feltMappings = {
-            'mAar': params.get('aar'),
-            'mPeriode': params.get('periode'),
-            'mFag': params.get('fag'),
-            'mTrinn': params.get('trinn'),
-            'mKlasse': params.get('klasse')
+        const mAar = document.getElementById('mAar');
+        
+        // Funksjon som setter verdiene og kjører hentData
+        const settVerdierOgHent = () => {
+            const feltMappings = {
+                'mAar': aarFraUrl,
+                'mPeriode': params.get('periode'),
+                'mFag': params.get('fag'),
+                'mTrinn': params.get('trinn'),
+                'mKlasse': params.get('klasse')
+            };
+
+            for (const [id, verdi] of Object.entries(feltMappings)) {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.value = verdi;
+                    // Trigger en 'change' event manuelt i tilfelle andre script lytter
+                    element.dispatchEvent(new Event('change'));
+                }
+            }
+
+            // Kjør hentData etter en liten pause så alt rekker å sette seg
+            setTimeout(() => {
+                if (typeof hentData === "function") {
+                    console.log("Henter data for spesifikt år fra URL...");
+                    hentData();
+                }
+                
+                // Rens URL til slutt
+                const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                window.history.replaceState({path: cleanUrl}, '', cleanUrl);
+            }, 200);
         };
 
-        for (const [id, verdi] of Object.entries(feltMappings)) {
-            const element = document.getElementById(id);
-            if (element) {
-                element.value = verdi;
-            }
+        // Hvis mAar-menyen er tom eller fortsatt laster, vent litt på den
+        if (mAar && mAar.options.length <= 1) {
+            console.log("Venter på at år-menyen skal fylles...");
+            const sjekkIntervall = setInterval(() => {
+                if (mAar.options.length > 1) {
+                    clearInterval(sjekkIntervall);
+                    settVerdierOgHent();
+                }
+            }, 100);
+        } else {
+            settVerdierOgHent();
         }
-
-        // Trigger henting av data
-        setTimeout(() => {
-            if (typeof hentData === "function") {
-                hentData();
-            }
-            
-            // --- NYTT: RENS ADRESSELINJEN ---
-            // Dette fjerner ?aar=... osv fra URL-en så den blir "ren" igjen
-            const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-            window.history.replaceState({path: cleanUrl}, '', cleanUrl);
-            console.log("URL er nå renset.");
-            
-        }, 300);
     }
 }
 
