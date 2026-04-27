@@ -3325,26 +3325,30 @@ async function kjorAdminRapport(type) {
 
 // --- ALLE ÅR _ MENY FRA GLOBAL_AAR ---
 function oppdaterAlleAarsMenyer() {
-    // 1. Hent den dynamiske listen fra din eksisterende funksjon i Global_aar.js
     const alleAar = hentSkoleaarFraRegister(); 
-    
-    // 2. Liste over alle ID-er som skal fylles med årstall
-    // 'adminAar' er menyen for Årsrapport
-    // 'teAar' er menyen for Total Eksport
-    // 'compAar' er menyen for Sammenligning
-    // 'mAar' er hovedmenyen din
     const menyer = ['mAar', 'teAar', 'adminAar', 'compAar'];
+    
+    // Sjekk om det ligger et år i URL-en
+    const params = new URLSearchParams(window.location.search);
+    const aarFraUrl = params.get('aar');
 
     menyer.forEach(id => {
-        // Bruk din egen fyllDropdown-funksjon!
         fyllDropdown(id, alleAar);
         
-        // Sett Global_aar som forhåndsvalgt hvis den finnes
         const meny = document.getElementById(id);
-        if (meny && typeof Global_aar !== 'undefined') {
-            meny.value = Global_aar;
+        if (meny) {
+            if (aarFraUrl && id === 'mAar') {
+                // Hvis vi har en link, bruk året fra linken på hovedmenyen
+                meny.value = aarFraUrl;
+            } else if (typeof Global_aar !== 'undefined') {
+                // Ellers bruk standard globalt år
+                meny.value = Global_aar;
+            }
         }
     });
+
+    // KJØR DENNE HER: Nå er alle menyer garantert ferdig fylt og satt
+    sjekkUrlParametere();
 }
 
 window.addEventListener('load', () => {
