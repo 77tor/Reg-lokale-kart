@@ -704,7 +704,6 @@ async function tegnTabell() {
     const vPeriode = document.getElementById('mPeriode').value;
     const vTrinn = document.getElementById('mTrinn').value;
     const vKlasse = document.getElementById('mKlasse').value;
-
     const tHead = document.getElementById('tHead');
     const tBody = document.getElementById('tBody');
     const actionButtons = document.getElementById('actionButtons'); // Referanse til knapperaden
@@ -732,14 +731,16 @@ async function tegnTabell() {
     oppdaterLaaseVisning(erLaast);
 
     // --- LOGIKK FOR Å HENTE OPPSETT ---
-    const aarIMal = oppgaveStruktur[vAar] ? vAar : "2025-2026";
-    const oppsett = (oppgaveStruktur[aarIMal] && oppgaveStruktur[aarIMal][vFag] && oppgaveStruktur[aarIMal][vFag][vPeriode]) 
-                    ? oppgaveStruktur[aarIMal][vFag][vPeriode][vTrinn] : null;
+    // ENDRET: Vi bruker vAar direkte. Hvis den ikke finnes i oppgaveStruktur, gir vi feilmelding
+    // i stedet for å tvinge den til 2025-2026.
+    const oppsett = (oppgaveStruktur[vAar] && oppgaveStruktur[vAar][vFag] && oppgaveStruktur[vAar][vFag][vPeriode]) 
+                    ? oppgaveStruktur[vAar][vFag][vPeriode][vTrinn] : null;
 
-    if (!oppsett) {
-        tBody.innerHTML = `<tr><td colspan='100%'>Fant ikke mal for ${vFag} i ${aarIMal}.</td></tr>`;
-        return;
-    }
+if (!oppsett) {
+    tBody.innerHTML = `<tr><td colspan='100%'>Fant ikke mal for ${vFag} i skoleåret ${vAar}.</td></tr>`;
+    if (actionButtons) actionButtons.style.display = 'none'; // Skjul knapper hvis mal mangler
+    return;
+}
 
     // 2. LAG TABELLHODE
     let hode = `<tr><th style="text-align:left">Elevnavn</th>`;
