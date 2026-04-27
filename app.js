@@ -582,19 +582,32 @@ function oppdaterHistorikk(epost) {
 
     let historikkHtml = "";
     const gjennomfoerteKlasser = [];
-    
-    // 1. Bla gjennom hele ansatteData (alle årstall)
-    // ansatteData er objektet fra ansatt.js
+    const innloggetEpostClean = epost ? epost.toLowerCase() : "";
+
+    // 1. Bla gjennom alle år i ansatteData
     for (const aar in window.ansatteData) {
         const listeForAar = window.ansatteData[aar];
         if (Array.isArray(listeForAar)) {
             listeForAar.forEach(ansatt => {
-                // Sjekk om e-posten matcher hoved-epost eller paloggingsmail
-                const erMatch = ansatt.epost.toLowerCase() === epost || 
-                               (Array.isArray(ansatt.paloggingsmail) && ansatt.paloggingsmail.some(m => m.toLowerCase() === epost)) ||
-                               (ansatt.paloggingsmail && ansatt.paloggingsmail.toLowerCase() === epost);
+                
+                // --- SIKKER SJEKK AV E-POST ---
+                let erMatch = false;
+                
+                // Sjekk hoved-epost
+                if (ansatt.epost && ansatt.epost.toLowerCase() === innloggetEpostClean) {
+                    erMatch = true;
+                }
+                
+                // Sjekk paloggingsmail (håndterer både Array og String)
+                if (!erMatch && ansatt.paloggingsmail) {
+                    if (Array.isArray(ansatt.paloggingsmail)) {
+                        erMatch = ansatt.paloggingsmail.some(m => m && m.toLowerCase() === innloggetEpostClean);
+                    } else if (typeof ansatt.paloggingsmail === 'string') {
+                        erMatch = ansatt.paloggingsmail.toLowerCase() === innloggetEpostClean;
+                    }
+                }
 
-                // Hvis match og vedkommende er kontaktlærer dette året
+                // Hvis match og vedkommende er kontaktlærer
                 if (erMatch && ansatt.kontaktlaerer && ansatt.kontaktlaerer !== "Ingen") {
                     gjennomfoerteKlasser.push({ 
                         skoleaar: aar, 
@@ -605,19 +618,19 @@ function oppdaterHistorikk(epost) {
         }
     }
 
-    // 2. Vis/skjul seksjonen basert på om de er/har vært kontaktlærer
+    // 2. Vis/skjul seksjonen
     if (gjennomfoerteKlasser.length === 0) {
         historikkSeksjon.style.display = "none";
         return;
     }
     historikkSeksjon.style.display = "block";
 
-    // 3. Hent prøver fra din lagring (eks: localStorage.getItem('alleAnalyser'))
-    // MERK: Sørg for at 'alleAnalyser' inneholder objekter med .skoleaar og .klasse
+    // 3. Hent prøver fra localStorage
     const alleLagrede = JSON.parse(localStorage.getItem('alleAnalyser') || "[]");
     
     const relevante = alleLagrede.filter(p => {
         return gjennomfoerteKlasser.some(k => 
+            p.klasse && k.klasse && 
             p.klasse.toLowerCase() === k.klasse.toLowerCase() && 
             p.skoleaar === k.skoleaar
         );
@@ -625,16 +638,19 @@ function oppdaterHistorikk(epost) {
 
     // 4. Bygg listen
     if (relevante.length > 0) {
+        // Sorterer slik at nyeste skoleår kommer øverst
+        relevante.sort((a, b) => b.skoleaar.localeCompare(a.skoleaar));
+
         relevante.forEach(p => {
             const navn = `${p.fag}-${p.klasse}-${p.periode === 'H' ? 'Høst' : 'Vår'}-${p.aarstall}`;
             historikkHtml += `
                 <div style="padding: 8px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; display: flex; align-items: center; justify-content: space-between;">
                     <span style="font-weight: 500;">${navn}</span>
-                    <span style="font-size: 10px; color: #666; background: #e8f5e9; padding: 2px 6px; border-radius: 10px; border: 1px solid #c8e6c9;">${p.skoleaar}</span>
+                    <span style="font-size: 10px; color: #27ae60; background: #e8f5e9; padding: 2px 6px; border-radius: 10px; border: 1px solid #c8e6c9; font-weight: bold;">${p.skoleaar}</span>
                 </div>`;
         });
     } else {
-        historikkHtml = '<p style="color: #999; font-size: 0.85em; padding: 15px; text-align: center;">Kontaktlærer-data funnet, men ingen analyser er lagret for disse klassene ennå.</p>';
+        historikkHtml = '<p style="color: #999; font-size: 0.85em; padding: 15px; text-align: center;">Du er registrert som kontaktlærer, men det er ikke lagret noen analyser for dine klasser i systemet ennå.</p>';
     }
 
     historikkListe.innerHTML = historikkHtml;
