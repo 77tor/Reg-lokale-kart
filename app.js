@@ -2566,20 +2566,22 @@ htmlSide1 += `
                 const totaltSnitt = antallEleverAlleAar > 0 ? (totalSumAlleAar / antallEleverAlleAar).toFixed(1) : "0.0";
                 htmlSide1 += `<td class="col-sum">${totaltSnitt}</td>
             </tr>
-<tr style="font-weight: bold; font-size: 16px;">
-                <td class="col-navn">Snitt for klassen</td>`;
+
+<tr style="font-weight: bold;">
+                <td class="col-navn" style="font-size: 15px !important;">Snitt for klassen</td>`;
                 oppgaveSummer.forEach(s => {
-                    htmlSide1 += `<td>${(s/antall).toFixed(1)}</td>`;
+                    htmlSide1 += `<td style="font-size: 15px !important;">${(s/antall).toFixed(1)}</td>`;
                 });
-                htmlSide1 += `<td class="col-sum">${(totalSumKlasse/antall).toFixed(1)}</td>
+                htmlSide1 += `<td class="col-sum" style="font-size: 15px !important;">${(totalSumKlasse/antall).toFixed(1)}</td>
             </tr>
-            <tr style="font-weight: bold; font-size: 16px;">
-                <td class="col-navn">I % av maks</td>`;
+            <tr style="font-weight: bold;">
+                <td class="col-navn" style="font-size: 15px !important;">I % av maks</td>`;
                 oppgaveSummer.forEach((s, i) => {
-                    htmlSide1 += `<td>${((s/antall)/oppsett.oppgaver[i].maks*100).toFixed(0)}%</td>`;
+                    htmlSide1 += `<td style="font-size: 15px !important;">${((s/antall)/oppsett.oppgaver[i].maks*100).toFixed(0)}%</td>`;
                 });
-                htmlSide1 += `<td class="col-sum">${totalKlasseSnittProsent.toFixed(0)}%</td>
+                htmlSide1 += `<td class="col-sum" style="font-size: 15px !important;">${totalKlasseSnittProsent.toFixed(0)}%</td>
             </tr>
+
         </tbody>
     </table>
 </div>
@@ -3097,6 +3099,13 @@ htmlSide4 += `<div style="text-align:center; margin: 20px 0 40px 0;">
         text-overflow: ellipsis; 
         padding-left: 8px !important;
     }
+
+/* Ny regel som overstyrer standard 9px og gjør teksten fet */
+.stor-rad td {
+    font-size: 14px !important;
+    font-weight: bold !important;
+    padding: 6px 2px !important;
+}
 
     /* Statisk bredde for tall/prosent-kolonner (f.eks. Side 2) */
     .col-tall { 
