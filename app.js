@@ -2557,7 +2557,6 @@ htmlSide1 += `
                 htmlSide1 += `<td class="col-sum"><b>${oppsett.grenseTotal}</b></td>
             </tr>
 
-// --- NY RAD: SNITT FOR PRØVEN (GRÅ) ---
             <tr style="background-color: #f2f2f2; font-weight: bold;">
                 <td class="col-navn">Snitt for prøven (alle år)</td>`;
                 oppgaveSummerAlleAar.forEach(s => {
