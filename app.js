@@ -2142,7 +2142,7 @@ function sendMeldingTilAdmin() {
 }
 
 // --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
-// Denne står nå utenfor, slik at den er ryddig og lett å lese
+// --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
 function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, statuser, alleLogger) {
     let resultat = { htmlTotal: "", htmlIkkeFerdig: "", harApne: false };
     
@@ -2158,9 +2158,8 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
     let sumOppnaaddPoeng = 0;
     let maksMuligPoengForKlassen = 0;
 
-    // Hent makspoeng fra oppsett.js
     let infoFraOppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
-    let korrektMaksPoengPerElev = 30; // Fallback
+    let korrektMaksPoengPerElev = 30; 
 
     if (infoFraOppsett && infoFraOppsett.oppgaver) {
         korrektMaksPoengPerElev = infoFraOppsett.oppgaver.reduce((acc, oppg) => acc + (oppg.maks || 0), 0);
@@ -2168,19 +2167,9 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
 
     Object.entries(eleverObjekt).forEach(([id, node]) => {
         if (id === "laast" || id === "ferdigstilt" || typeof node !== 'object') return;
-
         let råPoeng = node.sum;
         const markertSomIkkeGjennomfoert = node.ikkeGjennomfort === true;
-
-        const harGyldigResultat = (
-            råPoeng !== undefined && 
-            råPoeng !== null && 
-            råPoeng !== "" && 
-            råPoeng !== "undefined" &&
-            råPoeng !== 0 && 
-            råPoeng !== "0" &&
-            !markertSomIkkeGjennomfoert
-        );
+        const harGyldigResultat = (råPoeng !== undefined && råPoeng !== null && råPoeng !== "" && !markertSomIkkeGjennomfoert);
 
         if (harGyldigResultat) {
             const p = parseFloat(råPoeng);
@@ -2197,18 +2186,26 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
         snittVisning = Math.round((sumOppnaaddPoeng / maksMuligPoengForKlassen) * 100) + "%";
     }
 
-    const laerer = finnKontaktlaererForKlasse(fulltKlasseNavn, aar);
-    const laererNavn = laerer ? laerer.navn : "Ikke tildelt";
-    const laererEpost = laerer ? laerer.epost : ""; // Viktig for purre-knappen
+    // --- ENDRET: Henter alle lærere for denne klassen ---
+    const alleLaerere = (window.ansatteData && window.ansatteData[aar]) 
+        ? window.ansatteData[aar].filter(a => a.kontaktlaerer === fulltKlasseNavn.trim().toUpperCase() || a.kontaktlaerer === klasse)
+        : [];
+
+    const laererNavnVisning = alleLaerere.length > 0 
+        ? alleLaerere.map(l => l.navn).join(" / ") 
+        : "Ikke tildelt";
+
+    // MERK: Linjen "const laererEpost = ..." er fjernet fordi vi nå looper gjennom alleLaerere lenger nede
+
     const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
     const erLaast = statusObj.laast || false;
     const statusTekst = erLaast ? "<span style='color:green; font-weight:bold;'>✅ Ferdig</span>" : "<span style='color:red; font-weight:bold;'>⚠️ Pågår</span>";
 
-    // Bygg rad for hovedtabellen
+    // Bygg rad for hovedtabellen - Bruker nå laererNavnVisning
     resultat.htmlTotal = `<tr>
         <td style="text-align:left;">${fag} - ${periode} ${aar}</td>
         <td><b>${fulltKlasseNavn}</b></td>
-        <td>${laererNavn}</td>
+        <td>${laererNavnVisning}</td>
         <td>${antallGjennomfoert} / ${totaltAntallElever}</td>
         <td style="font-weight:bold;">${snittVisning}</td>
         <td>${statusTekst}</td>
@@ -2226,11 +2223,26 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
                 ${Object.values(loggForDenne).map(tid => `<li>Sist sendt: ${tid}</li>`).join('')}
             </ul>` : "";
 
+        let knapperHtml = "";
+        if (alleLaerere.length > 0) {
+            alleLaerere.forEach(l => {
+                if (l.epost) {
+                    knapperHtml += `
+                    <button onclick="sendEpostViaEmailJS('${l.navn}', '${l.epost}', '${proeveNavnFullt}', '${sideUrl}', '${stisti}')" 
+                            class="btn" style="background-color:#27ae60; color:white; border:none; padding:5px 8px; cursor:pointer; border-radius:4px; margin: 2px; font-size: 10px;">
+                        📧 Purr ${l.navn.split(' ')[0]}
+                    </button>`;
+                }
+            });
+        } else {
+            knapperHtml = "Mangler e-post";
+        }
+
         resultat.htmlIkkeFerdig = `<tr>
             <td style="text-align:left;"><b>${fag} (${fulltKlasseNavn})</b><br><small>${periode} ${aar}</small></td>
-            <td>${laererNavn}</td>
+            <td>${laererNavnVisning}</td>
             <td style="text-align:center;">
-                ${laererEpost ? `<button onclick="sendEpostViaEmailJS('${laererNavn}', '${laererEpost}', '${proeveNavnFullt}', '${sideUrl}', '${stisti}')" class="btn" style="background-color:#27ae60; color:white; border:none; padding:5px; cursor:pointer; border-radius:4px;">📧 Send purring</button>${loggHtml}` : "Mangler e-post"}
+                ${knapperHtml}${loggHtml}
             </td>
         </tr>`;
     }
