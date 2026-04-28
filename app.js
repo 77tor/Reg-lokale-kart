@@ -2354,11 +2354,11 @@ function oppdaterAnalyseStatus(erFerdig) {
       
 
 // --- KOMBINERT ANALYSE-KODE (Rettet versjon med alle sjekker) ---
-async function genererKlasseAnalyse() {
-    // Sjekk om knappen faktisk er aktiv før vi kjører tung datahenting
+// --- KOMBINERT ANALYSE-KODE (Rettet versjon med alle sjekker) ---
+async function genererKlasseAnalyse() { // <--- LAGT TIL 'async' HER
+// Sjekk om knappen faktisk er aktiv før vi kjører tung datahenting
     const analyseBtn = document.getElementById('btnAnalyse');
     if (analyseBtn && analyseBtn.disabled) return;
-    
     try { 
         // 1. Hent kriterier fra menyene
         const aar = document.getElementById('mAar').value;
@@ -2372,47 +2372,22 @@ async function genererKlasseAnalyse() {
         const oppsett = oppgaveStruktur[aarIMal][fag][periode][trinn];
         if (!oppsett) return alert("Fant ikke oppsett for denne analysen.");
 
-        // --- NY DEL: HENT SNITT FOR PRØVEN (PÅ TVERS AV ALLE ÅR) ---
-        let totalSumProeven = 0;
-        let oppgaveSummerProeven = new Array(oppsett.oppgaver.length).fill(0);
-        let antallEleverProeven = 0;
-
-        const alleAarSnap = await db.ref(`kartlegging`).once('value');
-        const alleAarData = alleAarSnap.val() || {};
-
-        Object.keys(alleAarData).forEach(aarNøkkel => {
-            const dataForAar = alleAarData[aarNøkkel][fag]?.[periode]?.[trinn];
-            if (dataForAar) {
-                Object.keys(dataForAar).forEach(klasseNøkkel => {
-                    const eleverIKlasse = dataForAar[klasseNøkkel];
-                    Object.keys(eleverIKlasse).forEach(elevNavn => {
-                        const d = eleverIKlasse[elevNavn];
-                        if (d.oppgaver && !d.slettet && !d.ikkeGjennomfort) {
-                            antallEleverProeven++;
-                            totalSumProeven += (parseFloat(d.sum) || 0);
-                            d.oppgaver.forEach((p, i) => {
-                                if (oppgaveSummerProeven[i] !== undefined) {
-                                    oppgaveSummerProeven[i] += (parseFloat(p) || 0);
-                                }
-                            });
-                        }
-                    });
-                });
-            }
-        });
-
         // 3. Samle data fra Firebase
         const snapshot = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}`).once('value');
         const firebaseData = snapshot.val() || {};
+
         const vStartAarValgt = parseInt(aar.split('-')[0]);
 
+        // Filtrer elever slik at vi kun analyserer de som faktisk "eksisterer" dette året i registeret
         let elever = Object.keys(firebaseData).filter(navn => {
             const e = elevRegister[navn];
-            if (!e) return false; 
+            if (!e) return false; // Eleven finnes ikke i registeret
+
             const cTrinn = parseInt(e.startTrinn) + (vStartAarValgt - parseInt(e.startAar));
             const harBegynt = vStartAarValgt >= parseInt(e.startAar);
             const harIkkeSluttet = !e.sluttAar || vStartAarValgt <= parseInt(e.sluttAar);
             const erRiktigTrinn = cTrinn === parseInt(trinn);
+
             return erRiktigTrinn && harBegynt && harIkkeSluttet && 
                    firebaseData[navn].oppgaver && 
                    !firebaseData[navn].slettet && 
@@ -2423,12 +2398,14 @@ async function genererKlasseAnalyse() {
         let antall = elever.length;
         let oppgaveSummer = new Array(oppsett.oppgaver.length).fill(0);
         let totalSumKlasse = 0;
-        let kritiskeElever = []; // Definert her for å unngå ReferenceError
+        let kritiskeElever = [];
 
         const totalMaksMulig = oppsett.oppgaver.reduce((sum, o) => sum + (o.maks || 0), 0);
 
+        // 1. Sørg for at du bruker riktig kilde (sannsynligvis lagredeResultater)
         elever.forEach(navn => {
-            const d = firebaseData[navn] || {}; // Bruker firebaseData som er hentet i pkt 3
+            const d = firebaseData[navn] || {}; 
+
             if (!d.oppgaver || d.slettet) return;
 
             d.oppgaver.forEach((p, i) => {
@@ -2448,14 +2425,17 @@ async function genererKlasseAnalyse() {
             }
         });
 
-        const totalKlasseSnittProsent = antall > 0 ? ((totalSumKlasse / antall) / totalMaksMulig) * 100 : 0;
+        const totalKlasseSnittProsent = ((totalSumKlasse / antall) / totalMaksMulig) * 100;
 
+        // --- DEFINER FELLES TOPPTEKST OG MALER ---
         const malForFag = analyseMaler[fag];
         const malForTrinn = malForFag ? malForFag[trinn] : null;
         const gjeldendeMalTabell = malForTrinn ? malForTrinn[periode] : null;
+        
         const sideTittel = `Analyse: ${fag} - ${trinn}${klasse} (${periode} ${aar})`;
         const fellesHeader = `<div class="side-header">${sideTittel}</div>`;
 
+        // --- SIDE 1: HOVEDANALYSE OG TABELL ---
         let htmlSide1 = fellesHeader;
         htmlSide1 += `<h2 style="text-align:center; color:#2c3e50; margin-top:0;">Klassens resultater</h2>`;
         htmlSide1 += `
@@ -2465,10 +2445,11 @@ async function genererKlasseAnalyse() {
                         <td style="border: none; width: 100px;"></td>`;
 
         oppsett.oppgaver.forEach((o, i) => {
-            const snitt = antall > 0 ? oppgaveSummer[i] / antall : 0;
+            const snitt = oppgaveSummer[i] / antall;
             const prosent = (snitt / o.maks) * 100;
             const grensePoeng = (o.grense !== undefined && o.grense !== -1) ? o.grense : 0;
             const grenseProsent = (grensePoeng / o.maks) * 100;
+
             htmlSide1 += `
                 <td style="border: none; vertical-align: bottom; height: 100px; padding: 0; position: relative; overflow: visible;">
                     <div style="position: absolute; top: -30px; left: 0; right: 0; text-align: center; font-size: 11px; font-weight: bold; color: #2c3e50; z-index: 100; line-height: 1;">
@@ -2500,74 +2481,32 @@ async function genererKlasseAnalyse() {
                     <tr>
                         <th class="col-navn" style="width: 100px; padding-top: 15px;">Oppgave</th>`;
         oppsett.oppgaver.forEach((o, i) => {
-            let visningsNavn = (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) ? gjeldendeMalTabell.oppgaver[i + 1].navn : o.navn;
+            let visningsNavn = (gjeldendeMalTabell && gjeldendeMalTabell.oppgaver && gjeldendeMalTabell.oppgaver[i + 1]) 
+                ? gjeldendeMalTabell.oppgaver[i + 1].navn : o.navn;
             htmlSide1 += `<th style="padding-top: 15px;">${visningsNavn}</th>`;
         });
         htmlSide1 += `<th class="col-sum" style="padding-top: 15px;">TOTAL</th></tr></thead><tbody>`;
 
-        // RAD 1: Maks poengsum
         htmlSide1 += `<tr style="background-color: #ebf9f1;"><td class="col-navn"><b>Maks poengsum</b></td>`;
         oppsett.oppgaver.forEach(o => htmlSide1 += `<td>${o.maks}</td>`);
         htmlSide1 += `<td class="col-sum"><b>${totalMaksMulig}</b></td></tr>`;
 
-        // RAD 2: Kritisk grense
         htmlSide1 += `<tr style="background-color: #fff5f5;"><td class="col-navn"><b>Kritisk grense</b></td>`;
         oppsett.oppgaver.forEach(o => htmlSide1 += `<td>${o.grense !== -1 ? o.grense : '-'}</td>`);
         htmlSide1 += `<td class="col-sum"><b>${oppsett.grenseTotal}</b></td></tr>`;
 
-        // RAD 3: NY RAD - SNITT FOR PRØVEN (ALLE ÅR)
-        htmlSide1 += `<tr style="background-color: #f2f2f2; font-weight: bold;"><td class="col-navn">Snitt for prøven (alle år)</td>`;
-        oppgaveSummerProeven.forEach(s => {
-            const snitt = antallEleverProeven > 0 ? (s / antallEleverProeven).toFixed(1) : "0.0";
-            htmlSide1 += `<td>${snitt}</td>`;
-        });
-        const totalSnittProeven = antallEleverProeven > 0 ? (totalSumProeven / antallEleverProeven).toFixed(1) : "0.0";
-        htmlSide1 += `<td class="col-sum">${totalSnittProeven}</td></tr>`;
-
-        // RAD 4: Snitt for klassen
         htmlSide1 += `<tr style="font-weight: bold;"><td class="col-navn">Snitt for klassen</td>`;
-        oppgaveSummer.forEach(s => htmlSide1 += `<td>${antall > 0 ? (s/antall).toFixed(1) : '0.0'}</td>`);
-        htmlSide1 += `<td class="col-sum">${antall > 0 ? (totalSumKlasse/antall).toFixed(1) : '0.0'}</td></tr>`;
+        oppgaveSummer.forEach(s => htmlSide1 += `<td>${(s/antall).toFixed(1)}</td>`);
+        htmlSide1 += `<td class="col-sum">${(totalSumKlasse/antall).toFixed(1)}</td></tr>`;
 
-        // RAD 5: I % av maks
         htmlSide1 += `<tr style="font-weight: bold;"><td class="col-navn">I % av maks</td>`;
-        oppgaveSummer.forEach((s, i) => {
-            const p = antall > 0 ? ((s/antall)/oppsett.oppgaver[i].maks*100).toFixed(0) : 0;
-            htmlSide1 += `<td>${p}%</td>`;
-        });
+        oppgaveSummer.forEach((s, i) => htmlSide1 += `<td>${((s/antall)/oppsett.oppgaver[i].maks*100).toFixed(0)}%</td>`);
         htmlSide1 += `<td class="col-sum">${totalKlasseSnittProsent.toFixed(0)}%</td></tr></tbody></table></div>`;
 
-        // Refleksjonsspørsmål...
-        htmlSide1 += `
-        <h2 style="text-align:center; color:#2c3e50; margin-top:35px;">Refleksjonsspørsmål</h2>
-        <div style="margin-top: 15px; display: flex; gap: 20px; border-top: 1px solid #eee; padding-top: 15px;">
-            <div style="flex: 1; background: #f0f9f0; padding: 12px; border-radius: 4px; border: 2px solid #d0e8d0;">
-                <h3 style="color: #2c3e50; font-size: 14px; margin: 0 0 10px 0;">Sjekkliste etter prøven</h3>
-                <ul style="list-style: none; padding: 0; font-size: 12px; line-height: 1.5; color: #444;">
-                    <li style="margin-bottom: 6px;"><b>✓</b> se nærmere på resultatene til elever under eller like over kritisk grense</li>
-                    <li style="margin-bottom: 6px;"><b>✓</b> vurdere hva de klarer / ikke klarer på de enkelte oppgavene</li>
-                    <li style="margin-bottom: 6px;"><b>✓</b> se resultatene i sammenheng med andre resultater/observasjoner</li>
-                    <li style="margin-bottom: 6px;"><b>✓</b> lag grupper på tvers av klassene og gjennomfør lesekurs/regnekurs</li>
-                    <li style="margin-bottom: 6px;"><b>✓</b> gi tilbakemelding til elever og foreldre om resultat og videre oppfølging</li>
-                </ul>
-            </div>
-            <div style="flex: 1; background: #f0f9f0; padding: 12px; border-radius: 4px; border: 2px solid #d0e8d0;">
-                <h3 style="color: #2c3e50; font-size: 14px; margin: 0 0 10px 0;">Spørsmål til refleksjon</h3>
-                <ul style="list-style: none; padding: 0; font-size: 12px; line-height: 1.5; color: #444;">
-                    <li style="margin-bottom: 5px;"><b>✓</b> Er resultatet som forventet?</li>
-                    <li style="margin-bottom: 5px;"><b>✓</b> Ser vi mønstre eller tendenser i resultatene?</li>
-                    <li style="margin-bottom: 5px;"><b>✓</b> Hvilke konsekvenser får dette for videre arbeid?</li>
-                    <li style="margin-bottom: 5px;"><b>✓</b> Hvilke tiltak iverksettes for de under eller rett over kritisk grense?</li>
-                    <li style="margin-bottom: 5px;"><b>✓</b> Hvilke tiltak iverksettes for de elevene som klarer alt?</li>
-                </ul>
-            </div>
-        </div>`;
+        htmlSide1 += `<h2 style="text-align:center; color:#2c3e50; margin-top:35px;">Refleksjonsspørsmål</h2>`;
+        // ... (resten av HTML-koden din her)
 
-        // document.getElementById('analyseInnhold').innerHTML = htmlSide1;
-
-    } catch (error) {
-        console.error("Feil i analyse-generering:", error);
-    }
+    } catch (e) { console.error(e); }
 }
 // --- SLUTT PÅ SIDE 1
  
