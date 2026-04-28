@@ -2568,18 +2568,18 @@ htmlSide1 += `
             </tr>
 
 <tr style="font-weight: bold;">
-                <td class="col-navn" style="font-size: 10px !important;">Snitt for klassen</td>`;
+                <td class="col-navn" style="font-size: 11px !important;">Snitt for klassen</td>`;
                 oppgaveSummer.forEach(s => {
-                    htmlSide1 += `<td style="font-size: 10px !important;">${(s/antall).toFixed(1)}</td>`;
+                    htmlSide1 += `<td style="font-size: 11px !important;">${(s/antall).toFixed(1)}</td>`;
                 });
-                htmlSide1 += `<td class="col-sum" style="font-size: 15px !important;">${(totalSumKlasse/antall).toFixed(1)}</td>
+                htmlSide1 += `<td class="col-sum" style="font-size: 11px !important;">${(totalSumKlasse/antall).toFixed(1)}</td>
             </tr>
             <tr style="font-weight: bold;">
-                <td class="col-navn" style="font-size: 10px !important;">I % av maks</td>`;
+                <td class="col-navn" style="font-size: 11px !important;">I % av maks</td>`;
                 oppgaveSummer.forEach((s, i) => {
-                    htmlSide1 += `<td style="font-size: 10px !important;">${((s/antall)/oppsett.oppgaver[i].maks*100).toFixed(0)}%</td>`;
+                    htmlSide1 += `<td style="font-size: 11px !important;">${((s/antall)/oppsett.oppgaver[i].maks*100).toFixed(0)}%</td>`;
                 });
-                htmlSide1 += `<td class="col-sum" style="font-size: 15px !important;">${totalKlasseSnittProsent.toFixed(0)}%</td>
+                htmlSide1 += `<td class="col-sum" style="font-size: 11px !important;">${totalKlasseSnittProsent.toFixed(0)}%</td>
             </tr>
 
         </tbody>
