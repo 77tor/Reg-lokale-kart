@@ -2566,15 +2566,14 @@ htmlSide1 += `
                 const totaltSnitt = antallEleverAlleAar > 0 ? (totalSumAlleAar / antallEleverAlleAar).toFixed(1) : "0.0";
                 htmlSide1 += `<td class="col-sum">${totaltSnitt}</td>
             </tr>
-
-            <tr style="font-weight: bold;">
+<tr style="font-weight: bold; font-size: 16px;">
                 <td class="col-navn">Snitt for klassen</td>`;
                 oppgaveSummer.forEach(s => {
                     htmlSide1 += `<td>${(s/antall).toFixed(1)}</td>`;
                 });
                 htmlSide1 += `<td class="col-sum">${(totalSumKlasse/antall).toFixed(1)}</td>
             </tr>
-            <tr style="font-weight: bold;">
+            <tr style="font-weight: bold; font-size: 16px;">
                 <td class="col-navn">I % av maks</td>`;
                 oppgaveSummer.forEach((s, i) => {
                     htmlSide1 += `<td>${((s/antall)/oppsett.oppgaver[i].maks*100).toFixed(0)}%</td>`;
