@@ -2365,12 +2365,48 @@ async function genererKlasseAnalyse() {
         const trinn = document.getElementById('mTrinn').value;
         const klasse = document.getElementById('mKlasse').value;
 
-
-
         // 2. Hent oppsettet
         const aarIMal = oppgaveStruktur[aar] ? aar : "2025-2026";
         const oppsett = oppgaveStruktur[aarIMal][fag][periode][trinn];
         if (!oppsett) return alert("Fant ikke oppsett for denne analysen.");
+
+// --- ETAPPE 1: HENT SNITT FOR PRØVEN PÅ TVERS AV ALLE ÅR ---
+        let totalSumAlleAar = 0;
+        let oppgaveSummerAlleAar = new Array(oppsett.oppgaver.length).fill(0);
+        let antallEleverAlleAar = 0;
+
+        // Hent hele 'kartlegging'-noden for å skanne alle årstall
+        const alleDataSnap = await db.ref(`kartlegging`).once('value');
+        const alleData = alleDataSnap.val() || {};
+
+        // Loop gjennom alle år (f.eks "2024-2025", "2025-2026")
+        Object.keys(alleData).forEach(aarNøkkel => {
+            // Gå direkte til fag -> periode -> trinn for dette året
+            const trinnData = alleData[aarNøkkel][fag]?.[periode]?.[trinn];
+            
+            if (trinnData) {
+                // trinnData inneholder nå alle klasser (A, B, C...)
+                Object.keys(trinnData).forEach(klasseNavn => {
+                    const elever = trinnData[klasseNavn];
+                    
+                    Object.keys(elever).forEach(elevNavn => {
+                        const d = elever[elevNavn];
+                        // Sjekk at eleven har gyldige oppgaver og ikke er slettet
+                        if (d.oppgaver && !d.slettet && !d.ikkeGjennomfort) {
+                            antallEleverAlleAar++;
+                            totalSumAlleAar += (parseFloat(d.sum) || 0);
+                            
+                            d.oppgaver.forEach((p, i) => {
+                                if (oppgaveSummerAlleAar[i] !== undefined) {
+                                    oppgaveSummerAlleAar[i] += (parseFloat(p) || 0);
+                                }
+                            });
+                        }
+                    });
+                });
+            }
+        });
+        // --- SLUTT PÅ ETAPPE 1 ---
 
         // 3. Samle data fra Firebase
 const snapshot = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}`).once('value');
@@ -2520,6 +2556,18 @@ htmlSide1 += `
                 });
                 htmlSide1 += `<td class="col-sum"><b>${oppsett.grenseTotal}</b></td>
             </tr>
+
+// --- NY RAD: SNITT FOR PRØVEN (GRÅ) ---
+            <tr style="background-color: #f2f2f2; font-weight: bold;">
+                <td class="col-navn">Snitt for prøven (alle år)</td>`;
+                oppgaveSummerAlleAar.forEach(s => {
+                    const snitt = antallEleverAlleAar > 0 ? (s / antallEleverAlleAar).toFixed(1) : "0.0";
+                    htmlSide1 += `<td>${snitt}</td>`;
+                });
+                const totaltSnitt = antallEleverAlleAar > 0 ? (totalSumAlleAar / antallEleverAlleAar).toFixed(1) : "0.0";
+                htmlSide1 += `<td class="col-sum">${totaltSnitt}</td>
+            </tr>
+
             <tr style="font-weight: bold;">
                 <td class="col-navn">Snitt for klassen</td>`;
                 oppgaveSummer.forEach(s => {
