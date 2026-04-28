@@ -2558,7 +2558,7 @@ htmlSide1 += `
             </tr>
 
             <tr style="background-color: #f2f2f2; font-weight: bold;">
-                <td class="col-navn">Snitt for prøven (alle år)</td>`;
+                <td class="col-navn">Snitt for prøven</td>`;
                 oppgaveSummerAlleAar.forEach(s => {
                     const snitt = antallEleverAlleAar > 0 ? (s / antallEleverAlleAar).toFixed(1) : "0.0";
                     htmlSide1 += `<td>${snitt}</td>`;
