@@ -3286,13 +3286,22 @@ function genererElevTabell(elevData, fag, aar, periode, trinn) {
         : 0;
 
     let html = `<table style="border: 1px solid #2c3e50; table-layout: fixed; width: 100%; border-collapse: collapse;">
-        <thead>
-            <tr style="background-color: #f8f9fa;">
-                <th style="text-align: left; width: 110px; padding: 3px; font-size: 10px;">Oppgave</th>
-                ${oppsett.oppgaver.map((o, i) => `<th style="font-size: 8px; padding: 2px;">${o.navn || 'O'+(i+1)}</th>`).join('')}
-                <th style="background-color: #2c3e50; color: white; width: 50px; padding: 3px; font-size: 10px;">TOTAL</th>
-            </tr>
-        </thead>
+<thead>
+    <tr style="background-color: #f8f9fa;">
+        <th style="text-align: left; width: 110px; padding: 3px; font-size: 10px;">Område</th>
+        ${oppsett.oppgaver.map((o, i) => {
+            // Slå opp navn i malen
+            const navnFraMal = analyseMaler[fag]?.[trinn]?.[periode]?.oppgaver?.[(i + 1).toString()]?.navn;
+            const kortNavn = navnFraMal || o.navn || 'O' + (i + 1);
+            
+            return `<th style="font-size: 8px; padding: 2px; height: 45px; vertical-align: bottom; text-align: center;">
+                        <div style="writing-mode: vertical-rl; transform: rotate(180deg); margin: 0 auto;">${kortNavn}</div>
+                    </th>`;
+        }).join('')}
+        <th style="background-color: #2c3e50; color: white; width: 50px; padding: 3px; font-size: 10px;">TOTAL</th>
+    </tr>
+</thead>
+
         <tbody style="font-size: 10px;">
             <tr style="background-color: #f1f8f5; line-height: 1.2;">
                 <td style="text-align: left; font-weight: bold; padding: 2px;">Maks</td>
@@ -3338,28 +3347,56 @@ function genererElevTabell(elevData, fag, aar, periode, trinn) {
 }
 // --- Slutt hjelpefunksjon---
 
+// --- Start tiltaksliste---
 function genererTiltaksListe(elevData, fag, aar, periode, trinn) {
     const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
     if (!oppsett || !elevData.oppgaver) return "";
 
-    let svakeOppgaver = [];
+    let tiltakHtml = "";
+    let harUnder70 = false;
+
+    // Finn riktig mal fra analyseMaler
+    const mal = analyseMaler[fag]?.[trinn]?.[periode];
+
     oppsett.oppgaver.forEach((o, i) => {
-        const poeng = parseFloat(elevData.oppgaver[i]) || 0;
+        const poeng = elevData.oppgaver[i] || 0;
         const prosent = (poeng / o.maks) * 100;
+
         if (prosent < 70) {
-            svakeOppgaver.push(`Oppg ${i+1} (${o.navn || 'Ferdighet'})`);
+            harUnder70 = true;
+            
+            // Hent navn og forklaring fra analyseMaler basert på oppgavenummer (i+1)
+            const oppgaveInfo = mal?.oppgaver?.[(i + 1).toString()];
+            const visningsNavn = oppgaveInfo?.navn || o.navn || `Oppgave ${i + 1}`;
+            const forklaring = oppgaveInfo?.forklaring 
+                ? `<div style="font-size: 10px; color: #555; margin-top: 2px; font-style: italic; line-height: 1.2;">${oppgaveInfo.forklaring}</div>` 
+                : "";
+
+            tiltakHtml += `
+                <li style="margin-bottom: 10px; list-style-type: none; border-left: 3px solid #e74c3c; padding-left: 10px;">
+                    <span style="font-weight: bold; font-size: 11px;">${visningsNavn}</span> 
+                    <span style="color: #c0392b; font-weight: bold;">(${Math.round(prosent)}%)</span>
+                    ${forklaring}
+                </li>`;
         }
     });
 
-    if (svakeOppgaver.length === 0) return "<p style='color: green; font-size: 10px; font-weight:bold;'>✔️ Alle områder over 70%</p>";
+    if (!harUnder70) {
+        return `
+            <div style="background: #f2f9f2; border: 1px solid #27ae60; color: #27ae60; padding: 10px; border-radius: 5px; margin-top: 10px; font-size: 12px; font-weight: bold;">
+                ✅ Eleven mestrer alle deloppgaver (over 70% riktig).
+            </div>`;
+    }
 
-    return `<div class="under-grense">
-        ⚠️ Områder under 70%:
-        <ul style="margin: 5px 0; padding-left: 15px;">
-            ${svakeOppgaver.map(s => `<li>${s}</li>`).join('')}
-        </ul>
-    </div>`;
+    return `
+        <div style="margin-top: 10px; background: #fffaf0; border: 1px solid #f39c12; padding: 10px; border-radius: 5px;">
+            <div style="font-weight: bold; margin-bottom: 8px; color: #d35400; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid #f39c12; padding-bottom: 3px;">
+                Fokusområder (Under 70% mestring):
+            </div>
+            <ul style="margin: 0; padding: 0;">${tiltakHtml}</ul>
+        </div>`;
 }
+
 
 // --- Hovedfunksjon ---
 async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
