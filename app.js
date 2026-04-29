@@ -3730,12 +3730,11 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                         // Her tvinger vi aksen til å inneholde disse verdiene
                         axis.ticks = [30, 40, 50, 60, 70, 80, 90, 100].map(v => ({ value: v }));
                     },
-                    grid: {
+                   grid: {
                         display: true,
                         drawOnChartArea: true,
-                        // Gjør 100-linjen ekstra tydelig
-                        color: (context) => (context.tick.value === 100 ? '#2c3e50' : '#e0e0e0'),
-                        lineWidth: (context) => (context.tick.value === 100 ? 1.5 : 0.5),
+                        color: '#e0e0e0', // Samme lysegrå farge for alle linjer
+                        lineWidth: 0.5,   // Samme tynne strek for alle linjer
                         drawTicks: true
                     },
                     ticks: { 
