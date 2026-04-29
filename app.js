@@ -3555,6 +3555,8 @@ for (let elevId of sorterteIder) {
 // --- LAG GRAF ---
 async function lagGrafBilde(fag, trinnInfo, elevId, alleData) {
     const canvas = document.getElementById('hiddenChartCanvas');
+    if (!canvas) return ""; // Sikkerhetsmekanisme
+
     canvas.width = 1000;
     canvas.height = 200;
     const ctx = canvas.getContext('2d');
@@ -3564,9 +3566,8 @@ async function lagGrafBilde(fag, trinnInfo, elevId, alleData) {
     let elevDataPunkter = [];
     let snittDataPunkter = [];
 
-    // Rens søkeparametere
     const sokNavn = elevId.trim().toLowerCase();
-    // Trekker ut kun tallet fra "3B" -> "3" (Viktig for din Firebase-struktur)
+    // Gjør om "3A" til tallet 3. Sørger for at vi treffer rett nivå i Firebase.
     const trinnTall = trinnInfo.toString().replace(/\D/g, ''); 
 
     const sorterteAar = Object.keys(alleData).sort(); 
@@ -3575,39 +3576,39 @@ async function lagGrafBilde(fag, trinnInfo, elevId, alleData) {
         const kortAar = aar.split('-')[0].substring(2);
 
         for (let p of databasePerioder) {
-            const periodenode = alleData[aar]?.[fag]?.[p];
-            if (!periodenode) continue;
+            const periodeNode = alleData[aar]?.[fag]?.[p];
+            if (!periodeNode) continue;
 
             let funnetElevProsent = null;
             let alleProsentITrinnet = [];
-            let harDataIPeriode = false;
+            let harData = false;
 
-            // Gå gjennom trinn-nøklene (f.eks. "1", "2", "3")
-            for (let tKey in periodenode) {
-                // Vi sjekker om nøkkelen i FB matcher trinnet vi leter etter
-                if (tKey == trinnTall) {
-                    const klasser = periodenode[tKey];
-                    
-                    for (let klasseKey in klasser) {
-                        const elever = klasser[klasseKey];
-                        for (let id in elever) {
-                            if (typeof elever[id] === 'object' && elever[id].totalProsent !== undefined) {
-                                harDataIPeriode = true;
+            // Går gjennom trinn-nøklene i FB (f.eks. "1", "2", "3")
+            for (let tKey in periodeNode) {
+                // Vi sjekker alle klasser under dette trinnet
+                const klasser = periodeNode[tKey];
+                for (let klasseKey in klasser) {
+                    const elever = klasser[klasseKey];
+                    for (let id in elever) {
+                        if (elever[id] && elever[id].totalProsent !== undefined) {
+                            // Vi samler snitt for det trinnet eleven går på NÅ
+                            if (tKey == trinnTall) {
                                 alleProsentITrinnet.push(elever[id].totalProsent);
-                                
-                                if (id.trim().toLowerCase() === sokNavn) {
-                                    funnetElevProsent = elever[id].totalProsent;
-                                }
+                            }
+                            
+                            // Sjekker om navnet matcher (uavhengig av hvilket trinn de var på før)
+                            if (id.trim().toLowerCase() === sokNavn) {
+                                funnetElevProsent = elever[id].totalProsent;
+                                harData = true;
                             }
                         }
                     }
                 }
             }
 
-            if (harDataIPeriode) {
+            if (harData || alleProsentITrinnet.length > 0) {
                 labels.push(`${p} ${kortAar}`);
                 elevDataPunkter.push(funnetElevProsent);
-                
                 const snitt = alleProsentITrinnet.length > 0 
                     ? Math.round(alleProsentITrinnet.reduce((a, b) => a + b, 0) / alleProsentITrinnet.length) 
                     : null;
@@ -3616,9 +3617,9 @@ async function lagGrafBilde(fag, trinnInfo, elevId, alleData) {
         }
     }
 
-    // Hvis ingen data ble funnet i det hele tatt
-    if (labels.length === 0) return null;
+    if (labels.length === 0) return ""; 
 
+    // Opprett grafen
     const chart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -3647,7 +3648,7 @@ async function lagGrafBilde(fag, trinnInfo, elevId, alleData) {
         options: {
             devicePixelRatio: 2,
             responsive: false,
-            animation: false, // KRITISK for toDataURL
+            animation: false,
             maintainAspectRatio: false,
             scales: { 
                 y: { min: 0, max: 100, ticks: { font: { size: 12 } } },
@@ -3657,21 +3658,24 @@ async function lagGrafBilde(fag, trinnInfo, elevId, alleData) {
         },
         plugins: [{
             id: 'white_bg',
-            beforeDraw: (chart) => {
-                const {ctx} = chart;
+            beforeDraw: (c) => {
+                const {ctx} = c;
                 ctx.save();
                 ctx.globalCompositeOperation = 'destination-over';
                 ctx.fillStyle = 'white';
-                ctx.fillRect(0, 0, chart.width, chart.height);
+                ctx.fillRect(0, 0, c.width, c.height);
                 ctx.restore();
             }
         }]
     });
 
+    // Viktig: Vent litt slik at Chart.js rekker å tegne ferdig på canvaset
     chart.update();
-    const bildeData = canvas.toDataURL('image/png');
-    chart.destroy();
-    return bildeData;
+    
+    // Generer bildet
+    const imgData = canvas.toDataURL('image/png');
+    chart.destroy(); 
+    return imgData;
 }
 
 // --- SLUTT ELEVKORT---
