@@ -3443,7 +3443,6 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
     win.document.write('<html><head><title>Genererer elevkort...</title></head><body><p style="font-family:sans-serif; text-align:center; margin-top:50px;">Henter data og forbereder utskrift...</p></body></html>');
 
     try {
-        // 1. HENT DATA
         const [lesingSnap, regningSnap, totalSnap] = await Promise.all([
             db.ref(`kartlegging/${aar}/Lesing/${periode}/${trinn}/${klasse}`).once('value'),
             db.ref(`kartlegging/${aar}/Regning/${periode}/${trinn}/${klasse}`).once('value'),
@@ -3454,17 +3453,16 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
         const regningData = regningSnap.val() || {};
         const heleDatabasen = totalSnap.val() || {};
         
-        // 2. FORBERED GLOBALE SNITT
         const globalLesingListe = hentGlobaltSnitt(heleDatabasen, 'Lesing', periode, trinn, aar);
         const globalRegningListe = hentGlobaltSnitt(heleDatabasen, 'Regning', periode, trinn, aar);
 
         const elevIder = new Set([...Object.keys(lesingData), ...Object.keys(regningData)]);
         
-        // Sortering
+        // --- FIKSET SORTERING ---
         const sorterteIder = Array.from(elevIder).sort((a, b) => {
             const navnA = (lesingData[a]?.navn || regningData[a]?.navn || "").toLowerCase();
             const navnB = (lesingData[b]?.navn || regningData[b]?.navn || "").toLowerCase();
-            return navnA.localeCompare(navnA);
+            return navnA.localeCompare(navnB); // Sammenlign A med B, ikke A med A
         });
 
         win.document.open();
@@ -3491,61 +3489,56 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
             </div>
             <div class="content-container">`);
 
-for (let elevId of sorterteIder) {
-    if (elevId === 'laast' || elevId === 'ferdigstilt') continue;
-    
-    const elevLes = lesingData[elevId] || {};
-    const elevReg = regningData[elevId] || {};
-    
-    if (!elevLes.oppgaver && !elevReg.oppgaver) continue;
+        for (let elevId of sorterteIder) {
+            if (elevId === 'laast' || elevId === 'ferdigstilt') continue;
+            
+            const elevLes = lesingData[elevId] || {};
+            const elevReg = regningData[elevId] || {};
+            
+            if (!elevLes.oppgaver && !elevReg.oppgaver) continue;
 
-    // 1. Hent rånavnet
-    let raaNavn = elevLes.navn || elevReg.navn || "";
-    
-    // 2. Fjern ordet "Elev" hvis det står først i strengen
-    // Vi bruker .replace() med en "Regular Expression" for å være sikre
-    let rensetNavn = raaNavn.replace(/^Elev\s+/i, '').trim();
+            // --- EKSTRA ROBUST NAVNERENSING ---
+            let raaNavn = (elevLes.navn || elevReg.navn || "").trim();
+            
+            // Fjerner "Elev " (uansett store/små bokstaver) i starten av strengen
+            let utenElev = raaNavn.replace(/^elev\s+/i, "");
 
-    let visningsNavn = "";
+            let visningsNavn = "";
 
-    // 3. Snu navnet hvis det inneholder komma
-    if (rensetNavn.includes(',')) {
-        const navneDeler = rensetNavn.split(',');
-        const etternavn = navneDeler[0].trim();
-        const fornavn = navneDeler[1].trim();
-        visningsNavn = `${fornavn} ${etternavn}`;
-    } else {
-        visningsNavn = rensetNavn || "Elev " + elevId;
-    }
-    // ---------------------------
+            if (utenElev.includes(',')) {
+                const navneDeler = utenElev.split(',');
+                const etternavn = navneDeler[0].trim();
+                const fornavn = navneDeler[1].trim();
+                visningsNavn = `${fornavn} ${etternavn}`;
+            } else {
+                visningsNavn = utenElev || "Elev " + elevId;
+            }
 
-    win.document.write(`
-        <div class="elev-side">
-            <div class="header">
-                <h1>Elevkort: ${visningsNavn}</h1>
-                <span style="font-size: 12px; color: #7f8c8d;">${trinn}${klasse} | ${periode} | Skoleår: ${aar}</span>
-            </div>
-            <div class="fag-del">
-                <h2>📚 Lesing</h2>
-                ${genererElevTabell(elevLes, 'Lesing', aar, periode, trinn, globalLesingListe)}
-                ${genererTiltaksListe(elevLes, 'Lesing', aar, periode, trinn)}
-            </div>
-            <div class="fag-del">
-                <h2>🧮 Regning</h2>
-                ${genererElevTabell(elevReg, 'Regning', aar, periode, trinn, globalRegningListe)}
-                ${genererTiltaksListe(elevReg, 'Regning', aar, periode, trinn)}
-            </div>
-        </div>
-    `);
-}
-   
+            win.document.write(`
+                <div class="elev-side">
+                    <div class="header">
+                        <h1>Elevkort: ${visningsNavn}</h1>
+                        <span style="font-size: 12px; color: #7f8c8d;">${trinn}${klasse} | ${periode} | Skoleår: ${aar}</span>
+                    </div>
+                    <div class="fag-del">
+                        <h2>📚 Lesing</h2>
+                        ${genererElevTabell(elevLes, 'Lesing', aar, periode, trinn, globalLesingListe)}
+                        ${genererTiltaksListe(elevLes, 'Lesing', aar, periode, trinn)}
+                    </div>
+                    <div class="fag-del">
+                        <h2>🧮 Regning</h2>
+                        ${genererElevTabell(elevReg, 'Regning', aar, periode, trinn, globalRegningListe)}
+                        ${genererTiltaksListe(elevReg, 'Regning', aar, periode, trinn)}
+                    </div>
+                </div>
+            `);
+        }
 
         win.document.write('</div></body></html>');
         win.document.close();
 
     } catch (err) {
         console.error("Feil:", err);
-        // Fjern win.close() her under utvikling, så du ser feilmeldingen i konsollen!
         alert("En feil oppstod: " + err.message);
     }
 }
