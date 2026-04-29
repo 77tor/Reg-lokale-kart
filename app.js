@@ -3433,7 +3433,7 @@ function genererTiltaksListe(elevData, fag, aar, periode, trinn) {
 }
 
 
-// --- HOVEDFUNKSJON---
+// --- HOVEDFUNKSJON ---
 async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
     if (!win || win === null) win = window.open('', '_blank');
     if (!win) {
@@ -3443,134 +3443,97 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
 
     win.document.write('<html><head><title>Genererer elevkort...</title></head><body><p style="font-family:sans-serif; text-align:center; margin-top:50px;">Henter data og forbereder utskrift...</p></body></html>');
 
-try {
-        // 1. HENT ALL DATA (for snittberegning på tvers av år)
+    try {
+        // 1. HENT DATA
         const [lesingSnap, regningSnap, totalSnap] = await Promise.all([
             db.ref(`kartlegging/${aar}/Lesing/${periode}/${trinn}/${klasse}`).once('value'),
             db.ref(`kartlegging/${aar}/Regning/${periode}/${trinn}/${klasse}`).once('value'),
-            db.ref(`kartlegging`).once('value') // Trengs for globalt snitt
+            db.ref(`kartlegging`).once('value')
         ]);
 
         const lesingData = lesingSnap.val() || {};
         const regningData = regningSnap.val() || {};
         const heleDatabasen = totalSnap.val() || {};
         
-        // 2. FORBERED GLOBALE SNITT-LISTER (KUN HISTORISK + NÅTID)
+        // 2. FORBERED GLOBALE SNITT
         const globalLesingListe = hentGlobaltSnitt(heleDatabasen, 'Lesing', periode, trinn, aar);
         const globalRegningListe = hentGlobaltSnitt(heleDatabasen, 'Regning', periode, trinn, aar);
 
         const elevIder = new Set([...Object.keys(lesingData), ...Object.keys(regningData)]);
         
+        // Sortering
+        const sorterteIder = Array.from(elevIder).sort((a, b) => {
+            const navnA = (lesingData[a]?.navn || regningData[a]?.navn || "").toLowerCase();
+            const navnB = (lesingData[b]?.navn || regningData[b]?.navn || "").toLowerCase();
+            return navnA.localeCompare(navnA);
+        });
+
         win.document.open();
         win.document.write(`<html><head><title>Elevkort - ${trinn}${klasse}</title>
             <style>
-                /* Liggende format */
                 @page { size: A4 landscape; margin: 10mm; }
-                
                 body { font-family: sans-serif; padding: 0; margin: 0; background: #f0f0f0; color: #333; }
-                
-                /* Fast meny på topp */
-                .sticky-menu {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    height: 60px;
-                    background: #2c3e50;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 15px;
-                    z-index: 1000;
-                    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-                }
-
-                .content-container {
-                    margin-top: 80px; /* Gir plass til den faste menyen */
-                }
-
-                .elev-side { 
-                    background: white; 
-                    width: 277mm; /* Bredde for A4 landscape minus margin */
-                    min-height: 190mm; 
-                    padding: 10mm; 
-                    margin: 10px auto; 
-                    box-sizing: border-box;
-                    page-break-after: always;
-                    box-shadow: 0 0 5px rgba(0,0,0,0.1);
-                }
-
+                .sticky-menu { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: #2c3e50; display: flex; align-items: center; justify-content: center; gap: 15px; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+                .content-container { margin-top: 80px; }
+                .elev-side { background: white; width: 277mm; min-height: 190mm; padding: 10mm; margin: 10px auto; box-sizing: border-box; page-break-after: always; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
                 .header { border-bottom: 2px solid #2c3e50; padding-bottom: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: flex-end; }
                 .fag-del { width: 100%; border: 1px solid #eee; padding: 10px; border-radius: 8px; background: #fff; margin-bottom: 15px; }
-                
                 h1 { font-size: 20px; margin: 0; color: #2c3e50; }
                 h2 { color: #2c3e50; border-bottom: 1px solid #3498db; padding-bottom: 3px; font-size: 16px; margin-top: 0; margin-bottom: 10px; }
-                
-                table { width: 100%; border-collapse: collapse; margin-bottom: 5px; font-size: 11px; table-layout: auto; }
-                th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
-                th { background: #f8f9fa; font-weight: bold; }
-                
                 .btn-tool { padding: 10px 20px; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; }
                 .btn-print { background: #27ae60; }
                 .btn-close { background: #e74c3c; }
-
-                @media print { 
-                    body { background: white; } 
-                    .sticky-menu { display: none !important; }
-                    .content-container { margin-top: 0; }
-                    .elev-side { margin: 0; border: none; width: 100%; box-shadow: none; }
-                }
+                @media print { body { background: white; } .sticky-menu { display: none !important; } .content-container { margin-top: 0; } .elev-side { margin: 0; border: none; width: 100%; box-shadow: none; } }
             </style>
-        </head><body>`);
-
-        // Menyen som alltid ligger på topp
-        win.document.write(`
+        </head><body>
             <div class="sticky-menu">
                 <button onclick="window.print()" class="btn-tool btn-print">🖨️ Skriv ut alle elevkort</button>
                 <button onclick="window.close()" class="btn-tool btn-close">❌ Lukk</button>
             </div>
-            <div class="content-container">
-        `);
+            <div class="content-container">`);
 
-        const sorterteIder = Array.from(elevIder).sort((a, b) => {
-            const navnA = (lesingData[a]?.navn || regningData[a]?.navn || "").toLowerCase();
-            const navnB = (lesingData[b]?.navn || regningData[b]?.navn || "").toLowerCase();
-            return navnA.localeCompare(navnB);
-        });
-for (let elevId of sorterteIder) {
-    // ... (samme sjekker som før)
-    const navn = elevLes.navn || elevReg.navn || "Elev " + elevId;
+        for (let elevId of sorterteIder) {
+            // Sjekk for å unngå metadata eller ugyldige noder
+            if (elevId === 'laast' || elevId === 'ferdigstilt') continue;
+            
+            // HER ER VARIABLENE SOM MANGLA:
+            const elevLes = lesingData[elevId] || {};
+            const elevReg = regningData[elevId] || {};
+            
+            // Skip hvis det ikke finnes faktiske data for eleven
+            if (!elevLes.oppgaver && !elevReg.oppgaver) continue;
 
-    win.document.write(`
-        <div class="elev-side">
-            <div class="header">
-                <h1>Elevkort: ${navn}</h1>
-                <span style="font-size: 12px; color: #7f8c8d;">${trinn}${klasse} | ${periode} | Skoleår: ${aar}</span>
-            </div>
-            <div class="fag-del">
-                <h2>📚 Lesing</h2>
-                ${genererElevTabell(elevLes, 'Lesing', aar, periode, trinn, globalLesingListe)}
-                ${genererTiltaksListe(elevLes, 'Lesing', aar, periode, trinn)}
-            </div>
-            <div class="fag-del">
-                <h2>🧮 Regning</h2>
-                ${genererElevTabell(elevReg, 'Regning', aar, periode, trinn, globalRegningListe)}
-                ${genererTiltaksListe(elevReg, 'Regning', aar, periode, trinn)}
-            </div>
-        </div>
-    `);
-}
+            const navn = elevLes.navn || elevReg.navn || "Elev " + elevId;
 
-        win.document.write('</div></body></html>'); // Lukker content-container
+            win.document.write(`
+                <div class="elev-side">
+                    <div class="header">
+                        <h1>Elevkort: ${navn}</h1>
+                        <span style="font-size: 12px; color: #7f8c8d;">${trinn}${klasse} | ${periode} | Skoleår: ${aar}</span>
+                    </div>
+                    <div class="fag-del">
+                        <h2>📚 Lesing</h2>
+                        ${genererElevTabell(elevLes, 'Lesing', aar, periode, trinn, globalLesingListe)}
+                        ${genererTiltaksListe(elevLes, 'Lesing', aar, periode, trinn)}
+                    </div>
+                    <div class="fag-del">
+                        <h2>🧮 Regning</h2>
+                        ${genererElevTabell(elevReg, 'Regning', aar, periode, trinn, globalRegningListe)}
+                        ${genererTiltaksListe(elevReg, 'Regning', aar, periode, trinn)}
+                    </div>
+                </div>
+            `);
+        }
+
+        win.document.write('</div></body></html>');
         win.document.close();
 
     } catch (err) {
         console.error("Feil:", err);
-        if (win) win.close();
-        alert("En feil oppstod under generering.");
+        // Fjern win.close() her under utvikling, så du ser feilmeldingen i konsollen!
+        alert("En feil oppstod: " + err.message);
     }
 }
-
 // --- SLUTT ELEVKORT---
 
 
