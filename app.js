@@ -3216,6 +3216,58 @@ htmlSide4 += `<div style="text-align:center; margin: 20px 0 40px 0;">
 }
 
 
+
+function lukkAdmin() {
+    // 1. Skjul admin-panelene og grafen
+    document.getElementById('adminPanel').style.display = 'none';
+    if (document.getElementById('chartContainer')) {
+        document.getElementById('chartContainer').style.display = 'none';
+    }
+    
+    // 2. Sørg for at registreringsskjemaet er synlig
+    document.getElementById('skjemaInnhold').style.display = 'block';
+    
+    // 3. Nullstill tabellen
+    document.getElementById('tHead').innerHTML = "";
+    document.getElementById('tBody').innerHTML = "<tr><td colspan='100%'>Velg alle kriterier...</td></tr>";
+
+    // --- ENDRING HER: Nullstill filtere, men sett ÅR korrekt ---
+    const filtere = ['mFag', 'mPeriode', 'mTrinn', 'mKlasse'];
+    filtere.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.selectedIndex = 0; // Setter Fag, Periode osv. til "Velg..."
+    });
+
+    // Spesialhåndtering for ÅR:
+    // I stedet for index 0, tvinger vi den til å bruke Global_aar (som er 2025-2026)
+    const aarMeny = document.getElementById('mAar');
+    if (aarMeny) {
+        // Vi kjører oppdateringen av menyer først for å være sikre på at alt er fylt
+        oppdaterAlleAarsMenyer(); 
+        // Deretter setter vi verdien til det globale året
+        aarMeny.value = Global_aar; 
+    }
+
+    // 4. Skjul seksjoner
+    if (document.getElementById('nyElevSeksjon')) {
+        document.getElementById('nyElevSeksjon').style.display = 'none';
+    }
+    
+    const actionBar = document.querySelector('.action-bar');
+    if (actionBar) {
+        actionBar.style.display = 'none';
+    }
+
+    // 5. Start lyttere på nytt
+    db.ref().off(); 
+    if (typeof startLyttere === "function") {
+        startLyttere();
+    }
+    
+    console.log("Admin lukket. År satt til:", Global_aar);
+}
+
+
 async function genererElevkortKlasse() {
     // Vi bruker variablene som allerede er tilgjengelige i analyse-konteksten
     // (aar, trinn, klasseNavn, periode)
@@ -3361,56 +3413,6 @@ function genererTiltaksListe(elevData, fag, aar, periode, trinn) {
             ${svakeOppgaver.map(s => `<li>${s}</li>`).join('')}
         </ul>
     </div>`;
-}
-
-function lukkAdmin() {
-    // 1. Skjul admin-panelene og grafen
-    document.getElementById('adminPanel').style.display = 'none';
-    if (document.getElementById('chartContainer')) {
-        document.getElementById('chartContainer').style.display = 'none';
-    }
-    
-    // 2. Sørg for at registreringsskjemaet er synlig
-    document.getElementById('skjemaInnhold').style.display = 'block';
-    
-    // 3. Nullstill tabellen
-    document.getElementById('tHead').innerHTML = "";
-    document.getElementById('tBody').innerHTML = "<tr><td colspan='100%'>Velg alle kriterier...</td></tr>";
-
-    // --- ENDRING HER: Nullstill filtere, men sett ÅR korrekt ---
-    const filtere = ['mFag', 'mPeriode', 'mTrinn', 'mKlasse'];
-    filtere.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.selectedIndex = 0; // Setter Fag, Periode osv. til "Velg..."
-    });
-
-    // Spesialhåndtering for ÅR:
-    // I stedet for index 0, tvinger vi den til å bruke Global_aar (som er 2025-2026)
-    const aarMeny = document.getElementById('mAar');
-    if (aarMeny) {
-        // Vi kjører oppdateringen av menyer først for å være sikre på at alt er fylt
-        oppdaterAlleAarsMenyer(); 
-        // Deretter setter vi verdien til det globale året
-        aarMeny.value = Global_aar; 
-    }
-
-    // 4. Skjul seksjoner
-    if (document.getElementById('nyElevSeksjon')) {
-        document.getElementById('nyElevSeksjon').style.display = 'none';
-    }
-    
-    const actionBar = document.querySelector('.action-bar');
-    if (actionBar) {
-        actionBar.style.display = 'none';
-    }
-
-    // 5. Start lyttere på nytt
-    db.ref().off(); 
-    if (typeof startLyttere === "function") {
-        startLyttere();
-    }
-    
-    console.log("Admin lukket. År satt til:", Global_aar);
 }
 
 
