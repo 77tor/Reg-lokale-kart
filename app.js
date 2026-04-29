@@ -3567,40 +3567,49 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
 
     const sokNavn = elevId.trim();
 
-    // 1. Gå gjennom alle år slik du gjør i aapneUtviklingsModal
+// 1. Gå gjennom alle år i databasen
     for (let aar in allData) {
-        const loopAarStart = parseInt(aar.split('-')[0]);
         const kortAar = aar.split('-')[0].slice(-2);
+        const fagData = allData[aar][fag];
+        if (!fagData) continue;
 
-        if (!allData[aar][fag]) continue;
-
-        for (let periode in allData[aar][fag]) {
+        for (let periode in fagData) {
             const pKey = `${periode} ${kortAar}`;
-            
-            // Finn maks poeng fra oppgaveStruktur (slik din kode gjør)
-            const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
-            if (!oppsett) continue;
-            const maksPoeng = oppsett.oppgaver.reduce((s, o) => s + o.maks, 0);
+            const periodeNode = fagData[periode];
 
-            const trinnData = allData[aar][fag][periode][trinn];
-            if (!trinnData) continue;
+            // NYTT: Vi leter gjennom ALLE trinn-mapper for å finne eleven
+            for (let tKey in periodeNode) {
+                const trinnData = periodeNode[tKey];
+                
+                // Finn maks poeng for akkurat dette trinnet i dette året
+                const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[tKey];
+                if (!oppsett) continue;
+                const maksPoeng = oppsett.oppgaver.reduce((s, o) => s + o.maks, 0);
 
-            allePerioderSet.add(pKey);
-            if (!trinnSnitt[pKey]) trinnSnitt[pKey] = [];
+                for (let klasse in trinnData) {
+                    for (let elevNavn in trinnData[klasse]) {
+                        const d = trinnData[klasse][elevNavn];
 
-            for (let klasse in trinnData) {
-                for (let elevNavn in trinnData[klasse]) {
-                    const d = trinnData[klasse][elevNavn];
+                        if (d.slettet || d.ikkeGjennomfort || d.sum === undefined) continue;
 
-                    // Samme filter-sjekker som din kode
-                    if (d.slettet || d.ikkeGjennomfort || d.sum === undefined) continue;
+                        const prosent = (d.sum / maksPoeng) * 100;
 
-                    const prosent = (d.sum / maksPoeng) * 100;
-                    trinnSnitt[pKey].push(prosent);
-
-                    // Lagre hvis det er vår elev
-                    if (elevNavn.trim() === sokNavn) {
-                        elevResultater[pKey] = prosent;
+                        // Hvis navnet matcher, lagre elevens resultat og marker perioden som aktiv
+                        if (elevNavn.trim().toLowerCase() === sokNavn.toLowerCase()) {
+                            allePerioderSet.add(pKey);
+                            elevResultater[pKey] = prosent;
+                            
+                            // Samle snitt for trinnet eleven faktisk tilhørte da
+                            if (!trinnSnitt[pKey]) trinnSnitt[pKey] = [];
+                            for (let k in trinnData) {
+                                for (let id in trinnData[k]) {
+                                    const ed = trinnData[k][id];
+                                    if (ed.sum !== undefined && !ed.slettet) {
+                                        trinnSnitt[pKey].push((ed.sum / maksPoeng) * 100);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
