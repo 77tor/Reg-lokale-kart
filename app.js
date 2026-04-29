@@ -3489,7 +3489,7 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
                 .btn-tool { padding: 10px 20px; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; }
                 .btn-print { background: #27ae60; }
                 .btn-close { background: #e74c3c; }
-                @media print { body { background: white; } .sticky-menu { display: none !important; } .content-container { margin-top: 0; } .elev-side { margin: 0; border: none; width: 100%; box-shadow: none; } }
+                @media print { body { background: white; } .sticky-menu { display: none !important; } .content-container { margin-top: 0 !important; } .elev-side { margin: 0 !important; padding-top: 0 !important; border: none; width: 100%; box-shadow: none; } }
             </style>
         </head><body>
             <div class="sticky-menu">
