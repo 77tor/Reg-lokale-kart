@@ -3269,7 +3269,33 @@ function lukkAdmin() {
 
 
 // --- START ELEVKORT---
-// --- Hjelpefunksjon---
+// --- Hjelpefunksjon 1---
+function hentGlobaltSnitt(heleDatabasen, fag, periode, trinn, gjeldendeAar) {
+    let alleResultater = [];
+    const innevaerendeAarStart = parseInt(gjeldendeAar.split('-')[0]);
+
+    Object.keys(heleDatabasen).forEach(aarStreng => {
+        const sjekkAarStart = parseInt(aarStreng.split('-')[0]);
+
+        // SJEKK: Kun historikk + nåværende år
+        if (sjekkAarStart <= innevaerendeAarStart) {
+            const trinnData = heleDatabasen[aarStreng]?.[fag]?.[periode]?.[trinn];
+            if (trinnData) {
+                Object.keys(trinnData).forEach(klasseNavn => {
+                    const elever = trinnData[klasseNavn];
+                    Object.values(elever).forEach(elev => {
+                        if (elev && elev.oppgaver) {
+                            alleResultater.push(elev);
+                        }
+                    });
+                });
+            }
+        }
+    });
+    return alleResultater;
+}
+
+// --- Hjelpefunksjon 2---
 function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = []) {
     const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
     const mal = analyseMaler[fag]?.[trinn]?.[periode];
@@ -3279,47 +3305,43 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = 
     const elevensTotalSum = elevData.sum || 0;
     const kritiskGrenseTotal = oppsett.grenseTotal || 0;
     
-    // Fargekoding for totalsum (Rød/Grønn bakgrunn)
     const totalBakgrunn = elevensTotalSum < kritiskGrenseTotal ? "#ff7675" : "#55efc4";
-    const totalTekstFarge = "#2d3436";
 
-    // --- BEREGNING AV SNITT FOR PRØVEN ---
+    // --- BEREGNING AV SNITT (Ryddet opp) ---
     const antallElever = alleEleverData.length;
     let oppgaveSnitt = [];
     let totalSnittSum = 0;
 
     if (antallElever > 0) {
+        // Regn ut snitt per oppgave
         oppsett.oppgaver.forEach((_, i) => {
-            const sumOppgave = alleEleverData.reduce((s, elev) => s + (elev.oppgaver[i] || 0), 0);
+            const sumOppgave = alleEleverData.reduce((s, elev) => {
+                const poeng = (elev.oppgaver && elev.oppgaver[i] !== undefined) ? elev.oppgaver[i] : 0;
+                return s + (Number(poeng) || 0);
+            }, 0);
             oppgaveSnitt.push((sumOppgave / antallElever).toFixed(1));
         });
-        const sumAlleTotaler = alleEleverData.reduce((s, elev) => s + (elev.sum || 0), 0);
+
+        // Regn ut snitt for totalsum
+        const sumAlleTotaler = alleEleverData.reduce((s, elev) => s + (Number(elev.sum) || 0), 0);
         totalSnittSum = (sumAlleTotaler / antallElever).toFixed(1);
+    } else {
+        oppgaveSnitt = oppsett.oppgaver.map(() => "-");
+        totalSnittSum = "-";
     }
-    // -------------------------------------
 
-    const totalProsent = faktisktMaksTotal > 0 
-        ? Math.min(100, Math.round((elevensTotalSum / faktisktMaksTotal) * 100)) 
-        : 0;
+    const totalProsent = faktisktMaksTotal > 0 ? Math.round((elevensTotalSum / faktisktMaksTotal) * 100) : 0;
 
-    let html = `<table style="border: 1px solid #2c3e50; table-layout: fixed; width: 100%; border-collapse: collapse; margin-bottom: 10px;">
+    return `
+    <table style="border: 1px solid #2c3e50; table-layout: fixed; width: 100%; border-collapse: collapse; margin-bottom: 10px;">
         <thead>
             <tr style="background-color: #f8f9fa;">
                 <th style="text-align: left; width: 100px; padding: 2px; font-size: 10px; border: 1px solid #ddd;">Oppgave</th>
                 ${oppsett.oppgaver.map((o, i) => {
                     const navn = mal?.oppgaver?.[(i + 1).toString()]?.navn || o.navn || 'O'+(i+1);
-                    
-                    // Betinget formatering: Del tekst kun hvis det er Regning
-                    let visningsNavn;
-                    if (fag === "Regning") {
-                        const ord = navn.split(' ');
-                        visningsNavn = ord.slice(0, 3).join('<br>');
-                    } else {
-                        visningsNavn = navn; // Full tekst på én linje for Lesing
-                    }
-                    
+                    const visningsNavn = (fag === "Regning") ? navn.split(' ').slice(0, 3).join('<br>') : navn;
                     return `<th style="font-size: 8px; padding: 2px; height: 35px; vertical-align: middle; text-align: center; border: 1px solid #ddd; line-height: 1.1;">
-                                <div style="max-height: 32px; overflow: hidden; word-wrap: break-word;">${visningsNavn}</div>
+                                <div style="max-height: 32px; overflow: hidden;">${visningsNavn}</div>
                             </th>`;
                 }).join('')}
                 <th style="background-color: #2c3e50; color: white; width: 50px; padding: 2px; font-size: 10px; border: 1px solid #2c3e50;">TOTAL</th>
@@ -3331,48 +3353,32 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = 
                 ${oppsett.oppgaver.map(o => `<td style="border: 1px solid #ddd;">${o.maks}</td>`).join('')}
                 <td style="font-weight: bold; border: 1px solid #ddd;">${faktisktMaksTotal}</td>
             </tr>
-            
             <tr style="color: #c0392b; font-weight: bold;">
                 <td style="text-align: left; padding: 2px; border: 1px solid #ddd;">Kritisk grense</td>
-                ${oppsett.oppgaver.map(o => {
-                    const g = o.grense !== undefined && o.grense !== -1 ? o.grense : '-';
-                    return `<td style="border: 1px solid #ddd;">${g}</td>`;
-                }).join('')}
+                ${oppsett.oppgaver.map(o => `<td style="border: 1px solid #ddd;">${(o.grense !== undefined && o.grense !== -1) ? o.grense : '-'}</td>`).join('')}
                 <td style="border: 1px solid #ddd;">${kritiskGrenseTotal}</td>
             </tr>
-
             <tr style="background-color: #fafafa; font-style: italic; color: #636e72;">
                 <td style="text-align: left; padding: 2px; border: 1px solid #ddd;">Snitt for prøven</td>
                 ${oppgaveSnitt.map(s => `<td style="border: 1px solid #ddd;">${s}</td>`).join('')}
                 <td style="border: 1px solid #ddd; font-weight: bold;">${totalSnittSum}</td>
             </tr>
-
             <tr style="background-color: #fff; border-top: 2px solid #2c3e50;">
                 <td style="text-align: left; font-weight: bold; padding: 4px 2px; border: 1px solid #ddd;">Elevens resultat</td>
                 ${oppsett.oppgaver.map((o, i) => {
                     const poeng = elevData.oppgaver[i] || 0;
-                    const grense = o.grense !== undefined && o.grense !== -1 ? o.grense : 0;
-                    const erUnder = poeng < grense;
-                    const farge = erUnder ? "#fdf2f2" : "#f2f9f2";
-                    const tekstFarge = erUnder ? "#c0392b" : "#27ae60";
-                    return `<td style="background-color: ${farge}; color: ${tekstFarge}; font-weight: bold; font-size: 11px; border: 1px solid #ddd;">${poeng}</td>`;
+                    const erUnder = poeng < (o.grense || 0);
+                    return `<td style="background-color: ${erUnder ? "#fdf2f2" : "#f2f9f2"}; color: ${erUnder ? "#c0392b" : "#27ae60"}; font-weight: bold; font-size: 11px; border: 1px solid #ddd;">${poeng}</td>`;
                 }).join('')}
-                <td style="background-color: ${totalBakgrunn}; color: ${totalTekstFarge}; font-weight: bold; font-size: 12px; border: 1px solid #2c3e50;">${elevensTotalSum}</td>
+                <td style="background-color: ${totalBakgrunn}; color: #2d3436; font-weight: bold; font-size: 12px; border: 1px solid #2c3e50;">${elevensTotalSum}</td>
             </tr>
-
             <tr style="font-size: 8px; background-color: #f8f9fa; color: #666;">
                 <td style="text-align: left; font-weight: bold; padding: 1px; border: 1px solid #ddd;">I % av maks</td>
-                ${oppsett.oppgaver.map((o, i) => {
-                    const poeng = elevData.oppgaver[i] || 0;
-                    const prosent = o.maks > 0 ? Math.min(100, Math.round((poeng / o.maks) * 100)) : 0;
-                    return `<td style="border: 1px solid #ddd;">${prosent}%</td>`;
-                }).join('')}
+                ${oppsett.oppgaver.map((o, i) => `<td style="border: 1px solid #ddd;">${o.maks > 0 ? Math.round(((elevData.oppgaver[i] || 0) / o.maks) * 100) : 0}%</td>`).join('')}
                 <td style="font-weight: bold; border: 1px solid #ddd;">${totalProsent}%</td>
             </tr>
         </tbody>
     </table>`;
-    
-    return html;
 }
 // --- Slutt hjelpefunksjon---
 
@@ -3427,7 +3433,7 @@ function genererTiltaksListe(elevData, fag, aar, periode, trinn) {
 }
 
 
-// --- Hovedfunksjon ---
+// --- HOVEDFUNKSJON---
 async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
     if (!win || win === null) win = window.open('', '_blank');
     if (!win) {
@@ -3437,14 +3443,22 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
 
     win.document.write('<html><head><title>Genererer elevkort...</title></head><body><p style="font-family:sans-serif; text-align:center; margin-top:50px;">Henter data og forbereder utskrift...</p></body></html>');
 
-    try {
-        const [lesingSnap, regningSnap] = await Promise.all([
+try {
+        // 1. HENT ALL DATA (for snittberegning på tvers av år)
+        const [lesingSnap, regningSnap, totalSnap] = await Promise.all([
             db.ref(`kartlegging/${aar}/Lesing/${periode}/${trinn}/${klasse}`).once('value'),
-            db.ref(`kartlegging/${aar}/Regning/${periode}/${trinn}/${klasse}`).once('value')
+            db.ref(`kartlegging/${aar}/Regning/${periode}/${trinn}/${klasse}`).once('value'),
+            db.ref(`kartlegging`).once('value') // Trengs for globalt snitt
         ]);
 
         const lesingData = lesingSnap.val() || {};
         const regningData = regningSnap.val() || {};
+        const heleDatabasen = totalSnap.val() || {};
+        
+        // 2. FORBERED GLOBALE SNITT-LISTER (KUN HISTORISK + NÅTID)
+        const globalLesingListe = hentGlobaltSnitt(heleDatabasen, 'Lesing', periode, trinn, aar);
+        const globalRegningListe = hentGlobaltSnitt(heleDatabasen, 'Regning', periode, trinn, aar);
+
         const elevIder = new Set([...Object.keys(lesingData), ...Object.keys(regningData)]);
         
         win.document.open();
@@ -3523,38 +3537,29 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
             const navnB = (lesingData[b]?.navn || regningData[b]?.navn || "").toLowerCase();
             return navnA.localeCompare(navnB);
         });
+for (let elevId of sorterteIder) {
+    // ... (samme sjekker som før)
+    const navn = elevLes.navn || elevReg.navn || "Elev " + elevId;
 
-        for (let elevId of sorterteIder) {
-            if (elevId === 'laast' || elevId === 'ferdigstilt' || (typeof lesingData[elevId] !== 'object' && typeof regningData[elevId] !== 'object')) continue;
-            
-            const elevLes = lesingData[elevId] || {};
-            const elevReg = regningData[elevId] || {};
-            const navn = elevLes.navn || elevReg.navn || "Elev " + elevId;
-
-            win.document.write(`
-                <div class="elev-side">
-                    <div class="header">
-                        <div>
-                            <h1>${navn}</h1>
-                            <span style="color: #34495e; font-weight:bold;">Klasse: ${trinn}${klasse}</span>
-                        </div>
-                        <div style="text-align: right; font-size: 12px;">
-                            <span style="background:#3498db; color:white; padding: 2px 10px; border-radius:10px; font-weight:bold;">${periode.toUpperCase()} ${aar}</span>
-                        </div>
-                    </div>
-                    <div class="fag-del">
-                        <h2>📚 Lesing</h2>
-                        ${genererElevTabell(elevLes, 'Lesing', aar, periode, trinn)}
-                        ${genererTiltaksListe(elevLes, 'Lesing', aar, periode, trinn)}
-                    </div>
-                    <div class="fag-del">
-                        <h2>🧮 Regning</h2>
-                        ${genererElevTabell(elevReg, 'Regning', aar, periode, trinn)}
-                        ${genererTiltaksListe(elevReg, 'Regning', aar, periode, trinn)}
-                    </div>
-                </div>
-            `);
-        }
+    win.document.write(`
+        <div class="elev-side">
+            <div class="header">
+                <h1>Elevkort: ${navn}</h1>
+                <span style="font-size: 12px; color: #7f8c8d;">${trinn}${klasse} | ${periode} | Skoleår: ${aar}</span>
+            </div>
+            <div class="fag-del">
+                <h2>📚 Lesing</h2>
+                ${genererElevTabell(elevLes, 'Lesing', aar, periode, trinn, globalLesingListe)}
+                ${genererTiltaksListe(elevLes, 'Lesing', aar, periode, trinn)}
+            </div>
+            <div class="fag-del">
+                <h2>🧮 Regning</h2>
+                ${genererElevTabell(elevReg, 'Regning', aar, periode, trinn, globalRegningListe)}
+                ${genererTiltaksListe(elevReg, 'Regning', aar, periode, trinn)}
+            </div>
+        </div>
+    `);
+}
 
         win.document.write('</div></body></html>'); // Lukker content-container
         win.document.close();
