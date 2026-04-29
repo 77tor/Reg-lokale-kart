@@ -3294,10 +3294,13 @@ function hentGlobaltSnitt(heleDatabasen, fag, periode, trinn, gjeldendeAar) {
 }
 
 // --- Hjelpefunksjon 2---
+// --- Hjelpefunksjon 2 (Oppdatert med sjekk for gjennomføring) ---
 function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = []) {
     const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
     const mal = analyseMaler[fag]?.[trinn]?.[periode];
-    if (!oppsett || !elevData.oppgaver) return "<p>Ingen data registrert.</p>";
+    
+    // Lagt til sjekk for ikkeGjennomfort her også
+    if (!oppsett || (!elevData.oppgaver && !elevData.ikkeGjennomfort)) return "<p>Ingen data registrert.</p>";
 
     const faktisktMaksTotal = oppsett.oppgaver.reduce((sum, o) => sum + (o.maks || 0), 0);
     const elevensTotalSum = elevData.sum || 0;
@@ -3305,13 +3308,12 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = 
     
     const totalBakgrunn = elevensTotalSum < kritiskGrenseTotal ? "#ff7675" : "#55efc4";
 
-    // --- BEREGNING AV SNITT (Ryddet opp) ---
+    // --- BEREGNING AV SNITT ---
     const antallElever = alleEleverData.length;
     let oppgaveSnitt = [];
     let totalSnittSum = 0;
 
     if (antallElever > 0) {
-        // Regn ut snitt per oppgave
         oppsett.oppgaver.forEach((_, i) => {
             const sumOppgave = alleEleverData.reduce((s, elev) => {
                 const poeng = (elev.oppgaver && elev.oppgaver[i] !== undefined) ? elev.oppgaver[i] : 0;
@@ -3319,8 +3321,6 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = 
             }, 0);
             oppgaveSnitt.push((sumOppgave / antallElever).toFixed(1));
         });
-
-        // Regn ut snitt for totalsum
         const sumAlleTotaler = alleEleverData.reduce((s, elev) => s + (Number(elev.sum) || 0), 0);
         totalSnittSum = (sumAlleTotaler / antallElever).toFixed(1);
     } else {
@@ -3329,6 +3329,7 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = 
     }
 
     const totalProsent = faktisktMaksTotal > 0 ? Math.round((elevensTotalSum / faktisktMaksTotal) * 100) : 0;
+    const antallOppgaver = oppsett.oppgaver.length;
 
     return `
     <table style="border: 1px solid #2c3e50; table-layout: fixed; width: 100%; border-collapse: collapse; margin-bottom: 5px;">
@@ -3346,46 +3347,43 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = 
             </tr>
         </thead>
         <tbody style="font-size: 10px; text-align: center;">
-<tr style="background-color: #d4edda; color: #000000;">
-    <td style="text-align: left; padding: 2px; border: 1px solid #ddd;">Maks poengsum</td>
-    ${oppsett.oppgaver.map(o => `<td style="border: 1px solid #ddd;">${o.maks}</td>`).join('')}
-    <td style="border: 1px solid #ddd;">${faktisktMaksTotal}</td>
-</tr>
+            <tr style="background-color: #d4edda; color: #000000;">
+                <td style="text-align: left; padding: 2px; border: 1px solid #ddd;">Maks poengsum</td>
+                ${oppsett.oppgaver.map(o => `<td style="border: 1px solid #ddd;">${o.maks}</td>`).join('')}
+                <td style="border: 1px solid #ddd;">${faktisktMaksTotal}</td>
+            </tr>
+            <tr style="background-color: #f8d7da; color: #000000;">
+                <td style="text-align: left; padding: 2px; border: 1px solid #ddd;">Kritisk grense</td>
+                ${oppsett.oppgaver.map(o => `<td style="border: 1px solid #ddd;">${(o.grense !== undefined && o.grense !== -1) ? o.grense : '-'}</td>`).join('')}
+                <td style="border: 1px solid #ddd;">${kritiskGrenseTotal}</td>
+            </tr>
+            <tr style="background-color: #e2e3e5; color: #000000;">
+                <td style="text-align: left; padding: 2px; border: 1px solid #ddd;">Snitt for prøven</td>
+                ${oppgaveSnitt.map(s => `<td style="border: 1px solid #ddd;">${s}</td>`).join('')}
+                <td style="border: 1px solid #ddd;">${totalSnittSum}</td>
+            </tr>
 
-<tr style="background-color: #f8d7da; color: #000000;">
-    <td style="text-align: left; padding: 2px; border: 1px solid #ddd;">Kritisk grense</td>
-    ${oppsett.oppgaver.map(o => `<td style="border: 1px solid #ddd;">${(o.grense !== undefined && o.grense !== -1) ? o.grense : '-'}</td>`).join('')}
-    <td style="border: 1px solid #ddd;">${kritiskGrenseTotal}</td>
-</tr>
-
-<tr style="background-color: #e2e3e5; color: #000000;">
-    <td style="text-align: left; padding: 2px; border: 1px solid #ddd;">Snitt for prøven</td>
-    ${oppgaveSnitt.map(s => `<td style="border: 1px solid #ddd;">${s}</td>`).join('')}
-    <td style="border: 1px solid #ddd;">${totalSnittSum}</td>
-</tr>
             <tr style="background-color: #fff; border-top: 2px solid #2c3e50;">
                 <td style="text-align: left; font-weight: bold; padding: 4px 2px; border: 1px solid #ddd;">Elevens resultat</td>
-
-${oppsett.oppgaver.map((o, i) => {
-    const poeng = elevData.oppgaver[i] || 0;
-    const erUnder = poeng < (o.grense || 0);
-    
-    // Hvis faget er Regning, bruk hvit bakgrunn og sort tekst
-    // Ellers bruk rød/grønn logikk som før
-    const cellStyle = (fag === "Regning") 
-        ? `background-color: #ffffff; color: #000000;` 
-        : `background-color: ${erUnder ? "#fdf2f2" : "#f2f9f2"}; color: ${erUnder ? "#c0392b" : "#27ae60"};`;
-
-    return `<td style="${cellStyle} font-weight: bold; font-size: 11px; border: 1px solid #ddd;">${poeng}</td>`;
-}).join('')}
-
-                <td style="background-color: ${totalBakgrunn}; color: #2d3436; font-weight: bold; font-size: 12px; border: 1px solid #2c3e50;">${elevensTotalSum}</td>
+                ${elevData.ikkeGjennomfort 
+                    ? `<td colspan="${antallOppgaver + 1}" style="border: 1px solid #ddd; font-style: italic; color: #7f8c8d; background-color: #fafafa;">Ikke gjennomført prøven</td>`
+                    : oppsett.oppgaver.map((o, i) => {
+                        const poeng = elevData.oppgaver[i] || 0;
+                        const erUnder = poeng < (o.grense || 0);
+                        const cellStyle = (fag === "Regning") 
+                            ? `background-color: #ffffff; color: #000000;` 
+                            : `background-color: ${erUnder ? "#fdf2f2" : "#f2f9f2"}; color: ${erUnder ? "#c0392b" : "#27ae60"};`;
+                        return `<td style="${cellStyle} font-weight: bold; font-size: 11px; border: 1px solid #ddd;">${poeng}</td>`;
+                    }).join('') + `<td style="background-color: ${totalBakgrunn}; color: #2d3436; font-weight: bold; font-size: 12px; border: 1px solid #2c3e50;">${elevensTotalSum}</td>`
+                }
             </tr>
 
             <tr style="font-size: 8px; background-color: #f8f9fa; color: #666;">
                 <td style="text-align: left; font-weight: bold; padding: 1px; border: 1px solid #ddd;">I % av maks</td>
-                ${oppsett.oppgaver.map((o, i) => `<td style="border: 1px solid #ddd;">${o.maks > 0 ? Math.round(((elevData.oppgaver[i] || 0) / o.maks) * 100) : 0}%</td>`).join('')}
-                <td style="font-weight: bold; border: 1px solid #ddd;">${totalProsent}%</td>
+                ${elevData.ikkeGjennomfort 
+                    ? `<td colspan="${antallOppgaver + 1}" style="border: 1px solid #ddd;">-</td>`
+                    : oppsett.oppgaver.map((o, i) => `<td style="border: 1px solid #ddd;">${o.maks > 0 ? Math.round(((elevData.oppgaver[i] || 0) / o.maks) * 100) : 0}%</td>`).join('') + `<td style="font-weight: bold; border: 1px solid #ddd;">${totalProsent}%</td>`
+                }
             </tr>
         </tbody>
     </table>`;
