@@ -3333,7 +3333,7 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = 
     const totalProsent = faktisktMaksTotal > 0 ? Math.round((elevensTotalSum / faktisktMaksTotal) * 100) : 0;
 
     return `
-    <table style="border: 1px solid #2c3e50; table-layout: fixed; width: 100%; border-collapse: collapse; margin-bottom: 10px;">
+    <table style="border: 1px solid #2c3e50; table-layout: fixed; width: 100%; border-collapse: collapse; margin-bottom: 5px;">
         <thead>
             <tr style="background-color: #f8f9fa;">
                 <th style="text-align: left; width: 100px; padding: 2px; font-size: 10px; border: 1px solid #ddd;">Oppgave</th>
@@ -3349,9 +3349,9 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = 
         </thead>
         <tbody style="font-size: 10px; text-align: center;">
 <tr style="background-color: #d4edda; color: #000000;">
-    <td style="text-align: left; font-weight: bold; padding: 2px; border: 1px solid #ddd;">Maks poengsum</td>
+    <td style="text-align: left; padding: 2px; border: 1px solid #ddd;">Maks poengsum</td>
     ${oppsett.oppgaver.map(o => `<td style="border: 1px solid #ddd;">${o.maks}</td>`).join('')}
-    <td style="font-weight: bold; border: 1px solid #ddd;">${faktisktMaksTotal}</td>
+    <td style="border: 1px solid #ddd;">${faktisktMaksTotal}</td>
 </tr>
 
 <tr style="background-color: #f8d7da; color: #000000;">
@@ -3363,7 +3363,7 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = 
 <tr style="background-color: #e2e3e5; color: #000000;">
     <td style="text-align: left; padding: 2px; border: 1px solid #ddd;">Snitt for prøven</td>
     ${oppgaveSnitt.map(s => `<td style="border: 1px solid #ddd;">${s}</td>`).join('')}
-    <td style="border: 1px solid #ddd; font-weight: bold;">${totalSnittSum}</td>
+    <td style="border: 1px solid #ddd;">${totalSnittSum}</td>
 </tr>
             <tr style="background-color: #fff; border-top: 2px solid #2c3e50;">
                 <td style="text-align: left; font-weight: bold; padding: 4px 2px; border: 1px solid #ddd;">Elevens resultat</td>
@@ -3374,6 +3374,7 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = 
                 }).join('')}
                 <td style="background-color: ${totalBakgrunn}; color: #2d3436; font-weight: bold; font-size: 12px; border: 1px solid #2c3e50;">${elevensTotalSum}</td>
             </tr>
+
             <tr style="font-size: 8px; background-color: #f8f9fa; color: #666;">
                 <td style="text-align: left; font-weight: bold; padding: 1px; border: 1px solid #ddd;">I % av maks</td>
                 ${oppsett.oppgaver.map((o, i) => `<td style="border: 1px solid #ddd;">${o.maks > 0 ? Math.round(((elevData.oppgaver[i] || 0) / o.maks) * 100) : 0}%</td>`).join('')}
