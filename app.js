@@ -3385,15 +3385,15 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = 
 }
 // --- Slutt hjelpefunksjon---
 
-// --- Start tiltaksliste---
+
+// --- Start tiltaksliste (Kompakt versjon) ---
 function genererTiltaksListe(elevData, fag, aar, periode, trinn) {
     const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
     if (!oppsett || !elevData.oppgaver) return "";
 
-    let tiltakHtml = "";
+    let tiltakArray = [];
     let harUnder70 = false;
 
-    // Finn riktig mal fra analyseMaler
     const mal = analyseMaler[fag]?.[trinn]?.[periode];
 
     oppsett.oppgaver.forEach((o, i) => {
@@ -3402,36 +3402,32 @@ function genererTiltaksListe(elevData, fag, aar, periode, trinn) {
 
         if (prosent < 70) {
             harUnder70 = true;
-            
-            // Hent navn og forklaring fra analyseMaler basert på oppgavenummer (i+1)
             const oppgaveInfo = mal?.oppgaver?.[(i + 1).toString()];
             const visningsNavn = oppgaveInfo?.navn || o.navn || `Oppgave ${i + 1}`;
-            const forklaring = oppgaveInfo?.forklaring 
-                ? `<div style="font-size: 10px; color: #555; margin-top: 2px; font-style: italic; line-height: 1.2;">${oppgaveInfo.forklaring}</div>` 
-                : "";
-
-            tiltakHtml += `
-                <li style="margin-bottom: 10px; list-style-type: none; border-left: 3px solid #e74c3c; padding-left: 10px;">
-                    <span style="font-weight: bold; font-size: 11px;">${visningsNavn}</span> 
-                    <span style="color: #c0392b; font-weight: bold;">(${Math.round(prosent)}%)</span>
-                    ${forklaring}
-                </li>`;
+            
+            // Lager en kompakt tekststreng for denne oppgaven
+            tiltakArray.push(`
+                <span style="white-space: nowrap; margin-right: 15px;">
+                    <span style="font-weight: bold;">${visningsNavn}</span> 
+                    <span style="color: #c0392b;">(${Math.round(prosent)}%)</span>
+                </span>`);
         }
     });
 
     if (!harUnder70) {
         return `
-            <div style="background: #f2f9f2; border: 1px solid #27ae60; color: #27ae60; padding: 10px; border-radius: 5px; margin-top: 10px; font-size: 12px; font-weight: bold;">
+            <div style="background: #f2f9f2; border: 1px solid #27ae60; color: #27ae60; padding: 5px 10px; border-radius: 5px; margin-top: 5px; font-size: 11px;">
                 ✅ Eleven mestrer alle deloppgaver (over 70% riktig).
             </div>`;
     }
 
+    // Her returnerer vi alt på én linje ved å bruke .join('')
     return `
-        <div style="margin-top: 10px; background: #fffaf0; border: 1px solid #f39c12; padding: 10px; border-radius: 5px;">
-            <div style="font-weight: bold; margin-bottom: 8px; color: #d35400; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid #f39c12; padding-bottom: 3px;">
-                Fokusområder (Under 70% mestring):
-            </div>
-            <ul style="margin: 0; padding: 0;">${tiltakHtml}</ul>
+        <div style="margin-top: 5px; background: #fffaf0; border: 1px solid #f39c12; padding: 5px 10px; border-radius: 5px; font-size: 11px;">
+            <span style="font-weight: bold; color: #d35400; text-transform: uppercase; margin-right: 10px; border-right: 1px solid #f39c12; padding-right: 10px;">
+                Fokusområder:
+            </span>
+            ${tiltakArray.join(' <span style="color: #ccc;">|</span> ')}
         </div>`;
 }
 
