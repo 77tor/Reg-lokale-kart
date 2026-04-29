@@ -3476,21 +3476,88 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
 
         win.document.open();
         win.document.write(`<html><head><title>Elevkort - ${trinn}${klasse}</title>
-            <style>
-                @page { size: A4 landscape; margin: 10mm; }
-                body { font-family: sans-serif; padding: 0; margin: 0; background: #f0f0f0; color: #333; }
-                .sticky-menu { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: #2c3e50; display: flex; align-items: center; justify-content: center; gap: 15px; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
-                .content-container { margin-top: 80; }
-                .elev-side { background: white; width: 277mm; min-height: 190mm; padding: 2mm 10mm; margin: 5px auto; box-sizing: border-box; page-break-after: always; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
-                .header { border-bottom: 2px solid #2c3e50; padding-bottom: 2px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: flex-end; }
-                .fag-del { width: 100%; border: 1px solid #eee; padding: 8px; border-radius: 8px; background: #fff; margin-bottom: 8px; }
-                h1 { font-size: 18px; margin: 0; color: #2c3e50; }
-                h2 { color: #2c3e50; border-bottom: 1px solid #3498db; padding-bottom: 3px; font-size: 14px; margin-top: 0; margin-bottom: 5px; }
-                .btn-tool { padding: 10px 20px; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; }
-                .btn-print { background: #27ae60; }
-                .btn-close { background: #e74c3c; }
-                @media print { body { background: white; } .sticky-menu { display: none !important; } .content-container { margin-top: 0 !important; } .elev-side { margin: 0 !important; padding-top: 0 !important; border: none; width: 100%; box-shadow: none; } }
-            </style>
+<style>
+    /* 1. FJERN @PAGE MARGIN: Dette er ofte synderen som lager hvitplass i toppen */
+    @page { 
+        size: A4 landscape; 
+        margin: 0; /* Vi styrer marginene selv i .elev-side */
+    }
+
+    body { 
+        font-family: sans-serif; 
+        padding: 0; 
+        margin: 0; 
+        background: #f0f0f0; 
+        color: #333; 
+    }
+
+    .sticky-menu { 
+        position: fixed; top: 0; left: 0; right: 0; height: 60px; 
+        background: #2c3e50; display: flex; align-items: center; 
+        justify-content: center; gap: 15px; z-index: 1000; 
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3); 
+    }
+
+    /* Redusert margin-top for skjermvisning */
+    .content-container { margin-top: 70px; }
+
+    /* 2. MAKSIMAL UTNYTTELSE AV TOPPEN */
+    .elev-side { 
+        background: white; 
+        width: 297mm; /* Full bredde for landscape */
+        min-height: 210mm; 
+        padding: 4mm 10mm; /* Minimal padding i topp (4mm) */
+        margin: 0 auto; 
+        box-sizing: border-box; 
+        page-break-after: always; 
+        box-shadow: 0 0 5px rgba(0,0,0,0.1); 
+        position: relative;
+        top: 0;
+    }
+
+    /* 3. KOMPAKT HEADER */
+    .header { 
+        border-bottom: 2px solid #2c3e50; 
+        padding-bottom: 2px; 
+        margin-bottom: 5px; 
+        margin-top: 0; /* Tvinger overskriften helt opp */
+        display: flex; 
+        justify-content: space-between; 
+        align-items: flex-end; 
+    }
+
+    /* 4. MINDRE LUFT MELLOM FAGENE */
+    .fag-del { 
+        width: 100%; 
+        border: 1px solid #eee; 
+        padding: 6px 10px; /* Redusert fra 8px */
+        border-radius: 6px; 
+        background: #fff; 
+        margin-bottom: 5px; /* Redusert fra 8px */
+    }
+
+    h1 { font-size: 18px; margin: 0; color: #2c3e50; line-height: 1; }
+    h2 { color: #2c3e50; border-bottom: 1px solid #3498db; padding-bottom: 2px; font-size: 14px; margin-top: 0; margin-bottom: 4px; }
+
+    .btn-tool { padding: 10px 20px; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; }
+    .btn-print { background: #27ae60; }
+    .btn-close { background: #e74c3c; }
+
+    /* 5. SPESIFIKKE UTSKRIFTSREGLER */
+    @media print { 
+        body { background: white; margin: 0; padding: 0; } 
+        .sticky-menu { display: none !important; } 
+        .content-container { margin-top: 0 !important; padding-top: 0 !important; } 
+        .elev-side { 
+            margin: 0 !important; 
+            padding-top: 2mm !important; /* Ekstremt tett på kanten */
+            border: none; 
+            width: 100%; 
+            box-shadow: none; 
+        } 
+    }
+</style>
+
         </head><body>
             <div class="sticky-menu">
                 <button onclick="window.print()" class="btn-tool btn-print">🖨️ Skriv ut alle elevkort</button>
