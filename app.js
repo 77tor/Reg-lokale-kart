@@ -3498,6 +3498,9 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
             </div>
             <div class="content-container">`);
 
+// Inne i loopen for hver elev i genererElevkortKlasse:
+
+
 for (let elevId of sorterteIder) {
     if (elevId === 'laast' || elevId === 'ferdigstilt') continue;
     
@@ -3506,13 +3509,10 @@ for (let elevId of sorterteIder) {
     
     if (!elevLes.oppgaver && !elevReg.oppgaver) continue;
 
-    // --- NY LOGIKK FOR DIN STRUKTUR ---
-    // Siden navnet ER selve elevId-en (nøkkelen i Firebase):
+    // --- NAVNEHÅNDTERING (Viktig for at visningsNavn skal virke) ---
     let raaNavn = elevId; 
-
     let visningsNavn = "";
 
-    // Snu navnet hvis det inneholder komma (f.eks. "Barria, Cristiano")
     if (raaNavn.includes(',')) {
         const navneDeler = raaNavn.split(',');
         const etternavn = navneDeler[0].trim();
@@ -3521,27 +3521,51 @@ for (let elevId of sorterteIder) {
     } else {
         visningsNavn = raaNavn;
     }
-    // ----------------------------------
 
-            win.document.write(`
-                <div class="elev-side">
-                    <div class="header">
-                        <h1>Elevkort: ${visningsNavn}</h1>
-                        <span style="font-size: 12px; color: #7f8c8d;">${trinn}${klasse} | ${periode} | Skoleår: ${aar}</span>
-                    </div>
-                    <div class="fag-del">
+    // --- GRAF-GENERERING ---
+    // Vi bruker 'await' her fordi lagGrafBilde må bli ferdig før vi går videre
+const grafLesing = await lagGrafBilde("Lesing", trinn, elevId, heleDatabasen);
+const grafRegning = await lagGrafBilde("Regning", trinn, elevId, heleDatabasen);
+
+   // ... etter graf-generering ...
+
+    win.document.write(`
+        <div class="elev-side">
+            <div class="header">
+                <h1>Elevkort: ${visningsNavn}</h1>
+                <span style="font-size: 12px; color: #7f8c8d;">${trinn}${klasse} | ${periode} | Skoleår: ${aar}</span>
+            </div>
+            
+            <div class="fag-del">
+                <div style="display: flex; gap: 15px; align-items: flex-start;">
+                    <div style="flex: 3;">
                         <h2>📚 Lesing</h2>
                         ${genererElevTabell(elevLes, 'Lesing', aar, periode, trinn, globalLesingListe)}
                         ${genererTiltaksListe(elevLes, 'Lesing', aar, periode, trinn)}
                     </div>
-                    <div class="fag-del">
+                    <div style="flex: 1; text-align: center; border-left: 1px solid #eee; padding-left: 10px;">
+                        <p style="font-size: 9px; font-weight: bold; color: #7f8c8d; margin-bottom: 5px; text-transform: uppercase;">Utvikling Lesing</p>
+                        <img src="${grafLesing}" style="width: 100%; height: auto; max-height: 110px; object-fit: contain;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="fag-del">
+                <div style="display: flex; gap: 15px; align-items: flex-start;">
+                    <div style="flex: 3;">
                         <h2>🧮 Regning</h2>
                         ${genererElevTabell(elevReg, 'Regning', aar, periode, trinn, globalRegningListe)}
                         ${genererTiltaksListe(elevReg, 'Regning', aar, periode, trinn)}
                     </div>
+                    <div style="flex: 1; text-align: center; border-left: 1px solid #eee; padding-left: 10px;">
+                        <p style="font-size: 9px; font-weight: bold; color: #7f8c8d; margin-bottom: 5px; text-transform: uppercase;">Utvikling Regning</p>
+                        <img src="${grafRegning}" style="width: 100%; height: auto; max-height: 110px; object-fit: contain;">
+                    </div>
                 </div>
-            `);
-        }
+            </div>
+        </div>
+    `);
+}
 
         win.document.write('</div></body></html>');
         win.document.close();
@@ -3551,6 +3575,115 @@ for (let elevId of sorterteIder) {
         alert("En feil oppstod: " + err.message);
     }
 }
+
+async function lagGrafBilde(fag, trinn, elevId, alleData) {
+    const canvas = document.getElementById('hiddenChartCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const whiteBackground = {
+        id: 'white_bg',
+        beforeDraw: (chart) => {
+            const {ctx} = chart;
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-over';
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, chart.width, chart.height);
+            ctx.restore();
+        }
+    };
+
+    // 1. Definer periodene du vil vise på grafen
+    const perioder = ["Høst", "Vinter", "Vår"];
+    
+    // 2. Hent elevens faktiske data for hver periode
+    const elevProsenter = perioder.map(p => {
+        // Vi leter i: alleData[aar][fag][p][trinn][klasse][elevId]
+        // Men siden vi ikke har 'aar' og 'klasse' her, må vi kanskje forenkle eller sende dem med.
+        // Hvis alleData er strukturert slik som i bildet ditt:
+        let sum = 0;
+        let teller = 0;
+        
+        // Finn gjeldende år (f.eks. ved å se på nøklene i alleData)
+        for (let aarKey in alleData) {
+            const dataForPeriode = alleData[aarKey]?.[fag]?.[p]?.[trinn];
+            if (dataForPeriode) {
+                // Let gjennom alle klassene på trinnet etter denne eleven
+                for (let klasseKey in dataForPeriode) {
+                    const elevResultat = dataForPeriode[klasseKey][elevId];
+                    if (elevResultat && elevResultat.totalProsent !== undefined) {
+                        return elevResultat.totalProsent;
+                    }
+                }
+            }
+        }
+        return null; // Ingen data funnet for denne perioden
+    });
+
+    // 3. Hent skolesnittet (du har kanskje en funksjon for dette allerede, f.eks. hentGlobaltSnitt)
+    const skolenSnitt = perioder.map(p => {
+        let alleVerdier = [];
+        for (let aarKey in alleData) {
+            const trinnData = alleData[aarKey]?.[fag]?.[p]?.[trinn];
+            if (trinnData) {
+                for (let kl in trinnData) {
+                    for (let id in trinnData[kl]) {
+                        if (trinnData[kl][id].totalProsent !== undefined) {
+                            alleVerdier.push(trinnData[kl][id].totalProsent);
+                        }
+                    }
+                }
+            }
+        }
+        if (alleVerdier.length === 0) return null;
+        return Math.round(alleVerdier.reduce((a, b) => a + b, 0) / alleVerdier.length);
+    });
+
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: perioder,
+            datasets: [{
+                label: 'Eleven',
+                data: elevProsenter,
+                borderColor: '#3498db',
+                borderWidth: 3,
+                pointRadius: 5,
+                pointBackgroundColor: '#3498db',
+                spanGaps: true, // Binder sammen punkter selv om en periode mangler
+                fill: false,
+                tension: 0.2
+            }, {
+                label: 'Snitt skole',
+                data: skolenSnitt,
+                borderColor: '#bdc3c7',
+                borderDash: [5, 5],
+                borderWidth: 2,
+                pointRadius: 0,
+                spanGaps: true,
+                fill: false
+            }]
+        },
+        options: {
+            devicePixelRatio: 2,
+            responsive: false,
+            animation: false,
+            maintainAspectRatio: false,
+            scales: { 
+                y: { min: 0, max: 100, ticks: { font: { size: 10 } } },
+                x: { ticks: { font: { size: 10 } } }
+            },
+            plugins: { 
+                legend: { display: true, position: 'bottom', labels: { boxHeight: 1, font: { size: 10 } } } 
+            }
+        },
+        plugins: [whiteBackground]
+    });
+
+    const bildeData = canvas.toDataURL('image/png');
+    chart.destroy(); 
+    return bildeData;
+}
+
 // --- SLUTT ELEVKORT---
 
 
