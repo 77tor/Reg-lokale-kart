@@ -3489,30 +3489,30 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
             </div>
             <div class="content-container">`);
 
-        for (let elevId of sorterteIder) {
-            if (elevId === 'laast' || elevId === 'ferdigstilt') continue;
-            
-            const elevLes = lesingData[elevId] || {};
-            const elevReg = regningData[elevId] || {};
-            
-            if (!elevLes.oppgaver && !elevReg.oppgaver) continue;
+for (let elevId of sorterteIder) {
+    if (elevId === 'laast' || elevId === 'ferdigstilt') continue;
+    
+    const elevLes = lesingData[elevId] || {};
+    const elevReg = regningData[elevId] || {};
+    
+    if (!elevLes.oppgaver && !elevReg.oppgaver) continue;
 
-            // --- EKSTRA ROBUST NAVNERENSING ---
-            let raaNavn = (elevLes.navn || elevReg.navn || "").trim();
-            
-            // Fjerner "Elev " (uansett store/små bokstaver) i starten av strengen
-            let utenElev = raaNavn.replace(/^elev\s+/i, "");
+    // --- NY LOGIKK FOR DIN STRUKTUR ---
+    // Siden navnet ER selve elevId-en (nøkkelen i Firebase):
+    let raaNavn = elevId; 
 
-            let visningsNavn = "";
+    let visningsNavn = "";
 
-            if (utenElev.includes(',')) {
-                const navneDeler = utenElev.split(',');
-                const etternavn = navneDeler[0].trim();
-                const fornavn = navneDeler[1].trim();
-                visningsNavn = `${fornavn} ${etternavn}`;
-            } else {
-                visningsNavn = utenElev || "Elev " + elevId;
-            }
+    // Snu navnet hvis det inneholder komma (f.eks. "Barria, Cristiano")
+    if (raaNavn.includes(',')) {
+        const navneDeler = raaNavn.split(',');
+        const etternavn = navneDeler[0].trim();
+        const fornavn = navneDeler[1] ? navneDeler[1].trim() : "";
+        visningsNavn = `${fornavn} ${etternavn}`;
+    } else {
+        visningsNavn = raaNavn;
+    }
+    // ----------------------------------
 
             win.document.write(`
                 <div class="elev-side">
