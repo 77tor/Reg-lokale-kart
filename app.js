@@ -3506,28 +3506,16 @@ for (let elevId of sorterteIder) {
     
     const elevLes = lesingData[elevId] || {};
     const elevReg = regningData[elevId] || {};
-    
     if (!elevLes.oppgaver && !elevReg.oppgaver) continue;
 
-    // --- NAVNEHÅNDTERING (Viktig for at visningsNavn skal virke) ---
+    // --- NAVNEHÅNDTERING ---
     let raaNavn = elevId; 
-    let visningsNavn = "";
+    let visningsNavn = raaNavn.includes(',') ? 
+        `${raaNavn.split(',')[1].trim()} ${raaNavn.split(',')[0].trim()}` : raaNavn;
 
-    if (raaNavn.includes(',')) {
-        const navneDeler = raaNavn.split(',');
-        const etternavn = navneDeler[0].trim();
-        const fornavn = navneDeler[1] ? navneDeler[1].trim() : "";
-        visningsNavn = `${fornavn} ${etternavn}`;
-    } else {
-        visningsNavn = raaNavn;
-    }
-
-    // --- GRAF-GENERERING ---
-    // Vi bruker 'await' her fordi lagGrafBilde må bli ferdig før vi går videre
-const grafLesing = await lagGrafBilde("Lesing", trinn, elevId, heleDatabasen);
-const grafRegning = await lagGrafBilde("Regning", trinn, elevId, heleDatabasen);
-
-   // ... etter graf-generering ...
+    // --- GRAF-GENERERING (Nå med bredere format) ---
+    const grafLesing = await lagGrafBilde("Lesing", trinn, elevId, heleDatabasen);
+    const grafRegning = await lagGrafBilde("Regning", trinn, elevId, heleDatabasen);
 
     win.document.write(`
         <div class="elev-side">
@@ -3537,36 +3525,25 @@ const grafRegning = await lagGrafBilde("Regning", trinn, elevId, heleDatabasen);
             </div>
             
             <div class="fag-del">
-                <div style="display: flex; gap: 15px; align-items: flex-start;">
-                    <div style="flex: 3;">
-                        <h2>📚 Lesing</h2>
-                        ${genererElevTabell(elevLes, 'Lesing', aar, periode, trinn, globalLesingListe)}
-                        ${genererTiltaksListe(elevLes, 'Lesing', aar, periode, trinn)}
-                    </div>
-                    <div style="flex: 1; text-align: center; border-left: 1px solid #eee; padding-left: 10px;">
-                        <p style="font-size: 9px; font-weight: bold; color: #7f8c8d; margin-bottom: 5px; text-transform: uppercase;">Utvikling Lesing</p>
-                        <img src="${grafLesing}" style="width: 100%; height: auto; max-height: 110px; object-fit: contain;">
-                    </div>
+                <h2>📚 Lesing</h2>
+                <div style="width: 100%; height: 120px; margin-bottom: 15px; border-bottom: 1px solid #f0f0f0;">
+                    <img src="${grafLesing}" style="width: 100%; height: 100%; object-fit: contain;">
                 </div>
+                ${genererElevTabell(elevLes, 'Lesing', aar, periode, trinn, globalLesingListe)}
+                ${genererTiltaksListe(elevLes, 'Lesing', aar, periode, trinn)}
             </div>
 
             <div class="fag-del">
-                <div style="display: flex; gap: 15px; align-items: flex-start;">
-                    <div style="flex: 3;">
-                        <h2>🧮 Regning</h2>
-                        ${genererElevTabell(elevReg, 'Regning', aar, periode, trinn, globalRegningListe)}
-                        ${genererTiltaksListe(elevReg, 'Regning', aar, periode, trinn)}
-                    </div>
-                    <div style="flex: 1; text-align: center; border-left: 1px solid #eee; padding-left: 10px;">
-                        <p style="font-size: 9px; font-weight: bold; color: #7f8c8d; margin-bottom: 5px; text-transform: uppercase;">Utvikling Regning</p>
-                        <img src="${grafRegning}" style="width: 100%; height: auto; max-height: 110px; object-fit: contain;">
-                    </div>
+                <h2>🧮 Regning</h2>
+                <div style="width: 100%; height: 120px; margin-bottom: 15px; border-bottom: 1px solid #f0f0f0;">
+                    <img src="${grafRegning}" style="width: 100%; height: 100%; object-fit: contain;">
                 </div>
+                ${genererElevTabell(elevReg, 'Regning', aar, periode, trinn, globalRegningListe)}
+                ${genererTiltaksListe(elevReg, 'Regning', aar, periode, trinn)}
             </div>
         </div>
     `);
 }
-
         win.document.write('</div></body></html>');
         win.document.close();
 
@@ -3578,6 +3555,11 @@ const grafRegning = await lagGrafBilde("Regning", trinn, elevId, heleDatabasen);
 
 async function lagGrafBilde(fag, trinn, elevId, alleData) {
     const canvas = document.getElementById('hiddenChartCanvas');
+    
+    // Sett canvas til et bredt format (f.eks. 800x150 piksler)
+    canvas.width = 800;
+    canvas.height = 150;
+    
     const ctx = canvas.getContext('2d');
     
     const whiteBackground = {
@@ -3638,42 +3620,30 @@ async function lagGrafBilde(fag, trinn, elevId, alleData) {
         return Math.round(alleVerdier.reduce((a, b) => a + b, 0) / alleVerdier.length);
     });
 
-    const chart = new Chart(ctx, {
+   const chart = new Chart(ctx, {
         type: 'line',
-        data: {
-            labels: perioder,
-            datasets: [{
-                label: 'Eleven',
-                data: elevProsenter,
-                borderColor: '#3498db',
-                borderWidth: 3,
-                pointRadius: 5,
-                pointBackgroundColor: '#3498db',
-                spanGaps: true, // Binder sammen punkter selv om en periode mangler
-                fill: false,
-                tension: 0.2
-            }, {
-                label: 'Snitt skole',
-                data: skolenSnitt,
-                borderColor: '#bdc3c7',
-                borderDash: [5, 5],
-                borderWidth: 2,
-                pointRadius: 0,
-                spanGaps: true,
-                fill: false
-            }]
-        },
+        data: { /* ... lik som før ... */ },
         options: {
             devicePixelRatio: 2,
             responsive: false,
             animation: false,
-            maintainAspectRatio: false,
+            maintainAspectRatio: false, // Viktig for å tvinge den til å bruke canvas-høyden
             scales: { 
-                y: { min: 0, max: 100, ticks: { font: { size: 10 } } },
-                x: { ticks: { font: { size: 10 } } }
+                y: { 
+                    min: 0, 
+                    max: 100, 
+                    ticks: { font: { size: 10 }, stepSize: 25 } 
+                },
+                x: { 
+                    ticks: { font: { size: 11, weight: 'bold' } } 
+                }
             },
             plugins: { 
-                legend: { display: true, position: 'bottom', labels: { boxHeight: 1, font: { size: 10 } } } 
+                legend: { 
+                    display: true, 
+                    position: 'right', // Flytt legenden til høyre for å spare vertikal plass
+                    labels: { boxWidth: 12, font: { size: 10 } } 
+                } 
             }
         },
         plugins: [whiteBackground]
