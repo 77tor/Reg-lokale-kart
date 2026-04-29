@@ -3552,16 +3552,14 @@ for (let elevId of sorterteIder) {
         alert("En feil oppstod: " + err.message);
     }
 }
-
 async function lagGrafBilde(fag, trinn, elevId, alleData) {
     const canvas = document.getElementById('hiddenChartCanvas');
     
-    // Sett canvas til et bredt format (f.eks. 800x150 piksler)
-    canvas.width = 800;
-    canvas.height = 150;
-    
+    // 1. VIKTIG: Sett fysisk størrelse på canvas for bredformat
+    canvas.width = 1000; 
+    canvas.height = 200; 
     const ctx = canvas.getContext('2d');
-    
+
     const whiteBackground = {
         id: 'white_bg',
         beforeDraw: (chart) => {
@@ -3574,80 +3572,82 @@ async function lagGrafBilde(fag, trinn, elevId, alleData) {
         }
     };
 
-    // 1. Definer periodene du vil vise på grafen
+    // Datahenting (samme som før)
     const perioder = ["Høst", "Vinter", "Vår"];
-    
-    // 2. Hent elevens faktiske data for hver periode
     const elevProsenter = perioder.map(p => {
-        // Vi leter i: alleData[aar][fag][p][trinn][klasse][elevId]
-        // Men siden vi ikke har 'aar' og 'klasse' her, må vi kanskje forenkle eller sende dem med.
-        // Hvis alleData er strukturert slik som i bildet ditt:
-        let sum = 0;
-        let teller = 0;
-        
-        // Finn gjeldende år (f.eks. ved å se på nøklene i alleData)
         for (let aarKey in alleData) {
             const dataForPeriode = alleData[aarKey]?.[fag]?.[p]?.[trinn];
             if (dataForPeriode) {
-                // Let gjennom alle klassene på trinnet etter denne eleven
                 for (let klasseKey in dataForPeriode) {
-                    const elevResultat = dataForPeriode[klasseKey][elevId];
-                    if (elevResultat && elevResultat.totalProsent !== undefined) {
-                        return elevResultat.totalProsent;
-                    }
+                    const resultat = dataForPeriode[klasseKey][elevId];
+                    if (resultat && resultat.totalProsent !== undefined) return resultat.totalProsent;
                 }
             }
         }
-        return null; // Ingen data funnet for denne perioden
+        return null;
     });
 
-    // 3. Hent skolesnittet (du har kanskje en funksjon for dette allerede, f.eks. hentGlobaltSnitt)
+    // Snittberegning (samme som før)
     const skolenSnitt = perioder.map(p => {
-        let alleVerdier = [];
+        let verdier = [];
         for (let aarKey in alleData) {
             const trinnData = alleData[aarKey]?.[fag]?.[p]?.[trinn];
             if (trinnData) {
                 for (let kl in trinnData) {
                     for (let id in trinnData[kl]) {
-                        if (trinnData[kl][id].totalProsent !== undefined) {
-                            alleVerdier.push(trinnData[kl][id].totalProsent);
-                        }
+                        if (trinnData[kl][id].totalProsent !== undefined) verdier.push(trinnData[kl][id].totalProsent);
                     }
                 }
             }
         }
-        if (alleVerdier.length === 0) return null;
-        return Math.round(alleVerdier.reduce((a, b) => a + b, 0) / alleVerdier.length);
+        return verdier.length > 0 ? Math.round(verdier.reduce((a, b) => a + b, 0) / verdier.length) : null;
     });
 
-   const chart = new Chart(ctx, {
+    // 2. Opprett grafen
+    const chart = new Chart(ctx, {
         type: 'line',
-        data: { /* ... lik som før ... */ },
+        data: {
+            labels: perioder,
+            datasets: [{
+                label: 'Eleven',
+                data: elevProsenter,
+                borderColor: '#3498db',
+                backgroundColor: '#3498db',
+                borderWidth: 4,
+                pointRadius: 6,
+                fill: false,
+                tension: 0.1,
+                spanGaps: true
+            }, {
+                label: 'Skolesnitt',
+                data: skolenSnitt,
+                borderColor: '#bdc3c7',
+                borderDash: [5, 5],
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: false,
+                spanGaps: true
+            }]
+        },
         options: {
             devicePixelRatio: 2,
             responsive: false,
-            animation: false,
-            maintainAspectRatio: false, // Viktig for å tvinge den til å bruke canvas-høyden
+            animation: false, // VIKTIG: Skru av animasjon helt
+            maintainAspectRatio: false,
+            layout: { padding: { top: 10, bottom: 10, left: 10, right: 10 } },
             scales: { 
-                y: { 
-                    min: 0, 
-                    max: 100, 
-                    ticks: { font: { size: 10 }, stepSize: 25 } 
-                },
-                x: { 
-                    ticks: { font: { size: 11, weight: 'bold' } } 
-                }
+                y: { min: 0, max: 100, ticks: { font: { size: 12 } } },
+                x: { ticks: { font: { size: 12, weight: 'bold' } } }
             },
             plugins: { 
-                legend: { 
-                    display: true, 
-                    position: 'right', // Flytt legenden til høyre for å spare vertikal plass
-                    labels: { boxWidth: 12, font: { size: 10 } } 
-                } 
+                legend: { display: true, position: 'right' } 
             }
         },
         plugins: [whiteBackground]
     });
+
+    // 3. Tving en tegning før vi henter bilde-URL
+    chart.update(); 
 
     const bildeData = canvas.toDataURL('image/png');
     chart.destroy(); 
