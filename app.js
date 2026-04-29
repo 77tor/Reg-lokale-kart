@@ -3480,9 +3480,9 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
                 @page { size: A4 landscape; margin: 10mm; }
                 body { font-family: sans-serif; padding: 0; margin: 0; background: #f0f0f0; color: #333; }
                 .sticky-menu { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: #2c3e50; display: flex; align-items: center; justify-content: center; gap: 15px; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
-                .content-container { margin-top: 80px; }
-                .elev-side { background: white; width: 277mm; min-height: 190mm; padding: 5mm 10mm; margin: 5px auto; box-sizing: border-box; page-break-after: always; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
-                .header { border-bottom: 2px solid #2c3e50; padding-bottom: 2px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-end; }
+                ..content-container { margin-top: 0 !important; }
+                .elev-side { background: white; width: 277mm; min-height: 190mm; padding: 2mm 10mm; margin: 5px auto; box-sizing: border-box; page-break-after: always; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+                .header { border-bottom: 2px solid #2c3e50; padding-bottom: 2px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: flex-end; }
                 .fag-del { width: 100%; border: 1px solid #eee; padding: 8px; border-radius: 8px; background: #fff; margin-bottom: 8px; }
                 h1 { font-size: 18px; margin: 0; color: #2c3e50; }
                 h2 { color: #2c3e50; border-bottom: 1px solid #3498db; padding-bottom: 3px; font-size: 14px; margin-top: 0; margin-bottom: 5px; }
