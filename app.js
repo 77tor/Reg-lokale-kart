@@ -3552,85 +3552,80 @@ for (let elevId of sorterteIder) {
         alert("En feil oppstod: " + err.message);
     }
 }
+
 async function lagGrafBilde(fag, trinn, elevId, alleData) {
     const canvas = document.getElementById('hiddenChartCanvas');
-    
-    // 1. VIKTIG: Sett fysisk størrelse på canvas for bredformat
-    canvas.width = 1000; 
-    canvas.height = 200; 
+    canvas.width = 1000;
+    canvas.height = 200;
     const ctx = canvas.getContext('2d');
 
-    const whiteBackground = {
-        id: 'white_bg',
-        beforeDraw: (chart) => {
-            const {ctx} = chart;
-            ctx.save();
-            ctx.globalCompositeOperation = 'destination-over';
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, chart.width, chart.height);
-            ctx.restore();
-        }
-    };
+    // Definer de faktiske periodene vi vil lete etter i databasen
+    const databasePerioder = ["Høst", "Vinter", "Vår"];
+    
+    // Vi må lage labels som ser ut som "Høst 24", "Vår 25" etc. basert på årene i databasen
+    let labels = [];
+    let elevDataPunkter = [];
+    let snittDataPunkter = [];
 
-    // Datahenting (samme som før)
-    const perioder = ["Høst", "Vinter", "Vår"];
-   const elevProsenter = perioder.map(p => {
-        const sokNavn = elevId.trim().toLowerCase(); // Vasker søke-ID
-        
-        for (let aarKey in alleData) {
-            const dataForPeriode = alleData[aarKey]?.[fag]?.[p]?.[trinn];
-            if (dataForPeriode) {
-                for (let klasseKey in dataForPeriode) {
-                    const klasseData = dataForPeriode[klasseKey];
-                    
-                    // Let etter match uavhengig av små/store bokstaver eller mellomrom
-                    const faktiskId = Object.keys(klasseData).find(id => 
-                        id.trim().toLowerCase() === sokNavn
-                    );
+    const sokNavn = elevId.trim().toLowerCase();
 
-                    if (faktiskId && klasseData[faktiskId].totalProsent !== undefined) {
-                        return klasseData[faktiskId].totalProsent;
+    // Gå gjennom alle år lagret i databasen (sortert)
+    const sorterteAar = Object.keys(alleData).sort(); 
+
+    for (let aar of sorterteAar) {
+        const kortAar = aar.split('-')[0].substring(2); // Gjør "2024-2025" til "24"
+
+        for (let p of databasePerioder) {
+            const periodeData = alleData[aar]?.[fag]?.[p]?.[trinn];
+            if (!periodeData) continue;
+
+            let funnetElevProsent = null;
+            let alleProsentIKlassen = [];
+
+            // Let gjennom alle klasser (A, B, C...) for denne perioden
+            for (let klasseKey in periodeData) {
+                const elever = periodeData[klasseKey];
+                
+                for (let id in elever) {
+                    if (elever[id].totalProsent !== undefined) {
+                        alleProsentIKlassen.push(elever[id].totalProsent);
+                        
+                        // Sjekk om dette er vår elev
+                        if (id.trim().toLowerCase() === sokNavn) {
+                            funnetElevProsent = elever[id].totalProsent;
+                        }
                     }
                 }
             }
-        }
-        return null;
-    });
 
-    // Snittberegning (samme som før)
-    const skolenSnitt = perioder.map(p => {
-        let verdier = [];
-        for (let aarKey in alleData) {
-            const trinnData = alleData[aarKey]?.[fag]?.[p]?.[trinn];
-            if (trinnData) {
-                for (let kl in trinnData) {
-                    for (let id in trinnData[kl]) {
-                        if (trinnData[kl][id].totalProsent !== undefined) verdier.push(trinnData[kl][id].totalProsent);
-                    }
-                }
+            // Bare legg til punktet på grafen hvis det faktisk finnes data for trinnet i denne perioden
+            if (alleProsentIKlassen.length > 0) {
+                labels.push(`${p} ${kortAar}`);
+                elevDataPunkter.push(funnetElevProsent); // Kan være null, spanGaps håndterer det
+                
+                const snitt = Math.round(alleProsentIKlassen.reduce((a, b) => a + b, 0) / alleProsentIKlassen.length);
+                snittDataPunkter.push(snitt);
             }
         }
-        return verdier.length > 0 ? Math.round(verdier.reduce((a, b) => a + b, 0) / verdier.length) : null;
-    });
+    }
 
-    // 2. Opprett grafen
     const chart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: perioder,
+            labels: labels,
             datasets: [{
                 label: 'Eleven',
-                data: elevProsenter,
+                data: elevDataPunkter,
                 borderColor: '#3498db',
                 backgroundColor: '#3498db',
                 borderWidth: 4,
                 pointRadius: 6,
                 fill: false,
-                tension: 0.1,
+                tension: 0.2,
                 spanGaps: true
             }, {
                 label: 'Skolesnitt',
-                data: skolenSnitt,
+                data: snittDataPunkter,
                 borderColor: '#bdc3c7',
                 borderDash: [5, 5],
                 borderWidth: 2,
@@ -3642,25 +3637,33 @@ async function lagGrafBilde(fag, trinn, elevId, alleData) {
         options: {
             devicePixelRatio: 2,
             responsive: false,
-            animation: false, // VIKTIG: Skru av animasjon helt
+            animation: false,
             maintainAspectRatio: false,
-            layout: { padding: { top: 10, bottom: 10, left: 10, right: 10 } },
             scales: { 
                 y: { min: 0, max: 100, ticks: { font: { size: 12 } } },
-                x: { ticks: { font: { size: 12, weight: 'bold' } } }
+                x: { ticks: { font: { size: 11, weight: 'bold' } } }
             },
             plugins: { 
-                legend: { display: true, position: 'right' } 
+                legend: { display: true, position: 'right' },
+                white_bg: { color: 'white' } // Bruker pluginen vi definerte tidligere
             }
         },
-        plugins: [whiteBackground]
+        plugins: [{
+            id: 'white_bg',
+            beforeDraw: (chart) => {
+                const {ctx} = chart;
+                ctx.save();
+                ctx.globalCompositeOperation = 'destination-over';
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, chart.width, chart.height);
+                ctx.restore();
+            }
+        }]
     });
 
-    // 3. Tving en tegning før vi henter bilde-URL
-    chart.update(); 
-
+    chart.update();
     const bildeData = canvas.toDataURL('image/png');
-    chart.destroy(); 
+    chart.destroy();
     return bildeData;
 }
 
