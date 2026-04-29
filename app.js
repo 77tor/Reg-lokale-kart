@@ -3499,16 +3499,24 @@ for (let elevId of sorterteIder) {
     
     if (!elevLes.oppgaver && !elevReg.oppgaver) continue;
 
-    // --- NY NAVNEHÅNDTERING ---
-    let raaNavn = elevLes.navn || elevReg.navn || "Ukjent Elev";
-    let visningsNavn = raaNavn;
+    // --- FORBEDRET NAVNEHÅNDTERING ---
+    // Vi henter rånavnet fra enten lesing, regning, eller selve objektet hvis det ligger der
+    let raaNavn = elevLes.navn || elevReg.navn || lesingData[elevId]?.navn || regningData[elevId]?.navn || "";
+    
+    let visningsNavn = "";
 
-    if (raaNavn.includes(',')) {
-        // Splitter "Etternavn, Fornavn" -> ["Etternavn", " Fornavn"]
+    if (raaNavn && raaNavn.includes(',')) {
+        // Håndterer "Etternavn, Fornavn"
         const navneDeler = raaNavn.split(',');
         const etternavn = navneDeler[0].trim();
         const fornavn = navneDeler[1].trim();
         visningsNavn = `${fornavn} ${etternavn}`;
+    } else if (raaNavn) {
+        // Hvis navnet ikke har komma, bruker vi det som det er
+        visningsNavn = raaNavn;
+    } else {
+        // Siste utvei hvis alt er tomt
+        visningsNavn = "Elev " + elevId;
     }
     // ---------------------------
 
