@@ -3353,7 +3353,7 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
         return;
     }
 
-    win.document.write('<html><body><p style="font-family:sans-serif; text-align:center; margin-top:50px;">Henter data og forbereder utskrift...</p></body></html>');
+    win.document.write('<html><head><title>Genererer elevkort...</title></head><body><p style="font-family:sans-serif; text-align:center; margin-top:50px;">Henter data og forbereder utskrift...</p></body></html>');
 
     try {
         const [lesingSnap, regningSnap] = await Promise.all([
@@ -3368,34 +3368,73 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
         win.document.open();
         win.document.write(`<html><head><title>Elevkort - ${trinn}${klasse}</title>
             <style>
-                @page { size: A4 portrait; margin: 10mm; }
+                /* Liggende format */
+                @page { size: A4 landscape; margin: 10mm; }
+                
                 body { font-family: sans-serif; padding: 0; margin: 0; background: #f0f0f0; color: #333; }
-                .elev-side { 
-                    background: white; width: 210mm; min-height: 295mm; 
-                    padding: 15mm; margin: 10mm auto; box-sizing: border-box;
-                    page-break-after: always;
+                
+                /* Fast meny på topp */
+                .sticky-menu {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 60px;
+                    background: #2c3e50;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 15px;
+                    z-index: 1000;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
                 }
-                .header { border-bottom: 2px solid #2c3e50; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: flex-end; }
+
+                .content-container {
+                    margin-top: 80px; /* Gir plass til den faste menyen */
+                }
+
+                .elev-side { 
+                    background: white; 
+                    width: 277mm; /* Bredde for A4 landscape minus margin */
+                    min-height: 190mm; 
+                    padding: 10mm; 
+                    margin: 10px auto; 
+                    box-sizing: border-box;
+                    page-break-after: always;
+                    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+                }
+
+                .header { border-bottom: 2px solid #2c3e50; padding-bottom: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: flex-end; }
+                .fag-del { width: 100%; border: 1px solid #eee; padding: 10px; border-radius: 8px; background: #fff; margin-bottom: 15px; }
                 
-                /* ENDRET: Nå stabler de seg vertikalt */
-                .fag-container { display: block; }
-                .fag-del { width: 100%; border: 1px solid #eee; padding: 12px; border-radius: 8px; background: #fff; margin-bottom: 20px; box-sizing: border-box; }
+                h1 { font-size: 20px; margin: 0; color: #2c3e50; }
+                h2 { color: #2c3e50; border-bottom: 1px solid #3498db; padding-bottom: 3px; font-size: 16px; margin-top: 0; margin-bottom: 10px; }
                 
-                h1 { font-size: 22px; margin: 0; color: #2c3e50; }
-                h2 { color: #2c3e50; border-bottom: 1px solid #3498db; padding-bottom: 5px; font-size: 16px; margin-top: 0; }
-                table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 10px; table-layout: fixed; }
-                th, td { border: 1px solid #ccc; padding: 4px; text-align: center; overflow: hidden; text-overflow: ellipsis; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 5px; font-size: 11px; table-layout: auto; }
+                th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
                 th { background: #f8f9fa; font-weight: bold; }
-                .under-grense { color: #c0392b; font-weight: bold; font-size: 10px; margin-top: 5px; background: #fdf2f2; padding: 8px; border-radius: 4px; border-left: 3px solid #c0392b; }
+                
+                .btn-tool { padding: 10px 20px; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; }
+                .btn-print { background: #27ae60; }
+                .btn-close { background: #e74c3c; }
+
                 @media print { 
                     body { background: white; } 
-                    .elev-side { margin: 0; border: none; width: 100%; height: auto; }
-                    .no-print { display: none !important; }
+                    .sticky-menu { display: none !important; }
+                    .content-container { margin-top: 0; }
+                    .elev-side { margin: 0; border: none; width: 100%; box-shadow: none; }
                 }
             </style>
         </head><body>`);
 
-        win.document.write('<div class="no-print" style="padding: 15px; text-align: center; background: #2c3e50;"><button onclick="window.print()" style="padding: 10px 25px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size:14px;">🖨️ Skriv ut alle elevkort</button></div>');
+        // Menyen som alltid ligger på topp
+        win.document.write(`
+            <div class="sticky-menu">
+                <button onclick="window.print()" class="btn-tool btn-print">🖨️ Skriv ut alle elevkort</button>
+                <button onclick="window.close()" class="btn-tool btn-close">❌ Lukk</button>
+            </div>
+            <div class="content-container">
+        `);
 
         const sorterteIder = Array.from(elevIder).sort((a, b) => {
             const navnA = (lesingData[a]?.navn || regningData[a]?.navn || "").toLowerCase();
@@ -3418,34 +3457,33 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
                             <span style="color: #34495e; font-weight:bold;">Klasse: ${trinn}${klasse}</span>
                         </div>
                         <div style="text-align: right; font-size: 12px;">
-                            <span style="background:#3498db; color:white; padding: 2px 10px; border-radius:10px;">${periode} ${aar}</span>
+                            <span style="background:#3498db; color:white; padding: 2px 10px; border-radius:10px; font-weight:bold;">${periode.toUpperCase()} ${aar}</span>
                         </div>
                     </div>
-                    <div class="fag-container">
-                        <div class="fag-del">
-                            <h2>📚 Lesing</h2>
-                            ${genererElevTabell(elevLes, 'Lesing', aar, periode, trinn)}
-                            ${genererTiltaksListe(elevLes, 'Lesing', aar, periode, trinn)}
-                        </div>
-                        <div class="fag-del">
-                            <h2>🧮 Regning</h2>
-                            ${genererElevTabell(elevReg, 'Regning', aar, periode, trinn)}
-                            ${genererTiltaksListe(elevReg, 'Regning', aar, periode, trinn)}
-                        </div>
+                    <div class="fag-del">
+                        <h2>📚 Lesing</h2>
+                        ${genererElevTabell(elevLes, 'Lesing', aar, periode, trinn)}
+                        ${genererTiltaksListe(elevLes, 'Lesing', aar, periode, trinn)}
+                    </div>
+                    <div class="fag-del">
+                        <h2>🧮 Regning</h2>
+                        ${genererElevTabell(elevReg, 'Regning', aar, periode, trinn)}
+                        ${genererTiltaksListe(elevReg, 'Regning', aar, periode, trinn)}
                     </div>
                 </div>
             `);
         }
 
-        win.document.write('</body></html>');
+        win.document.write('</div></body></html>'); // Lukker content-container
         win.document.close();
 
     } catch (err) {
         console.error("Feil:", err);
         if (win) win.close();
-        alert("En feil oppstod. Se konsollen.");
+        alert("En feil oppstod under generering.");
     }
 }
+
 // --- SLUTT ELEVKORT---
 
 
