@@ -3270,7 +3270,7 @@ function lukkAdmin() {
 
 // --- START ELEVKORT---
 // --- Hjelpefunksjon---
-function genererElevTabell(elevData, fag, aar, periode, trinn, snittData = {}) {
+function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = []) {
     const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
     const mal = analyseMaler[fag]?.[trinn]?.[periode];
     if (!oppsett || !elevData.oppgaver) return "<p>Ingen data registrert.</p>";
@@ -3279,9 +3279,24 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, snittData = {}) {
     const elevensTotalSum = elevData.sum || 0;
     const kritiskGrenseTotal = oppsett.grenseTotal || 0;
     
-    // Fargekoding for elevens totalsum (bakgrunn basert på status)
+    // Fargekoding for totalsum (Rød/Grønn bakgrunn)
     const totalBakgrunn = elevensTotalSum < kritiskGrenseTotal ? "#ff7675" : "#55efc4";
-    const totalTekstFarge = "#2d3436"; // Mørk tekst for bedre lesbarhet på farget bakgrunn
+    const totalTekstFarge = "#2d3436";
+
+    // --- BEREGNING AV SNITT FOR PRØVEN ---
+    const antallElever = alleEleverData.length;
+    let oppgaveSnitt = [];
+    let totalSnittSum = 0;
+
+    if (antallElever > 0) {
+        oppsett.oppgaver.forEach((_, i) => {
+            const sumOppgave = alleEleverData.reduce((s, elev) => s + (elev.oppgaver[i] || 0), 0);
+            oppgaveSnitt.push((sumOppgave / antallElever).toFixed(1));
+        });
+        const sumAlleTotaler = alleEleverData.reduce((s, elev) => s + (elev.sum || 0), 0);
+        totalSnittSum = (sumAlleTotaler / antallElever).toFixed(1);
+    }
+    // -------------------------------------
 
     const totalProsent = faktisktMaksTotal > 0 
         ? Math.min(100, Math.round((elevensTotalSum / faktisktMaksTotal) * 100)) 
@@ -3293,12 +3308,18 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, snittData = {}) {
                 <th style="text-align: left; width: 100px; padding: 2px; font-size: 10px; border: 1px solid #ddd;">Oppgave</th>
                 ${oppsett.oppgaver.map((o, i) => {
                     const navn = mal?.oppgaver?.[(i + 1).toString()]?.navn || o.navn || 'O'+(i+1);
-                    // Splitter tekst ved mellomrom og tar kun de 3 første ordene for å holde høyden nede
-                    const ord = navn.split(' ');
-                    const visningsNavn = ord.slice(0, 3).join('<br>');
                     
-                    return `<th style="font-size: 8px; padding: 2px; height: 35px; vertical-align: middle; text-align: center; border: 1px solid #ddd; line-height: 1;">
-                                <div style="max-height: 32px; overflow: hidden;">${visningsNavn}</div>
+                    // Betinget formatering: Del tekst kun hvis det er Regning
+                    let visningsNavn;
+                    if (fag === "Regning") {
+                        const ord = navn.split(' ');
+                        visningsNavn = ord.slice(0, 3).join('<br>');
+                    } else {
+                        visningsNavn = navn; // Full tekst på én linje for Lesing
+                    }
+                    
+                    return `<th style="font-size: 8px; padding: 2px; height: 35px; vertical-align: middle; text-align: center; border: 1px solid #ddd; line-height: 1.1;">
+                                <div style="max-height: 32px; overflow: hidden; word-wrap: break-word;">${visningsNavn}</div>
                             </th>`;
                 }).join('')}
                 <th style="background-color: #2c3e50; color: white; width: 50px; padding: 2px; font-size: 10px; border: 1px solid #2c3e50;">TOTAL</th>
@@ -3322,11 +3343,8 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, snittData = {}) {
 
             <tr style="background-color: #fafafa; font-style: italic; color: #636e72;">
                 <td style="text-align: left; padding: 2px; border: 1px solid #ddd;">Snitt for prøven</td>
-                ${oppsett.oppgaver.map((o, i) => {
-                    const snitt = (snittData && snittData.oppgaveSnitt) ? snittData.oppgaveSnitt[i] || '-' : '-';
-                    return `<td style="border: 1px solid #ddd;">${snitt}</td>`;
-                }).join('')}
-                <td style="border: 1px solid #ddd; font-weight: bold;">${snittData.totalSnitt || '-'}</td>
+                ${oppgaveSnitt.map(s => `<td style="border: 1px solid #ddd;">${s}</td>`).join('')}
+                <td style="border: 1px solid #ddd; font-weight: bold;">${totalSnittSum}</td>
             </tr>
 
             <tr style="background-color: #fff; border-top: 2px solid #2c3e50;">
