@@ -3293,7 +3293,7 @@ function hentGlobaltSnitt(heleDatabasen, fag, periode, trinn, gjeldendeAar) {
     return alleResultater;
 }
 
-// --- Hjelpefunksjon 2---
+
 // --- Hjelpefunksjon 2 (Oppdatert med sjekk for gjennomføring) ---
 function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = []) {
     const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
@@ -3712,7 +3712,7 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                 pointBackgroundColor: '#3498db',
                 fill: false,
                 tension: 0.1,
-                spanGaps: true
+                spanGaps: true,
                 clip: false
             }, {
                 label: 'Trinnsnitt',
