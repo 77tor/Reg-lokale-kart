@@ -3274,60 +3274,62 @@ function genererElevTabell(elevData, fag, aar, periode, trinn) {
     const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
     if (!oppsett || !elevData.oppgaver) return "<p>Ingen data registrert.</p>";
 
-    // Beregn faktisk total maks poengsum basert på oppgavene
     const faktisktMaksTotal = oppsett.oppgaver.reduce((sum, o) => sum + (o.maks || 0), 0);
     const elevensTotalSum = elevData.sum || 0;
+    const kritiskGrenseTotal = oppsett.grenseTotal || 0;
     
-    // Beregn total prosent (maks 100%)
+    // Fargekoding for totalsummen
+    const totalStatusFarge = elevensTotalSum < kritiskGrenseTotal ? "#ff7675" : "#55efc4";
+
     const totalProsent = faktisktMaksTotal > 0 
         ? Math.min(100, Math.round((elevensTotalSum / faktisktMaksTotal) * 100)) 
         : 0;
 
-    let html = `<table style="border: 2px solid #2c3e50; table-layout: fixed; width: 100%;">
+    let html = `<table style="border: 1px solid #2c3e50; table-layout: fixed; width: 100%; border-collapse: collapse;">
         <thead>
             <tr style="background-color: #f8f9fa;">
-                <th style="text-align: left; width: 140px;">Oppgave</th>
-                ${oppsett.oppgaver.map((o, i) => `<th style="font-size: 9px;">${o.navn || 'O'+(i+1)}</th>`).join('')}
-                <th style="background-color: #2c3e50; color: white; width: 60px;">TOTAL</th>
+                <th style="text-align: left; width: 110px; padding: 3px; font-size: 10px;">Oppgave</th>
+                ${oppsett.oppgaver.map((o, i) => `<th style="font-size: 8px; padding: 2px;">${o.navn || 'O'+(i+1)}</th>`).join('')}
+                <th style="background-color: #2c3e50; color: white; width: 50px; padding: 3px; font-size: 10px;">TOTAL</th>
             </tr>
         </thead>
-        <tbody>
-            <tr style="background-color: #f1f8f5;">
-                <td style="text-align: left; font-weight: bold;">Maks poengsum</td>
-                ${oppsett.oppgaver.map(o => `<td>${o.maks}</td>`).join('')}
-                <td style="font-weight: bold;">${faktisktMaksTotal}</td>
+        <tbody style="font-size: 10px;">
+            <tr style="background-color: #f1f8f5; line-height: 1.2;">
+                <td style="text-align: left; font-weight: bold; padding: 2px;">Maks</td>
+                ${oppsett.oppgaver.map(o => `<td style="padding: 2px;">${o.maks}</td>`).join('')}
+                <td style="font-weight: bold; padding: 2px;">${faktisktMaksTotal}</td>
             </tr>
             
-            <tr>
-                <td style="text-align: left; font-weight: bold;">Kritisk grense</td>
+            <tr style="line-height: 1.2;">
+                <td style="text-align: left; font-weight: bold; padding: 2px;">Grense</td>
                 ${oppsett.oppgaver.map(o => {
                     const g = o.grense !== undefined && o.grense !== -1 ? o.grense : 0;
-                    return `<td style="color: #c0392b; font-weight: bold;">${g}</td>`;
+                    return `<td style="color: #c0392b; font-weight: bold; padding: 2px;">${g}</td>`;
                 }).join('')}
-                <td style="color: #c0392b; font-weight: bold;">${oppsett.grenseTotal || 0}</td>
+                <td style="color: #ff7675; font-weight: bold; padding: 2px;">${kritiskGrenseTotal}</td>
             </tr>
 
-            <tr style="background-color: #fff; border-top: 2px solid #2c3e50;">
-                <td style="text-align: left; font-weight: bold;">Elevens resultat</td>
+            <tr style="background-color: #fff; border-top: 1.5px solid #2c3e50; line-height: 1.4;">
+                <td style="text-align: left; font-weight: bold; padding: 4px 2px;">Resultat</td>
                 ${oppsett.oppgaver.map((o, i) => {
                     const poeng = elevData.oppgaver[i] || 0;
                     const grense = o.grense !== undefined && o.grense !== -1 ? o.grense : 0;
                     const erUnder = poeng < grense;
                     const farge = erUnder ? "#fdf2f2" : "#f2f9f2";
                     const tekstFarge = erUnder ? "#c0392b" : "#27ae60";
-                    return `<td style="background-color: ${farge}; color: ${tekstFarge}; font-weight: bold; font-size: 13px;">${poeng}</td>`;
+                    return `<td style="background-color: ${farge}; color: ${tekstFarge}; font-weight: bold; font-size: 11px; padding: 2px;">${poeng}</td>`;
                 }).join('')}
-                <td style="background-color: #2c3e50; color: white; font-weight: bold; font-size: 13px;">${elevensTotalSum}</td>
+                <td style="background-color: #2c3e50; color: ${totalStatusFarge}; font-weight: bold; font-size: 12px; padding: 2px;">${elevensTotalSum}</td>
             </tr>
 
-            <tr style="font-size: 9px; background-color: #f8f9fa;">
-                <td style="text-align: left; font-weight: bold;">I % av maks</td>
+            <tr style="font-size: 8px; background-color: #f8f9fa; color: #666; line-height: 1.1;">
+                <td style="text-align: left; font-weight: bold; padding: 1px;">% av maks</td>
                 ${oppsett.oppgaver.map((o, i) => {
                     const poeng = elevData.oppgaver[i] || 0;
                     const prosent = o.maks > 0 ? Math.min(100, Math.round((poeng / o.maks) * 100)) : 0;
-                    return `<td>${prosent}%</td>`;
+                    return `<td style="padding: 1px;">${prosent}%</td>`;
                 }).join('')}
-                <td style="font-weight: bold;">${totalProsent}%</td>
+                <td style="font-weight: bold; padding: 1px; color: ${totalStatusFarge};">${totalProsent}%</td>
             </tr>
         </tbody>
     </table>`;
