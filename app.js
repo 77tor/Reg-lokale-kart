@@ -3194,7 +3194,7 @@ htmlSide4 += `<div style="text-align:center; margin: 20px 0 40px 0;">
             <body>
                 <div class="toolbar">
                     <button onclick="window.print()" style="background:#2980b9;" class="btn-tool">🖨️ Skriv ut / Lagre PDF</button>
-                    <button onclick="window.opener.genererElevkortKlasse('${aar}', '${trinn}', '${klasse}', '${periode}')" style="background:#27ae60;" class="btn-tool">👤 Elevkort (Hele klassen)</button>
+                    <button onclick="const win = window.open('', '_blank'); window.opener.genererElevkortKlasse('${aar}', '${trinn}', '${klasse}', '${periode}', win)" style="background:#27ae60;" class="btn-tool">👤 Elevkort (Hele klassen)</button>
                     <a href="${oppgaveSti}" target="_blank" style="background:#8e44ad;" class="btn-tool">📄 Se prøve</a>
                     ${harFasit ? `<a href="${fasitSti}" target="_blank" style="background:#2c3e50;" class="btn-tool">✅ Se fasit</a>` : ''}
                     <button onclick="window.close()" class="btn-tool btn-grey">Lukk</button>
@@ -3316,20 +3316,23 @@ function genererTiltaksListe(elevData, fag, aar, periode, trinn) {
 }
 
 // --- Hovedfunksjon ---
-async function genererElevkortKlasse(aar, trinn, klasse, periode) {
-    // 1. Åpne vinduet UMIDDELBART ved klikk (viktig for popup-blokkerer)
-    const win = window.open('', '_blank');
+async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
+    console.log("Genererer elevkort for:", aar, trinn, klasse, periode);
+
+    // VIKTIG: Vi sjekker om 'win' finnes. Hvis ikke (f.eks. ved direkte kall), åpner vi det.
+    if (!win || win === null) {
+        win = window.open('', '_blank');
+    }
     
     if (!win) {
-        alert("Popup ble blokkert! Se etter ikonet i adressefeltet for å tillate popups.");
+        alert("Popup ble blokkert! Vennligst tillat popups i adressefeltet.");
         return;
     }
 
-    // 2. Vis en lastemelding med en gang
-    win.document.write('<html><body><p>Henter data fra databasen...</p></body></html>');
+    win.document.write('<html><body><p style="font-family:sans-serif; text-align:center; margin-top:50px;">Henter data og forbereder utskrift...</p></body></html>');
 
     try {
-        // 3. Nå kan vi gjøre de tunge asynkrone tingene
+        // Hent data mens vinduet allerede er åpent og "godkjent" av nettleseren
         const [lesingSnap, regningSnap] = await Promise.all([
             db.ref(`kartlegging/${aar}/Lesing/${periode}/${trinn}/${klasse}`).once('value'),
             db.ref(`kartlegging/${aar}/Regning/${periode}/${trinn}/${klasse}`).once('value')
