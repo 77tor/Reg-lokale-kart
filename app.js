@@ -3725,27 +3725,26 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                 spanGaps: true
             }]
         },
-        options: {
-            devicePixelRatio: 3, // Høy oppløsning for utskrift
+options: {
+            devicePixelRatio: 3,
             animation: false,
             responsive: false,
             maintainAspectRatio: false,
             scales: {
                 y: { 
-    min: 30, 
-    max: 105, // Øk fra 100 til 105 for å unngå kutting
-    ticks: { 
-        stepSize: 10,
-        font: { size: 9 },
-        // Denne funksjonen sørger for at vi ikke viser "105" på aksen
-        callback: function(value) {
-            if (value <= 100) return value; 
-        }
-    },
-    // Valgfritt: Legg til litt padding i toppen av aksen
-    grace: '5%' 
-}
-                x: { ticks: { font: { size: 9, weight: 'bold' } } }
+                    min: 30, 
+                    max: 105, 
+                    ticks: { 
+                        stepSize: 10,
+                        font: { size: 9 },
+                        callback: function(value) {
+                            if (value <= 100) return value; 
+                        }
+                    }
+                }, // <--- DETTE KOMMAET må være her
+                x: { 
+                    ticks: { font: { size: 9, weight: 'bold' } } 
+                }
             },
             plugins: {
                 legend: { position: 'right', labels: { boxWidth: 10, font: { size: 9 } } }
