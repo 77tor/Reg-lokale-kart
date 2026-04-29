@@ -3481,10 +3481,10 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
                 body { font-family: sans-serif; padding: 0; margin: 0; background: #f0f0f0; color: #333; }
                 .sticky-menu { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: #2c3e50; display: flex; align-items: center; justify-content: center; gap: 15px; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
                 .content-container { margin-top: 80px; }
-                .elev-side { background: white; width: 277mm; min-height: 190mm; padding: 10mm; margin: 10px auto; box-sizing: border-box; page-break-after: always; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
-                .header { border-bottom: 2px solid #2c3e50; padding-bottom: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: flex-end; }
+                .elev-side { background: white; width: 277mm; min-height: 190mm; padding: 5mm 10mm; margin: 5px auto; box-sizing: border-box; page-break-after: always; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+                .header { border-bottom: 2px solid #2c3e50; padding-bottom: 2px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-end; }
                 .fag-del { width: 100%; border: 1px solid #eee; padding: 10px; border-radius: 8px; background: #fff; margin-bottom: 15px; }
-                h1 { font-size: 20px; margin: 0; color: #2c3e50; }
+                h1 { font-size: 18px; margin: 0; color: #2c3e50; }
                 h2 { color: #2c3e50; border-bottom: 1px solid #3498db; padding-bottom: 3px; font-size: 16px; margin-top: 0; margin-bottom: 10px; }
                 .btn-tool { padding: 10px 20px; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; }
                 .btn-print { background: #27ae60; }
