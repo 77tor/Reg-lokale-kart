@@ -3348,21 +3348,23 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = 
             </tr>
         </thead>
         <tbody style="font-size: 10px; text-align: center;">
-            <tr style="background-color: #f1f8f5;">
-                <td style="text-align: left; font-weight: bold; padding: 2px; border: 1px solid #ddd;">Maks poengsum</td>
-                ${oppsett.oppgaver.map(o => `<td style="border: 1px solid #ddd;">${o.maks}</td>`).join('')}
-                <td style="font-weight: bold; border: 1px solid #ddd;">${faktisktMaksTotal}</td>
-            </tr>
-            <tr style="color: #c0392b; font-weight: bold;">
-                <td style="text-align: left; padding: 2px; border: 1px solid #ddd;">Kritisk grense</td>
-                ${oppsett.oppgaver.map(o => `<td style="border: 1px solid #ddd;">${(o.grense !== undefined && o.grense !== -1) ? o.grense : '-'}</td>`).join('')}
-                <td style="border: 1px solid #ddd;">${kritiskGrenseTotal}</td>
-            </tr>
-            <tr style="background-color: #fafafa; font-style: italic; color: #636e72;">
-                <td style="text-align: left; padding: 2px; border: 1px solid #ddd;">Snitt for prøven</td>
-                ${oppgaveSnitt.map(s => `<td style="border: 1px solid #ddd;">${s}</td>`).join('')}
-                <td style="border: 1px solid #ddd; font-weight: bold;">${totalSnittSum}</td>
-            </tr>
+<tr style="background-color: #d4edda; color: #000000;">
+    <td style="text-align: left; font-weight: bold; padding: 2px; border: 1px solid #ddd;">Maks poengsum</td>
+    ${oppsett.oppgaver.map(o => `<td style="border: 1px solid #ddd;">${o.maks}</td>`).join('')}
+    <td style="font-weight: bold; border: 1px solid #ddd;">${faktisktMaksTotal}</td>
+</tr>
+
+<tr style="background-color: #f8d7da; color: #000000;">
+    <td style="text-align: left; padding: 2px; border: 1px solid #ddd;">Kritisk grense</td>
+    ${oppsett.oppgaver.map(o => `<td style="border: 1px solid #ddd;">${(o.grense !== undefined && o.grense !== -1) ? o.grense : '-'}</td>`).join('')}
+    <td style="border: 1px solid #ddd;">${kritiskGrenseTotal}</td>
+</tr>
+
+<tr style="background-color: #e2e3e5; color: #000000;">
+    <td style="text-align: left; padding: 2px; border: 1px solid #ddd;">Snitt for prøven</td>
+    ${oppgaveSnitt.map(s => `<td style="border: 1px solid #ddd;">${s}</td>`).join('')}
+    <td style="border: 1px solid #ddd; font-weight: bold;">${totalSnittSum}</td>
+</tr>
             <tr style="background-color: #fff; border-top: 2px solid #2c3e50;">
                 <td style="text-align: left; font-weight: bold; padding: 4px 2px; border: 1px solid #ddd;">Elevens resultat</td>
                 ${oppsett.oppgaver.map((o, i) => {
