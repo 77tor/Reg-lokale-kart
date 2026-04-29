@@ -3367,11 +3367,20 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = 
 </tr>
             <tr style="background-color: #fff; border-top: 2px solid #2c3e50;">
                 <td style="text-align: left; font-weight: bold; padding: 4px 2px; border: 1px solid #ddd;">Elevens resultat</td>
-                ${oppsett.oppgaver.map((o, i) => {
-                    const poeng = elevData.oppgaver[i] || 0;
-                    const erUnder = poeng < (o.grense || 0);
-                    return `<td style="background-color: ${erUnder ? "#fdf2f2" : "#f2f9f2"}; color: ${erUnder ? "#c0392b" : "#27ae60"}; font-weight: bold; font-size: 11px; border: 1px solid #ddd;">${poeng}</td>`;
-                }).join('')}
+
+${oppsett.oppgaver.map((o, i) => {
+    const poeng = elevData.oppgaver[i] || 0;
+    const erUnder = poeng < (o.grense || 0);
+    
+    // Hvis faget er Regning, bruk hvit bakgrunn og sort tekst
+    // Ellers bruk rød/grønn logikk som før
+    const cellStyle = (fag === "Regning") 
+        ? `background-color: #ffffff; color: #000000;` 
+        : `background-color: ${erUnder ? "#fdf2f2" : "#f2f9f2"}; color: ${erUnder ? "#c0392b" : "#27ae60"};`;
+
+    return `<td style="${cellStyle} font-weight: bold; font-size: 11px; border: 1px solid #ddd;">${poeng}</td>`;
+}).join('')}
+
                 <td style="background-color: ${totalBakgrunn}; color: #2d3436; font-weight: bold; font-size: 12px; border: 1px solid #2c3e50;">${elevensTotalSum}</td>
             </tr>
 
