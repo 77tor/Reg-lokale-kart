@@ -3390,10 +3390,15 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = 
 }
 // --- Slutt hjelpefunksjon---
 
-
 // --- Start tiltaksliste (Kompakt versjon) ---
 function genererTiltaksListe(elevData, fag, aar, periode, trinn) {
+    // --- NY SJEKK: Skjul fokusområder hvis prøven ikke er tatt ---
+    if (elevData.ikkeGjennomfort) {
+        return ""; // Returnerer ingenting, så boksen forsvinner helt
+    }
+
     const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
+    // Lagt til sjekk for elevData.oppgaver her også for sikkerhets skyld
     if (!oppsett || !elevData.oppgaver) return "";
 
     let tiltakArray = [];
@@ -3403,14 +3408,14 @@ function genererTiltaksListe(elevData, fag, aar, periode, trinn) {
 
     oppsett.oppgaver.forEach((o, i) => {
         const poeng = elevData.oppgaver[i] || 0;
-        const prosent = (poeng / o.maks) * 100;
+        const oMaks = o.maks || 1; // Unngå deling på null
+        const prosent = (poeng / oMaks) * 100;
 
         if (prosent < 70) {
             harUnder70 = true;
             const oppgaveInfo = mal?.oppgaver?.[(i + 1).toString()];
             const visningsNavn = oppgaveInfo?.navn || o.navn || `Oppgave ${i + 1}`;
             
-            // Lager en kompakt tekststreng for denne oppgaven
             tiltakArray.push(`
                 <span style="white-space: nowrap; margin-right: 15px;">
                     <span style="font-weight: bold;">${visningsNavn}</span> 
@@ -3426,7 +3431,6 @@ function genererTiltaksListe(elevData, fag, aar, periode, trinn) {
             </div>`;
     }
 
-    // Her returnerer vi alt på én linje ved å bruke .join('')
     return `
         <div style="margin-top: 5px; background: #fffaf0; border: 1px solid #f39c12; padding: 5px 10px; border-radius: 5px; font-size: 11px;">
             <span style="font-weight: bold; color: #d35400; text-transform: uppercase; margin-right: 10px; border-right: 1px solid #f39c12; padding-right: 10px;">
