@@ -3268,108 +3268,14 @@ function lukkAdmin() {
 }
 
 
-async function genererElevkortKlasse(aar, trinn, klasseNavn, periode) {     
-    const win = window.open('', '_blank');
-    win.document.write('<html><head><title>Elevkort - ' + klasseNavn + '</title>');
-    
-    // Gjenbruk stiler fra analyse-delen, men legg til spesifikke for elevkort
-    win.document.write(`
-        <style>
-            @page { size: A4 portrait; margin: 10mm; }
-            body { font-family: sans-serif; padding: 0; margin: 0; background: #eee; }
-            .elev-side { 
-                background: white; width: 210mm; min-height: 297mm; 
-                padding: 15mm; margin: 10mm auto; box-sizing: border-box;
-                page-break-after: always; box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            }
-            .header { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; }
-            .fag-container { display: flex; gap: 20px; }
-            .fag-del { flex: 1; border: 1px solid #ddd; padding: 10px; border-radius: 5px; }
-            h2 { color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 5px; font-size: 18px; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 11px; }
-            th, td { border: 1px solid #333; padding: 4px; text-align: center; }
-            th { background: #f8f9fa; }
-            .under-grense { color: #e74c3c; font-weight: bold; font-size: 10px; margin-top: 5px; }
-            .chart-placeholder { height: 120px; border: 1px dashed #ccc; margin-top: 10px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999; }
-            @media print { 
-                body { background: white; } 
-                .elev-side { margin: 0; box-shadow: none; border: none; }
-                .no-print { display: none; }
-            }
-        </style>
-    `);
-    win.document.write('</head><body>');
-    win.document.write('<div class="no-print" style="padding: 10px; text-align: center;"><button onclick="window.print()" class="btn-tool" style="padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer;">Skriv ut alle elevkort</button></div>');
-
-    try {
-        // Hent data for begge fag
-        const [lesingSnap, regningSnap] = await Promise.all([
-            db.ref(`kartlegging/${aar}/Lesing/${periode}/${trinn}/${klasseNavn}`).once('value'),
-            db.ref(`kartlegging/${aar}/Regning/${periode}/${trinn}/${klasseNavn}`).once('value')
-        ]);
-
-        const lesingData = lesingSnap.val() || {};
-        const regningData = regningSnap.val() || {};
-        
-        // Hent elevliste (alle unike ID-er fra begge fag)
-        const elevIder = new Set([...Object.keys(lesingData), ...Object.keys(regningData)]);
-        
-        for (let elevId of elevIder) {
-            if (elevId === 'laast' || elevId === 'ferdigstilt') continue;
-            
-            const elevLes = lesingData[elevId] || {};
-            const elevReg = regningData[elevId] || {};
-            const navn = elevLes.navn || elevReg.navn || "Ukjent elev";
-
-            let html = `<div class="elev-side">
-                <div class="header">
-                    <div>
-                        <h1 style="margin:0;">${navn}</h1>
-                        <span style="color: #666;">Klasse: ${trinn}${klasseNavn}</span>
-                    </div>
-                    <div style="text-align: right;">
-                        <strong>${periode} ${aar}</strong><br>
-                        Elevkort - Kartlegging
-                    </div>
-                </div>
-
-                <div class="fag-container">
-                    <div class="fag-del">
-                        <h2>Lesing</h2>
-                        ${genererElevTabell(elevLes, 'Lesing', aar, periode, trinn)}
-                        ${genererTiltaksListe(elevLes, 'Lesing', aar, periode, trinn)}
-                        <div class="chart-placeholder">Utviklingsdiagram (Historikk) kommer her</div>
-                    </div>
-
-                    <div class="fag-del">
-                        <h2>Regning</h2>
-                        ${genererElevTabell(elevReg, 'Regning', aar, periode, trinn)}
-                        ${genererTiltaksListe(elevReg, 'Regning', aar, periode, trinn)}
-                        <div class="chart-placeholder">Utviklingsdiagram (Historikk) kommer her</div>
-                    </div>
-                </div>
-            </div>`;
-            
-            win.document.write(html);
-        }
-
-        win.document.write('</body></html>');
-        win.document.close();
-
-    } catch (err) {
-        console.error(err);
-        win.close();
-        alert("Kunne ikke generere elevkort: " + err.message);
-    }
-}
-
-// Hjelpefunksjon for å lage tabellen (tilsvarer Side 1 i analysen)
+// --- START ELEVKORT---
+// --- Hjelpefunksjon---
 function genererElevTabell(elevData, fag, aar, periode, trinn) {
     const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
-    if (!oppsett || !elevData.oppgaver) return "<p>Ingen data registrert.</p>";
+    if (!oppsett || !elevData.oppgaver) return "<p style='font-size:10px; color:gray;'>Ingen data registrert for dette faget.</p>";
 
     let html = `<table><thead><tr>`;
-    oppsett.oppgaver.forEach((o, i) => html += `<th>Oppg ${i+1}</th>`);
+    oppsett.oppgaver.forEach((o, i) => html += `<th>O${i+1}</th>`);
     html += `<th>Sum</th></tr></thead><tbody><tr>`;
     
     oppsett.oppgaver.forEach((o, i) => {
@@ -3378,17 +3284,14 @@ function genererElevTabell(elevData, fag, aar, periode, trinn) {
     });
     
     html += `<td style="font-weight:bold;">${elevData.sum || 0}</td></tr>`;
-    
-    // Legg til en rad for maks
-    html += `<tr style="font-size: 9px; color: #666;">`;
-    oppsett.oppgaver.forEach(o => html += `<td>/ ${o.maks}</td>`);
-    html += `<td>/ ${oppsett.grenseTotal}</td></tr>`;
+    html += `<tr style="font-size: 8px; color: #666; background:#f9f9f9;">`;
+    oppsett.oppgaver.forEach(o => html += `<td>${o.maks}</td>`);
+    html += `<td>${oppsett.grenseTotal}</td></tr>`;
     
     html += `</tbody></table>`;
     return html;
 }
 
-// Hjelpefunksjon for å liste oppgaver under 70%
 function genererTiltaksListe(elevData, fag, aar, periode, trinn) {
     const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
     if (!oppsett || !elevData.oppgaver) return "";
@@ -3402,7 +3305,7 @@ function genererTiltaksListe(elevData, fag, aar, periode, trinn) {
         }
     });
 
-    if (svakeOppgaver.length === 0) return "<p style='color: green; font-size: 10px;'>✔️ Alle områder over 70%</p>";
+    if (svakeOppgaver.length === 0) return "<p style='color: green; font-size: 10px; font-weight:bold;'>✔️ Alle områder over 70%</p>";
 
     return `<div class="under-grense">
         ⚠️ Områder under 70%:
@@ -3411,6 +3314,115 @@ function genererTiltaksListe(elevData, fag, aar, periode, trinn) {
         </ul>
     </div>`;
 }
+
+// --- Hovedfunksjon ---
+async function genererElevkortKlasse(aar, trinn, klasse, periode) {
+    console.log("Genererer elevkort for:", aar, trinn, klasse, periode);
+
+    const win = window.open('', '_blank');
+    if (!win) {
+        alert("Popup ble blokkert! Vennligst tillat popups for å se elevkort.");
+        return;
+    }
+
+    win.document.write('<html><head><title>Genererer elevkort...</title></head><body><p style="font-family:sans-serif; text-align:center; margin-top:50px;">Genererer elevkort for klassen, vennligst vent...</p></body></html>');
+
+    try {
+        const [lesingSnap, regningSnap] = await Promise.all([
+            db.ref(`kartlegging/${aar}/Lesing/${periode}/${trinn}/${klasse}`).once('value'),
+            db.ref(`kartlegging/${aar}/Regning/${periode}/${trinn}/${klasse}`).once('value')
+        ]);
+
+        const lesingData = lesingSnap.val() || {};
+        const regningData = regningSnap.val() || {};
+        const elevIder = new Set([...Object.keys(lesingData), ...Object.keys(regningData)]);
+        
+        win.document.open();
+        win.document.write(`<html><head><title>Elevkort - ${trinn}${klasse}</title>
+            <style>
+                @page { size: A4 portrait; margin: 10mm; }
+                body { font-family: sans-serif; padding: 0; margin: 0; background: #f0f0f0; color: #333; }
+                .elev-side { 
+                    background: white; width: 210mm; min-height: 295mm; 
+                    padding: 15mm; margin: 10mm auto; box-sizing: border-box;
+                    page-break-after: always; position: relative;
+                }
+                .header { border-bottom: 2px solid #2c3e50; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+                .fag-container { display: flex; gap: 15px; }
+                .fag-del { flex: 1; border: 1px solid #eee; padding: 12px; border-radius: 8px; background: #fff; }
+                h1 { font-size: 24px; margin: 0; color: #2c3e50; }
+                h2 { color: #2c3e50; border-bottom: 1px solid #3498db; padding-bottom: 5px; font-size: 16px; margin-top: 0; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 10px; }
+                th, td { border: 1px solid #ccc; padding: 4px; text-align: center; }
+                th { background: #f8f9fa; font-weight: bold; }
+                .under-grense { color: #c0392b; font-weight: bold; font-size: 10px; margin-top: 8px; background: #fdf2f2; padding: 5px; border-radius: 4px; }
+                @media print { 
+                    body { background: white; } 
+                    .elev-side { margin: 0; border: none; width: 100%; height: auto; }
+                    .no-print { display: none !important; }
+                }
+            </style>
+        </head><body>`);
+
+        win.document.write('<div class="no-print" style="padding: 15px; text-align: center; background: #2c3e50;"><button onclick="window.print()" style="padding: 10px 25px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size:14px;">🖨️ Skriv ut alle elevkort</button></div>');
+
+        let teller = 0;
+        // Sorterer ID-ene slik at de kommer alfabetisk hvis navn er tilgjengelig
+        const sorterteIder = Array.from(elevIder).sort((a, b) => {
+            const navnA = (lesingData[a]?.navn || regningData[a]?.navn || "").toLowerCase();
+            const navnB = (lesingData[b]?.navn || regningData[b]?.navn || "").toLowerCase();
+            return navnA.localeCompare(navnB);
+        });
+
+        for (let elevId of sorterteIder) {
+            if (elevId === 'laast' || elevId === 'ferdigstilt' || typeof lesingData[elevId] !== 'object' && typeof regningData[elevId] !== 'object') continue;
+            
+            teller++;
+            const elevLes = lesingData[elevId] || {};
+            const elevReg = regningData[elevId] || {};
+            const navn = elevLes.navn || elevReg.navn || "Elev " + elevId;
+
+            win.document.write(`
+                <div class="elev-side">
+                    <div class="header">
+                        <div>
+                            <h1>${navn}</h1>
+                            <span style="color: #34495e; font-weight:bold;">Klasse: ${trinn}${klasse}</span>
+                        </div>
+                        <div style="text-align: right; font-size: 12px;">
+                            <span style="background:#3498db; color:white; padding: 2px 8px; border-radius:10px;">${periode} ${aar}</span>
+                        </div>
+                    </div>
+                    <div class="fag-container">
+                        <div class="fag-del">
+                            <h2>📚 Lesing</h2>
+                            ${genererElevTabell(elevLes, 'Lesing', aar, periode, trinn)}
+                            ${genererTiltaksListe(elevLes, 'Lesing', aar, periode, trinn)}
+                        </div>
+                        <div class="fag-del">
+                            <h2>🧮 Regning</h2>
+                            ${genererElevTabell(elevReg, 'Regning', aar, periode, trinn)}
+                            ${genererTiltaksListe(elevReg, 'Regning', aar, periode, trinn)}
+                        </div>
+                    </div>
+                </div>
+            `);
+        }
+
+        if (teller === 0) {
+            win.document.write('<p style="padding: 50px; text-align:center;">Ingen elever med registrerte resultater ble funnet.</p>');
+        }
+
+        win.document.write('</body></html>');
+        win.document.close();
+
+    } catch (err) {
+        console.error("Kritisk feil ved generering av elevkort:", err);
+        if (win) win.close();
+        alert("En feil oppstod. Se konsollen for detaljer.");
+    }
+}
+// --- SLUTT ELEVKORT---
 
 
 // --- ÅRSRAPPORT I ADMIN-FUNKSJONER (Nå dynamisk koblet til Global_aar) ---
