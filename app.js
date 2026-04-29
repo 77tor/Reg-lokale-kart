@@ -3317,17 +3317,19 @@ function genererTiltaksListe(elevData, fag, aar, periode, trinn) {
 
 // --- Hovedfunksjon ---
 async function genererElevkortKlasse(aar, trinn, klasse, periode) {
-    console.log("Genererer elevkort for:", aar, trinn, klasse, periode);
-
+    // 1. Åpne vinduet UMIDDELBART ved klikk (viktig for popup-blokkerer)
     const win = window.open('', '_blank');
+    
     if (!win) {
-        alert("Popup ble blokkert! Vennligst tillat popups for å se elevkort.");
+        alert("Popup ble blokkert! Se etter ikonet i adressefeltet for å tillate popups.");
         return;
     }
 
-    win.document.write('<html><head><title>Genererer elevkort...</title></head><body><p style="font-family:sans-serif; text-align:center; margin-top:50px;">Genererer elevkort for klassen, vennligst vent...</p></body></html>');
+    // 2. Vis en lastemelding med en gang
+    win.document.write('<html><body><p>Henter data fra databasen...</p></body></html>');
 
     try {
+        // 3. Nå kan vi gjøre de tunge asynkrone tingene
         const [lesingSnap, regningSnap] = await Promise.all([
             db.ref(`kartlegging/${aar}/Lesing/${periode}/${trinn}/${klasse}`).once('value'),
             db.ref(`kartlegging/${aar}/Regning/${periode}/${trinn}/${klasse}`).once('value')
