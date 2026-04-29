@@ -3713,6 +3713,7 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                 fill: false,
                 tension: 0.1,
                 spanGaps: true
+                clip: false
             }, {
                 label: 'Trinnsnitt',
                 data: snittDataPunkter,
@@ -3730,7 +3731,20 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
             responsive: false,
             maintainAspectRatio: false,
             scales: {
-                y: { min: 30, max: 100, ticks: { stepSize: 10, font: { size: 10 } } },
+                y: { 
+    min: 30, 
+    max: 105, // Øk fra 100 til 105 for å unngå kutting
+    ticks: { 
+        stepSize: 10,
+        font: { size: 9 },
+        // Denne funksjonen sørger for at vi ikke viser "105" på aksen
+        callback: function(value) {
+            if (value <= 100) return value; 
+        }
+    },
+    // Valgfritt: Legg til litt padding i toppen av aksen
+    grace: '5%' 
+}
                 x: { ticks: { font: { size: 9, weight: 'bold' } } }
             },
             plugins: {
