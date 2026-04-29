@@ -3664,7 +3664,7 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
             responsive: false,
             maintainAspectRatio: false,
             scales: {
-                y: { min: 30, max: 105, ticks: { stepSize: 10, font: { size: 10 } } },
+                y: { min: 30, max: 100, ticks: { stepSize: 10, font: { size: 10 } } },
                 x: { ticks: { font: { size: 9, weight: 'bold' } } }
             },
             plugins: {
