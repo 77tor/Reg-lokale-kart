@@ -3553,89 +3553,93 @@ for (let elevId of sorterteIder) {
     }
 }
 // --- LAG GRAF ---
-async function lagGrafBilde(fag, trinnInfo, elevId, alleData) {
+async function lagGrafBilde(fag, trinn, elevId, allData) {
     const canvas = document.getElementById('hiddenChartCanvas');
-    if (!canvas) return ""; // Sikkerhetsmekanisme
-
+    if (!canvas) return "";
+    
     canvas.width = 1000;
     canvas.height = 200;
     const ctx = canvas.getContext('2d');
 
-    const databasePerioder = ["Høst", "Vinter", "Vår"];
-    let labels = [];
-    let elevDataPunkter = [];
-    let snittDataPunkter = [];
+    const allePerioderSet = new Set();
+    const elevResultater = {}; // { "Høst 24": prosent }
+    const trinnSnitt = {};    // { "Høst 24": [prosent1, prosent2...] }
 
-    const sokNavn = elevId.trim().toLowerCase();
-    // Gjør om "3A" til tallet 3. Sørger for at vi treffer rett nivå i Firebase.
-    const trinnTall = trinnInfo.toString().replace(/\D/g, ''); 
+    const sokNavn = elevId.trim();
 
-    const sorterteAar = Object.keys(alleData).sort(); 
+    // 1. Gå gjennom alle år slik du gjør i aapneUtviklingsModal
+    for (let aar in allData) {
+        const loopAarStart = parseInt(aar.split('-')[0]);
+        const kortAar = aar.split('-')[0].slice(-2);
 
-    for (let aar of sorterteAar) {
-        const kortAar = aar.split('-')[0].substring(2);
+        if (!allData[aar][fag]) continue;
 
-        for (let p of databasePerioder) {
-            const periodeNode = alleData[aar]?.[fag]?.[p];
-            if (!periodeNode) continue;
+        for (let periode in allData[aar][fag]) {
+            const pKey = `${periode} ${kortAar}`;
+            
+            // Finn maks poeng fra oppgaveStruktur (slik din kode gjør)
+            const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
+            if (!oppsett) continue;
+            const maksPoeng = oppsett.oppgaver.reduce((s, o) => s + o.maks, 0);
 
-            let funnetElevProsent = null;
-            let alleProsentITrinnet = [];
-            let harData = false;
+            const trinnData = allData[aar][fag][periode][trinn];
+            if (!trinnData) continue;
 
-            // Går gjennom trinn-nøklene i FB (f.eks. "1", "2", "3")
-            for (let tKey in periodeNode) {
-                // Vi sjekker alle klasser under dette trinnet
-                const klasser = periodeNode[tKey];
-                for (let klasseKey in klasser) {
-                    const elever = klasser[klasseKey];
-                    for (let id in elever) {
-                        if (elever[id] && elever[id].totalProsent !== undefined) {
-                            // Vi samler snitt for det trinnet eleven går på NÅ
-                            if (tKey == trinnTall) {
-                                alleProsentITrinnet.push(elever[id].totalProsent);
-                            }
-                            
-                            // Sjekker om navnet matcher (uavhengig av hvilket trinn de var på før)
-                            if (id.trim().toLowerCase() === sokNavn) {
-                                funnetElevProsent = elever[id].totalProsent;
-                                harData = true;
-                            }
-                        }
+            allePerioderSet.add(pKey);
+            if (!trinnSnitt[pKey]) trinnSnitt[pKey] = [];
+
+            for (let klasse in trinnData) {
+                for (let elevNavn in trinnData[klasse]) {
+                    const d = trinnData[klasse][elevNavn];
+
+                    // Samme filter-sjekker som din kode
+                    if (d.slettet || d.ikkeGjennomfort || d.sum === undefined) continue;
+
+                    const prosent = (d.sum / maksPoeng) * 100;
+                    trinnSnitt[pKey].push(prosent);
+
+                    // Lagre hvis det er vår elev
+                    if (elevNavn.trim() === sokNavn) {
+                        elevResultater[pKey] = prosent;
                     }
                 }
-            }
-
-            if (harData || alleProsentITrinnet.length > 0) {
-                labels.push(`${p} ${kortAar}`);
-                elevDataPunkter.push(funnetElevProsent);
-                const snitt = alleProsentITrinnet.length > 0 
-                    ? Math.round(alleProsentITrinnet.reduce((a, b) => a + b, 0) / alleProsentITrinnet.length) 
-                    : null;
-                snittDataPunkter.push(snitt);
             }
         }
     }
 
-    if (labels.length === 0) return ""; 
+    // 2. Sorter periodene kronologisk (samme sortering som din kode)
+    const sortertePerioder = Array.from(allePerioderSet).sort((a, b) => {
+        const aarA = a.split(' ')[1];
+        const aarB = b.split(' ')[1];
+        if (aarA !== aarB) return aarA - aarB;
+        return a.includes("Høst") ? -1 : 1;
+    });
 
-    // Opprett grafen
+    if (sortertePerioder.length === 0) return "";
+
+    // 3. Forbered data til Chart.js
+    const elevDataPunkter = sortertePerioder.map(p => elevResultater[p] ?? null);
+    const snittDataPunkter = sortertePerioder.map(p => {
+        const verdier = trinnSnitt[p] || [];
+        return verdier.length > 0 ? Math.round(verdier.reduce((a, b) => a + b, 0) / verdier.length) : null;
+    });
+
     const chart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: labels,
+            labels: sortertePerioder,
             datasets: [{
                 label: 'Eleven',
                 data: elevDataPunkter,
                 borderColor: '#3498db',
-                backgroundColor: '#3498db',
                 borderWidth: 4,
                 pointRadius: 6,
+                pointBackgroundColor: '#3498db',
                 fill: false,
-                tension: 0.2,
+                tension: 0.1,
                 spanGaps: true
             }, {
-                label: 'Skolesnitt',
+                label: 'Trinnsnitt',
                 data: snittDataPunkter,
                 borderColor: '#bdc3c7',
                 borderDash: [5, 5],
@@ -3646,35 +3650,34 @@ async function lagGrafBilde(fag, trinnInfo, elevId, alleData) {
             }]
         },
         options: {
-            devicePixelRatio: 2,
-            responsive: false,
+            devicePixelRatio: 3, // Høy oppløsning for utskrift
             animation: false,
+            responsive: false,
             maintainAspectRatio: false,
-            scales: { 
-                y: { min: 0, max: 100, ticks: { font: { size: 12 } } },
-                x: { ticks: { font: { size: 11, weight: 'bold' } } }
+            scales: {
+                y: { min: 0, max: 100, ticks: { font: { size: 10 } } },
+                x: { ticks: { font: { size: 10, weight: 'bold' } } }
             },
-            plugins: { legend: { display: true, position: 'right' } }
+            plugins: {
+                legend: { position: 'right', labels: { boxWidth: 10, font: { size: 9 } } }
+            }
         },
         plugins: [{
             id: 'white_bg',
-            beforeDraw: (c) => {
-                const {ctx} = c;
+            beforeDraw: (chart) => {
+                const {ctx} = chart;
                 ctx.save();
                 ctx.globalCompositeOperation = 'destination-over';
                 ctx.fillStyle = 'white';
-                ctx.fillRect(0, 0, c.width, c.height);
+                ctx.fillRect(0, 0, chart.width, chart.height);
                 ctx.restore();
             }
         }]
     });
 
-    // Viktig: Vent litt slik at Chart.js rekker å tegne ferdig på canvaset
     chart.update();
-    
-    // Generer bildet
     const imgData = canvas.toDataURL('image/png');
-    chart.destroy(); 
+    chart.destroy();
     return imgData;
 }
 
