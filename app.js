@@ -3558,7 +3558,7 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
     if (!canvas) return "";
     
     canvas.width = 1000;
-    canvas.height = 200;
+    canvas.height = 140; // Redusert fra 200 for å spare plass på arket
     const ctx = canvas.getContext('2d');
 
     const allePerioderSet = new Set();
@@ -3664,8 +3664,8 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
             responsive: false,
             maintainAspectRatio: false,
             scales: {
-                y: { min: 0, max: 100, ticks: { font: { size: 10 } } },
-                x: { ticks: { font: { size: 10, weight: 'bold' } } }
+                y: { min: 30, max: 105, ticks: { stepSize: 10, font: { size: 10 } } },
+                x: { ticks: { font: { size: 9, weight: 'bold' } } }
             },
             plugins: {
                 legend: { position: 'right', labels: { boxWidth: 10, font: { size: 9 } } }
