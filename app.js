@@ -3275,18 +3275,30 @@ function genererElevTabell(elevData, fag, aar, periode, trinn) {
     if (!oppsett || !elevData.oppgaver) return "<p style='font-size:10px; color:gray;'>Ingen data registrert for dette faget.</p>";
 
     let html = `<table><thead><tr>`;
-    oppsett.oppgaver.forEach((o, i) => html += `<th>O${i+1}</th>`);
-    html += `<th>Sum</th></tr></thead><tbody><tr>`;
+    // Rad 1: Overskrifter (Oppgave 1, 2, 3...)
+    oppsett.oppgaver.forEach((o, i) => html += `<th>Oppg ${i+1}</th>`);
+    html += `<th rowspan="2" style="vertical-align:middle; background:#eee;">Sum</th></tr>`;
     
+    // Rad 2: Navn på oppgavene (fra oppsettet)
+    html += `<tr>`;
+    oppsett.oppgaver.forEach((o) => {
+        const kortNavn = o.navn || "Oppgave";
+        html += `<td style="font-size: 8px; background:#fdfdfd; font-weight:bold;">${kortNavn}</td>`;
+    });
+    html += `</tr></thead>`;
+
+    // Rad 3: Elevens poeng
+    html += `<tbody><tr>`;
     oppsett.oppgaver.forEach((o, i) => {
         const poeng = elevData.oppgaver[i] || 0;
         html += `<td>${poeng}</td>`;
     });
+    html += `<td style="font-weight:bold; background:#f0f0f0;">${elevData.sum || 0}</td></tr>`;
     
-    html += `<td style="font-weight:bold;">${elevData.sum || 0}</td></tr>`;
+    // Rad 4: Maks poeng per oppgave
     html += `<tr style="font-size: 8px; color: #666; background:#f9f9f9;">`;
-    oppsett.oppgaver.forEach(o => html += `<td>${o.maks}</td>`);
-    html += `<td>${oppsett.grenseTotal}</td></tr>`;
+    oppsett.oppgaver.forEach(o => html += `<td>av ${o.maks}</td>`);
+    html += `<td>av ${oppsett.grenseTotal}</td></tr>`;
     
     html += `</tbody></table>`;
     return html;
@@ -3317,22 +3329,15 @@ function genererTiltaksListe(elevData, fag, aar, periode, trinn) {
 
 // --- Hovedfunksjon ---
 async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
-    console.log("Genererer elevkort for:", aar, trinn, klasse, periode);
-
-    // VIKTIG: Vi sjekker om 'win' finnes. Hvis ikke (f.eks. ved direkte kall), åpner vi det.
-    if (!win || win === null) {
-        win = window.open('', '_blank');
-    }
-    
+    if (!win || win === null) win = window.open('', '_blank');
     if (!win) {
-        alert("Popup ble blokkert! Vennligst tillat popups i adressefeltet.");
+        alert("Popup ble blokkert!");
         return;
     }
 
     win.document.write('<html><body><p style="font-family:sans-serif; text-align:center; margin-top:50px;">Henter data og forbereder utskrift...</p></body></html>');
 
     try {
-        // Hent data mens vinduet allerede er åpent og "godkjent" av nettleseren
         const [lesingSnap, regningSnap] = await Promise.all([
             db.ref(`kartlegging/${aar}/Lesing/${periode}/${trinn}/${klasse}`).once('value'),
             db.ref(`kartlegging/${aar}/Regning/${periode}/${trinn}/${klasse}`).once('value')
@@ -3350,17 +3355,20 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
                 .elev-side { 
                     background: white; width: 210mm; min-height: 295mm; 
                     padding: 15mm; margin: 10mm auto; box-sizing: border-box;
-                    page-break-after: always; position: relative;
+                    page-break-after: always;
                 }
-                .header { border-bottom: 2px solid #2c3e50; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
-                .fag-container { display: flex; gap: 15px; }
-                .fag-del { flex: 1; border: 1px solid #eee; padding: 12px; border-radius: 8px; background: #fff; }
-                h1 { font-size: 24px; margin: 0; color: #2c3e50; }
+                .header { border-bottom: 2px solid #2c3e50; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: flex-end; }
+                
+                /* ENDRET: Nå stabler de seg vertikalt */
+                .fag-container { display: block; }
+                .fag-del { width: 100%; border: 1px solid #eee; padding: 12px; border-radius: 8px; background: #fff; margin-bottom: 20px; box-sizing: border-box; }
+                
+                h1 { font-size: 22px; margin: 0; color: #2c3e50; }
                 h2 { color: #2c3e50; border-bottom: 1px solid #3498db; padding-bottom: 5px; font-size: 16px; margin-top: 0; }
-                table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 10px; }
-                th, td { border: 1px solid #ccc; padding: 4px; text-align: center; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 10px; table-layout: fixed; }
+                th, td { border: 1px solid #ccc; padding: 4px; text-align: center; overflow: hidden; text-overflow: ellipsis; }
                 th { background: #f8f9fa; font-weight: bold; }
-                .under-grense { color: #c0392b; font-weight: bold; font-size: 10px; margin-top: 8px; background: #fdf2f2; padding: 5px; border-radius: 4px; }
+                .under-grense { color: #c0392b; font-weight: bold; font-size: 10px; margin-top: 5px; background: #fdf2f2; padding: 8px; border-radius: 4px; border-left: 3px solid #c0392b; }
                 @media print { 
                     body { background: white; } 
                     .elev-side { margin: 0; border: none; width: 100%; height: auto; }
@@ -3371,8 +3379,6 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
 
         win.document.write('<div class="no-print" style="padding: 15px; text-align: center; background: #2c3e50;"><button onclick="window.print()" style="padding: 10px 25px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size:14px;">🖨️ Skriv ut alle elevkort</button></div>');
 
-        let teller = 0;
-        // Sorterer ID-ene slik at de kommer alfabetisk hvis navn er tilgjengelig
         const sorterteIder = Array.from(elevIder).sort((a, b) => {
             const navnA = (lesingData[a]?.navn || regningData[a]?.navn || "").toLowerCase();
             const navnB = (lesingData[b]?.navn || regningData[b]?.navn || "").toLowerCase();
@@ -3380,9 +3386,8 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
         });
 
         for (let elevId of sorterteIder) {
-            if (elevId === 'laast' || elevId === 'ferdigstilt' || typeof lesingData[elevId] !== 'object' && typeof regningData[elevId] !== 'object') continue;
+            if (elevId === 'laast' || elevId === 'ferdigstilt' || (typeof lesingData[elevId] !== 'object' && typeof regningData[elevId] !== 'object')) continue;
             
-            teller++;
             const elevLes = lesingData[elevId] || {};
             const elevReg = regningData[elevId] || {};
             const navn = elevLes.navn || elevReg.navn || "Elev " + elevId;
@@ -3395,7 +3400,7 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
                             <span style="color: #34495e; font-weight:bold;">Klasse: ${trinn}${klasse}</span>
                         </div>
                         <div style="text-align: right; font-size: 12px;">
-                            <span style="background:#3498db; color:white; padding: 2px 8px; border-radius:10px;">${periode} ${aar}</span>
+                            <span style="background:#3498db; color:white; padding: 2px 10px; border-radius:10px;">${periode} ${aar}</span>
                         </div>
                     </div>
                     <div class="fag-container">
@@ -3414,17 +3419,13 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
             `);
         }
 
-        if (teller === 0) {
-            win.document.write('<p style="padding: 50px; text-align:center;">Ingen elever med registrerte resultater ble funnet.</p>');
-        }
-
         win.document.write('</body></html>');
         win.document.close();
 
     } catch (err) {
-        console.error("Kritisk feil ved generering av elevkort:", err);
+        console.error("Feil:", err);
         if (win) win.close();
-        alert("En feil oppstod. Se konsollen for detaljer.");
+        alert("En feil oppstod. Se konsollen.");
     }
 }
 // --- SLUTT ELEVKORT---
