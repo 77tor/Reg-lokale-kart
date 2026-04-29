@@ -3491,38 +3491,47 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
             </div>
             <div class="content-container">`);
 
-        for (let elevId of sorterteIder) {
-            // Sjekk for å unngå metadata eller ugyldige noder
-            if (elevId === 'laast' || elevId === 'ferdigstilt') continue;
-            
-            // HER ER VARIABLENE SOM MANGLA:
-            const elevLes = lesingData[elevId] || {};
-            const elevReg = regningData[elevId] || {};
-            
-            // Skip hvis det ikke finnes faktiske data for eleven
-            if (!elevLes.oppgaver && !elevReg.oppgaver) continue;
+for (let elevId of sorterteIder) {
+    if (elevId === 'laast' || elevId === 'ferdigstilt') continue;
+    
+    const elevLes = lesingData[elevId] || {};
+    const elevReg = regningData[elevId] || {};
+    
+    if (!elevLes.oppgaver && !elevReg.oppgaver) continue;
 
-            const navn = elevLes.navn || elevReg.navn || "Elev " + elevId;
+    // --- NY NAVNEHÅNDTERING ---
+    let raaNavn = elevLes.navn || elevReg.navn || "Ukjent Elev";
+    let visningsNavn = raaNavn;
 
-            win.document.write(`
-                <div class="elev-side">
-                    <div class="header">
-                        <h1>Elevkort: ${navn}</h1>
-                        <span style="font-size: 12px; color: #7f8c8d;">${trinn}${klasse} | ${periode} | Skoleår: ${aar}</span>
-                    </div>
-                    <div class="fag-del">
-                        <h2>📚 Lesing</h2>
-                        ${genererElevTabell(elevLes, 'Lesing', aar, periode, trinn, globalLesingListe)}
-                        ${genererTiltaksListe(elevLes, 'Lesing', aar, periode, trinn)}
-                    </div>
-                    <div class="fag-del">
-                        <h2>🧮 Regning</h2>
-                        ${genererElevTabell(elevReg, 'Regning', aar, periode, trinn, globalRegningListe)}
-                        ${genererTiltaksListe(elevReg, 'Regning', aar, periode, trinn)}
-                    </div>
-                </div>
-            `);
-        }
+    if (raaNavn.includes(',')) {
+        // Splitter "Etternavn, Fornavn" -> ["Etternavn", " Fornavn"]
+        const navneDeler = raaNavn.split(',');
+        const etternavn = navneDeler[0].trim();
+        const fornavn = navneDeler[1].trim();
+        visningsNavn = `${fornavn} ${etternavn}`;
+    }
+    // ---------------------------
+
+    win.document.write(`
+        <div class="elev-side">
+            <div class="header">
+                <h1>Elevkort: ${visningsNavn}</h1>
+                <span style="font-size: 12px; color: #7f8c8d;">${trinn}${klasse} | ${periode} | Skoleår: ${aar}</span>
+            </div>
+            <div class="fag-del">
+                <h2>📚 Lesing</h2>
+                ${genererElevTabell(elevLes, 'Lesing', aar, periode, trinn, globalLesingListe)}
+                ${genererTiltaksListe(elevLes, 'Lesing', aar, periode, trinn)}
+            </div>
+            <div class="fag-del">
+                <h2>🧮 Regning</h2>
+                ${genererElevTabell(elevReg, 'Regning', aar, periode, trinn, globalRegningListe)}
+                ${genererTiltaksListe(elevReg, 'Regning', aar, periode, trinn)}
+            </div>
+        </div>
+    `);
+}
+   
 
         win.document.write('</div></body></html>');
         win.document.close();
