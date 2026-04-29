@@ -3574,13 +3574,23 @@ async function lagGrafBilde(fag, trinn, elevId, alleData) {
 
     // Datahenting (samme som før)
     const perioder = ["Høst", "Vinter", "Vår"];
-    const elevProsenter = perioder.map(p => {
+   const elevProsenter = perioder.map(p => {
+        const sokNavn = elevId.trim().toLowerCase(); // Vasker søke-ID
+        
         for (let aarKey in alleData) {
             const dataForPeriode = alleData[aarKey]?.[fag]?.[p]?.[trinn];
             if (dataForPeriode) {
                 for (let klasseKey in dataForPeriode) {
-                    const resultat = dataForPeriode[klasseKey][elevId];
-                    if (resultat && resultat.totalProsent !== undefined) return resultat.totalProsent;
+                    const klasseData = dataForPeriode[klasseKey];
+                    
+                    // Let etter match uavhengig av små/store bokstaver eller mellomrom
+                    const faktiskId = Object.keys(klasseData).find(id => 
+                        id.trim().toLowerCase() === sokNavn
+                    );
+
+                    if (faktiskId && klasseData[faktiskId].totalProsent !== undefined) {
+                        return klasseData[faktiskId].totalProsent;
+                    }
                 }
             }
         }
