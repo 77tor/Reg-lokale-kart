@@ -3726,16 +3726,23 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                 y: { 
                     min: 30, 
                     max: 105, 
+                    afterBuildTicks: (axis) => {
+                        // Her tvinger vi aksen til å inneholde disse verdiene
+                        axis.ticks = [30, 40, 50, 60, 70, 80, 90, 100].map(v => ({ value: v }));
+                    },
                     grid: {
                         display: true,
                         drawOnChartArea: true,
+                        // Gjør 100-linjen ekstra tydelig
                         color: (context) => (context.tick.value === 100 ? '#2c3e50' : '#e0e0e0'),
                         lineWidth: (context) => (context.tick.value === 100 ? 1.5 : 0.5),
+                        drawTicks: true
                     },
                     ticks: { 
                         stepSize: 10,
                         font: { size: 9 },
                         callback: function(value) {
+                            // Vi returnerer verdien kun hvis den er 100 eller lavere
                             if (value <= 100) return value; 
                         }
                     }
