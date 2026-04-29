@@ -3553,7 +3553,7 @@ for (let elevId of sorterteIder) {
     }
 }
 // --- LAG GRAF ---
-async function lagGrafBilde(fag, trinn, elevId, alleData) {
+async function lagGrafBilde(fag, trinnInfo, elevId, alleData) {
     const canvas = document.getElementById('hiddenChartCanvas');
     canvas.width = 1000;
     canvas.height = 200;
@@ -3564,10 +3564,10 @@ async function lagGrafBilde(fag, trinn, elevId, alleData) {
     let elevDataPunkter = [];
     let snittDataPunkter = [];
 
+    // Rens søkeparametere
     const sokNavn = elevId.trim().toLowerCase();
-    
-    // VIKTIG: Finn ut hvilket numerisk trinn vi skal lete etter (f.eks. "2A" -> "2")
-    const trinnTall = trinn.toString().replace(/\D/g, ''); 
+    // Trekker ut kun tallet fra "3B" -> "3" (Viktig for din Firebase-struktur)
+    const trinnTall = trinnInfo.toString().replace(/\D/g, ''); 
 
     const sorterteAar = Object.keys(alleData).sort(); 
 
@@ -3575,25 +3575,24 @@ async function lagGrafBilde(fag, trinn, elevId, alleData) {
         const kortAar = aar.split('-')[0].substring(2);
 
         for (let p of databasePerioder) {
-            // Vi må sjekke alle noder under perioden (siden trinnet ditt er lagret som "1", "2" osv.)
-            const alleTrinnIDennePerioden = alleData[aar]?.[fag]?.[p];
-            if (!alleTrinnIDennePerioden) continue;
+            const periodenode = alleData[aar]?.[fag]?.[p];
+            if (!periodenode) continue;
 
             let funnetElevProsent = null;
             let alleProsentITrinnet = [];
-            let harDataForDennePerioden = false;
+            let harDataIPeriode = false;
 
-            // Gå gjennom trinn-nodene (f.eks. "1", "2", "3")
-            for (let tTall in alleTrinnIDennePerioden) {
-                // Vi sjekker om dette er trinnet vi leter etter
-                if (tTall == trinnTall) {
-                    const klasser = alleTrinnIDennePerioden[tTall];
+            // Gå gjennom trinn-nøklene (f.eks. "1", "2", "3")
+            for (let tKey in periodenode) {
+                // Vi sjekker om nøkkelen i FB matcher trinnet vi leter etter
+                if (tKey == trinnTall) {
+                    const klasser = periodenode[tKey];
                     
                     for (let klasseKey in klasser) {
                         const elever = klasser[klasseKey];
                         for (let id in elever) {
-                            if (elever[id] && elever[id].totalProsent !== undefined) {
-                                harDataForDennePerioden = true;
+                            if (typeof elever[id] === 'object' && elever[id].totalProsent !== undefined) {
+                                harDataIPeriode = true;
                                 alleProsentITrinnet.push(elever[id].totalProsent);
                                 
                                 if (id.trim().toLowerCase() === sokNavn) {
@@ -3605,16 +3604,20 @@ async function lagGrafBilde(fag, trinn, elevId, alleData) {
                 }
             }
 
-            if (harDataForDennePerioden) {
+            if (harDataIPeriode) {
                 labels.push(`${p} ${kortAar}`);
                 elevDataPunkter.push(funnetElevProsent);
                 
-                const snitt = alleProsentITrinnet.length > 0 ? 
-                    Math.round(alleProsentITrinnet.reduce((a, b) => a + b, 0) / alleProsentITrinnet.length) : null;
+                const snitt = alleProsentITrinnet.length > 0 
+                    ? Math.round(alleProsentITrinnet.reduce((a, b) => a + b, 0) / alleProsentITrinnet.length) 
+                    : null;
                 snittDataPunkter.push(snitt);
             }
         }
     }
+
+    // Hvis ingen data ble funnet i det hele tatt
+    if (labels.length === 0) return null;
 
     const chart = new Chart(ctx, {
         type: 'line',
@@ -3644,15 +3647,13 @@ async function lagGrafBilde(fag, trinn, elevId, alleData) {
         options: {
             devicePixelRatio: 2,
             responsive: false,
-            animation: false,
+            animation: false, // KRITISK for toDataURL
             maintainAspectRatio: false,
             scales: { 
-                y: { min: 0, max: 100, ticks: { font: { size: 12 }, stepSize: 20 } },
+                y: { min: 0, max: 100, ticks: { font: { size: 12 } } },
                 x: { ticks: { font: { size: 11, weight: 'bold' } } }
             },
-            plugins: { 
-                legend: { display: true, position: 'right' }
-            }
+            plugins: { legend: { display: true, position: 'right' } }
         },
         plugins: [{
             id: 'white_bg',
