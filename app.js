@@ -3552,58 +3552,65 @@ for (let elevId of sorterteIder) {
         alert("En feil oppstod: " + err.message);
     }
 }
-
+// --- LAG GRAF ---
 async function lagGrafBilde(fag, trinn, elevId, alleData) {
     const canvas = document.getElementById('hiddenChartCanvas');
     canvas.width = 1000;
     canvas.height = 200;
     const ctx = canvas.getContext('2d');
 
-    // Definer de faktiske periodene vi vil lete etter i databasen
     const databasePerioder = ["Høst", "Vinter", "Vår"];
-    
-    // Vi må lage labels som ser ut som "Høst 24", "Vår 25" etc. basert på årene i databasen
     let labels = [];
     let elevDataPunkter = [];
     let snittDataPunkter = [];
 
     const sokNavn = elevId.trim().toLowerCase();
+    
+    // VIKTIG: Finn ut hvilket numerisk trinn vi skal lete etter (f.eks. "2A" -> "2")
+    const trinnTall = trinn.toString().replace(/\D/g, ''); 
 
-    // Gå gjennom alle år lagret i databasen (sortert)
     const sorterteAar = Object.keys(alleData).sort(); 
 
     for (let aar of sorterteAar) {
-        const kortAar = aar.split('-')[0].substring(2); // Gjør "2024-2025" til "24"
+        const kortAar = aar.split('-')[0].substring(2);
 
         for (let p of databasePerioder) {
-            const periodeData = alleData[aar]?.[fag]?.[p]?.[trinn];
-            if (!periodeData) continue;
+            // Vi må sjekke alle noder under perioden (siden trinnet ditt er lagret som "1", "2" osv.)
+            const alleTrinnIDennePerioden = alleData[aar]?.[fag]?.[p];
+            if (!alleTrinnIDennePerioden) continue;
 
             let funnetElevProsent = null;
-            let alleProsentIKlassen = [];
+            let alleProsentITrinnet = [];
+            let harDataForDennePerioden = false;
 
-            // Let gjennom alle klasser (A, B, C...) for denne perioden
-            for (let klasseKey in periodeData) {
-                const elever = periodeData[klasseKey];
-                
-                for (let id in elever) {
-                    if (elever[id].totalProsent !== undefined) {
-                        alleProsentIKlassen.push(elever[id].totalProsent);
-                        
-                        // Sjekk om dette er vår elev
-                        if (id.trim().toLowerCase() === sokNavn) {
-                            funnetElevProsent = elever[id].totalProsent;
+            // Gå gjennom trinn-nodene (f.eks. "1", "2", "3")
+            for (let tTall in alleTrinnIDennePerioden) {
+                // Vi sjekker om dette er trinnet vi leter etter
+                if (tTall == trinnTall) {
+                    const klasser = alleTrinnIDennePerioden[tTall];
+                    
+                    for (let klasseKey in klasser) {
+                        const elever = klasser[klasseKey];
+                        for (let id in elever) {
+                            if (elever[id] && elever[id].totalProsent !== undefined) {
+                                harDataForDennePerioden = true;
+                                alleProsentITrinnet.push(elever[id].totalProsent);
+                                
+                                if (id.trim().toLowerCase() === sokNavn) {
+                                    funnetElevProsent = elever[id].totalProsent;
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            // Bare legg til punktet på grafen hvis det faktisk finnes data for trinnet i denne perioden
-            if (alleProsentIKlassen.length > 0) {
+            if (harDataForDennePerioden) {
                 labels.push(`${p} ${kortAar}`);
-                elevDataPunkter.push(funnetElevProsent); // Kan være null, spanGaps håndterer det
+                elevDataPunkter.push(funnetElevProsent);
                 
-                const snitt = Math.round(alleProsentIKlassen.reduce((a, b) => a + b, 0) / alleProsentIKlassen.length);
+                const snitt = alleProsentITrinnet.length > 0 ? 
+                    Math.round(alleProsentITrinnet.reduce((a, b) => a + b, 0) / alleProsentITrinnet.length) : null;
                 snittDataPunkter.push(snitt);
             }
         }
@@ -3640,12 +3647,11 @@ async function lagGrafBilde(fag, trinn, elevId, alleData) {
             animation: false,
             maintainAspectRatio: false,
             scales: { 
-                y: { min: 0, max: 100, ticks: { font: { size: 12 } } },
+                y: { min: 0, max: 100, ticks: { font: { size: 12 }, stepSize: 20 } },
                 x: { ticks: { font: { size: 11, weight: 'bold' } } }
             },
             plugins: { 
-                legend: { display: true, position: 'right' },
-                white_bg: { color: 'white' } // Bruker pluginen vi definerte tidligere
+                legend: { display: true, position: 'right' }
             }
         },
         plugins: [{
