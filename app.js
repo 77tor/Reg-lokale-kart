@@ -3194,7 +3194,7 @@ htmlSide4 += `<div style="text-align:center; margin: 20px 0 40px 0;">
             <body>
                 <div class="toolbar">
                     <button onclick="window.print()" style="background:#2980b9;" class="btn-tool">🖨️ Skriv ut / Lagre PDF</button>
-                    <button onclick="genererElevkortKlasse()" style="background:#27ae60;" class="btn-tool">👤 Elevkort (Hele klassen)</button>
+                    <button onclick="window.opener.genererElevkortKlasse('${aar}', '${trinn}', '${klasseNavn}', '${periode}')" style="background:#27ae60;" class="btn-tool">👤 Elevkort (Hele klassen)</button>
                     <a href="${oppgaveSti}" target="_blank" style="background:#8e44ad;" class="btn-tool">📄 Se prøve</a>
                     ${harFasit ? `<a href="${fasitSti}" target="_blank" style="background:#2c3e50;" class="btn-tool">✅ Se fasit</a>` : ''}
                     <button onclick="window.close()" class="btn-tool btn-grey">Lukk</button>
@@ -3268,10 +3268,7 @@ function lukkAdmin() {
 }
 
 
-async function genererElevkortKlasse() {
-    // Vi bruker variablene som allerede er tilgjengelige i analyse-konteksten
-    // (aar, trinn, klasseNavn, periode)
-    
+async function genererElevkortKlasse(aar, trinn, klasseNavn, periode) {     
     const win = window.open('', '_blank');
     win.document.write('<html><head><title>Elevkort - ' + klasseNavn + '</title>');
     
