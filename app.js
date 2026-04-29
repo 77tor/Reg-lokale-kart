@@ -3502,29 +3502,28 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
     .content-container { margin-top: 70px; }
 
     /* 2. MAKSIMAL UTNYTTELSE AV TOPPEN */
-    .elev-side { 
-        background: white; 
-        width: 297mm; /* Full bredde for landscape */
-        min-height: 210mm; 
-        padding: 4mm 10mm; /* Minimal padding i topp (4mm) */
-        margin: 0 auto; 
-        box-sizing: border-box; 
-        page-break-after: always; 
-        box-shadow: 0 0 5px rgba(0,0,0,0.1); 
-        position: relative;
-        top: 0;
-    }
+.elev-side { 
+    background: white; 
+    width: 297mm; 
+    min-height: 210mm; 
+    padding: 8mm 10mm 4mm 10mm; /* Økt topp-padding fra 4mm til 8mm */
+    margin: 0 auto; 
+    box-sizing: border-box; 
+    page-break-after: always; 
+    box-shadow: 0 0 5px rgba(0,0,0,0.1); 
+    position: relative;
+}
 
     /* 3. KOMPAKT HEADER */
-    .header { 
-        border-bottom: 2px solid #2c3e50; 
-        padding-bottom: 2px; 
-        margin-bottom: 5px; 
-        margin-top: 0; /* Tvinger overskriften helt opp */
-        display: flex; 
-        justify-content: space-between; 
-        align-items: flex-end; 
-    }
+.header { 
+    border-bottom: 2px solid #2c3e50; 
+    padding-bottom: 4px; 
+    margin-top: 5px;     /* Lagt til litt luft over selve streken/teksten */
+    margin-bottom: 8px;  
+    display: flex; 
+    justify-content: space-between; 
+    align-items: flex-end; 
+}
 
     /* 4. MINDRE LUFT MELLOM FAGENE */
     .fag-del { 
@@ -3544,18 +3543,18 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
     .btn-close { background: #e74c3c; }
 
     /* 5. SPESIFIKKE UTSKRIFTSREGLER */
-    @media print { 
-        body { background: white; margin: 0; padding: 0; } 
-        .sticky-menu { display: none !important; } 
-        .content-container { margin-top: 0 !important; padding-top: 0 !important; } 
-        .elev-side { 
-            margin: 0 !important; 
-            padding-top: 2mm !important; /* Ekstremt tett på kanten */
-            border: none; 
-            width: 100%; 
-            box-shadow: none; 
-        } 
-    }
+@media print { 
+    body { background: white; margin: 0; padding: 0; } 
+    .sticky-menu { display: none !important; } 
+    .content-container { margin-top: 0 !important; padding-top: 0 !important; } 
+    .elev-side { 
+        margin: 0 !important; 
+        padding-top: 6mm !important; /* Litt mer luft i toppen på selve utskriften */
+        border: none; 
+        width: 100%; 
+        box-shadow: none; 
+    } 
+}
 </style>
 
         </head><body>
