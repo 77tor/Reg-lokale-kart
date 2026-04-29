@@ -3499,24 +3499,23 @@ for (let elevId of sorterteIder) {
     
     if (!elevLes.oppgaver && !elevReg.oppgaver) continue;
 
-    // --- FORBEDRET NAVNEHÅNDTERING ---
-    // Vi henter rånavnet fra enten lesing, regning, eller selve objektet hvis det ligger der
-    let raaNavn = elevLes.navn || elevReg.navn || lesingData[elevId]?.navn || regningData[elevId]?.navn || "";
+    // 1. Hent rånavnet
+    let raaNavn = elevLes.navn || elevReg.navn || "";
     
+    // 2. Fjern ordet "Elev" hvis det står først i strengen
+    // Vi bruker .replace() med en "Regular Expression" for å være sikre
+    let rensetNavn = raaNavn.replace(/^Elev\s+/i, '').trim();
+
     let visningsNavn = "";
 
-    if (raaNavn && raaNavn.includes(',')) {
-        // Håndterer "Etternavn, Fornavn"
-        const navneDeler = raaNavn.split(',');
+    // 3. Snu navnet hvis det inneholder komma
+    if (rensetNavn.includes(',')) {
+        const navneDeler = rensetNavn.split(',');
         const etternavn = navneDeler[0].trim();
         const fornavn = navneDeler[1].trim();
         visningsNavn = `${fornavn} ${etternavn}`;
-    } else if (raaNavn) {
-        // Hvis navnet ikke har komma, bruker vi det som det er
-        visningsNavn = raaNavn;
     } else {
-        // Siste utvei hvis alt er tomt
-        visningsNavn = "Elev " + elevId;
+        visningsNavn = rensetNavn || "Elev " + elevId;
     }
     // ---------------------------
 
