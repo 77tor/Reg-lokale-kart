@@ -3506,11 +3506,12 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
     background: white; 
     width: 297mm; 
     min-height: 210mm; 
-    padding: 8mm 10mm 4mm 10mm; /* Økt topp-padding fra 4mm til 8mm */
-    margin: 0 auto; 
+    padding: 8mm 10mm 4mm 10mm; 
+    /* Endret fra '0 auto' til '20px auto' for å få luft på skjerm */
+    margin: 20px auto; 
     box-sizing: border-box; 
     page-break-after: always; 
-    box-shadow: 0 0 5px rgba(0,0,0,0.1); 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15); /* Litt kraftigere skygge på skjerm */
     position: relative;
 }
 
@@ -3552,7 +3553,7 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
         padding-top: 6mm !important; /* Litt mer luft i toppen på selve utskriften */
         border: none; 
         width: 100%; 
-        box-shadow: none; 
+        box-shadow: none !important; 
     } 
 }
 </style>
@@ -3624,16 +3625,15 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
     if (!canvas) return "";
     
     canvas.width = 1000;
-    canvas.height = 140; // Redusert fra 200 for å spare plass på arket
+    canvas.height = 140; 
     const ctx = canvas.getContext('2d');
 
     const allePerioderSet = new Set();
-    const elevResultater = {}; // { "Høst 24": prosent }
-    const trinnSnitt = {};    // { "Høst 24": [prosent1, prosent2...] }
+    const elevResultater = {}; 
+    const trinnSnitt = {};    
 
     const sokNavn = elevId.trim();
 
-// 1. Gå gjennom alle år i databasen
     for (let aar in allData) {
         const kortAar = aar.split('-')[0].slice(-2);
         const fagData = allData[aar][fag];
@@ -3643,11 +3643,8 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
             const pKey = `${periode} ${kortAar}`;
             const periodeNode = fagData[periode];
 
-            // NYTT: Vi leter gjennom ALLE trinn-mapper for å finne eleven
             for (let tKey in periodeNode) {
                 const trinnData = periodeNode[tKey];
-                
-                // Finn maks poeng for akkurat dette trinnet i dette året
                 const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[tKey];
                 if (!oppsett) continue;
                 const maksPoeng = oppsett.oppgaver.reduce((s, o) => s + o.maks, 0);
@@ -3655,17 +3652,14 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                 for (let klasse in trinnData) {
                     for (let elevNavn in trinnData[klasse]) {
                         const d = trinnData[klasse][elevNavn];
-
                         if (d.slettet || d.ikkeGjennomfort || d.sum === undefined) continue;
 
                         const prosent = (d.sum / maksPoeng) * 100;
 
-                        // Hvis navnet matcher, lagre elevens resultat og marker perioden som aktiv
                         if (elevNavn.trim().toLowerCase() === sokNavn.toLowerCase()) {
                             allePerioderSet.add(pKey);
                             elevResultater[pKey] = prosent;
                             
-                            // Samle snitt for trinnet eleven faktisk tilhørte da
                             if (!trinnSnitt[pKey]) trinnSnitt[pKey] = [];
                             for (let k in trinnData) {
                                 for (let id in trinnData[k]) {
@@ -3682,7 +3676,6 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
         }
     }
 
-    // 2. Sorter periodene kronologisk (samme sortering som din kode)
     const sortertePerioder = Array.from(allePerioderSet).sort((a, b) => {
         const aarA = a.split(' ')[1];
         const aarB = b.split(' ')[1];
@@ -3692,7 +3685,6 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
 
     if (sortertePerioder.length === 0) return "";
 
-    // 3. Forbered data til Chart.js
     const elevDataPunkter = sortertePerioder.map(p => elevResultater[p] ?? null);
     const snittDataPunkter = sortertePerioder.map(p => {
         const verdier = trinnSnitt[p] || [];
@@ -3725,7 +3717,7 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                 spanGaps: true
             }]
         },
-options: {
+        options: {
             devicePixelRatio: 3,
             animation: false,
             responsive: false,
@@ -3734,6 +3726,12 @@ options: {
                 y: { 
                     min: 30, 
                     max: 105, 
+                    grid: {
+                        display: true,
+                        drawOnChartArea: true,
+                        color: (context) => (context.tick.value === 100 ? '#2c3e50' : '#e0e0e0'),
+                        lineWidth: (context) => (context.tick.value === 100 ? 1.5 : 0.5),
+                    },
                     ticks: { 
                         stepSize: 10,
                         font: { size: 9 },
@@ -3741,7 +3739,7 @@ options: {
                             if (value <= 100) return value; 
                         }
                     }
-                }, // <--- DETTE KOMMAET må være her
+                },
                 x: { 
                     ticks: { font: { size: 9, weight: 'bold' } } 
                 }
