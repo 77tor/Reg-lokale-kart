@@ -2366,9 +2366,9 @@ function oppdaterAnalyseStatus(erFerdig) {
       
 // --- KOMBINERT ANALYSE-KODE (Rettet versjon med alle sjekker) ---
 async function genererKlasseAnalyse() {
-// Sjekk om knappen faktisk er aktiv før vi kjører tung datahenting
     const analyseBtn = document.getElementById('btnAnalyse');
     if (analyseBtn && analyseBtn.disabled) return;
+
     try { 
         // 1. Hent kriterier fra menyene
         const aar = document.getElementById('mAar').value;
@@ -2376,6 +2376,27 @@ async function genererKlasseAnalyse() {
         const periode = document.getElementById('mPeriode').value;
         const trinn = document.getElementById('mTrinn').value;
         const klasse = document.getElementById('mKlasse').value;
+
+        // --- NY ETAPPE: HENT STATUS FOR LÅSING ---
+        // Vi må hente hele status-grenen for å sjekke om BÅDE Lesing og Regning er låst
+        const statusSnap = await db.ref(`status/${aar}`).once('value');
+        const statusData = statusSnap.val() || {};
+
+        const lesingLaast = statusData["Lesing"]?.[periode]?.[trinn]?.[klasse]?.laast === true;
+        const regningLaast = statusData["Regning"]?.[periode]?.[trinn]?.[klasse]?.laast === true;
+        const beggeFerdig = (lesingLaast && regningLaast);
+
+        // Definer knappe-egenskaper for elevkort-knappen
+        const elevkortClick = beggeFerdig 
+            ? `const win = window.open('', '_blank'); window.opener.genererElevkortKlasse('${aar}', '${trinn}', '${klasse}', '${periode}', win)` 
+            : "";
+            
+        const elevkortStil = beggeFerdig 
+            ? "position: relative; padding-left: 40px; height: 38px; font-size: 14px; align-items: center; cursor: pointer;" 
+            : "position: relative; padding-left: 40px; height: 38px; font-size: 14px; align-items: center; background-color: #bdc3c7; cursor: not-allowed; opacity: 0.8;";
+
+        const elevkortTooltip = beggeFerdig ? "" : "title='Begge prøver må settes til \"Ferdigstilt\" før elevkort kan aktiveres'";
+        // --- SLUTT STATUS-SJEKK ---
 
         // 2. Hent oppsettet
         const aarIMal = oppgaveStruktur[aar] ? aar : "2025-2026";
@@ -3217,13 +3238,13 @@ const fullHtml = `
                 Skriv ut analysedel
             </button>
 
-            <button onclick="${elevkortClick}" 
-                    class="btn-tool btn-elevkort" 
-                    ${elevkortTooltip}
-                    style="${elevkortStil}">
-                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">👤</span> 
-                Elevkort (Hele klassen)
-            </button>
+<button onclick="${elevkortClick}" 
+        class="btn-tool btn-elevkort" 
+        ${elevkortTooltip}
+        style="${elevkortStil}">
+    <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">👤</span> 
+    Elevkort (Hele klassen)
+</button>
 
             <button onclick="window.close()" class="btn-tool btn-close" 
                     style="height: 38px; font-size: 14px; background-color: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 0 15px;">
