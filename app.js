@@ -3769,22 +3769,17 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
             maintainAspectRatio: false,
             scales: {
                 y: { 
-                    min: 30, max: 105,
-                    ticks: { 
-                        font: { size: 9 },
-                        callback: (v) => v <= 100 ? v + '%' : null 
+                    min: 30, max: 105, 
+                    afterBuildTicks: (axis) => {
+                        axis.ticks = [30, 40, 50, 60, 70, 80, 90, 100].map(v => ({ value: v }));
                     },
-                    grid: { color: '#e0e0e0', lineWidth: 0.5 }
+                    grid: { display: true, color: '#e0e0e0', lineWidth: 0.5 },
+                    ticks: { font: { size: 9 }, callback: (v) => v <= 100 ? v + '%' : null }
                 },
-                x: {
-                    ticks: { font: { size: 9, weight: 'bold' } }
-                }
+                x: { ticks: { font: { size: 9, weight: 'bold' } } }
             },
             plugins: {
-                legend: { 
-                    position: 'right', 
-                    labels: { boxWidth: 10, font: { size: 9 } } 
-                }
+                legend: { position: 'right', labels: { boxWidth: 10, font: { size: 9 } } }
             }
         },
         plugins: [{
