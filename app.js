@@ -3538,7 +3538,7 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
     h2 { color: #2c3e50; border-bottom: 1px solid #3498db; padding-bottom: 2px; font-size: 14px; margin-top: 0; margin-bottom: 4px; }
 
     .btn-tool { padding: 10px 20px; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; }
-    .btn-print { background: #27ae60; }
+    .btn-print {  background: #2980b9;  }
     .btn-close { background: #e74c3c; }
 
     /* 5. SPESIFIKKE UTSKRIFTSREGLER */
