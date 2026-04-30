@@ -3082,7 +3082,6 @@ htmlSide4 += `<div style="text-align:center; margin: 20px 0 40px 0;">
 // --- SIDE 4 FERDIG ---
 
 // --- GENERER ENDELIG HTML ---
-// --- GENERER ENDELIG HTML ---
 const f_clean = fag.toLowerCase(); 
 const t_clean = trinn.replace(/\D/g, ''); 
 const p_clean = periode.charAt(0).toUpperCase(); // H eller V
@@ -3205,6 +3204,11 @@ if (win) {
     win.document.close();
 } else {
     alert("Popup blokkert! Vennligst tillat popups i nettleseren din for å se analysen.");
+}
+    } catch (error) {
+        console.error("Feil i analyse-generering:", error);
+        alert("Feil: " + error.message);
+    }
 }
 
 
