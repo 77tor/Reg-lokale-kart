@@ -3190,7 +3190,7 @@ const fullHtml = `
         <div class="sticky-menu">
             
 <button onclick="window.print()" class="btn-tool btn-print" style="position: relative; padding-left: 45px; height: 38px;">
-  <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.6rem;">🖨️</span>
+  <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">🖨️</span>
   Skriv analysedelen
 </button>
 
