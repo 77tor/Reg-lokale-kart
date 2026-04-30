@@ -3631,10 +3631,12 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
     const allePerioderSet = new Set();
     const elevResultater = {}; 
     const klasseSnitt = {};
+    const proveSnittHistorisk = {}; // Nytt objekt for historisk snitt
     const kritiskGrenseData = {};
 
     const sokNavn = elevId.trim();
 
+    // 1. GÅ GJENNOM DATA FOR Å FINNE ELEVENS RESULTATER OG KLASSESNITT
     for (let aar in allData) {
         const kortAar = aar.split('-')[0].slice(-2);
         const fagData = allData[aar][fag];
@@ -3649,30 +3651,27 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                 
                 for (let klasse in trinnData) {
                     if (trinnData[klasse][sokNavn]) {
-                        // Finn riktig år i oppgaveStruktur (håndterer fremtidige år)
                         let strukturAar = aar;
-                        if (!oppgaveStruktur[aar] && aar > "2025-2026") {
-                            strukturAar = "2025-2026";
-                        }
+                        if (!oppgaveStruktur[aar] && aar > "2025-2026") strukturAar = "2025-2026";
                         
                         const oppsett = oppgaveStruktur[strukturAar]?.[fag]?.[periode]?.[tKey];
                         if (!oppsett) continue;
                         
                         const maksPoeng = oppsett.oppgaver.reduce((s, o) => s + o.maks, 0);
-                        
-                        // HENT GRENSE (Bruker grenseTotal fra ditt oppsett)
-                        if (oppsett.grenseTotal !== undefined && oppsett.grenseTotal !== -1) {
-                            kritiskGrenseData[pKey] = (oppsett.grenseTotal / maksPoeng) * 100;
-                        } else {
-                            kritiskGrenseData[pKey] = null; 
-                        }
-
                         allePerioderSet.add(pKey);
+
+                        // Eleven
                         const d = trinnData[klasse][sokNavn];
                         if (d.sum !== undefined && !d.slettet && !d.ikkeGjennomfort) {
                             elevResultater[pKey] = (d.sum / maksPoeng) * 100;
                         }
 
+                        // Kritisk grense
+                        if (oppsett.grenseTotal !== undefined && oppsett.grenseTotal !== -1) {
+                            kritiskGrenseData[pKey] = (oppsett.grenseTotal / maksPoeng) * 100;
+                        }
+
+                        // Klassesnitt (kun nåværende klasse)
                         if (!klasseSnitt[pKey]) {
                             let summer = [];
                             for (let id in trinnData[klasse]) {
@@ -3683,11 +3682,35 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                             }
                             klasseSnitt[pKey] = summer.length > 0 ? Math.round(summer.reduce((a, b) => a + b, 0) / summer.length) : null;
                         }
+
+                        // 2. BEREGN PRØVESNITT (Historisk på tvers av alle år og klasser)
+                        if (!proveSnittHistorisk[pKey]) {
+                            let alleResultaterForDenneProven = [];
+                            
+                            // Vi sjekker alle år i databasen for samme periode og trinn
+                            for (let hAar in allData) {
+                                const hFagData = allData[hAar][fag];
+                                if (!hFagData || !hFagData[periode] || !hFagData[periode][tKey]) continue;
+                                
+                                const hTrinnData = hFagData[periode][tKey];
+                                for (let hKlasse in hTrinnData) {
+                                    for (let hId in hTrinnData[hKlasse]) {
+                                        const hEd = hTrinnData[hKlasse][hId];
+                                        if (hEd.sum !== undefined && !hEd.slettet && !hEd.ikkeGjennomfort) {
+                                            alleResultaterForDenneProven.push((hEd.sum / maksPoeng) * 100);
+                                        }
+                                    }
+                                }
+                            }
+                            proveSnittHistorisk[pKey] = alleResultaterForDenneProven.length > 0 
+                                ? Math.round(alleResultaterForDenneProven.reduce((a, b) => a + b, 0) / alleResultaterForDenneProven.length) 
+                                : null;
+                        }
                     }
                 }
             }
         }
-    } // Alle loopene er nå lukket riktig
+    }
 
     const sortertePerioder = Array.from(allePerioderSet).sort((a, b) => {
         const aarA = a.split(' ')[1];
@@ -3698,10 +3721,6 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
 
     if (sortertePerioder.length === 0) return "";
 
-    const elevDataPunkter = sortertePerioder.map(p => elevResultater[p] ?? null);
-    const snittDataPunkter = sortertePerioder.map(p => klasseSnitt[p] ?? null);
-    const kritiskGrensePunkter = sortertePerioder.map(p => kritiskGrenseData[p] ?? null);
-
     const chart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -3709,7 +3728,7 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
             datasets: [
                 {
                     label: 'Eleven',
-                    data: elevDataPunkter,
+                    data: sortertePerioder.map(p => elevResultater[p] ?? null),
                     borderColor: '#3498db',
                     borderWidth: 4,
                     pointRadius: 6,
@@ -3721,7 +3740,7 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                 },
                 {
                     label: 'Klassesnitt',
-                    data: snittDataPunkter,
+                    data: sortertePerioder.map(p => klasseSnitt[p] ?? null),
                     borderColor: '#f1c40f',
                     borderDash: [5, 5],
                     borderWidth: 2,
@@ -3730,12 +3749,22 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                     spanGaps: true
                 },
                 {
+                    label: 'Prøvesnitt (Historisk)',
+                    data: sortertePerioder.map(p => proveSnittHistorisk[p] ?? null),
+                    borderColor: '#bdc3c7', // Grå
+                    borderDash: [5, 5],
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: false,
+                    spanGaps: true
+                },
+                {
                     label: 'Kritisk grense',
-                    data: kritiskGrensePunkter,
+                    data: sortertePerioder.map(p => kritiskGrenseData[p] ?? null),
                     borderColor: '#e74c3c',
                     borderDash: [2, 2],
                     borderWidth: 2,
-                    pointRadius: 2, // Satt til 2 for at punktet skal synes selv uten linje
+                    pointRadius: 2,
                     fill: false,
                     spanGaps: true
                 }
@@ -3748,8 +3777,7 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
             maintainAspectRatio: false,
             scales: {
                 y: { 
-                    min: 30, 
-                    max: 105, 
+                    min: 30, max: 105, 
                     afterBuildTicks: (axis) => {
                         axis.ticks = [30, 40, 50, 60, 70, 80, 90, 100].map(v => ({ value: v }));
                     },
