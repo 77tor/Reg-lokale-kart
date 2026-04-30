@@ -3173,7 +3173,7 @@ const fullHtml = `
     }
     .btn-print { background: #2980b9; }
     .btn-elevkort { background: #27ae60; }
-    .btn-close { background: #95a5a6; } /* Din gamle btn-grey farge */
+   .btn-close { background: #e74c3c; }
     
     @media print { 
         .sticky-menu { display:none; } 
