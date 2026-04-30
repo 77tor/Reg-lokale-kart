@@ -3189,13 +3189,16 @@ const fullHtml = `
     <body>
         <div class="sticky-menu">
             
-<button onclick="window.print()" class="btn-tool btn-print" style="position: relative; padding-left: 45px; height: 38px;">
-  <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">🖨️</span>
-  Skriv analysedelen
+<button onclick="const win = window.open('', '_blank'); window.opener.genererElevkortKlasse('${aar}', '${trinn}', '${klasse}', '${periode}', win)" 
+        class="btn-tool btn-elevkort" 
+        style="position: relative; padding-left: 40px; height: 38px; font-size: 14px; align-items: center;">
+    <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">👤</span> 
+    Elevkort (Hele klassen)
 </button>
 
-            <button onclick="const win = window.open('', '_blank'); window.opener.genererElevkortKlasse('${aar}', '${trinn}', '${klasse}', '${periode}', win)" class="btn-tool btn-elevkort">👤 Elevkort (Hele klassen)</button>
-            <button onclick="window.close()" class="btn-tool btn-close">❌ Lukk</button>
+<button onclick="window.close()" class="btn-tool btn-close" style="height: 38px; font-size: 14px;">
+    ❌ Lukk
+</button>
         </div>
         
         <div class="content-container">
@@ -3563,12 +3566,15 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
 
         </head><body>
             <div class="sticky-menu">
-               <button onclick="window.print()" class="btn-tool btn-print" style="position: relative; padding-left: 45px; height: 38px;">
-                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">🖨️</span>
-                Skriv ut alle elevkort
-                </button>
-               <button onclick="window.close()" class="btn-tool btn-close">❌ Lukk</button>
-            </div>
+    <button onclick="window.print()" class="btn-tool btn-print" style="position: relative; padding-left: 45px; height: 38px; font-size: 14px;">
+        <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">🖨️</span>
+        Skriv ut alle elevkort
+    </button>
+    
+    <button onclick="window.close()" class="btn-tool btn-close" style="height: 38px; font-size: 14px;">
+        ❌ Lukk
+    </button>
+</div>
             <div class="content-container">`);
 
 // Inne i loopen for hver elev i genererElevkortKlasse:
