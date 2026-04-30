@@ -3299,16 +3299,15 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = 
     const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
     const mal = analyseMaler[fag]?.[trinn]?.[periode];
     
-    // Lagt til sjekk for ikkeGjennomfort her også
     if (!oppsett || (!elevData.oppgaver && !elevData.ikkeGjennomfort)) return "<p>Ingen data registrert.</p>";
 
     const faktisktMaksTotal = oppsett.oppgaver.reduce((sum, o) => sum + (o.maks || 0), 0);
     const elevensTotalSum = elevData.sum || 0;
     const kritiskGrenseTotal = oppsett.grenseTotal || 0;
     
+    // Rødt hvis elev <= kritisk grense
     const totalBakgrunn = elevensTotalSum <= kritiskGrenseTotal ? "#ff7675" : "#55efc4";
 
-    // --- BEREGNING AV SNITT ---
     const antallElever = alleEleverData.length;
     let oppgaveSnitt = [];
     let totalSnittSum = 0;
@@ -3343,7 +3342,7 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = 
                                 <div style="max-height: 32px; overflow: hidden;">${visningsNavn}</div>
                             </th>`;
                 }).join('')}
-                <th style="background-color: #2c3e50; color: white; width: 50px; padding: 2px; font-size: 10px; border: 1px solid #2c3e50;">TOTAL</th>
+                <th style="background-color: #f8f9fa; color: #000; width: 50px; padding: 2px; font-size: 10px; border: 1px solid #ddd; font-weight: bold;">TOTAL</th>
             </tr>
         </thead>
         <tbody style="font-size: 10px; text-align: center;">
@@ -3369,12 +3368,14 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = 
                     ? `<td colspan="${antallOppgaver + 1}" style="border: 1px solid #ddd; font-style: italic; color: #7f8c8d; background-color: #fafafa;">Ikke gjennomført prøven</td>`
                     : oppsett.oppgaver.map((o, i) => {
                         const poeng = elevData.oppgaver[i] || 0;
-                        const erUnder = poeng <= (o.grense !== undefined ? o.grense : -1);
+                        const erUnder = (o.grense !== undefined && o.grense !== -1) ? poeng <= o.grense : false;
                         const cellStyle = (fag === "Regning") 
                             ? `background-color: #ffffff; color: #000000;` 
                             : `background-color: ${erUnder ? "#fdf2f2" : "#f2f9f2"}; color: ${erUnder ? "#c0392b" : "#27ae60"};`;
                         return `<td style="${cellStyle} font-weight: bold; font-size: 11px; border: 1px solid #ddd;">${poeng}</td>`;
-                    }).join('') + `<td style="background-color: ${totalBakgrunn}; color: #2d3436; font-weight: bold; font-size: 12px; border: 1px solid #2c3e50;">${elevensTotalSum}</td>`
+                    }).join('') + 
+                    /* Oppdatert TOTAL-celle for elev: Fjernet sort tykk ramme */
+                    `<td style="background-color: ${totalBakgrunn}; color: #2d3436; font-weight: bold; font-size: 12px; border: 1px solid #ddd;">${elevensTotalSum}</td>`
                 }
             </tr>
 
@@ -3631,7 +3632,7 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
     const allePerioderSet = new Set();
     const elevResultater = {}; 
     const klasseSnitt = {};
-    const historiskSnitt = {}; // Den nye grå linjen
+    const historiskSnitt = {};
     const kritiskGrenseData = {};
     const sokNavn = elevId.trim();
 
@@ -3654,6 +3655,8 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                         if (!oppsett) continue;
                         
                         const maksPoeng = oppsett.oppgaver.reduce((s, o) => s + o.maks, 0);
+                        if (maksPoeng === 0) continue;
+
                         allePerioderSet.add(pKey);
 
                         // 1. Eleven
@@ -3662,7 +3665,7 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                             elevResultater[pKey] = (d.sum / maksPoeng) * 100;
                         }
 
-                        // 2. Kritisk grense (Inklusiv verdi)
+                        // 2. Kritisk grense
                         if (oppsett.grenseTotal !== undefined && oppsett.grenseTotal !== -1) {
                             kritiskGrenseData[pKey] = (oppsett.grenseTotal / maksPoeng) * 100;
                         }
@@ -3676,10 +3679,10 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                                     summer.push((ed.sum / maksPoeng) * 100);
                                 }
                             }
-                            klasseSnitt[pKey] = summer.length > 0 ? Math.round(summer.reduce((a, b) => a + b, 0) / summer.length) : null;
+                            klasseSnitt[pKey] = summer.length > 0 ? (summer.reduce((a, b) => a + b, 0) / summer.length) : null;
                         }
 
-                        // 4. Historisk prøvesnitt (Går på tvers av alle år og alle klasser)
+                        // 4. Historisk prøvesnitt
                         if (!historiskSnitt[pKey]) {
                             let alleHistoriske = [];
                             for (let hAar in allData) {
@@ -3688,7 +3691,7 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                                 for (let hKlasse in hData) {
                                     for (let hId in hData[hKlasse]) {
                                         const hElev = hData[hKlasse][hId];
-                                        if (hElev.sum !== undefined && !hElev.slettet) {
+                                        if (hElev.sum !== undefined && !hElev.slettet && !hElev.ikkeGjennomfort) {
                                             alleHistoriske.push((hElev.sum / maksPoeng) * 100);
                                         }
                                     }
@@ -3709,6 +3712,8 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
         return pA === "Høst" ? -1 : 1;
     });
 
+    if (sortertePerioder.length === 0) return "";
+
     const chart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -3720,7 +3725,10 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                     borderColor: '#3498db',
                     borderWidth: 4,
                     pointRadius: 6,
-                    zIndex: 10
+                    pointBackgroundColor: '#3498db',
+                    fill: false,
+                    tension: 0.1,
+                    spanGaps: true
                 },
                 {
                     label: 'Klassesnitt',
@@ -3728,15 +3736,19 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                     borderColor: '#f1c40f',
                     borderDash: [5, 5],
                     borderWidth: 2,
-                    pointRadius: 0
+                    pointRadius: 0,
+                    fill: false,
+                    spanGaps: true
                 },
                 {
                     label: 'Prøvesnitt (Historisk)',
                     data: sortertePerioder.map(p => historiskSnitt[p] ?? null),
-                    borderColor: '#bdc3c7', // Grå farge
+                    borderColor: '#bdc3c7',
                     borderDash: [3, 3],
                     borderWidth: 2,
-                    pointRadius: 0
+                    pointRadius: 0,
+                    fill: false,
+                    spanGaps: true
                 },
                 {
                     label: 'Kritisk grense',
@@ -3744,23 +3756,48 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                     borderColor: '#e74c3c',
                     borderDash: [2, 2],
                     borderWidth: 2,
-                    pointRadius: 2
+                    pointRadius: 2,
+                    fill: false,
+                    spanGaps: true
                 }
             ]
         },
         options: {
             devicePixelRatio: 3,
+            animation: false,
+            responsive: false,
             maintainAspectRatio: false,
             scales: {
                 y: { 
                     min: 30, max: 105,
-                    ticks: { callback: (v) => v <= 100 ? v + '%' : null }
+                    ticks: { 
+                        font: { size: 9 },
+                        callback: (v) => v <= 100 ? v + '%' : null 
+                    },
+                    grid: { color: '#e0e0e0', lineWidth: 0.5 }
+                },
+                x: {
+                    ticks: { font: { size: 9, weight: 'bold' } }
                 }
             },
             plugins: {
-                legend: { position: 'right', labels: { boxWidth: 10 } }
+                legend: { 
+                    position: 'right', 
+                    labels: { boxWidth: 10, font: { size: 9 } } 
+                }
             }
-        }
+        },
+        plugins: [{
+            id: 'white_bg',
+            beforeDraw: (chart) => {
+                const {ctx} = chart;
+                ctx.save();
+                ctx.globalCompositeOperation = 'destination-over';
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, chart.width, chart.height);
+                ctx.restore();
+            }
+        }]
     });
 
     chart.update();
@@ -3768,6 +3805,7 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
     chart.destroy();
     return imgData;
 }
+
 // --- SLUTT ELEVKORT---
 
 
