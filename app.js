@@ -3620,8 +3620,8 @@ for (let elevId of sorterteIder) {
         `${raaNavn.split(',')[1].trim()} ${raaNavn.split(',')[0].trim()}` : raaNavn;
 
     // --- GRAF-GENERERING (Nå med bredere format) ---
-    const grafLesing = await lagGrafBilde("Lesing", trinn, elevId, heleDatabasen);
-    const grafRegning = await lagGrafBilde("Regning", trinn, elevId, heleDatabasen);
+    const grafLesing = await lagGrafBilde('Lesing', trinn, elevId, heleDatabasen, aar, periode);
+    const grafRegning = await lagGrafBilde('Regning', trinn, elevId, heleDatabasen, aar, periode);
 
     win.document.write(`
         <div class="elev-side">
