@@ -3659,7 +3659,7 @@ for (let elevId of sorterteIder) {
     }
 }
 // --- LAG GRAF ---
-async function lagGrafBilde(fag, trinn, elevId, allData) {
+async function lagGrafBilde(fag, trinn, elevId, allData, aar, periode) {
     const canvas = document.getElementById('hiddenChartCanvas');
     if (!canvas) return "";
     
@@ -3743,12 +3743,37 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
         }
     }
 
-    const sortertePerioder = Array.from(allePerioderSet).sort((a, b) => {
+// --- NY FILTRERING HER ---
+    const valgtKortAar = aar.split('-')[0].slice(-2); // f.eks "25"
+    
+    const filtrertePerioder = Array.from(allePerioderSet).filter(pKey => {
+        const [pNavn, pAar] = pKey.split(' '); // pNavn er "Høst"/"Vår", pAar er "25"
+        
+        // 1. Hvis året er tidligere enn valgt år, vis det alltid
+        if (parseInt(pAar) < parseInt(valgtKortAar)) return true;
+        
+        // 2. Hvis vi er i samme år:
+        if (pAar === valgtKortAar) {
+            // Hvis vi er i Høst-perioden, vis kun Høst (skjul Vår)
+            if (periode === "Høst") {
+                return pNavn === "Høst";
+            }
+            // Hvis vi er i Vår-perioden, vis både Høst og Vår
+            return true;
+        }
+        
+        // 3. Skjul alt som er fremtidige år
+        return false;
+    });
+
+    // Sorter de filtrerte periodene (samme sortering som før)
+    const sortertePerioder = filtrertePerioder.sort((a, b) => {
         const [pA, aarA] = a.split(' ');
         const [pB, aarB] = b.split(' ');
         if (aarA !== aarB) return aarA - aarB;
         return pA === "Høst" ? -1 : 1;
     });
+    // --- SLUTT PÅ FILTRERING ---
 
     if (sortertePerioder.length === 0) return "";
 
