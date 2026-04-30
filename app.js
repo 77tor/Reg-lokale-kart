@@ -3306,7 +3306,7 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = 
     const elevensTotalSum = elevData.sum || 0;
     const kritiskGrenseTotal = oppsett.grenseTotal || 0;
     
-    const totalBakgrunn = elevensTotalSum < kritiskGrenseTotal ? "#ff7675" : "#55efc4";
+    const totalBakgrunn = elevensTotalSum <= kritiskGrenseTotal ? "#ff7675" : "#55efc4";
 
     // --- BEREGNING AV SNITT ---
     const antallElever = alleEleverData.length;
@@ -3369,7 +3369,7 @@ function genererElevTabell(elevData, fag, aar, periode, trinn, alleEleverData = 
                     ? `<td colspan="${antallOppgaver + 1}" style="border: 1px solid #ddd; font-style: italic; color: #7f8c8d; background-color: #fafafa;">Ikke gjennomført prøven</td>`
                     : oppsett.oppgaver.map((o, i) => {
                         const poeng = elevData.oppgaver[i] || 0;
-                        const erUnder = poeng < (o.grense || 0);
+                        const erUnder = poeng <= (o.grense !== undefined ? o.grense : -1);
                         const cellStyle = (fag === "Regning") 
                             ? `background-color: #ffffff; color: #000000;` 
                             : `background-color: ${erUnder ? "#fdf2f2" : "#f2f9f2"}; color: ${erUnder ? "#c0392b" : "#27ae60"};`;
@@ -3631,12 +3631,10 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
     const allePerioderSet = new Set();
     const elevResultater = {}; 
     const klasseSnitt = {};
-    const proveSnittHistorisk = {}; // Nytt objekt for historisk snitt
+    const historiskSnitt = {}; // Den nye grå linjen
     const kritiskGrenseData = {};
-
     const sokNavn = elevId.trim();
 
-    // 1. GÅ GJENNOM DATA FOR Å FINNE ELEVENS RESULTATER OG KLASSESNITT
     for (let aar in allData) {
         const kortAar = aar.split('-')[0].slice(-2);
         const fagData = allData[aar][fag];
@@ -3651,27 +3649,25 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                 
                 for (let klasse in trinnData) {
                     if (trinnData[klasse][sokNavn]) {
-                        let strukturAar = aar;
-                        if (!oppgaveStruktur[aar] && aar > "2025-2026") strukturAar = "2025-2026";
-                        
+                        let strukturAar = oppgaveStruktur[aar] ? aar : "2025-2026";
                         const oppsett = oppgaveStruktur[strukturAar]?.[fag]?.[periode]?.[tKey];
                         if (!oppsett) continue;
                         
                         const maksPoeng = oppsett.oppgaver.reduce((s, o) => s + o.maks, 0);
                         allePerioderSet.add(pKey);
 
-                        // Eleven
+                        // 1. Eleven
                         const d = trinnData[klasse][sokNavn];
                         if (d.sum !== undefined && !d.slettet && !d.ikkeGjennomfort) {
                             elevResultater[pKey] = (d.sum / maksPoeng) * 100;
                         }
 
-                        // Kritisk grense
+                        // 2. Kritisk grense (Inklusiv verdi)
                         if (oppsett.grenseTotal !== undefined && oppsett.grenseTotal !== -1) {
                             kritiskGrenseData[pKey] = (oppsett.grenseTotal / maksPoeng) * 100;
                         }
 
-                        // Klassesnitt (kun nåværende klasse)
+                        // 3. Klassesnitt
                         if (!klasseSnitt[pKey]) {
                             let summer = [];
                             for (let id in trinnData[klasse]) {
@@ -3683,28 +3679,22 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                             klasseSnitt[pKey] = summer.length > 0 ? Math.round(summer.reduce((a, b) => a + b, 0) / summer.length) : null;
                         }
 
-                        // 2. BEREGN PRØVESNITT (Historisk på tvers av alle år og klasser)
-                        if (!proveSnittHistorisk[pKey]) {
-                            let alleResultaterForDenneProven = [];
-                            
-                            // Vi sjekker alle år i databasen for samme periode og trinn
+                        // 4. Historisk prøvesnitt (Går på tvers av alle år og alle klasser)
+                        if (!historiskSnitt[pKey]) {
+                            let alleHistoriske = [];
                             for (let hAar in allData) {
-                                const hFagData = allData[hAar][fag];
-                                if (!hFagData || !hFagData[periode] || !hFagData[periode][tKey]) continue;
-                                
-                                const hTrinnData = hFagData[periode][tKey];
-                                for (let hKlasse in hTrinnData) {
-                                    for (let hId in hTrinnData[hKlasse]) {
-                                        const hEd = hTrinnData[hKlasse][hId];
-                                        if (hEd.sum !== undefined && !hEd.slettet && !hEd.ikkeGjennomfort) {
-                                            alleResultaterForDenneProven.push((hEd.sum / maksPoeng) * 100);
+                                const hData = allData[hAar]?.[fag]?.[periode]?.[tKey];
+                                if (!hData) continue;
+                                for (let hKlasse in hData) {
+                                    for (let hId in hData[hKlasse]) {
+                                        const hElev = hData[hKlasse][hId];
+                                        if (hElev.sum !== undefined && !hElev.slettet) {
+                                            alleHistoriske.push((hElev.sum / maksPoeng) * 100);
                                         }
                                     }
                                 }
                             }
-                            proveSnittHistorisk[pKey] = alleResultaterForDenneProven.length > 0 
-                                ? Math.round(alleResultaterForDenneProven.reduce((a, b) => a + b, 0) / alleResultaterForDenneProven.length) 
-                                : null;
+                            historiskSnitt[pKey] = alleHistoriske.length > 0 ? (alleHistoriske.reduce((a, b) => a + b, 0) / alleHistoriske.length) : null;
                         }
                     }
                 }
@@ -3713,13 +3703,11 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
     }
 
     const sortertePerioder = Array.from(allePerioderSet).sort((a, b) => {
-        const aarA = a.split(' ')[1];
-        const aarB = b.split(' ')[1];
+        const [pA, aarA] = a.split(' ');
+        const [pB, aarB] = b.split(' ');
         if (aarA !== aarB) return aarA - aarB;
-        return a.includes("Høst") ? -1 : 1;
+        return pA === "Høst" ? -1 : 1;
     });
-
-    if (sortertePerioder.length === 0) return "";
 
     const chart = new Chart(ctx, {
         type: 'line',
@@ -3732,10 +3720,6 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                     borderColor: '#3498db',
                     borderWidth: 4,
                     pointRadius: 6,
-                    pointBackgroundColor: '#3498db',
-                    fill: false,
-                    tension: 0.1,
-                    spanGaps: true,
                     zIndex: 10
                 },
                 {
@@ -3744,19 +3728,15 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                     borderColor: '#f1c40f',
                     borderDash: [5, 5],
                     borderWidth: 2,
-                    pointRadius: 0,
-                    fill: false,
-                    spanGaps: true
+                    pointRadius: 0
                 },
                 {
                     label: 'Prøvesnitt (Historisk)',
-                    data: sortertePerioder.map(p => proveSnittHistorisk[p] ?? null),
-                    borderColor: '#bdc3c7', // Grå
-                    borderDash: [5, 5],
+                    data: sortertePerioder.map(p => historiskSnitt[p] ?? null),
+                    borderColor: '#bdc3c7', // Grå farge
+                    borderDash: [3, 3],
                     borderWidth: 2,
-                    pointRadius: 0,
-                    fill: false,
-                    spanGaps: true
+                    pointRadius: 0
                 },
                 {
                     label: 'Kritisk grense',
@@ -3764,43 +3744,23 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                     borderColor: '#e74c3c',
                     borderDash: [2, 2],
                     borderWidth: 2,
-                    pointRadius: 2,
-                    fill: false,
-                    spanGaps: true
+                    pointRadius: 2
                 }
             ]
         },
         options: {
             devicePixelRatio: 3,
-            animation: false,
-            responsive: false,
             maintainAspectRatio: false,
             scales: {
                 y: { 
-                    min: 30, max: 105, 
-                    afterBuildTicks: (axis) => {
-                        axis.ticks = [30, 40, 50, 60, 70, 80, 90, 100].map(v => ({ value: v }));
-                    },
-                    grid: { display: true, color: '#e0e0e0', lineWidth: 0.5 },
-                    ticks: { font: { size: 9 }, callback: (v) => v <= 100 ? v + '%' : null }
-                },
-                x: { ticks: { font: { size: 9, weight: 'bold' } } }
+                    min: 30, max: 105,
+                    ticks: { callback: (v) => v <= 100 ? v + '%' : null }
+                }
             },
             plugins: {
-                legend: { position: 'right', labels: { boxWidth: 10, font: { size: 9 } } }
+                legend: { position: 'right', labels: { boxWidth: 10 } }
             }
-        },
-        plugins: [{
-            id: 'white_bg',
-            beforeDraw: (chart) => {
-                const {ctx} = chart;
-                ctx.save();
-                ctx.globalCompositeOperation = 'destination-over';
-                ctx.fillStyle = 'white';
-                ctx.fillRect(0, 0, chart.width, chart.height);
-                ctx.restore();
-            }
-        }]
+        }
     });
 
     chart.update();
