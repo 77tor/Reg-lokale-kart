@@ -3188,7 +3188,12 @@ const fullHtml = `
     </head>
     <body>
         <div class="sticky-menu">
-            <button onclick="window.print()" class="btn-tool btn-print">🖨️ Skriv ut / Lagre PDF</button>
+            
+<button onclick="window.print()" class="btn-tool btn-print" style="position: relative; padding-left: 45px; height: 38px;">
+  <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.6rem;">🖨️</span>
+  Skriv analysedelen
+</button>
+
             <button onclick="const win = window.open('', '_blank'); window.opener.genererElevkortKlasse('${aar}', '${trinn}', '${klasse}', '${periode}', win)" class="btn-tool btn-elevkort">👤 Elevkort (Hele klassen)</button>
             <button onclick="window.close()" class="btn-tool btn-close">❌ Lukk</button>
         </div>
