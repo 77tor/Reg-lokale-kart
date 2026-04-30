@@ -2142,7 +2142,6 @@ function sendMeldingTilAdmin() {
 }
 
 // --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
-// --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
 function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, statuser, alleLogger) {
     let resultat = { htmlTotal: "", htmlIkkeFerdig: "", harApne: false };
     
@@ -2473,7 +2472,7 @@ let elever = Object.keys(firebaseData).filter(navn => {
 // 1. Sørg for at du bruker riktig kilde (sannsynligvis lagredeResultater)
 elever.forEach(navn => {
     // ENDRET: Bruk lagredeResultater (eller det navnet du har definert lenger opp)
-    const d = lagredeResultater[navn] || {}; 
+    const d = firebaseData[navn] || {};
 
     // 2. SIKKERHETSSJEKK: Hopp over hvis eleven mangler data eller er slettet
     if (!d.oppgaver || d.slettet) return;
