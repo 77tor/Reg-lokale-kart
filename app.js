@@ -3072,17 +3072,28 @@ const fasitSti = `Fasit/Kartlegging_${f_clean}_${t_clean}_${p_clean}_Fasit.pdf`;
 const harFasit = !(f_clean === "lesing" && t_clean === "1" && p_clean === "H");
 
 
-// ---SJEKK OM BEGGE PRØVER ER FERDIGSTILT
-// Sjekk om begge prøvene er ferdigstilte
-const statusLesing = allData[aar]?.["Lesing"]?.[periode]?.[trinn]?.[klasse]?.status || "";
-const statusRegning = allData[aar]?.["Regning"]?.[periode]?.[trinn]?.[klasse]?.status || "";
-const beggeFerdig = (statusLesing === "Ferdigstilt" && statusRegning === "Ferdigstilt");
+// --- SJEKK OM BEGGE PRØVER ER FERDIGSTILT ---
+let beggeFerdig = false;
+try {
+    // Vi bruker ?. på ALLE nivåer for å være 100% trygge
+    const statusLesing = allData?.[aar]?.["Lesing"]?.[periode]?.[trinn]?.[klasse]?.status || "";
+    const statusRegning = allData?.[aar]?.["Regning"]?.[periode]?.[trinn]?.[klasse]?.status || "";
+    
+    beggeFerdig = (statusLesing === "Ferdigstilt" && statusRegning === "Ferdigstilt");
+} catch (e) {
+    console.error("Kunne ikke sjekke status:", e);
+    beggeFerdig = false; // Default til false hvis dataene er korrupte
+}
 
 // Definer knappe-egenskaper
-const elevkortClick = beggeFerdig ? `const win = window.open('', '_blank'); window.opener.genererElevkortKlasse('${aar}', '${trinn}', '${klasse}', '${periode}', win)` : "";
+const elevkortClick = beggeFerdig 
+    ? `const win = window.open('', '_blank'); window.opener.genererElevkortKlasse('${aar}', '${trinn}', '${klasse}', '${periode}', win)` 
+    : "return false;"; // Hindrer klikk hvis ikke ferdig
+
 const elevkortStil = beggeFerdig 
-    ? "position: relative; padding-left: 40px; height: 38px; font-size: 14px; align-items: center;" 
+    ? "position: relative; padding-left: 40px; height: 38px; font-size: 14px; align-items: center; cursor: pointer;" 
     : "position: relative; padding-left: 40px; height: 38px; font-size: 14px; align-items: center; background-color: #bdc3c7; cursor: not-allowed; opacity: 0.8;";
+
 const elevkortTooltip = beggeFerdig ? "" : "title='Begge prøver må settes til \"Ferdigstilt\" før elevkort kan aktiveres'";
 // ---FERDIG SJEKK
 
