@@ -3159,6 +3159,31 @@ const fullHtml = `
             .btn-print { background: #2980b9; }
             .btn-elevkort { background: #27ae60; }
             .btn-close { background: #e74c3c; }
+
+/* Denne sørger for at bildet ligger gjemt bak øye-ikonet */
+.hover-bilde { 
+    display: none; 
+    position: absolute; 
+    z-index: 100; 
+    border: 3px solid #2c3e50; 
+    border-radius: 8px; 
+    background: white; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
+    width: 400px; 
+    left: 40px; /* Flyttet litt til høyre for øyet */
+    top: 0; 
+}
+
+/* Denne viser bildet når man holder musa over containeren */
+.bilde-container:hover .hover-bilde { 
+    display: block; 
+}
+
+.bilde-container {
+    position: relative;
+    display: inline-block;
+    cursor: help;
+}
             
             @media print { 
                 .sticky-menu { display:none; } 
