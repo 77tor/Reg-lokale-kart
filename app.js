@@ -3630,7 +3630,8 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
 
     const allePerioderSet = new Set();
     const elevResultater = {}; 
-    const trinnSnitt = {};    
+    const klasseSnitt = {};
+    const kritiskGrenseData = {}; // Nytt objekt for dynamiske grenser
 
     const sokNavn = elevId.trim();
 
@@ -3645,30 +3646,38 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
 
             for (let tKey in periodeNode) {
                 const trinnData = periodeNode[tKey];
-                const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[tKey];
-                if (!oppsett) continue;
-                const maksPoeng = oppsett.oppgaver.reduce((s, o) => s + o.maks, 0);
-
+                
                 for (let klasse in trinnData) {
-                    for (let elevNavn in trinnData[klasse]) {
-                        const d = trinnData[klasse][elevNavn];
-                        if (d.slettet || d.ikkeGjennomfort || d.sum === undefined) continue;
+                    if (trinnData[klasse][sokNavn]) {
+                        const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[tKey];
+                        if (!oppsett) continue;
+                        
+                        const maksPoeng = oppsett.oppgaver.reduce((s, o) => s + o.maks, 0);
+                        
+                        // HENTER DYNAMISK GRENSE:
+                        // Bruker oppsett.kritiskGrense (i poeng) og gjør om til prosent. 
+                        // Hvis den ikke finnes, setter vi en fallback (f.eks. 70)
+                        if (oppsett.kritiskGrense !== undefined) {
+                            kritiskGrenseData[pKey] = (oppsett.kritiskGrense / maksPoeng) * 100;
+                        } else {
+                            kritiskGrenseData[pKey] = null; 
+                        }
 
-                        const prosent = (d.sum / maksPoeng) * 100;
+                        allePerioderSet.add(pKey);
+                        const d = trinnData[klasse][sokNavn];
+                        if (d.sum !== undefined && !d.slettet && !d.ikkeGjennomfort) {
+                            elevResultater[pKey] = (d.sum / maksPoeng) * 100;
+                        }
 
-                        if (elevNavn.trim().toLowerCase() === sokNavn.toLowerCase()) {
-                            allePerioderSet.add(pKey);
-                            elevResultater[pKey] = prosent;
-                            
-                            if (!trinnSnitt[pKey]) trinnSnitt[pKey] = [];
-                            for (let k in trinnData) {
-                                for (let id in trinnData[k]) {
-                                    const ed = trinnData[k][id];
-                                    if (ed.sum !== undefined && !ed.slettet) {
-                                        trinnSnitt[pKey].push((ed.sum / maksPoeng) * 100);
-                                    }
+                        if (!klasseSnitt[pKey]) {
+                            let summer = [];
+                            for (let id in trinnData[klasse]) {
+                                const ed = trinnData[klasse][id];
+                                if (ed.sum !== undefined && !ed.slettet && !ed.ikkeGjennomfort) {
+                                    summer.push((ed.sum / maksPoeng) * 100);
                                 }
                             }
+                            klasseSnitt[pKey] = summer.length > 0 ? Math.round(summer.reduce((a, b) => a + b, 0) / summer.length) : null;
                         }
                     }
                 }
@@ -3686,38 +3695,51 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
     if (sortertePerioder.length === 0) return "";
 
     const elevDataPunkter = sortertePerioder.map(p => elevResultater[p] ?? null);
-    const snittDataPunkter = sortertePerioder.map(p => {
-        const verdier = trinnSnitt[p] || [];
-        return verdier.length > 0 ? Math.round(verdier.reduce((a, b) => a + b, 0) / verdier.length) : null;
-    });
+    const snittDataPunkter = sortertePerioder.map(p => klasseSnitt[p] ?? null);
+    const kritiskGrensePunkter = sortertePerioder.map(p => kritiskGrenseData[p] ?? null);
 
     const chart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: sortertePerioder,
-            datasets: [{
-                label: 'Eleven',
-                data: elevDataPunkter,
-                borderColor: '#3498db',
-                borderWidth: 4,
-                pointRadius: 6,
-                pointBackgroundColor: '#3498db',
-                fill: false,
-                tension: 0.1,
-                spanGaps: true,
-                clip: false
-            }, {
-                label: 'Trinnsnitt',
-                data: snittDataPunkter,
-                borderColor: '#bdc3c7',
-                borderDash: [5, 5],
-                borderWidth: 2,
-                pointRadius: 0,
-                fill: false,
-                spanGaps: true
-            }]
+            datasets: [
+                {
+                    label: 'Eleven',
+                    data: elevDataPunkter,
+                    borderColor: '#3498db',
+                    borderWidth: 4,
+                    pointRadius: 6,
+                    pointBackgroundColor: '#3498db',
+                    fill: false,
+                    tension: 0.1,
+                    spanGaps: true,
+                    clip: false,
+                    zIndex: 10
+                },
+                {
+                    label: 'Klassesnitt',
+                    data: snittDataPunkter,
+                    borderColor: '#f1c40f',
+                    borderDash: [5, 5],
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: false,
+                    spanGaps: true
+                },
+                {
+                    label: 'Kritisk grense',
+                    data: kritiskGrensePunkter,
+                    borderColor: '#e74c3c',
+                    borderDash: [2, 2],
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: false,
+                    spanGaps: true // Gjør at den tegner mellom punkter selv om en prøve mangler grense
+                }
+            ]
         },
         options: {
+            // ... (Samme options som i forrige svar)
             devicePixelRatio: 3,
             animation: false,
             responsive: false,
@@ -3727,33 +3749,18 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                     min: 30, 
                     max: 105, 
                     afterBuildTicks: (axis) => {
-                        // Her tvinger vi aksen til å inneholde disse verdiene
                         axis.ticks = [30, 40, 50, 60, 70, 80, 90, 100].map(v => ({ value: v }));
                     },
-                   grid: {
-                        display: true,
-                        drawOnChartArea: true,
-                        color: '#e0e0e0', // Samme lysegrå farge for alle linjer
-                        lineWidth: 0.5,   // Samme tynne strek for alle linjer
-                        drawTicks: true
-                    },
-                    ticks: { 
-                        stepSize: 10,
-                        font: { size: 9 },
-                        callback: function(value) {
-                            // Vi returnerer verdien kun hvis den er 100 eller lavere
-                            if (value <= 100) return value; 
-                        }
-                    }
+                    grid: { display: true, color: '#e0e0e0', lineWidth: 0.5 },
+                    ticks: { font: { size: 9 }, callback: (v) => v <= 100 ? v + '%' : null }
                 },
-                x: { 
-                    ticks: { font: { size: 9, weight: 'bold' } } 
-                }
+                x: { ticks: { font: { size: 9, weight: 'bold' } } }
             },
             plugins: {
                 legend: { position: 'right', labels: { boxWidth: 10, font: { size: 9 } } }
             }
         },
+        // ... (white_bg plugin)
         plugins: [{
             id: 'white_bg',
             beforeDraw: (chart) => {
@@ -3772,7 +3779,6 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
     chart.destroy();
     return imgData;
 }
-
 // --- SLUTT ELEVKORT---
 
 
