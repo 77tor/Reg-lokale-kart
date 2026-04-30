@@ -3061,7 +3061,7 @@ htmlSide4 += `<div style="text-align:center; margin: 20px 0 40px 0;">
 
 // --- SIDE 4 FERDIG ---
 
-// --- GENERER ENDELIG HTML ---
+
 // --- GENERER ENDELIG HTML ---
 const win = window.open('', '_blank');
 const f_clean = fag.toLowerCase(); 
@@ -3190,7 +3190,7 @@ const fullHtml = `
         <div class="sticky-menu">
             <button onclick="window.print()" class="btn-tool btn-print">🖨️ Skriv ut / Lagre PDF</button>
             <button onclick="const win = window.open('', '_blank'); window.opener.genererElevkortKlasse('${aar}', '${trinn}', '${klasse}', '${periode}', win)" class="btn-tool btn-elevkort">👤 Elevkort (Hele klassen)</button>
-            <button onclick="window.close()" class="btn-tool btn-close">Lukk</button>
+            <button onclick="window.close()" class="btn-tool btn-close">❌ Lukk</button>
         </div>
         
         <div class="content-container">
