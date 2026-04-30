@@ -3129,120 +3129,69 @@ const fullHtml = `
     <head>
         <title>Analyse ${trinn}${klasse}</title>
         <link rel="icon" type="image/png" href="${window.location.origin}${window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'))}/analyse.png">
-<style>
-    @page { size: A4 landscape; margin: 0; }
-    body { font-family: sans-serif; background:#f0f2f5; margin:0; padding:20px; display:flex; flex-direction:column; align-items:center; }
-    .analyse-section { 
-        background:white; width:297mm; height:210mm; padding:10mm 12mm; 
-        margin-bottom:30px; box-shadow:0 4px 15px rgba(0,0,0,0.15); 
-        box-sizing:border-box; page-break-after:always; position: relative; overflow: hidden;
-    }
-    .side-header { border-bottom:2px solid #2c3e50; margin-bottom:15px; font-size:16px; font-weight:bold; color:#2c3e50; }
+        <style>
+            @page { size: A4 landscape; margin: 0; }
+            body { font-family: sans-serif; background:#f0f2f5; margin:0; padding:0; padding-bottom: 20px; display:flex; flex-direction:column; align-items:center; }
+            .analyse-section { 
+                background:white; width:297mm; height:210mm; padding:10mm 12mm; 
+                margin-bottom:30px; box-shadow:0 4px 15px rgba(0,0,0,0.15); 
+                box-sizing:border-box; page-break-after:always; position: relative; overflow: hidden;
+            }
+            .content-container { margin-top: 80px; display: flex; flex-direction: column; align-items: center; }
+            .side-header { border-bottom:2px solid #2c3e50; margin-bottom:15px; font-size:16px; font-weight:bold; color:#2c3e50; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 15px; table-layout: fixed; }
+            th, td { border: 1px solid #333; padding: 4px 2px; text-align: center; font-size: 9px; overflow: hidden; }
+            th { background: #f8f9fa; }
+            .col-navn { width: 180px !important; text-align: left !important; white-space: nowrap; text-overflow: ellipsis; padding-left: 8px !important; }
+            .chart-container { display:flex; height:200px; align-items:flex-end; border-bottom:2px solid #333; margin-bottom:50px; padding-bottom: 30px; }
+            
+            .sticky-menu { 
+                position: fixed; top: 0; left: 0; right: 0; height: 60px; 
+                background: #2c3e50; display: flex; align-items: center; 
+                justify-content: center; gap: 15px; z-index: 1000; 
+                box-shadow: 0 2px 10px rgba(0,0,0,0.3); 
+            }
+            .btn-tool { 
+                padding: 10px 20px; color: white !important; border: none; 
+                border-radius: 5px; cursor: pointer; font-weight: bold; 
+                font-size: 13px; text-decoration: none; display: flex; align-items: center; gap: 8px;
+            }
+            .btn-print { background: #2980b9; }
+            .btn-elevkort { background: #27ae60; }
+            .btn-close { background: #e74c3c; }
 
-    /* --- VIKTIG ENDRING FOR Å HOLDE TABELLEN INNENFOR ARKET --- */
-    table { 
-        width: 100%; 
-        border-collapse: collapse; 
-        margin-bottom: 15px; 
-        table-layout: fixed; /* Tvinger tabellen til å holde seg innenfor arkets bredde */
-    }
-    th, td { 
-        border: 1px solid #333; 
-        padding: 4px 2px; 
-        text-align: center; 
-        font-size: 9px; /* Litt mindre skrift gir plass til flere kolonner */
-        overflow: hidden; /* Skjuler tekst som går utenfor cellen */
-    }
-    th { background: #f8f9fa; }
-
-    /* Justert navnekolonne (litt smalere for å gi plass til oppgaver) */
-    .col-navn { 
-        width: 180px !important; 
-        text-align: left !important; 
-        white-space: nowrap; 
-        text-overflow: ellipsis; 
-        padding-left: 8px !important;
-    }
-
-/* Ny regel som overstyrer standard 9px og gjør teksten fet */
-.stor-rad td {
-    font-size: 14px !important;
-    font-weight: bold !important;
-    padding: 6px 2px !important;
+/* Denne sørger for at bildet ligger gjemt bak øye-ikonet */
+.hover-bilde { 
+    display: none; 
+    position: absolute; 
+    z-index: 100; 
+    border: 3px solid #2c3e50; 
+    border-radius: 8px; 
+    background: white; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
+    width: 400px; 
+    left: 40px; /* Flyttet litt til høyre for øyet */
+    top: 0; 
 }
 
-    /* Statisk bredde for tall/prosent-kolonner (f.eks. Side 2) */
-    .col-tall { 
-        width: 60px !important; 
-    }
-
-
-/* Legg gjerne til dette i <style> blokken din */
-.analyse-side-3 div[style*="display: grid"]:hover {
-    background-color: #fcfcfc !important;
+/* Denne viser bildet når man holder musa over containeren */
+.bilde-container:hover .hover-bilde { 
+    display: block; 
 }
 
-/* Sørg for at overskriften på side 3 ikke blir med på neste side ved et uhell */
-.analyse-side-3 {
-    page-break-inside: avoid;
+.bilde-container {
+    position: relative;
+    display: inline-block;
+    cursor: help;
 }
-
-.hover-bilde {
-    display: none; /* Skjult som standard */
-    position: absolute;
-    z-index: 100;
-    border: 3px solid #2c3e50;
-    border-radius: 8px;
-    background: white;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    width: 400px; /* Juster størrelsen på forhåndsvisningen her */
-    left: 20px;
-    top: 25px;
-}
-/* Vis bildet ved hover på skjerm */
-.bilde-container:hover .hover-bilde {
-    display: block;
-}
-    /* Brukes for alle oppgave-kolonner slik at de deler resten av plassen */
-    .col-oppgave {
-        width: auto;
-    }
-    /* -------------------------------------------------------- */
-
-    .chart-container { display:flex; height:200px; align-items:flex-end; border-bottom:2px solid #333; margin-bottom:50px; padding-bottom: 30px; }
-    .bar-wrapper { flex:1; display:flex; flex-direction:column; align-items:center; position:relative; }
-    .bar-track { 
-    background: #eee; 
-    width: 35px; /* Endret fra 20px til 35px for tykkere søyler */
-    height: 150px; 
-    position: relative; 
-    border: 1px solid #ccc; 
-    display: flex; 
-    flex-direction: column-reverse; 
-    margin: 0 auto; /* Sikrer at søylen sentreres i sitt område */
-}
-    .bar-fill { background:#3498db; width:100%; }
-    .total-fill { background:#2ecc71; }
-    .target-line { position:absolute; width:100%; border-top:2px dashed red; z-index:5; }
-    .bar-label { font-size:8px; margin-top:10px; font-weight:bold; }
-    .toolbar { margin-bottom:20px; background:white; padding:10px; border-radius:50px; display:flex; gap:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; }
-    .btn-tool { padding:8px 15px; border-radius:5px; text-decoration:none; font-weight:bold; color:white !important; border:none; cursor:pointer; font-size:12px; }
-    .btn-grey { background: #95a5a6; }
-    
-    @media print { 
-        .toolbar { display:none; } 
-        body { background: white; padding:0; } 
-/* Skjul KI-knappene ved utskrift, da de ikke gir mening på papir */
-    .btn { display: none !important; }
-    /* Sørg for at de røde boksene på side 3 ikke blir grå (tving farger) */
-    .analyse-section { -webkit-print-color-adjust: exact; }
-.hover-bilde {
-        display: none !important;}
-        .analyse-section { box-shadow:none; margin:0; width: 297mm; height: 210mm; } 
-        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } 
-    }
-</style>
-
+            
+            @media print { 
+                .sticky-menu { display:none; } 
+                body { background: white; padding:0; } 
+                .content-container { margin-top: 0 !important; }
+                .analyse-section { box-shadow:none; margin:0; }
+            }
+        </style>
     </head>
     <body>
         <div class="sticky-menu">
