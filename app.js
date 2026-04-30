@@ -3576,9 +3576,10 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
         Skriv ut alle elevkort
     </button>
     
-    <button onclick="window.close()" class="btn-tool btn-close" style="height: 38px; font-size: 14px;">
-        ❌ Lukk
-    </button>
+<button onclick="window.close()" class="btn-tool btn-close" 
+        style="height: 38px; font-size: 14px; background-color: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 0 15px;">
+    <span style="font-weight: 900; margin-right: 5px;">✕</span> Lukk
+</button>
 </div>
             <div class="content-container">`);
 
