@@ -3631,7 +3631,7 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
     const allePerioderSet = new Set();
     const elevResultater = {}; 
     const klasseSnitt = {};
-    const kritiskGrenseData = {}; // Nytt objekt for dynamiske grenser
+    const kritiskGrenseData = {};
 
     const sokNavn = elevId.trim();
 
@@ -3649,16 +3649,20 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                 
                 for (let klasse in trinnData) {
                     if (trinnData[klasse][sokNavn]) {
-                        const oppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[tKey];
+                        // Finn riktig år i oppgaveStruktur (håndterer fremtidige år)
+                        let strukturAar = aar;
+                        if (!oppgaveStruktur[aar] && aar > "2025-2026") {
+                            strukturAar = "2025-2026";
+                        }
+                        
+                        const oppsett = oppgaveStruktur[strukturAar]?.[fag]?.[periode]?.[tKey];
                         if (!oppsett) continue;
                         
                         const maksPoeng = oppsett.oppgaver.reduce((s, o) => s + o.maks, 0);
                         
-                        // HENTER DYNAMISK GRENSE:
-                        // Bruker oppsett.kritiskGrense (i poeng) og gjør om til prosent. 
-                        // Hvis den ikke finnes, setter vi en fallback (f.eks. 70)
-                        if (oppsett.kritiskGrense !== undefined) {
-                            kritiskGrenseData[pKey] = (oppsett.kritiskGrense / maksPoeng) * 100;
+                        // HENT GRENSE (Bruker grenseTotal fra ditt oppsett)
+                        if (oppsett.grenseTotal !== undefined && oppsett.grenseTotal !== -1) {
+                            kritiskGrenseData[pKey] = (oppsett.grenseTotal / maksPoeng) * 100;
                         } else {
                             kritiskGrenseData[pKey] = null; 
                         }
@@ -3683,7 +3687,7 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                 }
             }
         }
-    }
+    } // Alle loopene er nå lukket riktig
 
     const sortertePerioder = Array.from(allePerioderSet).sort((a, b) => {
         const aarA = a.split(' ')[1];
@@ -3713,7 +3717,6 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                     fill: false,
                     tension: 0.1,
                     spanGaps: true,
-                    clip: false,
                     zIndex: 10
                 },
                 {
@@ -3732,14 +3735,13 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                     borderColor: '#e74c3c',
                     borderDash: [2, 2],
                     borderWidth: 2,
-                    pointRadius: 0,
+                    pointRadius: 2, // Satt til 2 for at punktet skal synes selv uten linje
                     fill: false,
-                    spanGaps: true // Gjør at den tegner mellom punkter selv om en prøve mangler grense
+                    spanGaps: true
                 }
             ]
         },
         options: {
-            // ... (Samme options som i forrige svar)
             devicePixelRatio: 3,
             animation: false,
             responsive: false,
@@ -3760,7 +3762,6 @@ async function lagGrafBilde(fag, trinn, elevId, allData) {
                 legend: { position: 'right', labels: { boxWidth: 10, font: { size: 9 } } }
             }
         },
-        // ... (white_bg plugin)
         plugins: [{
             id: 'white_bg',
             beforeDraw: (chart) => {
