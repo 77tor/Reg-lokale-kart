@@ -3071,6 +3071,21 @@ const oppgaveSti = `Oppgaver/Kartlegging_${f_clean}_${t_clean}_${p_clean}.pdf`;
 const fasitSti = `Fasit/Kartlegging_${f_clean}_${t_clean}_${p_clean}_Fasit.pdf`;
 const harFasit = !(f_clean === "lesing" && t_clean === "1" && p_clean === "H");
 
+
+// ---SJEKK OM BEGGE PRØVER ER FERDIGSTILT
+// Sjekk om begge prøvene er ferdigstilte
+const statusLesing = allData[aar]?.["Lesing"]?.[periode]?.[trinn]?.[klasse]?.status || "";
+const statusRegning = allData[aar]?.["Regning"]?.[periode]?.[trinn]?.[klasse]?.status || "";
+const beggeFerdig = (statusLesing === "Ferdigstilt" && statusRegning === "Ferdigstilt");
+
+// Definer knappe-egenskaper
+const elevkortClick = beggeFerdig ? `const win = window.open('', '_blank'); window.opener.genererElevkortKlasse('${aar}', '${trinn}', '${klasse}', '${periode}', win)` : "";
+const elevkortStil = beggeFerdig 
+    ? "position: relative; padding-left: 40px; height: 38px; font-size: 14px; align-items: center;" 
+    : "position: relative; padding-left: 40px; height: 38px; font-size: 14px; align-items: center; background-color: #bdc3c7; cursor: not-allowed; opacity: 0.8;";
+const elevkortTooltip = beggeFerdig ? "" : "title='Begge prøver må settes til \"Ferdigstilt\" før elevkort kan aktiveres'";
+// ---FERDIG SJEKK
+
 // VIKTIG: Her tildeler vi strengen til variabelen fullHtml
 const fullHtml = `
     <html>
@@ -3187,23 +3202,24 @@ const fullHtml = `
 </style>
     </head>
     <body>
-        <div class="sticky-menu">
-  <button onclick="window.print()" class="btn-tool btn-print" style="position: relative; padding-left: 45px; height: 38px; font-size: 14px;">
-        <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">🖨️</span>
-        Skriv ut analysedel
-    </button>
-            
-<button onclick="const win = window.open('', '_blank'); window.opener.genererElevkortKlasse('${aar}', '${trinn}', '${klasse}', '${periode}', win)" 
-        class="btn-tool btn-elevkort" 
-        style="position: relative; padding-left: 40px; height: 38px; font-size: 14px; align-items: center;">
-    <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">👤</span> 
-    Elevkort (Hele klassen)
-</button>
-<button onclick="window.close()" class="btn-tool btn-close" 
-        style="height: 38px; font-size: 14px; background-color: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 0 15px;">
-    <span style="font-weight: 900; margin-right: 5px;">✕</span> Lukk
-</button>
+<div class="sticky-menu">
+            <button onclick="window.print()" class="btn-tool btn-print" style="position: relative; padding-left: 45px; height: 38px; font-size: 14px;">
+                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">🖨️</span>
+                Skriv ut analysedel
+            </button>
 
+            <button onclick="${elevkortClick}" 
+                    class="btn-tool btn-elevkort" 
+                    ${elevkortTooltip}
+                    style="${elevkortStil}">
+                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">👤</span> 
+                Elevkort (Hele klassen)
+            </button>
+
+            <button onclick="window.close()" class="btn-tool btn-close" 
+                    style="height: 38px; font-size: 14px; background-color: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 0 15px;">
+                <span style="font-weight: 900; margin-right: 5px;">✕</span> Lukk
+            </button>
         </div>
         
         <div class="content-container">
