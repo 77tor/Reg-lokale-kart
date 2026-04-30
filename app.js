@@ -3199,10 +3199,11 @@ const fullHtml = `
     <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">👤</span> 
     Elevkort (Hele klassen)
 </button>
-
-<button onclick="window.close()" class="btn-tool btn-close" style="height: 38px; font-size: 14px;">
-    ❌ Lukk
+<button onclick="window.close()" class="btn-tool btn-close" 
+        style="height: 38px; font-size: 14px; background-color: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 0 15px;">
+    <span style="font-weight: 900; margin-right: 5px;">✕</span> Lukk
 </button>
+
         </div>
         
         <div class="content-container">
