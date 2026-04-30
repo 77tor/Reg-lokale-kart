@@ -3558,7 +3558,7 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
 
         </head><body>
             <div class="sticky-menu">
-                <button onclick="window.print()" class="btn-tool btn-print">🖨️ Skriv ut alle elevkort</button>
+                <button onclick="window.print()" class="btn-tool btn-print">  <span style="font-size: 1.5rem; vertical-align: middle;">🖨️</span> Skriv ut alle elevkort</button>
                 <button onclick="window.close()" class="btn-tool btn-close">❌ Lukk</button>
             </div>
             <div class="content-container">`);
