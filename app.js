@@ -3092,29 +3092,43 @@ const oppgaveSti = `Oppgaver/Kartlegging_${f_clean}_${t_clean}_${p_clean}.pdf`;
 const fasitSti = `Fasit/Kartlegging_${f_clean}_${t_clean}_${p_clean}_Fasit.pdf`;
 const harFasit = !(f_clean === "lesing" && t_clean === "1" && p_clean === "H");
 
-
-// --- SJEKK OM BEGGE PRØVER ER FERDIGSTILT ---
-let beggeFerdig = false;
+// --- SJEKK OM BEGGE PRØVER ER FERDIGSTILT (STATUS-SJEKK) ---
+let statusKlar = false;
+let elevkortClick = "";
+let elevkortStil = "";
+let elevkortTooltip = "";
 
 try {
-    // Vi må peke på 'status'-grenen i dataobjektet ditt
-    // Jeg antar at 'allData' inneholder hele Firebase-eksporten, 
-    // eller at du har tilgang til en variabel som heter 'statusData' eller lignende.
+    // Vi henter status fra den spesifikke grenen vi så i Firebase-bildet ditt
+    // Vi bruker 'alleData' som ble hentet i starten av funksjonen (via db.ref('kartlegging'))
+    // Men siden 'status' ligger på samme nivå som 'kartlegging', må vi kanskje bruke en egen snap
+    // hvis 'alleData' bare inneholder kartlegging-noden.
     
-    // Hvis 'allData' kun er 'kartlegging'-grenen, må du sjekke hvor du henter 'status' fra.
-    // Her er stien slik den ser ut på bildet ditt:
-    const statusGren = allData.status || dataFraFirebase.status; // Juster navnet her hvis nødvendig
-    
-    const lesingLaast = statusGren?.[aar]?.["Lesing"]?.[periode]?.[trinn]?.[klasse]?.laast === true;
-    const regningLaast = statusGren?.[aar]?.["Regning"]?.[periode]?.[trinn]?.[klasse]?.laast === true;
-    
-    beggeFerdig = (lesingLaast && regningLaast);
+    // Basert på koden din henter du: const alleDataSnap = await db.ref(`kartlegging`).once('value');
+    // Vi trenger status-grenen også:
+    const statusSnap = await db.ref(`status/${aar}`).once('value');
+    const statusInnhold = statusSnap.val() || {};
 
-    console.log("Sjekk:", aar, periode, trinn, klasse, "Lesing låst:", lesingLaast, "Regning låst:", regningLaast);
+    const lesingLaast = statusInnhold["Lesing"]?.[periode]?.[trinn]?.[klasse]?.laast === true;
+    const regningLaast = statusInnhold["Regning"]?.[periode]?.[trinn]?.[klasse]?.laast === true;
+
+    statusKlar = (lesingLaast && regningLaast);
+
+    // Definer knappe-egenskaper basert på status
+    if (statusKlar) {
+        elevkortClick = `const win = window.open('', '_blank'); window.opener.genererElevkortKlasse('${aar}', '${trinn}', '${klasse}', '${periode}', win)`;
+        elevkortStil = "position: relative; padding-left: 40px; height: 38px; font-size: 14px; align-items: center; cursor: pointer;";
+        elevkortTooltip = "";
+    } else {
+        elevkortClick = "alert('Begge prøver må settes til Ferdigstilt før elevkort kan genereres');";
+        elevkortStil = "position: relative; padding-left: 40px; height: 38px; font-size: 14px; align-items: center; background-color: #bdc3c7; cursor: not-allowed; opacity: 0.8;";
+        elevkortTooltip = "title='Begge prøver må settes til \"Ferdigstilt\" før elevkort kan aktiveres'";
+    }
+
+    console.log("Status-sjekk fullført:", {lesingLaast, regningLaast, statusKlar});
 } catch (e) {
     console.error("Feil ved sjekk av lås-status:", e);
 }
-// ---FERDIG SJEKK
 
 // VIKTIG: Her tildeler vi strengen til variabelen fullHtml
 const fullHtml = `
@@ -3124,127 +3138,54 @@ const fullHtml = `
         <link rel="icon" type="image/png" href="${window.location.origin}${window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'))}/analyse.png">
 <style>
     @page { size: A4 landscape; margin: 0; }
-    
-    /* Beholder din body-stil, men fjerner padding-top for å gi plass til sticky meny */
     body { font-family: sans-serif; background:#f0f2f5; margin:0; padding:0; padding-bottom: 20px; display:flex; flex-direction:column; align-items:center; }
-    
     .analyse-section { 
         background:white; width:297mm; height:210mm; padding:10mm 12mm; 
         margin-bottom:30px; box-shadow:0 4px 15px rgba(0,0,0,0.15); 
         box-sizing:border-box; page-break-after:always; position: relative; overflow: hidden;
     }
-    
     .content-container { margin-top: 80px; display: flex; flex-direction: column; align-items: center; }
-
     .side-header { border-bottom:2px solid #2c3e50; margin-bottom:15px; font-size:16px; font-weight:bold; color:#2c3e50; }
-
-    table { 
-        width: 100%; 
-        border-collapse: collapse; 
-        margin-bottom: 15px; 
-        table-layout: fixed; 
-    }
-    th, td { 
-        border: 1px solid #333; 
-        padding: 4px 2px; 
-        text-align: center; 
-        font-size: 9px; 
-        overflow: hidden; 
-    }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 15px; table-layout: fixed; }
+    th, td { border: 1px solid #333; padding: 4px 2px; text-align: center; font-size: 9px; overflow: hidden; }
     th { background: #f8f9fa; }
-
-    .col-navn { 
-        width: 180px !important; 
-        text-align: left !important; 
-        white-space: nowrap; 
-        text-overflow: ellipsis; 
-        padding-left: 8px !important;
-    }
-
-    .stor-rad td {
-        font-size: 14px !important;
-        font-weight: bold !important;
-        padding: 6px 2px !important;
-    }
-
+    .col-navn { width: 180px !important; text-align: left !important; white-space: nowrap; text-overflow: ellipsis; padding-left: 8px !important; }
+    .stor-rad td { font-size: 14px !important; font-weight: bold !important; padding: 6px 2px !important; }
     .col-tall { width: 60px !important; }
-
     .analyse-side-3 div[style*="display: grid"]:hover { background-color: #fcfcfc !important; }
     .analyse-side-3 { page-break-inside: avoid; }
-
-    .hover-bilde {
-        display: none; 
-        position: absolute;
-        z-index: 100;
-        border: 3px solid #2c3e50;
-        border-radius: 8px;
-        background: white;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        width: 400px; 
-        left: 20px;
-        top: 25px;
-    }
+    .hover-bilde { display: none; position: absolute; z-index: 100; border: 3px solid #2c3e50; border-radius: 8px; background: white; box-shadow: 0 10px 30px rgba(0,0,0,0.3); width: 400px; left: 20px; top: 25px; }
     .bilde-container:hover .hover-bilde { display: block; }
     .col-oppgave { width: auto; }
-
     .chart-container { display:flex; height:200px; align-items:flex-end; border-bottom:2px solid #333; margin-bottom:50px; padding-bottom: 30px; }
     .bar-wrapper { flex:1; display:flex; flex-direction:column; align-items:center; position:relative; }
-    .bar-track { 
-        background: #eee; 
-        width: 35px; 
-        height: 150px; 
-        position: relative; 
-        border: 1px solid #ccc; 
-        display: flex; 
-        flex-direction: column-reverse; 
-        margin: 0 auto; 
-    }
+    .bar-track { background: #eee; width: 35px; height: 150px; position: relative; border: 1px solid #ccc; display: flex; flex-direction: column-reverse; margin: 0 auto; }
     .bar-fill { background:#3498db; width:100%; }
     .total-fill { background:#2ecc71; }
     .target-line { position:absolute; width:100%; border-top:2px dashed red; z-index:5; }
     .bar-label { font-size:8px; margin-top:10px; font-weight:bold; }
-
-    /* NY STICKY-MENY (Erstattet den gamle toolbaren) */
-    .sticky-menu { 
-        position: fixed; top: 0; left: 0; right: 0; height: 60px; 
-        background: #2c3e50; display: flex; align-items: center; 
-        justify-content: center; gap: 15px; z-index: 1000; 
-        box-shadow: 0 2px 10px rgba(0,0,0,0.3); 
-    }
-    .btn-tool { 
-        padding: 10px 20px; color: white !important; border: none; 
-        border-radius: 5px; cursor: pointer; font-weight: bold; 
-        font-size: 13px; text-decoration: none; display: flex; align-items: center; gap: 8px;
-    }
+    .sticky-menu { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: #2c3e50; display: flex; align-items: center; justify-content: center; gap: 15px; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+    .btn-tool { padding: 10px 20px; color: white !important; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 13px; text-decoration: none; display: flex; align-items: center; gap: 8px; }
     .btn-print { background: #2980b9; }
     .btn-elevkort { background: #27ae60; }
-   .btn-close { background: #e74c3c; }
-    
-    @media print { 
-        .sticky-menu { display:none; } 
-        body { background: white; padding:0; } 
-        .content-container { margin-top: 0 !important; }
-        .btn { display: none !important; }
-        .analyse-section { -webkit-print-color-adjust: exact; box-shadow:none; margin:0; width: 297mm; height: 210mm; }
-        .hover-bilde { display: none !important; }
-        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } 
-    }
+    .btn-close { background: #e74c3c; }
+    @media print { .sticky-menu { display:none; } body { background: white; padding:0; } .content-container { margin-top: 0 !important; } .btn { display: none !important; } .analyse-section { -webkit-print-color-adjust: exact; box-shadow:none; margin:0; width: 297mm; height: 210mm; } .hover-bilde { display: none !important; } * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }
 </style>
     </head>
     <body>
-<div class="sticky-menu">
+        <div class="sticky-menu">
             <button onclick="window.print()" class="btn-tool btn-print" style="position: relative; padding-left: 45px; height: 38px; font-size: 14px;">
                 <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">🖨️</span>
                 Skriv ut analysedel
             </button>
 
-<button onclick="${elevkortClick}" 
-        class="btn-tool btn-elevkort" 
-        ${elevkortTooltip}
-        style="${elevkortStil}">
-    <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">👤</span> 
-    Elevkort (Hele klassen)
-</button>
+            <button onclick="${elevkortClick}" 
+                    class="btn-tool btn-elevkort" 
+                    ${elevkortTooltip}
+                    style="${elevkortStil}">
+                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">👤</span> 
+                Elevkort (Hele klassen)
+            </button>
 
             <button onclick="window.close()" class="btn-tool btn-close" 
                     style="height: 38px; font-size: 14px; background-color: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 0 15px;">
@@ -3259,7 +3200,7 @@ const fullHtml = `
             <div class="analyse-section">${htmlSide4}</div>
         </div>
     </body>
-    </html>`;
+    </html>\`;
 
 win.document.write(fullHtml);
 win.document.close();
