@@ -3160,29 +3160,38 @@ const fullHtml = `
             .btn-elevkort { background: #27ae60; }
             .btn-close { background: #e74c3c; }
 
-/* Denne sørger for at bildet ligger gjemt bak øye-ikonet */
+/* Containeren som holder øyet */
+.bilde-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: help;
+    width: 25px;
+    height: 25px;
+}
+
+/* Selve bildet */
 .hover-bilde { 
     display: none; 
     position: absolute; 
-    z-index: 100; 
+    z-index: 9999; /* Veldig høy verdi for å ligge over alt */
     border: 3px solid #2c3e50; 
     border-radius: 8px; 
     background: white; 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
-    width: 400px; 
-    left: 40px; /* Flyttet litt til høyre for øyet */
-    top: 0; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+    width: 450px; /* Litt større for lesbarhet */
+    height: auto;
+    
+    /* ENDRING: Bruker right i stedet for left for å unngå kanten */
+    right: 40px; 
+    top: -50px; /* Løfter bildet litt opp så det ikke dekker raden under */
+    pointer-events: none; /* Gjør at bildet ikke "forstyrrer" musa */
 }
 
-/* Denne viser bildet når man holder musa over containeren */
+/* Vis bildet ved hover */
 .bilde-container:hover .hover-bilde { 
     display: block; 
-}
-
-.bilde-container {
-    position: relative;
-    display: inline-block;
-    cursor: help;
 }
             
             @media print { 
