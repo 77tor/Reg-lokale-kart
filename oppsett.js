@@ -82,5 +82,10 @@ const oppgaveStruktur = {
                 "7": { grenseTotal: 35, oppgaver: Array(19).fill().map((_, i) => ({navn: "O"+(i+1), maks: [4,3,4,3,6,3,16,2,2,1,2,4,1,2,3,3,3,2,1][i], grense: -1, bilde: `Oppgavebilder/Reg-7-V25_O${i+1}.png`})) }
             }
         }
-    }
-}; // Her var det også en feil (for mange parenteser)
+      }
+    };
+
+
+// --- FOR SKOLEÅRET 2026-2027 ---
+oppgaveStruktur["2026-2027"] = JSON.parse(JSON.stringify(oppgaveStruktur["2025-2026"]));
+
