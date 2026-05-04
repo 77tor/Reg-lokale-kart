@@ -2629,6 +2629,7 @@ htmlSide1 += `
             <li style="margin-bottom: 6px;"><b>✓</b> se resultatene i sammenheng med andre resultater/observasjoner</li>
             <li style="margin-bottom: 6px;"><b>✓</b> lag grupper på tvers av klassene og gjennomfør lesekurs/regnekurs</li>
             <li style="margin-bottom: 6px;"><b>✓</b> gi tilbakemelding til elever og foreldre om resultat og videre oppfølging</li>
+            <li style="margin-bottom: 6px;"><b>✓</b> resultater registreres på skjema for foreldresamtale og legges i Sikker sak</li>
         </ul>
     </div>
     <div style="flex: 1; background: #f0f9f0; padding: 12px; border-radius: 4px; border: 2px solid #d0e8d0;">
