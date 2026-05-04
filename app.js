@@ -2618,7 +2618,7 @@ htmlSide1 += `
     </table>
 </div>
 
-<h2 style="text-align:center; color:#2c3e50; margin-top:35px;">Refleksjonsspørsmål</h2>
+<h2 style="text-align:center; color:#2c3e50; margin-top:35px;">Sjekkliste og refleksjonsspørsmål</h2>
 
 <div style="margin-top: 15px; display: flex; gap: 20px; border-top: 1px solid #eee; padding-top: 15px;">
     <div style="flex: 1; background: #f0f9f0; padding: 12px; border-radius: 4px; border: 2px solid #d0e8d0;">
