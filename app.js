@@ -3216,7 +3216,7 @@ const fullHtml = `
                     class="btn-tool btn-elevkort" 
                     ${eTooltip}
                     style="${eStil}">
-                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">👤</span> 
+                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">👫</span> 
                 Elevkort (Hele klassen)
             </button>
 
