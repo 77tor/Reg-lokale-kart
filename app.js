@@ -3160,7 +3160,7 @@ const fullHtml = `
                 font-size: 13px; text-decoration: none; display: flex; align-items: center; gap: 8px;
             }
             .btn-print { background: #2980b9; }
-            .btn-elevkort { background: #27ae60; }
+            .btn-elevkort { background: #FF2B9C; }
             .btn-close { background: #e74c3c; }
 
 /* Containeren som holder øyet */
