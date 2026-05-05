@@ -5409,30 +5409,32 @@ function slettElev(navn) {
               `</div>`,
         icon: 'warning',
         showCancelButton: true,
-        showDenyButton: true, // Aktiverer den tredje knappen
+        showDenyButton: true, 
         confirmButtonText: 'Ja, slett eleven',
         denyButtonText: 'Sett som "Ikke gjennomført"',
         cancelButtonText: 'Avbryt',
-        confirmButtonColor: '#d33', // Rød for sletting
-        denyButtonColor: '#3085d6'  // Blå for statusendring
+        confirmButtonColor: '#d33',
+        denyButtonColor: '#3085d6',
     }).then((result) => {
         if (result.isConfirmed) {
-            // VALG: SLETT ELEV
+            // SLETTING
             db.ref(hentSti(navn)).update({ slettet: true }).then(() => {
                 tegnTabell();
                 Swal.fire('Slettet!', `${visningsNavn} er fjernet.`, 'success');
             });
         } else if (result.isDenied) {
-            // VALG: IKKE GJENNOMFØRT
-            // Her antar jeg at 'gjennomfort: false' er slik du lagrer det i databasen
-            db.ref(hentSti(navn)).update({ gjennomfort: false, slettet: false }).then(() => {
+            // SETT SOM IKKE GJENNOMFØRT
+            // Basert på koden din bruker vi nå 'ikkeGjennomfort: true'
+            db.ref(hentSti(navn)).update({ 
+                ikkeGjennomfort: true, // Dette matcher ID-en i lytteren din
+                slettet: false 
+            }).then(() => {
                 tegnTabell();
                 Swal.fire('Oppdatert', `${visningsNavn} er nå satt til "Ikke gjennomført".`, 'success');
             });
         }
     });
 }
-
 
 function gjenopprettElev(navn) {
     db.ref(hentSti(navn)).update({ slettet: false }).then(() => {
