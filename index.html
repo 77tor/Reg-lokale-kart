@@ -718,53 +718,54 @@ svg {
             <h2 style="margin: 0;">Lærerveiledning & Informasjon</h2>
             <span class="close" onclick="lukkVeiledning()" style="cursor:pointer; font-size:24px;">&times;</span>
         </div>
-   
+
         <div style="padding: 20px; line-height: 1.6; max-height: 70vh; overflow-y: auto; font-family: sans-serif;">
-            <p>Velkommen til kartleggingssystemet for registrering av lokale kartlegginger på Hånes skoleenhet. Dette systemet hjelper deg med å registrere og analysere elevresultater.</p>
             
-<h3 style="border-bottom: 2px solid #007bff; padding-bottom: 5px;">Registrering</h3>
-<ol style="padding-left: 20px; font-size: 1.2em;"> 
-    <li style="margin-bottom: 15px;">
-        Velg skoleår, periode, fag, trinn og klasse i menyene for å starte registrering.
-        <img src="knapper/meny.png" style="display: block; max-width: 100%; height: auto; margin-top: 10px; border: 1px solid #ddd; border-radius: 4px;">
-    </li>
-    <li style="margin-bottom: 10px;">
-        Klikk på knappen <img src="knapper/registrer.png" style="height:25px; vertical-align:middle;"> på venstre side og fyll inn poeng for hver oppgave. 
-        Elever som ikke har gjennomført prøven (syk/fritak), settes som <strong>“Ikke gjennomført”</strong> (egen avkryssing i bunnen). 
-        IKKE bruk “Slett” til dette.
-    </li>
-    <li style="margin-bottom: 10px;">
-        Når alle resultater for alle elever er fylt inn, må prøven ferdigstilles. 
-        Trykk på den oransje knappen <img src="knapper/ferdigstille.png" style="height:25px; vertical-align:middle;"> 
-        (elever uten resultater, settes da automatisk som “Ikke gjennomført”).
-    </li>
-</ol>
-<h3 style="border-bottom: 2px solid #007bff; padding-bottom: 5px; margin-top: 10px;"></h3>
-            <p>
-                <strong>Endring av resultat:</strong> For å endre resultat, klikk på <img src="knapper/endre.png" style="height:25px; vertical-align:middle;">. Om prøven er satt til “Ferdigstilt”, må du trykke på knappen <img src="knapper/ferdigstilt.png" style="height:25px; vertical-align:middle;"> og gjenåpne prøven før endring. 
-    Husk å ferdigstille prøven etter endringene.
-            </p>
+            <div style="background-color: #e3f2fd; border: 1px solid #bbdefb; border-radius: 12px; padding: 15px 20px; margin-bottom: 25px; color: #0d47a1;">
+                Velkommen til kartleggingssystemet for registrering av lokale kartlegginger på Hånes skoleenhet. Dette systemet hjelper deg med å registrere og analysere elevresultater.
+            </div>
 
-            <p>
-            <p>
-                <strong>Nullstill resultat:</strong> En kan nullstille resultat for elever ved å klikke på <img src="knapper/nullstill.png" style="height:20px; vertical-align:middle;">.
-            </p>
+            <h3 style="border-bottom: 2px solid #007bff; padding-bottom: 5px;">Registrering</h3>
+            <ol style="padding-left: 20px; font-size: 1.1em;"> 
+                <li style="margin-bottom: 15px;">
+                    Velg skoleår, periode, fag, trinn og klasse i menyene for å starte registrering.
+                    <img src="knapper/meny.png" style="display: block; max-width: 100%; height: auto; margin-top: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                </li>
+                <li style="margin-bottom: 15px;">
+                    Klikk på knappen <img src="knapper/registrer.png" style="height:25px; vertical-align:middle;"> på venstre side og fyll inn poeng for hver oppgave. 
+                    Elever som ikke har gjennomført prøven (syk/fritak), settes som <strong>“Ikke gjennomført”</strong> (egen avkryssing i bunnen). 
+                    IKKE bruk “Slett” til dette.
+                </li>
+                <li style="margin-bottom: 15px;">
+                    Når alle resultater for alle elever er fylt inn, må prøven ferdigstilles. 
+                    Trykk på den oransje knappen <img src="knapper/ferdigstille.png" style="height:25px; vertical-align:middle;"> 
+                    (elever uten resultater, settes da automatisk som “Ikke gjennomført”).
+                </li>
+            </ol>
 
-            <p>
-                <strong>Legge til elev:</strong> Det kan legges til elever i bunnen av klasselista, men dette er en nødløsning. 
-                Om klasser har elever som ikke står på listen, <a href="https://teams.microsoft.com/l/chat/0/0?users=tor.skarprud@kristiansand.kommune.no" target="_blank" style="color: #007bff; font-weight: bold;">kontakt administrator</a>.
-            </p>
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                <p style="margin-top: 0;">
+                    <strong>Endring av resultat:</strong> For å endre resultat, klikk på <img src="knapper/endre.png" style="height:25px; vertical-align:middle;">. Om prøven er satt til “Ferdigstilt”, må du trykke på knappen <img src="knapper/ferdigstilt.png" style="height:25px; vertical-align:middle;"> og gjenåpne prøven før endring. Husk å ferdigstille prøven etter endringene.
+                </p>
 
-            <p>
-                <strong>Slette elev:</strong> Det kan slettes elever fra lista, da legges de inaktive på bunnen. Dette brukes bare om det er elever som flytter fra skolen i løpet av skoleåret. 
-                Står det elever på klasselisten som ikke går i klassen, <a href="https://teams.microsoft.com/l/chat/0/0?users=tor.skarprud@kristiansand.kommune.no" target="_blank" style="color: #007bff; font-weight: bold;">kontakt administrator</a>.
-            </p>
+                <p>
+                    <strong>Nullstill resultat:</strong> En kan nullstille resultat for elever ved å klikke på <img src="knapper/nullstill.png" style="height:20px; vertical-align:middle;">.
+                </p>
 
-            <h3 style="border-bottom: 2px solid #007bff; padding-bottom: 5px; margin-top: 25px;">Funksjoner</h3>
+                <p>
+                    <strong>Legge til elev:</strong> Det kan legges til elever i bunnen av klasselista, men dette er en nødløsning. Om klasser har elever som ikke står på listen, <a href="https://teams.microsoft.com/l/chat/0/0?users=tor.skarprud@kristiansand.kommune.no" target="_blank" style="color: #007bff; font-weight: bold;">kontakt administrator</a>.
+                </p>
+
+                <p style="margin-bottom: 0;">
+                    <strong>Slette elev:</strong> Det kan slettes elever fra lista, da legges de inaktive på bunnen. Dette brukes bare om det er elever som flytter fra skolen i løpet av skoleåret. Står det elever på klasselisten som ikke går i klassen, <a href="https://teams.microsoft.com/l/chat/0/0?users=tor.skarprud@kristiansand.kommune.no" target="_blank" style="color: #007bff; font-weight: bold;">kontakt administrator</a>.
+                </p>
+            </div>
+
+            <h3 style="border-bottom: 2px solid #007bff; padding-bottom: 5px; margin-top: 30px;">Funksjoner</h3>
             
-            <div style="display: grid; grid-template-columns: auto 1fr; gap: 15px; align-items: start;">
+            <div style="display: grid; grid-template-columns: auto 1fr; gap: 15px; align-items: start; margin-top: 15px;">
                 <img src="knapper/ferdigstille.png" style="height:30px;">
-                <div><strong>Ferdigstille prøven:</strong> Knappen gjør ferdigstiller og låser prøven. Når prøver er satt til "Ferdigstilt", aktiveres "Analyse", hvor en får mer detaljer av resultatene. I tillegg kan en se alle prøver til den enkelte elev ved å klikke på navnet. Når både prøven i lesing og regning er ferdigstilt, kan en få opp elevkort for alle elever. </div>
+                <div><strong>Ferdigstille prøven:</strong> Knappen ferdigstiller og låser prøven. Når prøver er satt til "Ferdigstilt", aktiveres "Analyse", hvor en får mer detaljer av resultatene. I tillegg kan en se alle prøver til den enkelte elev ved å klikke på navnet. Når både prøven i lesing og regning er ferdigstilt, kan en få opp elevkort for alle elever. </div>
 
                 <img src="knapper/skrivut.png" style="height:30px;">
                 <div><strong>Skriv ut:</strong> Knappen gjør klar en side av alle resultater for utskrift.</div>
@@ -782,7 +783,7 @@ svg {
                 <div><strong>Import:</strong> Import av data fra Excel-fil. Benyttes bare av <a href="https://teams.microsoft.com/l/chat/0/0?users=tor.skarprud@kristiansand.kommune.no" target="_blank" style="color: #007bff; font-weight: bold;">administrator</a>.</div>
             </div>
 
-            <h3 style="border-bottom: 2px solid #007bff; padding-bottom: 5px; margin-top: 25px;">Videoveiledning</h3>
+            <h3 style="border-bottom: 2px solid #007bff; padding-bottom: 5px; margin-top: 30px;">Videoveiledning</h3>
             <div style="margin-top: 15px; background: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
                 <video width="100%" controls style="display: block;">
                     <source src="veileder.mp4" type="video/mp4">
@@ -791,12 +792,12 @@ svg {
                 </video>
             </div>
 
-            <hr style="margin-top: 30px;">
-            <p><small>Versjon 2.0 - Siste oppdatering: april, 2026</small></p>
+            <hr style="margin-top: 30px; border: 0; border-top: 1px solid #eee;">
+            <p><small>Versjon 2.0 - Siste oppdatering: mai, 2026</small></p>
         </div>
         
         <div style="text-align: right; border-top: 1px solid #eee; padding: 15px;">
-            <button class="btn" onclick="lukkVeiledning()">Lukk</button>
+            <button class="btn" onclick="lukkVeiledning()" style="padding: 8px 20px; cursor: pointer;">Lukk</button>
         </div>
     </div>
 </div>
