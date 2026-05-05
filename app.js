@@ -5408,9 +5408,9 @@ function slettElev(navn) {
 
     Swal.fire({
         title: `Vil du slette ${visningsNavn}?`,
-        html: `Er du sikker på at du vil slette denne eleven fra prøven?<br><br>` +
+        html: `Er du sikker på at du vil slette denne eleven fra klassen?<br><br>` +
               `<div style="background-color: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; border: 1px solid #ffeeba;">` +
-              `⚠️ <strong>Husk:</strong> Elever som ikke har gjennomført, men som fortsatt går i klassen, skal <strong>ikke</strong> slettes.` +
+              `⚠️ <strong>Husk:</strong> Elever som ikke har gjennomført prøven, men som fortsatt går i klassen,  <strong>ikke</strong> slettes, men settes som "Ikke gjennomført" i registreringsskjemaet.` +
               `</div>`,
         icon: 'warning',
         showCancelButton: true,
