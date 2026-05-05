@@ -5399,35 +5399,34 @@ function startLyttere() {
 
 
 function slettElev(navn) {
+    // splitter "Albert, William Denstad" -> ["Albert", "William Denstad"]
+    const deler = navn.split(", ");
+    
+    // Setter sammen til "William Denstad Albert"
+    // Hvis navnet mangler komma (sikkerhet), bruker den bare navnet som det er
+    const visningsNavn = deler.length > 1 ? `${deler[1]} ${deler[0]}` : navn;
+
     Swal.fire({
-        title: `Vil du slette ${navn}?`,
+        title: `Vil du slette ${visningsNavn}?`,
         html: `Er du sikker på at du vil slette denne eleven fra prøven?<br><br>` +
               `<div style="background-color: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; border: 1px solid #ffeeba;">` +
-              `⚠️ <strong>Husk:</strong> Elever som ikke har gjennomført, men som fortsatt går i klassen,  <strong>ikke</strong> slettes, ` +
-              `men settes som "Ikke gjennomført" i registreringsskjemaet.` +
+              `⚠️ <strong>Husk:</strong> Elever som ikke har gjennomført, men som fortsatt går i klassen, skal <strong>ikke</strong> slettes.` +
               `</div>`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#d33', // Rød farge for sletting
-        cancelButtonColor: '#3085d6',
         confirmButtonText: 'Ja, slett eleven',
         cancelButtonText: 'Avbryt'
     }).then((result) => {
-        // result.isConfirmed er sann hvis brukeren trykket på "Ja"
         if (result.isConfirmed) {
+            // VIKTIG: Bruker fortsatt det originale "Albert, William Denstad" mot databasen
             db.ref(hentSti(navn)).update({ slettet: true }).then(() => {
                 tegnTabell();
-                
-                // Valgfritt: Vis en liten bekreftelse på at det er gjort
-                Swal.fire(
-                    'Slettet!',
-                    `${navn} er fjernet fra listen.`,
-                    'success'
-                );
+                Swal.fire('Slettet!', `${visningsNavn} er fjernet.`, 'success');
             });
         }
     });
 }
+
 function gjenopprettElev(navn) {
     db.ref(hentSti(navn)).update({ slettet: false }).then(() => {
         tegnTabell(); // Tvinger tabellen til å tegne på nytt
