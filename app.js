@@ -5397,35 +5397,42 @@ function startLyttere() {
     });
 }
 
-
 function slettElev(navn) {
-    // splitter "Albert, William Denstad" -> ["Albert", "William Denstad"]
     const deler = navn.split(", ");
-    
-    // Setter sammen til "William Denstad Albert"
-    // Hvis navnet mangler komma (sikkerhet), bruker den bare navnet som det er
     const visningsNavn = deler.length > 1 ? `${deler[1]} ${deler[0]}` : navn;
 
     Swal.fire({
         title: `Vil du slette ${visningsNavn}?`,
         html: `Er du sikker på at du vil slette denne eleven fra klassen?<br><br>` +
               `<div style="background-color: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; border: 1px solid #ffeeba;">` +
-              `⚠️ <strong>Husk:</strong> Elever som ikke har gjennomført prøven, men som fortsatt går i klassen,  <strong>ikke</strong> slettes, men settes som "Ikke gjennomført" i registreringsskjemaet.` +
+              `⚠️ <strong>Husk:</strong> Elever som ikke har gjennomført prøven, men som fortsatt går i klassen, skal <strong>ikke</strong> slettes.` +
               `</div>`,
         icon: 'warning',
         showCancelButton: true,
+        showDenyButton: true, // Aktiverer den tredje knappen
         confirmButtonText: 'Ja, slett eleven',
-        cancelButtonText: 'Avbryt'
+        denyButtonText: 'Sett som "Ikke gjennomført"',
+        cancelButtonText: 'Avbryt',
+        confirmButtonColor: '#d33', // Rød for sletting
+        denyButtonColor: '#3085d6'  // Blå for statusendring
     }).then((result) => {
         if (result.isConfirmed) {
-            // VIKTIG: Bruker fortsatt det originale "Albert, William Denstad" mot databasen
+            // VALG: SLETT ELEV
             db.ref(hentSti(navn)).update({ slettet: true }).then(() => {
                 tegnTabell();
                 Swal.fire('Slettet!', `${visningsNavn} er fjernet.`, 'success');
             });
+        } else if (result.isDenied) {
+            // VALG: IKKE GJENNOMFØRT
+            // Her antar jeg at 'gjennomfort: false' er slik du lagrer det i databasen
+            db.ref(hentSti(navn)).update({ gjennomfort: false, slettet: false }).then(() => {
+                tegnTabell();
+                Swal.fire('Oppdatert', `${visningsNavn} er nå satt til "Ikke gjennomført".`, 'success');
+            });
         }
     });
 }
+
 
 function gjenopprettElev(navn) {
     db.ref(hentSti(navn)).update({ slettet: false }).then(() => {
