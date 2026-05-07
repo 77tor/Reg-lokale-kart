@@ -3207,7 +3207,7 @@ const fullHtml = `
     </head>
     <body>
     <div class="sticky-menu" style="display: flex; align-items: center; justify-content: center;">
-        <img src="kart_03.png" alt="Kart" style="height: 40px; margin-right: 30px;">
+        <img src="kart.png" alt="Kart" style="height: 40px; margin-right: 30px;">
 
         <button onclick="window.print()" class="btn-tool btn-print" style="position: relative; padding-left: 45px; height: 38px;">
             <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">🖨️</span>
@@ -3226,7 +3226,7 @@ const fullHtml = `
             <span style="font-weight: 900; margin-right: 5px;">✕</span> Lukk
         </button>
 
-        <img src="kart_03.png" alt="Kart" style="height: 40px; margin-left: 30px;">
+        <img src="kart.png" alt="Kart" style="height: 40px; margin-left: 30px;">
     </div>
     
     <div class="content-container">
