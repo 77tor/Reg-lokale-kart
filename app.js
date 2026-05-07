@@ -3206,36 +3206,32 @@ const fullHtml = `
         </style>
     </head>
     <body>
-    <div class="sticky-menu" style="display: flex; align-items: center; justify-content: center;">
-        <img src="kart.png" alt="Kart" style="height: 40px; margin-right: 30px;">
+        <div class="sticky-menu">
+            <button onclick="window.print()" class="btn-tool btn-print" style="position: relative; padding-left: 45px; height: 38px;">
+                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">🖨️</span>
+                Skriv ut analysedel
+            </button>
 
-        <button onclick="window.print()" class="btn-tool btn-print" style="position: relative; padding-left: 45px; height: 38px;">
-            <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">🖨️</span>
-            Skriv ut analysedel
-        </button>
+            <button onclick="${eClick}" 
+                    class="btn-tool btn-elevkort" 
+                    ${eTooltip}
+                    style="${eStil}">
+                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">👫</span> 
+                Elevkort (Hele klassen)
+            </button>
 
-        <button onclick="${eClick}" 
-                class="btn-tool btn-elevkort" 
-                ${eTooltip}
-                style="${eStil} margin: 0 10px;">
-            <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">👫</span> 
-            Elevkort (Hele klassen)
-        </button>
-
-        <button onclick="window.close()" class="btn-tool btn-close" style="height: 38px;">
-            <span style="font-weight: 900; margin-right: 5px;">✕</span> Lukk
-        </button>
-
-        <img src="kart.png" alt="Kart" style="height: 40px; margin-left: 30px;">
-    </div>
-    
-    <div class="content-container">
-        <div class="analyse-section">${htmlSide1}</div>
-        <div class="analyse-section">${htmlSide2}</div>
-        <div class="analyse-section">${htmlSide3}</div>
-        <div class="analyse-section">${htmlSide4}</div>
-    </div>
-</body>
+            <button onclick="window.close()" class="btn-tool btn-close" style="height: 38px;">
+                <span style="font-weight: 900; margin-right: 5px;">✕</span> Lukk
+            </button>
+        </div>
+        
+        <div class="content-container">
+            <div class="analyse-section">${htmlSide1}</div>
+            <div class="analyse-section">${htmlSide2}</div>
+            <div class="analyse-section">${htmlSide3}</div>
+            <div class="analyse-section">${htmlSide4}</div>
+        </div>
+    </body>
     </html>`;
 
 // --- ÅPNE VINDUET OG SKRIV INNHOLDET ---
