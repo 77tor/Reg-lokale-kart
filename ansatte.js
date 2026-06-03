@@ -31,7 +31,6 @@ window.ansatteData = {
     { navn: "Thomas Brænde Omholt", epost: "thomas.braende.omholt@kristiansand.kommune.no", paloggingsmail: "85thomas@ikrs.no", kontaktlaerer: "5A", trinn: [5] },
     { navn: "Oliv Smeland", epost: "oliv.smeland@kristiansand.kommune.no", paloggingsmail: "96smeland@ikrs.no", kontaktlaerer: "5B", trinn: [5] },
     { navn: "Espen N Nesse", epost: "espen.n.nesse@kristiansand.kommune.no", paloggingsmail: "94espen@ikrs.no", kontaktlaerer: "5C", trinn: [5] },
-    { navn: "Guro Haaland", epost: "guro.haaland@kristiansand.kommune.no", paloggingsmail: "93guro@ikrs.no", kontaktlaerer: "", trinn: [5] },
     { navn: "Rebecca Jakobsen", epost: "rebecca.v.jakobsen@kristiansand.kommune.no", paloggingsmail: "92rebecca@ikrs.no", kontaktlaerer: "", trinn: [5] },
     { navn: "Kari Grostad Beckmann", epost: "kari.grostad.beckmann@kristiansand.kommune.no", paloggingsmail: "86kari@ikrs.no", kontaktlaerer: "", trinn: [5] },
     { navn: "Martin Myklebust", epost: "martin.myklebust@kristiansand.kommune.no", paloggingsmail: "marmyk@ikrs.no", kontaktlaerer: "6A", trinn: [6] },
