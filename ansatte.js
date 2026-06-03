@@ -3,10 +3,11 @@ window.ansatteData = {
   "2026-2027": [
     { navn: "Siril Bergum", epost: "siril.bergum@kristiansand.kommune.no", paloggingsmail: "93siril@ikrs.no", kontaktlaerer: "", trinn: ["Permisjon"] },
     { navn: "Malin Aadnevik", epost: "malin.aadnevik@kristiansand.kommune.no", paloggingsmail: "97malin10@ikrs.no", kontaktlaerer: "", trinn: ["Permisjon"] },
-    { navn: "Janne Braadland", epost: "janne.braadland@kristiansand.kommune.no", paloggingsmail: "72janne@ikrs.no", kontaktlaerer: "", trinn: ["adm"] },
+    { navn: "Janne Braadland", epost: "janne.braadland@kristiansand.kommune.no", paloggingsmail: "72janne@ikrs.no", kontaktlaerer: "adm", trinn: ["adm"] },
     { navn: "Tor Skarprud", epost: "tor.skarprud@kristiansand.kommune.no", paloggingsmail: ["77tor@ikrs.no"], kontaktlaerer: "adm", trinn: ["Adm"] },
     { navn: "Tor Pettersen", epost: "tor.skarprud@kristiansand.kommune.no", paloggingsmail: ["tor.skarprud@gmail.com"], kontaktlaerer: "", trinn: [1] },
-    { navn: "Thomas Dyrdahl", epost: "thomas.dyrdahl@kristiansand.kommune.no", paloggingsmail: "75thomas@ikrs.no", kontaktlaerer: "", trinn: ["Adm"] },
+    { navn: "Thomas Dyrdahl", epost: "thomas.dyrdahl@kristiansand.kommune.no", paloggingsmail: "75thomas@ikrs.no", kontaktlaerer: "adm", trinn: ["Adm"] },
+    { navn: "Marit Frivoll", epost: "marit.frivoll@kristiansand.kommune.no", paloggingsmail: "62marit3@ikrs.no", kontaktlaerer: "adm", trinn: ["Adm"] },
     { navn: "Daniel Rossevatn", epost: "daniel.rossevatn@kristiansand.kommune.no", paloggingsmail: "98daniel19@ikrs.no", kontaktlaerer: "1A", trinn: [1] },
     { navn: "Elise Mariann Helbostad Daling", epost: "elise.mariann.helbostad.daling@kristiansand.kommune.no", paloggingsmail: "96elise1@ikrs.no", kontaktlaerer: "1A", trinn: [1] },
     { navn: "Christine Sørli", epost: "christine.sorli2@kristiansand.kommune.no", paloggingsmail: "94christine1@ikrs.no", kontaktlaerer: "1B", trinn: [1] },
