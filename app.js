@@ -2032,32 +2032,42 @@ function finnKontaktlaererForKlasse(klasseNavn, aar) {
 }
 
 // --- HENTE ANTALL ELEVER ---
-function hentAntallEleverIRegister(klasseNavn, aar) {
-    const register = window.elevRegister;
-    if (!register) return 0;
-
-    let teller = 0;
-    const sokeAar = parseInt(aar.toString().substring(0, 4));
+function oppdaterElevListe() {
+    const vAar = document.getElementById('mAar').value;
+    const vTrinnValgt = parseInt(document.getElementById('mTrinn').value);
+    const vKlasse = document.getElementById('mKlasse').value;
+    const select = document.getElementById('regElev');
     
-    // Gjør søket ufølsomt for små/store bokstaver og mellomrom
-    const sokKlasse = klasseNavn.toString().toUpperCase().trim();
+    if (!select) return;
+    select.innerHTML = '<option value="">-- Velg elev --</option>';
 
-    for (let elevNavn in register) {
-        const info = register[elevNavn];
-        
-        const innevaerendeTrinn = (sokeAar - info.startAar) + info.startTrinn;
-        
-        // Tvinger register-data til store bokstaver for matching
-        const klasseBokstav = info.startKlasse.toString().toUpperCase().trim();
-        const fulltNavnFraRegister = innevaerendeTrinn + klasseBokstav; 
+    if (!vAar || isNaN(vTrinnValgt) || !vKlasse) return;
+    
+    const vStartAarValgt = parseInt(vAar.split('-')[0]);
 
-        if (fulltNavnFraRegister === sokKlasse) {
-            if (sokeAar >= info.startAar && sokeAar <= info.sluttAar) {
-                teller++;
-            }
+    Object.keys(elevRegister).sort().forEach(navn => {
+        const e = elevRegister[navn];
+        
+        // Beregn trinn
+        const cTrinn = parseInt(e.startTrinn) + (vStartAarValgt - parseInt(e.startAar));
+
+        // Sjekker 'klasse' dersom det er overstyrt, ellers 'startKlasse'
+        const aktivKlasse = e.klasse || e.startKlasse;
+
+        const erRiktigTrinn = (cTrinn === vTrinnValgt);
+        const erRiktigKlasse = (aktivKlasse === vKlasse);
+        const harBegynt = vStartAarValgt >= parseInt(e.startAar);
+        
+        // ENDRET: Endret <= til < her slik at sluttAar: 2026 gjør eleven inaktiv i 2026-skoleåret
+        const harIkkeSluttet = !e.sluttAar || vStartAarValgt < parseInt(e.sluttAar);
+
+        if (erRiktigTrinn && erRiktigKlasse && harBegynt && harIkkeSluttet) {
+            const opt = document.createElement('option');
+            opt.value = navn;
+            opt.textContent = navn;
+            select.appendChild(opt);
         }
-    }
-    return teller;
+    });
 }
 
 // --- EMAILJS - UT  ---
