@@ -174,6 +174,7 @@ window.elevRegister = {
     "Vinknes, Franki Thurgood": { startTrinn: 1, startKlasse: 'C', startAar: 2024, sluttAar: 2031 },
     "Vu, Matheo Hieu": { startTrinn: 1, startKlasse: 'C', startAar: 2024, sluttAar: 2031 },
     "Belayhun, Wudasie Endalk": { startTrinn: 3, startKlasse: 'C', startAar: 2026, sluttAar: 2031 },
+    "Gineitis, Danielius": { startTrinn: 3, startKlasse: 'C', startAar: 2026, sluttAar: 2031 },
 
 // 2. TRINN (Startet 2024)
     "Alieksieiev, Artem": { startTrinn: 2, startKlasse: 'A', startAar: 2024, sluttAar: 2030 },
