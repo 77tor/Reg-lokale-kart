@@ -3564,20 +3564,19 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
 
         const elevIder = new Set([...Object.keys(lesingData), ...Object.keys(regningData)]);
         
-        // --- FIKSET SORTERING ---
+        // --- SORTERING PÅ NAVN ---
         const sorterteIder = Array.from(elevIder).sort((a, b) => {
             const navnA = (lesingData[a]?.navn || regningData[a]?.navn || "").toLowerCase();
             const navnB = (lesingData[b]?.navn || regningData[b]?.navn || "").toLowerCase();
-            return navnA.localeCompare(navnB); // Sammenlign A med B, ikke A med A
+            return navnA.localeCompare(navnB, 'no'); // Støtter æ, ø, å
         });
 
         win.document.open();
         win.document.write(`<html><head><title>Elevkort - ${trinn}${klasse}</title>
 <style>
-    /* 1. FJERN @PAGE MARGIN: Dette er ofte synderen som lager hvitplass i toppen */
     @page { 
         size: A4 landscape; 
-        margin: 0; /* Vi styrer marginene selv i .elev-side */
+        margin: 0; 
     }
 
     body { 
@@ -3595,142 +3594,139 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
         box-shadow: 0 2px 10px rgba(0,0,0,0.3); 
     }
 
-    /* Redusert margin-top for skjermvisning */
     .content-container { margin-top: 70px; }
 
-    /* 2. MAKSIMAL UTNYTTELSE AV TOPPEN */
-.elev-side { 
-    background: white; 
-    width: 297mm; 
-    min-height: 210mm; 
-    padding: 8mm 10mm 4mm 10mm; 
-    /* Endret fra '0 auto' til '20px auto' for å få luft på skjerm */
-    margin: 20px auto; 
-    box-sizing: border-box; 
-    page-break-after: always; 
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15); /* Litt kraftigere skygge på skjerm */
-    position: relative;
-}
+    .elev-side { 
+        background: white; 
+        width: 297mm; 
+        min-height: 210mm; 
+        padding: 8mm 10mm 4mm 10mm; 
+        margin: 20px auto; 
+        box-sizing: border-box; 
+        page-break-after: always; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
+        position: relative;
+    }
 
-    /* 3. KOMPAKT HEADER */
-.header { 
-    border-bottom: 2px solid #2c3e50; 
-    padding-bottom: 4px; 
-    margin-top: 5px;     /* Lagt til litt luft over selve streken/teksten */
-    margin-bottom: 8px;  
-    display: flex; 
-    justify-content: space-between; 
-    align-items: flex-end; 
-}
+    .header { 
+        border-bottom: 2px solid #2c3e50; 
+        padding-bottom: 4px; 
+        margin-top: 5px; 
+        margin-bottom: 8px;  
+        display: flex; 
+        justify-content: space-between; 
+        align-items: flex-end; 
+    }
 
-    /* 4. MINDRE LUFT MELLOM FAGENE */
     .fag-del { 
         width: 100%; 
         border: 1px solid #eee; 
-        padding: 6px 10px; /* Redusert fra 8px */
+        padding: 6px 10px; 
         border-radius: 6px; 
         background: #fff; 
-        margin-bottom: 5px; /* Redusert fra 8px */
+        margin-bottom: 5px; 
     }
 
     h1 { font-size: 18px; margin: 0; color: #2c3e50; line-height: 1; }
     h2 { color: #2c3e50; border-bottom: 1px solid #3498db; padding-bottom: 2px; font-size: 14px; margin-top: 0; margin-bottom: 4px; }
 
     .btn-tool { padding: 10px 20px; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; }
-    .btn-print {  background: #2980b9;  }
+    .btn-print { background: #2980b9; }
     .btn-close { background: #e74c3c; }
 
-    /* 5. SPESIFIKKE UTSKRIFTSREGLER */
-@media print { 
-    body { background: white; margin: 0; padding: 0; } 
-    .sticky-menu { display: none !important; } 
-    .content-container { margin-top: 0 !important; padding-top: 0 !important; } 
-    .elev-side { 
-        margin: 0 !important; 
-        padding-top: 6mm !important; /* Litt mer luft i toppen på selve utskriften */
-        border: none; 
-        width: 100%; 
-        box-shadow: none !important; 
-    } 
-}
-</style>
-
-        </head><body>
-            <div class="sticky-menu">
-    <button onclick="window.print()" class="btn-tool btn-print" style="position: relative; padding-left: 45px; height: 38px; font-size: 14px;">
-        <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">🖨️</span>
-        Skriv ut alle elevkort
-    </button>
-    
-<button onclick="window.close()" class="btn-tool btn-close" 
-        style="height: 38px; font-size: 14px; background-color: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 0 15px;">
-    <span style="font-weight: 900; margin-right: 5px;">✕</span> Lukk
-</button>
-</div>
-            <div class="content-container">`);
-
-// Inne i loopen for hver elev i genererElevkortKlasse:
-
-
-const vStartAarValgt = parseInt(aar.split('-')[0]);
-
-for (let elevId of sorterteIder) {
-    if (elevId === 'laast' || elevId === 'ferdigstilt') continue;
-    
-    // RETTET: Sjekk elevregisteret for klasse og sluttAar
-    const regInfo = elevRegister[elevId];
-    if (regInfo) {
-        const cTrinn = parseInt(regInfo.startTrinn) + (vStartAarValgt - parseInt(regInfo.startAar));
-        const aktivKlasse = regInfo.klasse || regInfo.startKlasse;
-        const harBegynt = vStartAarValgt >= parseInt(regInfo.startAar);
-        const harIkkeSluttet = !regInfo.sluttAar || vStartAarValgt < parseInt(regInfo.sluttAar);
-        const erRiktigTrinnOgKlasse = (cTrinn === parseInt(trinn) && aktivKlasse === klasse);
-
-        if (!erRiktigTrinnOgKlasse || !harBegynt || !harIkkeSluttet) {
-            continue; // Hopp over elever som har sluttet eller byttet klasse
-        }
+    @media print { 
+        body { background: white; margin: 0; padding: 0; } 
+        .sticky-menu { display: none !important; } 
+        .content-container { margin-top: 0 !important; padding-top: 0 !important; } 
+        .elev-side { 
+            margin: 0 !important; 
+            padding-top: 6mm !important; 
+            border: none; 
+            width: 100%; 
+            box-shadow: none !important; 
+        } 
     }
+</style>
+</head><body>
+    <div class="sticky-menu">
+        <button onclick="window.print()" class="btn-tool btn-print" style="position: relative; padding-left: 45px; height: 38px; font-size: 14px;">
+            <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.4rem;">🖨️</span>
+            Skriv ut alle elevkort
+        </button>
+        <button onclick="window.close()" class="btn-tool btn-close" 
+                style="height: 38px; font-size: 14px; background-color: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 0 15px;">
+            <span style="font-weight: 900; margin-right: 5px;">✕</span> Lukk
+        </button>
+    </div>
+    <div class="content-container">`);
 
-    const elevLes = lesingData[elevId] || {};
-    const elevReg = regningData[elevId] || {};
-    if (!elevLes.oppgaver && !elevReg.oppgaver) continue;
+        const vStartAarValgt = parseInt(aar.split('-')[0]);
 
-    // --- NAVNEHÅNDTERING ---
-    let raaNavn = elevId; 
-    let visningsNavn = raaNavn.includes(',') ? 
-        `${raaNavn.split(',')[1].trim()} ${raaNavn.split(',')[0].trim()}` : raaNavn;
-
-    // --- GRAF-GENERERING (Nå med bredere format) ---
-    const grafLesing = await lagGrafBilde('Lesing', trinn, elevId, heleDatabasen, aar, periode);
-    const grafRegning = await lagGrafBilde('Regning', trinn, elevId, heleDatabasen, aar, periode);
-
-    win.document.write(`
-        <div class="elev-side">
-            <div class="header">
-                <h1>Elevkort: ${visningsNavn}</h1>
-                <span style="font-size: 12px; color: #7f8c8d;">${trinn}${klasse} | ${periode} | Skoleår: ${aar}</span>
-            </div>
+        for (let elevId of sorterteIder) {
+            if (elevId === 'laast' || elevId === 'ferdigstilt') continue;
             
-            <div class="fag-del">
-                <h2>📚 Lesing</h2>
-                <div style="width: 100%; height: 120px; margin-bottom: 15px; border-bottom: 1px solid #f0f0f0;">
-                    <img src="${grafLesing}" style="width: 100%; height: 100%; object-fit: contain;">
-                </div>
-                ${genererElevTabell(elevLes, 'Lesing', aar, periode, trinn, globalLesingListe)}
-                ${genererTiltaksListe(elevLes, 'Lesing', aar, periode, trinn)}
-            </div>
+            // Sjekk mot elevregister dersom det eksisterer globalt
+            if (typeof elevRegister !== 'undefined' && elevRegister[elevId]) {
+                const regInfo = elevRegister[elevId];
+                const cTrinn = parseInt(regInfo.startTrinn) + (vStartAarValgt - parseInt(regInfo.startAar));
+                const aktivKlasse = regInfo.klasse || regInfo.startKlasse;
+                const harBegynt = vStartAarValgt >= parseInt(regInfo.startAar);
+                const harIkkeSluttet = !regInfo.sluttAar || vStartAarValgt < parseInt(regInfo.sluttAar);
+                const erRiktigTrinnOgKlasse = (cTrinn === parseInt(trinn) && aktivKlasse === klasse);
 
-            <div class="fag-del">
-                <h2>🧮 Regning</h2>
-                <div style="width: 100%; height: 120px; margin-bottom: 15px; border-bottom: 1px solid #f0f0f0;">
-                    <img src="${grafRegning}" style="width: 100%; height: 100%; object-fit: contain;">
+                if (!erRiktigTrinnOgKlasse || !harBegynt || !harIkkeSluttet) {
+                    continue; // Hopp over
+                }
+            }
+
+            const elevLes = lesingData[elevId] || {};
+            const elevReg = regningData[elevId] || {};
+            if (!elevLes.oppgaver && !elevReg.oppgaver) continue;
+
+            // Navnehåndtering
+            let raaNavn = elevLes.navn || elevReg.navn || elevId; 
+            let visningsNavn = raaNavn.includes(',') ? 
+                `${raaNavn.split(',')[1].trim()} ${raaNavn.split(',')[0].trim()}` : raaNavn;
+
+            // Graf-generering
+            const grafLesing = await lagGrafBilde('Lesing', trinn, elevId, heleDatabasen, aar, periode);
+            const grafRegning = await lagGrafBilde('Regning', trinn, elevId, heleDatabasen, aar, periode);
+
+            // Generer tabell- og tiltaksinnhold trygt
+            const tabellLesing = typeof genererElevTabell === 'function' ? genererElevTabell(elevLes, 'Lesing', aar, periode, trinn, globalLesingListe) : '';
+            const tiltakLesing = typeof genererTiltaksListe === 'function' ? genererTiltaksListe(elevLes, 'Lesing', aar, periode, trinn) : '';
+            
+            const tabellRegning = typeof genererElevTabell === 'function' ? genererElevTabell(elevReg, 'Regning', aar, periode, trinn, globalRegningListe) : '';
+            const tiltakRegning = typeof genererTiltaksListe === 'function' ? genererTiltaksListe(elevReg, 'Regning', aar, periode, trinn) : '';
+
+            win.document.write(`
+                <div class="elev-side">
+                    <div class="header">
+                        <h1>Elevkort: ${visningsNavn}</h1>
+                        <span style="font-size: 12px; color: #7f8c8d;">${trinn}${klasse} | ${periode} | Skoleår: ${aar}</span>
+                    </div>
+                    
+                    <div class="fag-del">
+                        <h2>📚 Lesing</h2>
+                        <div style="width: 100%; height: 120px; margin-bottom: 15px; border-bottom: 1px solid #f0f0f0;">
+                            <img src="${grafLesing}" style="width: 100%; height: 100%; object-fit: contain;">
+                        </div>
+                        ${tabellLesing}
+                        ${tiltakLesing}
+                    </div>
+
+                    <div class="fag-del">
+                        <h2>🧮 Regning</h2>
+                        <div style="width: 100%; height: 120px; margin-bottom: 15px; border-bottom: 1px solid #f0f0f0;">
+                            <img src="${grafRegning}" style="width: 100%; height: 100%; object-fit: contain;">
+                        </div>
+                        ${tabellRegning}
+                        ${tiltakRegning}
+                    </div>
                 </div>
-                ${genererElevTabell(elevReg, 'Regning', aar, periode, trinn, globalRegningListe)}
-                ${genererTiltaksListe(elevReg, 'Regning', aar, periode, trinn)}
-            </div>
-        </div>
-    `);
-}
+            `);
+        }
+
         win.document.write('</div></body></html>');
         win.document.close();
 
@@ -3739,6 +3735,7 @@ for (let elevId of sorterteIder) {
         alert("En feil oppstod: " + err.message);
     }
 }
+
 // --- LAG GRAF ---
 async function lagGrafBilde(fag, trinn, elevId, allData, aar, periode) {
     const canvas = document.getElementById('hiddenChartCanvas');
@@ -3755,25 +3752,25 @@ async function lagGrafBilde(fag, trinn, elevId, allData, aar, periode) {
     const kritiskGrenseData = {};
     const sokNavn = elevId.trim();
 
-    for (let aar in allData) {
-        const kortAar = aar.split('-')[0].slice(-2);
-        const fagData = allData[aar][fag];
+    for (let currentAar in allData) {
+        const kortAar = currentAar.split('-')[0].slice(-2);
+        const fagData = allData[currentAar]?.[fag];
         if (!fagData) continue;
 
-        for (let periode in fagData) {
-            const pKey = `${periode} ${kortAar}`;
-            const periodeNode = fagData[periode];
+        for (let pNavn in fagData) {
+            const pKey = `${pNavn} ${kortAar}`;
+            const periodeNode = fagData[pNavn];
 
             for (let tKey in periodeNode) {
                 const trinnData = periodeNode[tKey];
                 
                 for (let klasse in trinnData) {
                     if (trinnData[klasse][sokNavn]) {
-                        let strukturAar = oppgaveStruktur[aar] ? aar : "2025-2026";
-                        const oppsett = oppgaveStruktur[strukturAar]?.[fag]?.[periode]?.[tKey];
-                        if (!oppsett) continue;
+                        let strukturAar = (typeof oppgaveStruktur !== 'undefined' && oppgaveStruktur[currentAar]) ? currentAar : "2025-2026";
+                        const oppsett = typeof oppgaveStruktur !== 'undefined' ? oppgaveStruktur[strukturAar]?.[fag]?.[pNavn]?.[tKey] : null;
+                        if (!oppsett || !oppsett.oppgaver) continue;
                         
-                        const maksPoeng = oppsett.oppgaver.reduce((s, o) => s + o.maks, 0);
+                        const maksPoeng = oppsett.oppgaver.reduce((s, o) => s + (o.maks || 0), 0);
                         if (maksPoeng === 0) continue;
 
                         allePerioderSet.add(pKey);
@@ -3805,7 +3802,7 @@ async function lagGrafBilde(fag, trinn, elevId, allData, aar, periode) {
                         if (!historiskSnitt[pKey]) {
                             let alleHistoriske = [];
                             for (let hAar in allData) {
-                                const hData = allData[hAar]?.[fag]?.[periode]?.[tKey];
+                                const hData = allData[hAar]?.[fag]?.[pNavn]?.[tKey];
                                 if (!hData) continue;
                                 for (let hKlasse in hData) {
                                     for (let hId in hData[hKlasse]) {
@@ -3824,40 +3821,32 @@ async function lagGrafBilde(fag, trinn, elevId, allData, aar, periode) {
         }
     }
 
-// --- NY FILTRERING HER ---
-    const valgtKortAar = aar.split('-')[0].slice(-2); // f.eks "25"
+    // Filtrering av perioder i henhold til tidslinje
+    const valgtKortAar = aar.split('-')[0].slice(-2);
     
     const filtrertePerioder = Array.from(allePerioderSet).filter(pKey => {
-        const [pNavn, pAar] = pKey.split(' '); // pNavn er "Høst"/"Vår", pAar er "25"
-        
-        // 1. Hvis året er tidligere enn valgt år, vis det alltid
+        const [pNavn, pAar] = pKey.split(' ');
         if (parseInt(pAar) < parseInt(valgtKortAar)) return true;
         
-        // 2. Hvis vi er i samme år:
         if (pAar === valgtKortAar) {
-            // Hvis vi er i Høst-perioden, vis kun Høst (skjul Vår)
             if (periode === "Høst") {
                 return pNavn === "Høst";
             }
-            // Hvis vi er i Vår-perioden, vis både Høst og Vår
             return true;
         }
-        
-        // 3. Skjul alt som er fremtidige år
         return false;
     });
 
-    // Sorter de filtrerte periodene (samme sortering som før)
     const sortertePerioder = filtrertePerioder.sort((a, b) => {
         const [pA, aarA] = a.split(' ');
         const [pB, aarB] = b.split(' ');
-        if (aarA !== aarB) return aarA - aarB;
+        if (aarA !== aarB) return parseInt(aarA) - parseInt(aarB);
         return pA === "Høst" ? -1 : 1;
     });
-    // --- SLUTT PÅ FILTRERING ---
 
     if (sortertePerioder.length === 0) return "";
 
+    // Opprett og tegn grafen via Chart.js
     const chart = new Chart(ctx, {
         type: 'line',
         data: {
