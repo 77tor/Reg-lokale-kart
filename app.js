@@ -509,9 +509,10 @@ function oppdaterElevListe() {
 
         // --- ENDRET LOGIKK HER ---
         const erRiktigTrinn = (cTrinn === vTrinnValgt);
-        const erRiktigKlasse = (e.startKlasse === vKlasse);
+        const aktivKlasse = e.klasse || e.startKlasse;
+        const erRiktigKlasse = (aktivKlasse === vKlasse);
         const harBegynt = vStartAarValgt >= parseInt(e.startAar);
-        const harIkkeSluttet = !e.sluttAar || vStartAarValgt <= parseInt(e.sluttAar);
+        const harIkkeSluttet = !e.sluttAar || vStartAarValgt < parseInt(e.sluttAar);
 
         if (erRiktigTrinn && erRiktigKlasse && harBegynt && harIkkeSluttet) {
             const opt = document.createElement('option');
@@ -759,17 +760,22 @@ if (!oppsett) {
     let slettedeRader = "";
 
     // 3. GÅ GJENNOM ALLE ELEVER
-    Object.keys(elevRegister).sort().forEach(navn => {
-        const e = elevRegister[navn];
-        const cTrinn = parseInt(e.startTrinn) + (vStartAarValgt - parseInt(e.startAar));
-        const harBegynt = vStartAarValgt >= parseInt(e.startAar);
-        const harIkkeSluttet = !e.sluttAar || vStartAarValgt <= parseInt(e.sluttAar);
-        const erRiktigTrinnOgKlasse = (cTrinn === parseInt(vTrinn) && e.startKlasse === vKlasse);
+Object.keys(elevRegister).sort().forEach(navn => {
+    const e = elevRegister[navn];
+    const cTrinn = parseInt(e.startTrinn) + (vStartAarValgt - parseInt(e.startAar));
+    const harBegynt = vStartAarValgt >= parseInt(e.startAar);
+    
+    // RETTET: Endret fra <= til <
+    const harIkkeSluttet = !e.sluttAar || vStartAarValgt < parseInt(e.sluttAar);
+    
+    // RETTET: Tar hensyn til 'klasse' dersom eleven har byttet klasse
+    const aktivKlasse = e.klasse || e.startKlasse;
+    const erRiktigTrinnOgKlasse = (cTrinn === parseInt(vTrinn) && aktivKlasse === vKlasse);
 
-        if (erRiktigTrinnOgKlasse && harBegynt && harIkkeSluttet) {
-            const d = lagredeResultater[navn] || {};
-            const erSlettet = d.slettet === true;
-            const erIkkeGjennomfort = d.ikkeGjennomfort === true;
+    if (erRiktigTrinnOgKlasse && harBegynt && harIkkeSluttet) {
+        const d = lagredeResultater[navn] || {};
+        const erSlettet = d.slettet === true;
+        const erIkkeGjennomfort = d.ikkeGjennomfort === true;
             
 
 // LOGIKK FOR KLIKKBARE NAVN VED LÅST PRØVE
@@ -1920,7 +1926,8 @@ if (!laererNavn) return;
                             const kartSnapshot = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}`).once('value');
                             const elever = kartSnapshot.val() || {};
 
-                            let totaltIKlassen = Object.keys(elever).length;
+                            const fulltKlasseNavn = `${trinn}${klasse}`;
+                            const totaltIKlassen = hentAntallEleverIRegister(fulltKlasseNavn, aar);
                             let deltakere = 0;
                             let sumPoeng = 0;
                             let underKritisk = 0;
@@ -2031,7 +2038,7 @@ function finnKontaktlaererForKlasse(klasseNavn, aar) {
     return funnet ? { navn: funnet.navn, epost: funnet.epost } : { navn: "Ikke tildelt", epost: "" };
 }
 
-// --- HENTE ANTALL ELEVER ---
+// --- OPPDATER ELEVLISTE (Dropdown i registrerings-modalen) ---
 function oppdaterElevListe() {
     const vAar = document.getElementById('mAar').value;
     const vTrinnValgt = parseInt(document.getElementById('mTrinn').value);
@@ -2051,14 +2058,12 @@ function oppdaterElevListe() {
         // Beregn trinn
         const cTrinn = parseInt(e.startTrinn) + (vStartAarValgt - parseInt(e.startAar));
 
-        // Sjekker 'klasse' dersom det er overstyrt, ellers 'startKlasse'
+        // Sjekk om eleven har overstyrt nåværende klasse, ellers bruk startKlasse
         const aktivKlasse = e.klasse || e.startKlasse;
 
         const erRiktigTrinn = (cTrinn === vTrinnValgt);
         const erRiktigKlasse = (aktivKlasse === vKlasse);
         const harBegynt = vStartAarValgt >= parseInt(e.startAar);
-        
-        // ENDRET: Endret <= til < her slik at sluttAar: 2026 gjør eleven inaktiv i 2026-skoleåret
         const harIkkeSluttet = !e.sluttAar || vStartAarValgt < parseInt(e.sluttAar);
 
         if (erRiktigTrinn && erRiktigKlasse && harBegynt && harIkkeSluttet) {
@@ -2069,6 +2074,40 @@ function oppdaterElevListe() {
         }
     });
 }
+
+// --- HENTE ANTALL ELEVER (Beregner totalt antall aktive i klassen) ---
+function hentAntallEleverIRegister(klasseNavn, aar) {
+    const register = window.elevRegister;
+    if (!register) return 0;
+
+    let teller = 0;
+    // Henter ut det 4-sifrede startåret (f.eks. "2026" fra "2026-2027")
+    const sokeAar = parseInt(aar.toString().substring(0, 4));
+    const sokKlasse = klasseNavn.toString().toUpperCase().trim();
+
+    for (let elevNavn in register) {
+        const info = register[elevNavn];
+        
+        // Beregn nåværende trinn basert på startår
+        const innevaerendeTrinn = (sokeAar - info.startAar) + info.startTrinn;
+        
+        // Sjekk om eleven har en overstyrt klasse (ved klassebytte), ellers bruk startKlasse
+        const aktivKlasse = info.klasse || info.startKlasse;
+        const klasseBokstav = aktivKlasse.toString().toUpperCase().trim();
+        const fulltNavnFraRegister = innevaerendeTrinn + klasseBokstav; 
+
+        // Sjekk om trinn+klasse matcher søket (f.eks "1A")
+        if (fulltNavnFraRegister === sokKlasse) {
+            // Sjekk om eleven er aktiv i det valgte skoleåret
+            // Bruker < for sluttAar slik at sluttAar: 2026 betyr at eleven er slutta f.o.m. 2026/2027
+            if (sokeAar >= info.startAar && sokeAar < info.sluttAar) {
+                teller++;
+            }
+        }
+    }
+    return teller;
+}
+
 
 // --- EMAILJS - UT  ---
 function sendEpostViaEmailJS(laererNavn, laererEpost, proeveNavn, sideUrl, stisti) {
@@ -2160,7 +2199,9 @@ function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, stat
         fulltKlasseNavn = trinn + klasse;
     }
 
-    const totaltAntallElever = hentAntallEleverIRegister(fulltKlasseNavn.trim().toUpperCase(), aar);
+// Henter kun det 4-sifrede startåret (f.eks. "2026" fra "2026-2027")
+const rentAar = aar.toString().substring(0, 4);
+const totaltAntallElever = hentAntallEleverIRegister(fulltKlasseNavn.trim().toUpperCase(), rentAar);
     if (!eleverObjekt) return resultat; 
 
     let antallGjennomfoert = 0;
@@ -2450,7 +2491,7 @@ async function genererKlasseAnalyse() {
         });
         // --- SLUTT PÅ ETAPPE 1 ---
 
-        // 3. Samle data fra Firebase
+// 3. Samle data fra Firebase
 const snapshot = await db.ref(`kartlegging/${aar}/${fag}/${periode}/${trinn}/${klasse}`).once('value');
 const firebaseData = snapshot.val() || {};
 
@@ -2463,14 +2504,20 @@ let elever = Object.keys(firebaseData).filter(navn => {
 
     const cTrinn = parseInt(e.startTrinn) + (vStartAarValgt - parseInt(e.startAar));
     const harBegynt = vStartAarValgt >= parseInt(e.startAar);
-    const harIkkeSluttet = !e.sluttAar || vStartAarValgt <= parseInt(e.sluttAar);
-    const erRiktigTrinn = cTrinn === parseInt(trinn);
+    
+    // RETTET: Bruker < i stedet for <= for sluttAar
+    const harIkkeSluttet = !e.sluttAar || vStartAarValgt < parseInt(e.sluttAar);
+    
+    // RETTET: Sjekker aktiv klasse ved klassebytte
+    const aktivKlasse = e.klasse || e.startKlasse;
+    const erRiktigTrinnOgKlasse = (cTrinn === parseInt(trinn) && aktivKlasse === klasse);
 
-    return erRiktigTrinn && harBegynt && harIkkeSluttet && 
+    return erRiktigTrinnOgKlasse && harBegynt && harIkkeSluttet && 
            firebaseData[navn].oppgaver && 
            !firebaseData[navn].slettet && 
            !firebaseData[navn].ikkeGjennomfort;
 });
+
         // 4. Beregn statistikk
         let antall = elever.length;
         let oppgaveSummer = new Array(oppsett.oppgaver.length).fill(0);
@@ -2686,11 +2733,13 @@ if (kritiskeElever.length > 0) {
     htmlSide2 += `<p style="text-align:center;">Ingen under kritisk grense.</p>`;
 }
 
-// 2. Lav mestring - ENDRET FRA 65 TIL 70
-let eleverUnder70 = elever.map(n => ({navn: n, sum: firebaseData[n].sum, prosent: (firebaseData[n].sum / totalMaksMulig) * 100}))
-                          .filter(e => e.prosent < 70 && e.sum > oppsett.grenseTotal); // Endret her
+// 2. Lav mestring - RETTET
+let eleverUnder70 = elever
+    .filter(n => firebaseData[n] && !firebaseData[n].slettet && !firebaseData[n].ikkeGjennomfort)
+    .map(n => ({navn: n, sum: firebaseData[n].sum, prosent: (firebaseData[n].sum / totalMaksMulig) * 100}))
+    .filter(e => e.prosent < 70 && e.sum > oppsett.grenseTotal);
 
-htmlSide2 += `<h3 style="color:#e67e22; margin: 15px 0 5px 0; font-size: 1.1em; text-align:center;">Lav mestring (Total skår < 70%)</h3>`; // Endret her
+htmlSide2 += `<h3 style="color:#e67e22; margin: 15px 0 5px 0; font-size: 1.1em; text-align:center;">Lav mestring (Total skår < 70%)</h3>`;
 if (eleverUnder70.length > 0) {
     htmlSide2 += `<table class="kompakt-tabell"><thead><tr><th class="col-navn">Navn</th><th class="col-tall">Poeng</th><th class="col-tall">Prosent</th></tr></thead><tbody>`;
     eleverUnder70.sort((a, b) => a.sum - b.sum).forEach(e => {
@@ -2698,12 +2747,14 @@ if (eleverUnder70.length > 0) {
     });
     htmlSide2 += `</tbody></table>`;
 } else {
-    htmlSide2 += `<p style="text-align:center;">Ingen ytterligere elever under 70%.</p>`; // Endret her
+    htmlSide2 += `<p style="text-align:center;">Ingen ytterligere elever under 70%.</p>`;
 }
 
-// 3. Høy mestring
-let topper = elever.map(n => ({navn: n, sum: firebaseData[n].sum, prosent: (firebaseData[n].sum / totalMaksMulig) * 100}))
-                   .filter(e => e.prosent >= 95);
+// 3. Høy mestring - RETTET
+let topper = elever
+    .filter(n => firebaseData[n] && !firebaseData[n].slettet && !firebaseData[n].ikkeGjennomfort)
+    .map(n => ({navn: n, sum: firebaseData[n].sum, prosent: (firebaseData[n].sum / totalMaksMulig) * 100}))
+    .filter(e => e.prosent >= 95);
 
 htmlSide2 += `<h3 style="color:#27ae60; margin: 15px 0 5px 0; font-size: 1.1em; text-align:center;">Høy mestring (Total skår ≥ 95%)</h3>`;
 if (topper.length > 0) {
@@ -3326,8 +3377,9 @@ function hentGlobaltSnitt(heleDatabasen, fag, periode, trinn, gjeldendeAar) {
                 Object.keys(trinnData).forEach(klasseNavn => {
                     const elever = trinnData[klasseNavn];
                     Object.values(elever).forEach(elev => {
-                        if (elev && elev.oppgaver) {
-                            alleResultater.push(elev);
+                        if (elev && elev.oppgaver && !elev.slettet && !elev.ikkeGjennomfort) {
+    alleResultater.push(elev);
+}
                         }
                     });
                 });
@@ -3620,9 +3672,25 @@ async function genererElevkortKlasse(aar, trinn, klasse, periode, win) {
 // Inne i loopen for hver elev i genererElevkortKlasse:
 
 
+const vStartAarValgt = parseInt(aar.split('-')[0]);
+
 for (let elevId of sorterteIder) {
     if (elevId === 'laast' || elevId === 'ferdigstilt') continue;
     
+    // RETTET: Sjekk elevregisteret for klasse og sluttAar
+    const regInfo = elevRegister[elevId];
+    if (regInfo) {
+        const cTrinn = parseInt(regInfo.startTrinn) + (vStartAarValgt - parseInt(regInfo.startAar));
+        const aktivKlasse = regInfo.klasse || regInfo.startKlasse;
+        const harBegynt = vStartAarValgt >= parseInt(regInfo.startAar);
+        const harIkkeSluttet = !regInfo.sluttAar || vStartAarValgt < parseInt(regInfo.sluttAar);
+        const erRiktigTrinnOgKlasse = (cTrinn === parseInt(trinn) && aktivKlasse === klasse);
+
+        if (!erRiktigTrinnOgKlasse || !harBegynt || !harIkkeSluttet) {
+            continue; // Hopp over elever som har sluttet eller byttet klasse
+        }
+    }
+
     const elevLes = lesingData[elevId] || {};
     const elevReg = regningData[elevId] || {};
     if (!elevLes.oppgaver && !elevReg.oppgaver) continue;
@@ -3936,18 +4004,18 @@ async function kjorAdminRapport(type) {
     // 1. Definer hvilket skoleår vi ser på (vStartAar er f.eks. 2025)
     // vStartAar er allerede definert rett over denne koden i din funksjon
     
-    // 2. NYTT: Sjekk om eleven er aktiv i dette skoleåret
-    const harBegynt = vStartAar >= parseInt(e.startAar);
-    const harIkkeSluttet = !e.sluttAar || vStartAar <= parseInt(e.sluttAar);
-    
-    // Hvis eleven ikke hører til i denne tidsperioden, hopper vi over helt
-    if (!harBegynt || !harIkkeSluttet) return;
+// 2. RETTET: Bruk < for sluttAar
+const harBegynt = vStartAar >= parseInt(e.startAar);
+const harIkkeSluttet = !e.sluttAar || vStartAar < parseInt(e.sluttAar);
 
-    // 3. Beregn hvilket trinn eleven var på i det aktuelle året
-    const cTrinn = parseInt(e.startTrinn) + (vStartAar - parseInt(e.startAar));
-    
-    // Sjekk om eleven matcher trinnet og klassen som rapporten kjøres for
-    if (cTrinn === parseInt(trinn) && e.startKlasse === klasse) {
+if (!harBegynt || !harIkkeSluttet) return;
+
+const cTrinn = parseInt(e.startTrinn) + (vStartAar - parseInt(e.startAar));
+
+// 3. RETTET: Sjekk aktiv klasse dersom eleven har byttet klasse
+const aktivKlasse = e.klasse || e.startKlasse;
+
+if (cTrinn === parseInt(trinn) && aktivKlasse === klasse) {
         const d = data[navn] || {};
         if (d.slettet === true) return;
 
@@ -4113,8 +4181,8 @@ async function kjorSammenligning() {
                 // Vi henter startåret for skoleåret (f.eks. 2025 fra "2025-2026")
                 const vStartAarRapport = parseInt(aar.split('-')[0]);
                 
-                const harBegynt = vStartAarRapport >= parseInt(e.startAar);
-                const harIkkeSluttet = !e.sluttAar || vStartAarRapport <= parseInt(e.sluttAar);
+const harBegynt = vStartAarRapport >= parseInt(e.startAar);
+const harIkkeSluttet = !e.sluttAar || vStartAarRapport < parseInt(e.sluttAar);
                 
                 // Hvis eleven ikke var aktiv i det valgte skoleåret, hopper vi over dem
                 if (!harBegynt || !harIkkeSluttet) return;
@@ -4384,7 +4452,7 @@ async function genererKlasserapport() {
                         if (e_reg) {
                             const vStartAarSkole = parseInt(skoleaar.split('-')[0]);
                             const harBegynt = vStartAarSkole >= parseInt(e_reg.startAar);
-                            const harIkkeSluttet = !e_reg.sluttAar || vStartAarSkole <= parseInt(e_reg.sluttAar);
+                            const harIkkeSluttet = !e_reg.sluttAar || vStartAarSkole < parseInt(e_reg.sluttAar);
                             if (!harBegynt || !harIkkeSluttet) continue; 
                         }
 
@@ -4692,7 +4760,7 @@ function aapneElevrapportValg() {
     document.getElementById('elevSokInput').value = ""; 
     
     // Vi definerer hva som er "i år" for å sjekke mot sluttAar
-    const innevaerendeAar = 2026; // Eller bruk new Date().getFullYear()
+    const innevaerendeAar = typeof Global_aar !== 'undefined' ? parseInt(Global_aar.split('-')[0]) : new Date().getFullYear();
 
     Object.keys(elevRegister).sort().forEach(navn => {
         const e = elevRegister[navn];
@@ -4761,22 +4829,22 @@ async function eksporterAlleKlasser() {
             let rader = [];
             
 // Finn elever i denne spesifikke klassen fra registeret
-            const relevanteElever = Object.keys(elevRegister).filter(navn => {
-                const e = elevRegister[navn];
-                
-                // Beregn hvilket trinn eleven er på i det valgte skoleåret
-                const cTrinn = e.startTrinn + (vStartAar - e.startAar);
-                
-                // --- NY SJEKK FOR START- OG SLUTTDATO ---
-                const harBegynt = vStartAar >= parseInt(e.startAar);
-                const harIkkeSluttet = !e.sluttAar || vStartAar <= parseInt(e.sluttAar);
-                
-                // Eleven må gå på riktig trinn, i riktig klasse, og være aktiv i det valgte året
-                return cTrinn == vTrinn && 
-                       e.startKlasse === klasseNavn && 
-                       harBegynt && 
-                       harIkkeSluttet;
-            }).sort();
+const relevanteElever = Object.keys(elevRegister).filter(navn => {
+    const e = elevRegister[navn];
+    const cTrinn = e.startTrinn + (vStartAar - e.startAar);
+    
+    const harBegynt = vStartAar >= parseInt(e.startAar);
+    // RETTET: Endret fra <= til <
+    const harIkkeSluttet = !e.sluttAar || vStartAar < parseInt(e.sluttAar);
+    
+    // RETTET: Bruker e.klasse || e.startKlasse for klassebytte
+    const aktivKlasse = e.klasse || e.startKlasse;
+    
+    return cTrinn == vTrinn && 
+           aktivKlasse === klasseNavn && 
+           harBegynt && 
+           harIkkeSluttet;
+}).sort();
 
             if (relevanteElever.length > 0) {
                 // Overskrifter for denne klassens fane
@@ -4851,16 +4919,19 @@ function analyserImportData(data) {
     const vStartAar = parseInt(vAar.split('-')[0]);
 
 // Finn alle aktive elever i valgt klasse
-    const aktuelleElever = Object.keys(elevRegister).filter(navn => {
-        const e = elevRegister[navn];
-        const cTrinn = e.startTrinn + (vStartAar - e.startAar);
-        
-        // --- NY SJEKK FOR SLUTTDATO ---
-        const harIkkeSluttet = !e.sluttAar || vStartAar <= parseInt(e.sluttAar);
-        const harBegynt = vStartAar >= parseInt(e.startAar);
-        
-        return cTrinn === vTrinn && e.startKlasse === vKlasse && harIkkeSluttet && harBegynt;
-    }).sort((a, b) => a.localeCompare(b, 'nb'));
+const aktuelleElever = Object.keys(elevRegister).filter(navn => {
+    const e = elevRegister[navn];
+    const cTrinn = e.startTrinn + (vStartAar - e.startAar);
+    
+    // RETTET: Endret fra <= til <
+    const harIkkeSluttet = !e.sluttAar || vStartAar < parseInt(e.sluttAar);
+    const harBegynt = vStartAar >= parseInt(e.startAar);
+    
+    // RETTET: Sjekker aktiv klasse
+    const aktivKlasse = e.klasse || e.startKlasse;
+    
+    return cTrinn === vTrinn && aktivKlasse === vKlasse && harIkkeSluttet && harBegynt;
+}).sort((a, b) => a.localeCompare(b, 'nb'));
 
     midlertidigImportData = [];
     let uidentifiserteNavn = [];
@@ -4986,17 +5057,17 @@ async function kjorFullSkoleEksport() {
 // 3. DYNAMISK TRINN-BEREGNING (Med sjekk for start- og sluttdato)
 const elever = Object.keys(elevRegister).filter(navn => {
     const e = elevRegister[navn];
-    
-    // Finn ut hvilket trinn denne eleven ville vært på i det valgte skoleåret
     const beregnetTrinn = parseInt(e.startTrinn) + (valgtStartAar - parseInt(e.startAar));
     
-    // --- NYE SJEKKER ---
     const harBegynt = valgtStartAar >= parseInt(e.startAar);
-    const harIkkeSluttet = !e.sluttAar || valgtStartAar <= parseInt(e.sluttAar);
+    // RETTET: Endret fra <= til <
+    const harIkkeSluttet = !e.sluttAar || valgtStartAar < parseInt(e.sluttAar);
     
-    // Legg til harBegynt og harIkkeSluttet i returen
+    // RETTET: Sjekker aktiv klasse
+    const aktivKlasse = e.klasse || e.startKlasse;
+    
     return beregnetTrinn === trinnInt && 
-           e.startKlasse === kl && 
+           aktivKlasse === kl && 
            harBegynt && 
            harIkkeSluttet;
 }).sort();
@@ -5572,15 +5643,19 @@ function eksporter() {
     let rader = [];
     const vStartAar = parseInt(vAar.split('-')[0]);
 
-    Object.keys(elevRegister).sort().forEach(navn => {
-        const e = elevRegister[navn];
-        const cTrinn = e.startTrinn + (vStartAar - e.startAar);
+// --- NY OG RIKTIG KODE ---
+Object.keys(elevRegister).sort().forEach(navn => {
+    const e = elevRegister[navn];
+    const cTrinn = e.startTrinn + (vStartAar - e.startAar);
 
-// --- NY SJEKK FOR START- OG SLUTTDATO ---
-        const harBegynt = vStartAar >= parseInt(e.startAar);
-        const harIkkeSluttet = !e.sluttAar || vStartAar <= parseInt(e.sluttAar);
+    const harBegynt = vStartAar >= parseInt(e.startAar);
+    // RETTET: Bruker < i stedet for <=
+    const harIkkeSluttet = !e.sluttAar || vStartAar < parseInt(e.sluttAar);
 
-        if (cTrinn == vTrinn && e.startKlasse === vKlasse) {
+    // RETTET: Sjekker aktiv klasse i stedet for e.startKlasse
+    const aktivKlasse = e.klasse || e.startKlasse;
+
+    if (cTrinn == vTrinn && aktivKlasse === vKlasse && harBegynt && harIkkeSluttet) {
             const d = lagredeResultater[navn] || {};
             if (d.slettet) return;
 
@@ -5634,13 +5709,19 @@ async function forberedPrint() {
 
         const sorterteNavn = Object.keys(elevRegister).sort();
         
-        const aktuelleElever = sorterteNavn.filter(navn => {
-            const e = elevRegister[navn];
-            const cTrinn = e.startTrinn + (vStartAar - e.startAar);
-            const harBegynt = vStartAar >= parseInt(e.startAar);
-            const harIkkeSluttet = !e.sluttAar || vStartAar <= parseInt(e.sluttAar);
-            return (cTrinn == vTrinn && e.startKlasse === vKlasse && harBegynt && harIkkeSluttet);
-        });
+const aktuelleElever = sorterteNavn.filter(navn => {
+    const e = elevRegister[navn];
+    const cTrinn = e.startTrinn + (vStartAar - e.startAar);
+    const harBegynt = vStartAar >= parseInt(e.startAar);
+    
+    // RETTET: Endret fra <= til <
+    const harIkkeSluttet = !e.sluttAar || vStartAar < parseInt(e.sluttAar);
+    
+    // RETTET: Bruker e.klasse || e.startKlasse for klassebytter
+    const aktivKlasse = e.klasse || e.startKlasse;
+    
+    return (cTrinn == vTrinn && aktivKlasse === vKlasse && harBegynt && harIkkeSluttet);
+});
         
         const totalAntall = aktuelleElever.length;
         const cellePadding = "padding: 3.5px 2px;"; 
@@ -5795,14 +5876,14 @@ async function aapneUtviklingsModal() {
                             const d = klasser[klasse][elevNavn];
 
                             // --- NYTT FILTER FOR SLUTTDATO ---
-                            const e = elevRegister[elevNavn];
-                            if (e) {
-                                const harBegynt = loopAarStart >= parseInt(e.startAar);
-                                const harIkkeSluttet = !e.sluttAar || loopAarStart <= parseInt(e.sluttAar);
-                                
-                                // Hvis eleven ikke var aktiv dette skoleåret, hopp over
-                                if (!harBegynt || !harIkkeSluttet) continue;
-                            }
+const e = elevRegister[elevNavn];
+if (e) {
+    const harBegynt = loopAarStart >= parseInt(e.startAar);
+    // RETTET: Endret fra <= til <
+    const harIkkeSluttet = !e.sluttAar || loopAarStart < parseInt(e.sluttAar);
+    
+    if (!harBegynt || !harIkkeSluttet) continue;
+}
                             // --------------------------------
 
                             if (d.slettet || d.ikkeGjennomfort || d.sum === undefined) continue;
