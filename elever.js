@@ -241,6 +241,8 @@ window.elevRegister = {
     "Skogen, Albert": { startTrinn: 2, startKlasse: 'C', startAar: 2024, sluttAar: 2030 },
     "Skretting, Daniel": { startTrinn: 2, startKlasse: 'C', startAar: 2024, sluttAar: 2030 },
     "Øverland, Thomas": { startTrinn: 2, startKlasse: 'C', startAar: 2024, sluttAar: 2030 },
+    "Gineityte, Paulina": { startTrinn: 4, startKlasse: 'C', startAar: 2026, sluttAar: 2030 },
+
 
 // 3. TRINN (Startet 2024)
     "Al-Shalah, Cilin": { startTrinn: 3, startKlasse: 'A', startAar: 2024, sluttAar: 2029 },
