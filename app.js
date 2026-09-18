@@ -3378,8 +3378,7 @@ function hentGlobaltSnitt(heleDatabasen, fag, periode, trinn, gjeldendeAar) {
                     const elever = trinnData[klasseNavn];
                     Object.values(elever).forEach(elev => {
                         if (elev && elev.oppgaver && !elev.slettet && !elev.ikkeGjennomfort) {
-    alleResultater.push(elev);
-}
+                            alleResultater.push(elev);
                         }
                     });
                 });
