@@ -455,6 +455,7 @@ window.elevRegister = {
     "Belayhun, Mieraf Endalk": { startTrinn: 7, startKlasse: 'C', startAar: 2026, sluttAar: 2027 },
     "Homme, Ella Håland": { startTrinn: 7, startKlasse: 'C', startAar: 2026, sluttAar: 2027 },
     "Larsen, Vilja Emilie": { startTrinn: 7, startKlasse: 'B', startAar: 2026, sluttAar: 2027 },
+    "Zec, Dorothea": { startTrinn: 7, startKlasse: 'A', startAar: 2026, sluttAar: 2027 },
 
 // 6. TRINN (Startet 2024)
     "Apeland, Charlotte Dybvik": { startTrinn: 6, startKlasse: 'A', startAar: 2024, sluttAar: 2026 },
