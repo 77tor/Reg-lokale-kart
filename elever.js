@@ -346,7 +346,7 @@ window.elevRegister = {
     "Mæland, Andrina": { startTrinn: 4, startKlasse: 'B', startAar: 2024, sluttAar: 2028 },
     "Nilsen, Julia Mål": { startTrinn: 4, startKlasse: 'B', startAar: 2024, sluttAar: 2028 },
     "Pedersen, Inea Sofie Falk": { startTrinn: 4, startKlasse: 'B', startAar: 2024, sluttAar: 2028 },
-    "Phillips, Oliver": { startTrinn: 4, startKlasse: 'B', startAar: 2024, sluttAar: 2028 },
+    "Phillips, Oliver": { startTrinn: 4, startKlasse: 'B', startAar: 2024, sluttAar: 2026 },
     "Schwarz, William Eik": { startTrinn: 4, startKlasse: 'B', startAar: 2024, sluttAar: 2028 },
     "Sergejeva, Veronika": { startTrinn: 4, startKlasse: 'B', startAar: 2024, sluttAar: 2028 },
     "Wennerberg, Sigurd Litland": { startTrinn: 4, startKlasse: 'B', startAar: 2024, sluttAar: 2028 },
