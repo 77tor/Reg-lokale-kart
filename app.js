@@ -2341,6 +2341,48 @@ function byttFaneModal(fane) {
     }
 }
 
+// --- HOVEDFUNKSJON FOR STATUS-MODAL
+// --- HOVEDFUNKSJON FOR MODAL ---
+let g_modalDataCache = []; // Cache for å slippe å hente fra Firebase hver gang man filtrerer
+let g_aktivFane = 'uferdig';
+
+// --- ÅPNE MODAL ---
+async function aapneGjennomfoeringModal() {
+    console.log("Åpner gjennomføringsmodal...");
+    const modal = document.getElementById('modalGjennomfoering');
+    if (modal) {
+        modal.style.display = 'flex';
+        await henteOgByggData();
+    } else {
+        console.error("Fant ikke modalGjennomfoering i HTML");
+    }
+}
+
+// --- FANE-BYTTE ---
+function byttFaneModal(fane) {
+    g_aktivFane = fane;
+    const btnUferdig = document.getElementById('tabBtnUferdig');
+    const btnTotal = document.getElementById('tabBtnTotal');
+    const divUferdig = document.getElementById('faneUferdigContent');
+    const divTotal = document.getElementById('faneTotalContent');
+
+    if (fane === 'uferdig') {
+        btnUferdig.style.borderBottomColor = '#ef4444';
+        btnUferdig.style.color = '#ef4444';
+        btnTotal.style.borderBottomColor = 'transparent';
+        btnTotal.style.color = '#64748b';
+        divUferdig.style.display = 'block';
+        divTotal.style.display = 'none';
+    } else {
+        btnTotal.style.borderBottomColor = '#2563eb';
+        btnTotal.style.color = '#2563eb';
+        btnUferdig.style.borderBottomColor = 'transparent';
+        btnUferdig.style.color = '#64748b';
+        divTotal.style.display = 'block';
+        divUferdig.style.display = 'none';
+    }
+}
+
 // --- HOVEDFUNKSJON FOR Å HENTE DATA EN GANG ---
 async function henteOgByggData() {
     const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
@@ -2506,22 +2548,10 @@ function lagTomKlasseDataResultat(aar, fag, periode, trinn, klasseNavn, laererIn
     };
 }
 
-        // Fyll dropdown med tilgjengelige skoleår
-        fyllSkoleaarDropdown(Array.from(skoleaarSett).sort().reverse());
-
-        // Filtrer og rendrer
-        filtrerOgRendrerModalData();
-
-    } catch (error) {
-        console.error("Feil ved henting:", error);
-        ikkeFerdigDiv.innerHTML = `<p style='color:red; padding:20px;'>Feil: ${error.message}</p>`;
-    }
-}
-
-
 // --- POPULER SKOLEÅR-DROPDOWN OG SETT DEFAULT TIL NÅVÆRENDE ---
 function fyllSkoleaarDropdown(skoleaarListe) {
     const select = document.getElementById('filterSkoleaar');
+    if (!select) return;
     
     // Beregn nåværende skoleår
     const na = new Date();
@@ -2529,22 +2559,31 @@ function fyllSkoleaarDropdown(skoleaarListe) {
     const mnd = na.getMonth() + 1;
     const naavaerendeSkoleaar = (mnd >= 8) ? `${aar}-${aar+1}` : `${aar-1}-${aar}`;
 
-    if (select.children.length === 0) {
-        skoleaarListe.forEach(sa => {
-            const opt = document.createElement('option');
-            opt.value = sa;
-            opt.textContent = sa;
-            if (sa === naavaerendeSkoleaar) opt.selected = true;
-            select.appendChild(opt);
-        });
+    select.innerHTML = ''; // Tøm eksisterende options før oppdatering
+
+    skoleaarListe.forEach(sa => {
+        const opt = document.createElement('option');
+        opt.value = sa;
+        opt.textContent = sa;
+        if (sa === naavaerendeSkoleaar) opt.selected = true;
+        select.appendChild(opt);
+    });
+
+    // Hvis ingen ble matchet som valgt, velg det første alternativet
+    if (!select.value && skoleaarListe.length > 0) {
+        select.value = skoleaarListe[0];
     }
 }
 
 // --- RENDERING basert på aktivt filter ---
 function filtrerOgRendrerModalData() {
-    const valgtSkoleaar = document.getElementById('filterSkoleaar').value;
-    const valgtTermin = document.getElementById('filterTermin').value;
-    const sokTekst = document.getElementById('filterSok').value.toLowerCase().trim();
+    const selectSkoleaar = document.getElementById('filterSkoleaar');
+    const selectTermin = document.getElementById('filterTermin');
+    const inputSok = document.getElementById('filterSok');
+
+    const valgtSkoleaar = selectSkoleaar ? selectSkoleaar.value : '';
+    const valgtTermin = selectTermin ? selectTermin.value : 'alle';
+    const sokTekst = inputSok ? inputSok.value.toLowerCase().trim() : '';
 
     const filtrert = g_modalDataCache.filter(item => {
         // Skoleår-filter
@@ -2566,42 +2605,52 @@ function filtrerOgRendrerModalData() {
 
     // Splitt i uferdige og totalt
     const uferdige = filtrert.filter(i => !i.erFerdig);
-    const ferdige = filtrert.filter(i => i.erFerdig);
 
     // Oppdater KPI-statistikk
     const totaltAntall = filtrert.length;
     const uferdigAntall = uferdige.length;
     const prosentFerdig = totaltAntall > 0 ? Math.round(((totaltAntall - uferdigAntall) / totaltAntall) * 100) : 0;
 
-    document.getElementById('statUferdig').textContent = uferdigAntall;
-    document.getElementById('statProsent').textContent = `${prosentFerdig}%`;
-    document.getElementById('cntUferdig').textContent = uferdigAntall;
-    document.getElementById('cntTotal').textContent = totaltAntall;
+    const elStatUferdig = document.getElementById('statUferdig');
+    const elStatProsent = document.getElementById('statProsent');
+    const elCntUferdig = document.getElementById('cntUferdig');
+    const elCntTotal = document.getElementById('cntTotal');
+
+    if (elStatUferdig) elStatUferdig.textContent = uferdigAntall;
+    if (elStatProsent) elStatProsent.textContent = `${prosentFerdig}%`;
+    if (elCntUferdig) elCntUferdig.textContent = uferdigAntall;
+    if (elCntTotal) elCntTotal.textContent = totaltAntall;
 
     // Bygg HTML for Uferdige
     const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
-    if (uferdige.length === 0) {
-        ikkeFerdigDiv.innerHTML = `<div style="text-align:center; padding:30px; background:white; border-radius:8px; color:#10b981; font-weight:bold;">
-            🎉 Alle prøver for valgte filtre er fullført!
-        </div>`;
-    } else {
-        const headerIkkeFerdig = `<table class="admin-table" style="width:100%; border-collapse:collapse;">
-            <thead><tr><th style="text-align:left;">Prøve</th><th>Kontaktlærer</th><th>Status/Logg</th></tr></thead><tbody>`;
-        ikkeFerdigDiv.innerHTML = headerIkkeFerdig + uferdige.map(i => i.htmlIkkeFerdig).join('') + "</tbody></table>";
+    if (ikkeFerdigDiv) {
+        if (uferdige.length === 0) {
+            ikkeFerdigDiv.innerHTML = `<div style="text-align:center; padding:30px; background:white; border-radius:8px; color:#10b981; font-weight:bold;">
+                🎉 Alle prøver for valgte filtre er fullført!
+            </div>`;
+        } else {
+            const headerIkkeFerdig = `<table class="admin-table" style="width:100%; border-collapse:collapse;">
+                <thead><tr><th style="text-align:left;">Prøve</th><th>Klasse / Lærer</th><th>Status/Logg</th></tr></thead><tbody>`;
+            ikkeFerdigDiv.innerHTML = headerIkkeFerdig + uferdige.map(i => i.htmlIkkeFerdig).join('') + "</tbody></table>";
+        }
     }
 
     // Bygg HTML for Totalt
     const totalTabellDiv = document.getElementById('gjennomfoeringTabellContainer');
-    if (filtrert.length === 0) {
-        totalTabellDiv.innerHTML = `<p style="padding:20px; text-align:center; color:#64748b;">Ingen data samsvarte med valgte filtre.</p>`;
-    } else {
-        const headerTotal = `<table class="admin-table" style="width:100%; border-collapse:collapse;">
-            <thead><tr><th style="text-align:left;">Prøve</th><th>Klasse</th><th>Kontaktlærer</th><th>Gjennomført</th><th>Snitt (%)</th><th>Status</th></tr></thead><tbody>`;
-        totalTabellDiv.innerHTML = headerTotal + filtrert.map(i => i.htmlTotal).join('') + "</tbody></table>";
+    if (totalTabellDiv) {
+        if (filtrert.length === 0) {
+            totalTabellDiv.innerHTML = `<p style="padding:20px; text-align:center; color:#64748b;">Ingen data samsvarte med valgte filtre.</p>`;
+        } else {
+            const headerTotal = `<table class="admin-table" style="width:100%; border-collapse:collapse;">
+                <thead><tr><th style="text-align:left;">Prøve</th><th>Klasse</th><th>Kontaktlærer</th><th>Gjennomført</th><th>Snitt (%)</th><th>Status</th></tr></thead><tbody>`;
+            totalTabellDiv.innerHTML = headerTotal + filtrert.map(i => i.htmlTotal).join('') + "</tbody></table>";
+        }
     }
 }
 
 
+
+// --- SLUTT PÅ HOVEDFUNKSJON FOR STATUS-MODAL
 
 function oppdaterAnalyseStatus(erFerdig) {
     const analyseBtn = document.getElementById('btnAnalyse');
