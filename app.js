@@ -2342,6 +2342,7 @@ function byttFaneModal(fane) {
 }
 
 // --- HOVEDFUNKSJON FOR Å HENTE DATA EN GANG ---
+// --- HOVEDFUNKSJON FOR Å HENTE DATA EN GANG ---
 async function henteOgByggData() {
     const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
     if (ikkeFerdigDiv) {
@@ -2362,7 +2363,6 @@ async function henteOgByggData() {
         const kartlegging = kartleggingSnapshot.val() || {};
 
         const skoleaarSett = new Set();
-
         for (let sa in statuser) skoleaarSett.add(sa);
         if (typeof ansatteData !== 'undefined') {
             for (let sa in ansatteData) skoleaarSett.add(sa);
@@ -2376,46 +2376,62 @@ async function henteOgByggData() {
                 for (let periode in fagLister[fag]) {
                     for (let trinn in fagLister[fag][periode]) {
                         
-                        // Hent eksisterende registreringer i status-treet for nøyaktig denne prøven
                         const statusKlasser = fagLister[fag][periode][trinn] || {};
-                        const kartleggingKlasser = kartlegging[aar]?.[fag]?.[periode]?.[trinn] || {};
-
-                        // Finn klassene som tilhører dette trinnet
                         const klasserForDetteTrinnet = finnKlasserForTrinn(trinn, alleGyldigeKlasser, Object.keys(statusKlasser));
 
-for (let klasseNavn of klasserForDetteTrinnet) {
-    // Sjekk om det finnes noe data på denne klassen
-    const klasseStatusData = statusKlasser[klasseNavn];
-    const klasseKartleggingData = kartleggingKlasser[klasseNavn];
+                        // Hent alt som er registrert i kartlegging for dette skoleåret og faget (uavhengig av om periode/trinn varierer i skrivemåte)
+                        const kartleggingFag = kartlegging[aar]?.[fag] || {};
 
-    const harStartet = Boolean(klasseStatusData || klasseKartleggingData);
+                        for (let klasseNavn of klasserForDetteTrinnet) {
+                            
+                            // UNNGÅ DUPLIKAT: Sjekk om denne klasseNavn + fag + aar ALEREDE er lagt til i cache
+                            const alleredeLagtTil = g_modalDataCache.some(
+                                item => item.aar === aar && item.fag === fag && item.klasseNavn === klasseNavn && (item.periode === periode || item.periode.includes(periode) || periode.includes(item.periode))
+                            );
+                            if (alleredeLagtTil) continue;
 
-    const klasseData = klasseKartleggingData || {};
-    const laererInfo = finnKontaktlaererForKlasse(klasseNavn, aar);
+                            // Finn om det finnes registrert data under kartlegging for denne klassen
+                            let funnetKlasseData = null;
+                            let funnetPeriode = periode;
+                            let funnetTrinn = trinn;
 
-    let res = null;
+                            // Søk gjennom alle perioder og trinn under faget for å finne klassen i kartlegging-treet
+                            for (let pKey in kartleggingFag) {
+                                for (let tKey in kartleggingFag[pKey]) {
+                                    if (kartleggingFag[pKey][tKey] && kartleggingFag[pKey][tKey][klasseNavn]) {
+                                        funnetKlasseData = kartleggingFag[pKey][tKey][klasseNavn];
+                                        funnetPeriode = pKey;
+                                        funnetTrinn = tKey;
+                                        break;
+                                    }
+                                }
+                                if (funnetKlasseData) break;
+                            }
 
-    if (harStartet) {
-        // Klassen har registrert data i enten status eller kartlegging
-        res = behandleKlasseData(aar, fag, periode, trinn, klasseNavn, klasseData, statuser, alleLogger);
-    } else {
-        // Klassen har INGEN registreringer ennå
-        res = lagTomKlasseDataResultat(aar, fag, periode, trinn, klasseNavn, laererInfo);
-    }
+                            const laererInfo = finnKontaktlaererForKlasse(klasseNavn, aar);
+                            let res = null;
 
-    if (res) {
-        g_modalDataCache.push({
-            aar,
-            fag,
-            periode,
-            trinn,
-            klasseNavn,
-            laererNavn: laererInfo.navn || 'Ikke tildelt',
-            laererEpost: laererInfo.epost || '',
-            erFerdig: !res.harApne,
-            htmlTotal: res.htmlTotal,
-            htmlIkkeFerdig: res.htmlIkkeFerdig
-        });
+                            if (funnetKlasseData) {
+                                // Klassen HAR registrert data i databasen
+                                res = behandleKlasseData(aar, fag, funnetPeriode, funnetTrinn, klasseNavn, funnetKlasseData, statuser, alleLogger);
+                            } else {
+                                // Klassen har INGEN registreringer ennå -> Vis som "Ikke startet"
+                                res = lagTomKlasseDataResultat(aar, fag, periode, trinn, klasseNavn, laererInfo);
+                            }
+
+                            if (res) {
+                                g_modalDataCache.push({
+                                    aar,
+                                    fag,
+                                    periode: funnetPeriode,
+                                    trinn: funnetTrinn,
+                                    klasseNavn,
+                                    laererNavn: laererInfo.navn || 'Ikke tildelt',
+                                    laererEpost: laererInfo.epost || '',
+                                    erFerdig: !res.harApne,
+                                    htmlTotal: res.htmlTotal,
+                                    htmlIkkeFerdig: res.htmlIkkeFerdig
+                                });
                             }
                         }
                     }
@@ -2433,6 +2449,7 @@ for (let klasseNavn of klasserForDetteTrinnet) {
         }
     }
 }
+
 
 // Henter alle gyldige klassenavn for et gitt skoleår fra ansatteData
 function hentGyldigeKlasserForSkoleaar(aar) {
