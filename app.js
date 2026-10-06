@@ -2341,7 +2341,7 @@ function byttFaneModal(fane) {
     }
 }
 
-// --- HOVEDFUNKSJON FOR Å HENTE DATA EN GANG ---
+
 // --- HOVEDFUNKSJON FOR Å HENTE DATA EN GANG ---
 async function henteOgByggData() {
     const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
@@ -2378,28 +2378,44 @@ async function henteOgByggData() {
                         
                         const statusKlasser = fagLister[fag][periode][trinn] || {};
                         const klasserForDetteTrinnet = finnKlasserForTrinn(trinn, alleGyldigeKlasser, Object.keys(statusKlasser));
-
-                        // Hent alt som er registrert i kartlegging for dette skoleåret og faget (uavhengig av om periode/trinn varierer i skrivemåte)
                         const kartleggingFag = kartlegging[aar]?.[fag] || {};
 
                         for (let klasseNavn of klasserForDetteTrinnet) {
                             
-                            // UNNGÅ DUPLIKAT: Sjekk om denne klasseNavn + fag + aar ALEREDE er lagt til i cache
+                            // 1. UNNGÅ DUPLIKAT: Sjekk om denne klasseNavn + fag + aar allerede er lagt i cachen
                             const alleredeLagtTil = g_modalDataCache.some(
-                                item => item.aar === aar && item.fag === fag && item.klasseNavn === klasseNavn && (item.periode === periode || item.periode.includes(periode) || periode.includes(item.periode))
+                                item => item.aar === aar && item.fag === fag && item.klasseNavn === klasseNavn
                             );
                             if (alleredeLagtTil) continue;
 
-                            // Finn om det finnes registrert data under kartlegging for denne klassen
+                            // 2. FINN VARIANTENE AV KLASSENAVN (f.eks "1B" vs "B")
+                            const trinnTall = trinn.replace(/\D/g, ''); // f.eks "1" fra "1. Trinn"
+                            let renBokstavKlasse = klasseNavn;
+                            if (trinnTall && klasseNavn.startsWith(trinnTall)) {
+                                renBokstavKlasse = klasseNavn.substring(trinnTall.length).trim(); // "1B" -> "B"
+                            }
+
+                            // 3. SØK I KARTLEGGINGS-TREET ETTER ENTEN "1B" ELLER "B"
                             let funnetKlasseData = null;
                             let funnetPeriode = periode;
                             let funnetTrinn = trinn;
+                            let funnetNokkel = klasseNavn;
 
-                            // Søk gjennom alle perioder og trinn under faget for å finne klassen i kartlegging-treet
                             for (let pKey in kartleggingFag) {
                                 for (let tKey in kartleggingFag[pKey]) {
-                                    if (kartleggingFag[pKey][tKey] && kartleggingFag[pKey][tKey][klasseNavn]) {
-                                        funnetKlasseData = kartleggingFag[pKey][tKey][klasseNavn];
+                                    const tTre = kartleggingFag[pKey][tKey];
+                                    if (!tTre) continue;
+
+                                    // Sjekk om data finnes enten som "1B" eller "B"
+                                    if (tTre[klasseNavn]) {
+                                        funnetKlasseData = tTre[klasseNavn];
+                                        funnetNokkel = klasseNavn;
+                                    } else if (renBokstavKlasse && tTre[renBokstavKlasse]) {
+                                        funnetKlasseData = tTre[renBokstavKlasse];
+                                        funnetNokkel = renBokstavKlasse;
+                                    }
+
+                                    if (funnetKlasseData) {
                                         funnetPeriode = pKey;
                                         funnetTrinn = tKey;
                                         break;
@@ -2412,10 +2428,10 @@ async function henteOgByggData() {
                             let res = null;
 
                             if (funnetKlasseData) {
-                                // Klassen HAR registrert data i databasen
-                                res = behandleKlasseData(aar, fag, funnetPeriode, funnetTrinn, klasseNavn, funnetKlasseData, statuser, alleLogger);
+                                // Klassen HAR registrering i databasen
+                                res = behandleKlasseData(aar, fag, funnetPeriode, funnetTrinn, funnetNokkel, funnetKlasseData, statuser, alleLogger);
                             } else {
-                                // Klassen har INGEN registreringer ennå -> Vis som "Ikke startet"
+                                // Klassen har IKKE registrering ennå
                                 res = lagTomKlasseDataResultat(aar, fag, periode, trinn, klasseNavn, laererInfo);
                             }
 
