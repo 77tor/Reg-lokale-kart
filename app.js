@@ -2361,22 +2361,49 @@ async function henteOgByggData() {
 
         const skoleaarSett = new Set();
 
-        for (let aar in statuser) {
-            skoleaarSett.add(aar);
-            for (let fag in statuser[aar]) {
-                for (let periode in statuser[aar][fag]) {
-                    for (let trinn in statuser[aar][fag][periode]) {
-                        for (let klasseNavn in statuser[aar][fag][periode][trinn]) {
-                            
-                            const klasseData = (kartlegging[aar]?.[fag]?.[periode]?.[trinn]) 
-                                               ? kartlegging[aar][fag][periode][trinn][klasseNavn] || {} 
-                                               : {};
+        // 1. Legg til alle skoleår som finnes enten i statuser eller i ansatteData
+        for (let sa in statuser) skoleaarSett.add(sa);
+        if (typeof ansatteData !== 'undefined') {
+            for (let sa in ansatteData) skoleaarSett.add(sa);
+        }
 
+        // 2. Gå gjennom alle registrerte skoleår
+        for (let aar of skoleaarSett) {
+            
+            // Hent alle kjente klasser for dette skoleåret (f.eks. fra ansatteData)
+            const alleGyldigeKlasser = hentGyldigeKlasserForSkoleaar(aar);
+
+            // Finn fagenes, periodenes og trinnenes navn fra statuser (eller en definert oppsett-struktur)
+            const fagLister = statuser[aar] || {};
+
+            for (let fag in fagLister) {
+                for (let periode in fagLister[fag]) {
+                    for (let trinn in fagLister[fag][periode]) {
+                        
+                        // Hent eksisterende status/kartlegging-objekter for denne prøven
+                        const statusKlasser = fagLister[fag][periode][trinn] || {};
+                        const kartleggingKlasser = kartlegging[aar]?.[fag]?.[periode]?.[trinn] || {};
+
+                        // Samle ALLE reelle klasser (både de med status og de fra ansatte-listen for trinnet)
+                        const alleKlasserForTrinn = finnKlasserForTrinn(trinn, alleGyldigeKlasser, Object.keys(statusKlasser));
+
+                        for (let klasseNavn of alleKlasserForTrinn) {
+                            const klasseData = kartleggingKlasser[klasseNavn] || {};
                             const laererInfo = finnKontaktlaererForKlasse(klasseNavn, aar);
                             
-                            // Kall din behandleKlasseData for å strukturere resultatet
-                            const res = behandleKlasseData(aar, fag, periode, trinn, klasseNavn, klasseData, statuser, alleLogger);
-                            
+                            // Sjekk om klassen har noe registrert i statuser
+                            const harStatus = Boolean(statusKlasser[klasseNavn]);
+
+                            let res = null;
+
+                            if (harStatus) {
+                                // Eksisterende behandleKlasseData håndterer klasser som har startet/fullført
+                                res = behandleKlasseData(aar, fag, periode, trinn, klasseNavn, klasseData, statuser, alleLogger);
+                            } else {
+                                // LAGA NY/MANGLENDE: Generer visning for klasser som overhode IKKE har startet
+                                res = lagTomKlasseDataResultat(aar, fag, periode, trinn, klasseNavn, laererInfo);
+                            }
+
                             if (res) {
                                 g_modalDataCache.push({
                                     aar,
@@ -2384,7 +2411,7 @@ async function henteOgByggData() {
                                     periode,
                                     trinn,
                                     klasseNavn,
-                                    laererNavn: laererInfo.navn || '',
+                                    laererNavn: laererInfo.navn || 'Ikke tildelt',
                                     laererEpost: laererInfo.epost || '',
                                     erFerdig: !res.harApne,
                                     htmlTotal: res.htmlTotal,
@@ -2397,10 +2424,83 @@ async function henteOgByggData() {
             }
         }
 
-        // Fyll Skoleår-dropdown dynamisk hvis den er tom
+// Henter alle gyldige klassenavn for et gitt skoleår fra ansatteData
+function hentGyldigeKlasserForSkoleaar(aar) {
+    if (typeof ansatteData === 'undefined') return [];
+    
+    const rentAar = aar.toString().substring(0, 4);
+    const skoleaarKey = Object.keys(ansatteData).find(key => key.startsWith(rentAar));
+    
+    if (!skoleaarKey) return [];
+    
+    // Hent alle unike kontaktlærere sine klasser
+    const klasser = ansatteData[skoleaarKey]
+        .map(a => a.kontaktlaerer)
+        .filter(k => k && k !== "Ikke tildelt" && k.trim() !== "");
+    
+    return [...new Set(klasser)]; // Unike klassenavn
+}
+
+// Filtrerer klasser tilhørende et spesifikt trinn (f.eks. fanger opp "8A", "8B" for trinn "8" eller "8. trinn")
+function finnKlasserForTrinn(trinn, alleGyldigeKlasser, eksisterendeKlasserIStatus) {
+    const trinnTall = trinn.replace(/\D/g, ''); // Henter ut sifferet (f.eks "8" fra "8. trinn")
+    
+    // Finn klasser fra ansatteData som starter med trinntallet
+    const matchendeFraAnsatte = alleGyldigeKlasser.filter(k => {
+        const klasseKort = k.trim();
+        return trinnTall ? klasseKort.startsWith(trinnTall) : true;
+    });
+
+    // Slå sammen med klasser som allerede finnes i status-objektet for å unngå at noen mangler
+    const samlet = new Set([...matchendeFraAnsatte, ...eksisterendeKlasserIStatus]);
+    return Array.from(samlet);
+}
+
+// Genererer rad-HTML for klasser som ikke er startet på en gang
+function lagTomKlasseDataResultat(aar, fag, periode, trinn, klasseNavn, laererInfo) {
+    const proveTittel = `${fag} (${periode} - ${trinn})`;
+    const epostLenke = laererInfo.epost ? `<a href="mailto:${laererInfo.epost}?subject=Mangler%20registrering%20for%20${encodeURIComponent(proveTittel)}" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Send påminnelse</a>` : 'Ingen e-post';
+
+    const htmlIkkeFerdig = `
+        <tr>
+            <td style="padding:10px; border-bottom:1px solid #e2e8f0;">
+                <strong>${fag}</strong> - ${trinn} (${periode})
+            </td>
+            <td style="padding:10px; border-bottom:1px solid #e2e8f0;">
+                <strong>${klasseNavn}</strong><br>
+                <small style="color:#64748b;">${laererInfo.navn}</small>
+            </td>
+            <td style="padding:10px; border-bottom:1px solid #e2e8f0;">
+                <span style="display:inline-block; padding:3px 8px; background:#fee2e2; color:#dc2626; border-radius:4px; font-size:0.8rem; font-weight:bold; margin-bottom:4px;">
+                    ❌ Ikke startet
+                </span><br>
+                <small>${epostLenke}</small>
+            </td>
+        </tr>`;
+
+    const htmlTotal = `
+        <tr>
+            <td style="padding:10px; border-bottom:1px solid #e2e8f0;"><strong>${fag}</strong> (${periode})</td>
+            <td style="padding:10px; border-bottom:1px solid #e2e8f0;">${klasseNavn}</td>
+            <td style="padding:10px; border-bottom:1px solid #e2e8f0;">${laererInfo.navn}</td>
+            <td style="padding:10px; border-bottom:1px solid #e2e8f0;">0%</td>
+            <td style="padding:10px; border-bottom:1px solid #e2e8f0;">-</td>
+            <td style="padding:10px; border-bottom:1px solid #e2e8f0;">
+                <span style="color:#dc2626; font-weight:bold;">❌ Ikke startet</span>
+            </td>
+        </tr>`;
+
+    return {
+        harApne: true, // Markeres som uferdig slik at den vises under "Trenger oppfølging"
+        htmlIkkeFerdig,
+        htmlTotal
+    };
+}
+
+        // Fyll dropdown med tilgjengelige skoleår
         fyllSkoleaarDropdown(Array.from(skoleaarSett).sort().reverse());
 
-        // Filtrer og vis i grensesnittet
+        // Filtrer og rendrer
         filtrerOgRendrerModalData();
 
     } catch (error) {
@@ -2408,6 +2508,7 @@ async function henteOgByggData() {
         ikkeFerdigDiv.innerHTML = `<p style='color:red; padding:20px;'>Feil: ${error.message}</p>`;
     }
 }
+
 
 // --- POPULER SKOLEÅR-DROPDOWN OG SETT DEFAULT TIL NÅVÆRENDE ---
 function fyllSkoleaarDropdown(skoleaarListe) {
