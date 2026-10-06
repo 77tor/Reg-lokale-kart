@@ -2386,7 +2386,9 @@ function byttFaneModal(fane) {
 // --- HOVEDFUNKSJON FOR Å HENTE DATA EN GANG ---
 async function henteOgByggData() {
     const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
-    ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Henter data fra databasen...</p>";
+    if (ikkeFerdigDiv) {
+        ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Henter data fra databasen...</p>";
+    }
     
     g_modalDataCache = [];
 
@@ -2467,7 +2469,9 @@ async function henteOgByggData() {
 
     } catch (error) {
         console.error("Feil ved henting:", error);
-        ikkeFerdigDiv.innerHTML = `<p style='color:red; padding:20px;'>Feil: ${error.message}</p>`;
+        if (ikkeFerdigDiv) {
+            ikkeFerdigDiv.innerHTML = `<p style='color:red; padding:20px;'>Feil: ${error.message}</p>`;
+        }
     }
 }
 
@@ -2647,7 +2651,6 @@ function filtrerOgRendrerModalData() {
         }
     }
 }
-
 
 
 // --- SLUTT PÅ HOVEDFUNKSJON FOR STATUS-MODAL
