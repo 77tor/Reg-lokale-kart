@@ -2122,7 +2122,7 @@ function hentAntallEleverIRegister(klasseNavn, aar) {
 }
 
 
-// --- EMAILJS - UT  ---
+// --- EMAILJS - UT ---
 function sendEpostViaEmailJS(laererNavn, laererEpost, proeveNavn, sideUrl, stisti) {
     const params = {
         laererNavn: laererNavn,
@@ -2130,26 +2130,35 @@ function sendEpostViaEmailJS(laererNavn, laererEpost, proeveNavn, sideUrl, stist
         proeveNavn: proeveNavn,
         sideUrl: sideUrl
     };
+
     emailjs.send("service_paj6cqb", "template_2foprtm", params)
         .then(() => {
-            // Lagre logg i Firebase
             const nå = new Date();
             const tidsstempel = nå.toLocaleString('no-NO', { 
-                day: '2-digit', month: '2-digit', year: '2-digit', 
+                day: '2-digit', month: '2-digit', year: 'numeric', 
                 hour: '2-digit', minute: '2-digit' 
             });
 
-            // Vi pusher en ny logg-oppføring til denne spesifikke prøven
-            db.ref('purrelogg/' + stisti).push(tidsstempel);
+            // Lagrer purreobjektet under stisti (f.eks: '2024-2025_Lesing_Høst_1A')
+            db.ref('purrelogg/' + stisti).set({
+                sendtDato: tidsstempel,
+                mottakerEpost: laererEpost,
+                mottakerNavn: laererNavn,
+                proeve: proeveNavn
+            });
 
-            alert("✅ E-post sendt!\nLogg er oppdatert.");
-            genererGjennomfoeringsData(); // Oppdaterer tabellen så loggen vises med en gang
+            alert("✅ E-post sendt til " + laererEpost + "!\nLoggen er oppdatert.");
+            
+            // Oppdaterer tabellen og modalen med en gang slik at 'Purret'-badgen dukker opp
+            henteOgByggData(); 
         })
         .catch((err) => {
             console.error("EmailJS Feil:", err);
-            alert("❌ Feil ved sending.");
+            alert("❌ Feil ved sending av e-post. Sjekk konsollen for detaljer.");
         });
 }
+
+
 
 // --- EMAILJS - INN ---
 // Åpne og lukke modal
@@ -2204,6 +2213,26 @@ function sendMeldingTilAdmin() {
 }
 
 // ---  STATUS-MODAL
+
+async function purreLaerer(epost, klasse, fag, periode, aar, loggNøkkel) {
+    if (!epost || epost === '' || epost === 'undefined' || epost === 'null') {
+        alert("❌ Fant ingen gyldig e-postadresse registrert på kontaktlærer for " + klasse);
+        return;
+    }
+
+    // Finn lærerens navn og side-URL om du har det
+    const laererInfo = finnKontaktlaererForKlasse(klasse, aar);
+    const laererNavn = laererInfo.navn !== "Ikke tildelt" ? laererInfo.navn : "Kontaktlærer";
+    const proeveNavn = `${fag} (${klasse}) - ${periode} ${aar}`;
+    const sideUrl = window.location.href; // Lenke til siden der prøven tas/føres
+
+    // Bekreftelse før sending
+    const bekreft = confirm(`Vil du sende purre-e-post til ${laererNavn} (${epost}) angående ${proeveNavn}?`);
+    if (!bekreft) return;
+
+    // Send via EmailJS
+    sendEpostViaEmailJS(laererNavn, epost, proeveNavn, sideUrl, loggNøkkel);
+}
 
 // --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
 function behandleKlasseData(aar, fag, periode, fulltKlassenavn, klasseData, alleLogger) {
@@ -2266,9 +2295,11 @@ function behandleKlasseData(aar, fag, periode, fulltKlassenavn, klasseData, alle
     if (!erFerdig) {
         const loggNøkkel = `${aar}_${fag}_${periode}_${fulltKlassenavn}`;
         const harPurret = alleLogger && alleLogger[loggNøkkel];
+
+        // HER ER ENDRINGEN: Send fag, periode, aar og loggNøkkel som egne parametere
         const purrKnappHtml = harPurret 
             ? `<span class="purret-badge">Purret</span>` 
-            : `<button class="btn-purr" onclick="purreLaerer('${laererInfo.epost}', '${fulltKlassenavn}', '${fag} - ${periode} ${aar}', '${loggNøkkel}')">Send påminnelse</button>`;
+            : `<button class="btn-purr" onclick="purreLaerer('${laererInfo.epost}', '${fulltKlassenavn}', '${fag}', '${periode}', '${aar}', '${loggNøkkel}')">Send påminnelse</button>`;
 
         htmlIkkeFerdig = `
             <tr>
@@ -2340,7 +2371,6 @@ function byttFaneModal(fane) {
 }
 
 
-// --- HOVEDFUNKSJON FOR Å HENTE OG BYGGE DATA ---
 // --- HOVEDFUNKSJON FOR Å HENTE OG BYGGE DATA ---
 async function henteOgByggData() {
     const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
