@@ -2234,7 +2234,7 @@ async function purreLaerer(epost, klasse, fag, periode, aar, loggNøkkel) {
     sendEpostViaEmailJS(laererNavn, epost, proeveNavn, sideUrl, loggNøkkel);
 }
 
-// --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
+
 // --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
 function behandleKlasseData(aar, fag, periode, fulltKlassenavn, klasseData, alleLogger) {
     // 1. FINN ELEVER
@@ -2287,25 +2287,38 @@ function behandleKlasseData(aar, fag, periode, fulltKlassenavn, klasseData, alle
     // Bruker elevregisteret hvis det finnes (>0), ellers antall aktuelt funnet i Firebase (som ikke er slettet)
     const totaltAntall = totaltIElevregister > 0 ? totaltIElevregister : antallAktiveIData;
 
-    // 4. BESTEM STATUS OG FERDIGSTILLING
+
+
+// 4. BESTEM STATUS OG FERDIGSTILLING
     const erEksplisittFerdigstilt = klasseData?.ferdigstilt === true || 
                                     klasseData?.status === "Ferdigstilt" || 
-                                    klasseData?.status === "Ferdig";
+                                    klasseData?.status === "Ferdig" ||
+                                    klasseData?.status === "ferdigstilt";
 
     let statusTekst = "";
     let statusKlasse = "";
     let erFerdig = false;
 
-    // Viktig: Sjekker at antallRegistrert faktiske når totaltAntall (og at totaltAntall > 0)
-    if (erEksplisittFerdigstilt || (totaltAntall > 0 && antallRegistrert >= totaltAntall)) {
+    // A. Manuell overstyring / Knappen "🔒 Ferdigstilt!" har FØRSTEPRIORITET
+    if (erEksplisittFerdigstilt) {
         statusTekst = "✅ Ferdig";
         statusKlasse = "status-ferdig";
         erFerdig = true;
-    } else if (antallRegistrert === 0) {
+    } 
+    // B. Automatisk fullført dersom alle aktive elever har registrert svar
+    else if (totaltAntall > 0 && antallRegistrert >= totaltAntall) {
+        statusTekst = "✅ Ferdig";
+        statusKlasse = "status-ferdig";
+        erFerdig = true;
+    } 
+    // C. Ingen svar registrert ennå
+    else if (antallRegistrert === 0) {
         statusTekst = "❌ Ikke startet";
         statusKlasse = "status-ikke-startet";
         erFerdig = false;
-    } else {
+    } 
+    // D. Noen har svar, men ikke alle
+    else {
         statusTekst = "⚠️ Pågår";
         statusKlasse = "status-pagaar";
         erFerdig = false;
