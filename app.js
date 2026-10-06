@@ -2242,8 +2242,8 @@ async function purreLaerer(epost, klasse, fag, periode, aar, loggNøkkel, purreN
 const na = new Date();
 const dag = String(na.getDate()).padStart(2, '0');
 const maaned = String(na.getMonth() + 1).padStart(2, '0');
-const aar = na.getFullYear();
-const datoFormatert = `${dag}.${maaned}.${aar}`;
+const inneverandeAar = na.getFullYear(); // Nytt variabelnavn
+const datoFormatert = `${dag}.${maaned}.${inneverandeAar}`;
 
 const nyLoggPost = {
     antall: purreNummer,
