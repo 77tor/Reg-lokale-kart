@@ -2290,40 +2290,39 @@ function behandleKlasseData(aar, fag, periode, fulltKlassenavn, klasseData, alle
 
 console.log(`Klasse: ${fulltKlassenavn}, Data:`, klasseData);
 // 4. BESTEM STATUS OG FERDIGSTILLING
-    // Sjekker alle mulige felter der "ferdigstilt" eller "status" kan ligge i Firebase
+    // I databasen din er "laast: true" nøkkelen som forteller at prøven er låst/ferdigstilt av lærer
     const statusVerdi = String(klasseData?.status || klasseData?.ferdigstilt || "").toLowerCase();
     
-    const erEksplisittFerdigstilt = klasseData?.ferdigstilt === true || 
+    const erEksplisittFerdigstilt = klasseData?.laast === true || 
+                                    klasseData?.laast === "true" ||
+                                    klasseData?.ferdigstilt === true || 
                                     klasseData?.ferdigstilt === "true" ||
-                                    klasseData?.isFinished === true ||
                                     statusVerdi === "ferdigstilt" || 
-                                    statusVerdi === "ferdig" ||
-                                    statusVerdi === "fullført" ||
-                                    statusVerdi === "låst";
+                                    statusVerdi === "ferdig";
 
     let statusTekst = "";
     let statusKlasse = "";
     let erFerdig = false;
 
-    // A. FØRSTEPRIORITET: Om læreren har trykket "🔒 Ferdigstilt!" / Låst prøven
+    // A. FØRSTEPRIORITET: Om læreren har låst/ferdigstilt prøven (laast === true)
     if (erEksplisittFerdigstilt) {
         statusTekst = "✅ Ferdig";
         statusKlasse = "status-ferdig";
         erFerdig = true;
     } 
-    // B. Om antall registreringer har nådd eller oversteget totalt antall
+    // B. Om antall registrert matcher totalt antall
     else if (totaltAntall > 0 && antallRegistrert >= totaltAntall) {
         statusTekst = "✅ Ferdig";
         statusKlasse = "status-ferdig";
         erFerdig = true;
     } 
-    // C. Om absolut ingen er registrert ennå
+    // C. Om ingen er registrert ennå
     else if (antallRegistrert === 0) {
         statusTekst = "❌ Ikke startet";
         statusKlasse = "status-ikke-startet";
         erFerdig = false;
     } 
-    // D. Noen er registrert, men prøven er ikke ferdigstilt ennå
+    // D. Pågår (noen registrert, men ikke ferdigstilt/låst av lærer)
     else {
         statusTekst = "⚠️ Pågår";
         statusKlasse = "status-pagaar";
