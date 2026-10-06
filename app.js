@@ -2279,8 +2279,6 @@ async function purreLaerer(epost, klasse, fag, periode, aar, loggNøkkel, purreN
 }
 
 
-
-// --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
 // --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
 function behandleKlasseData(aar, fag, periode, fulltKlassenavn, klasseData, alleLogger) {
     // 1. FINN ELEVER
@@ -2459,7 +2457,6 @@ function behandleKlasseData(aar, fag, periode, fulltKlassenavn, klasseData, alle
 
     return { erFerdig, htmlTotal, htmlIkkeFerdig };
 }
-
 
 // --- HOVEDFUNKSJON FOR STATUS-MODAL
 let g_modalDataCache = []; // Cache for å slippe å hente fra Firebase hver gang man filtrerer
