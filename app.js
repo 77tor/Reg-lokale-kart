@@ -2364,87 +2364,42 @@ async function henteOgByggData() {
         const kartlegging = kartleggingSnapshot.val() || {};
 
         const skoleaarSett = new Set();
-        for (let sa in statuser) skoleaarSett.add(sa);
-        if (typeof ansatteData !== 'undefined') {
-            for (let sa in ansatteData) skoleaarSett.add(sa);
-        }
 
-        // Sett for å garantere at UNIK (aar + fag + klasseNavn + periode) kun legges inn ÉN gang
-        const behandledeKombinasjoner = new Set();
+        // Les direkte ut fra statuser i Firebase (akkurat som den gamle modalen)
+        for (let aar in statuser) {
+            skoleaarSett.add(aar);
 
-        for (let aar of skoleaarSett) {
-            const alleGyldigeKlasser = hentGyldigeKlasserForSkoleaar(aar);
-            const fagLister = statuser[aar] || {};
-
-            for (let fag in fagLister) {
-                for (let periode in fagLister[fag]) {
-                    for (let trinn in fagLister[fag][periode]) {
+            for (let fag in statuser[aar]) {
+                for (let periode in statuser[aar][fag]) {
+                    for (let trinn in statuser[aar][fag][periode]) {
                         
-                        const statusKlasser = fagLister[fag][periode][trinn] || {};
-                        const klasserForDetteTrinnet = finnKlasserForTrinn(trinn, alleGyldigeKlasser, Object.keys(statusKlasser));
-                        const kartleggingFag = kartlegging[aar]?.[fag] || {};
+                        const klasserObjekt = statuser[aar][fag][periode][trinn] || {};
 
-                        for (let klasseNavn of klasserForDetteTrinnet) {
+                        for (let klasseNavn in klasserObjekt) {
                             
-                            // UNIK NØKKEL: Stopper absolutt alle duplikater
-                            const unikNokkel = `${aar}_${fag}_${periode}_${klasseNavn}`;
-                            if (behandledeKombinasjoner.has(unikNokkel)) {
-                                continue; // Hopp over hvis denne klassen og prøven allerede er lagt til!
-                            }
-
-                            // Finn variantene av klassenavnet (f.eks "1B" vs "B")
-                            const trinnTall = trinn.replace(/\D/g, ''); 
+                            // 1. Sjekk om klassen ligger under "1B" eller bare "B" i kartlegging-treet
+                            const trinnTall = trinn.replace(/\D/g, ''); // f.eks "1"
                             let renBokstavKlasse = klasseNavn;
                             if (trinnTall && klasseNavn.startsWith(trinnTall)) {
-                                renBokstavKlasse = klasseNavn.substring(trinnTall.length).trim();
+                                renBokstavKlasse = klasseNavn.substring(trinnTall.length).trim(); // "1B" -> "B"
                             }
 
-                            // Søk i kartlegging
-                            let funnetKlasseData = null;
-                            let funnetPeriode = periode;
-                            let funnetTrinn = trinn;
-                            let funnetNokkel = klasseNavn;
+                            const kartleggingTrinn = kartlegging[aar]?.[fag]?.[periode]?.[trinn] || {};
+                            
+                            // Hent data enten fra "1B" eller "B"
+                            const klasseData = kartleggingTrinn[klasseNavn] || kartleggingTrinn[renBokstavKlasse] || {};
 
-                            for (let pKey in kartleggingFag) {
-                                for (let tKey in kartleggingFag[pKey]) {
-                                    const tTre = kartleggingFag[pKey][tKey];
-                                    if (!tTre) continue;
-
-                                    if (tTre[klasseNavn]) {
-                                        funnetKlasseData = tTre[klasseNavn];
-                                        funnetNokkel = klasseNavn;
-                                    } else if (renBokstavKlasse && tTre[renBokstavKlasse]) {
-                                        funnetKlasseData = tTre[renBokstavKlasse];
-                                        funnetNokkel = renBokstavKlasse;
-                                    }
-
-                                    if (funnetKlasseData) {
-                                        funnetPeriode = pKey;
-                                        funnetTrinn = tKey;
-                                        break;
-                                    }
-                                }
-                                if (funnetKlasseData) break;
-                            }
-
-                            const laererInfo = finnKontaktlaererForKlasse(klasseNavn, aar);
-                            let res = null;
-
-                            if (funnetKlasseData) {
-                                res = behandleKlasseData(aar, fag, funnetPeriode, funnetTrinn, funnetNokkel, funnetKlasseData, statuser, alleLogger);
-                            } else {
-                                res = lagTomKlasseDataResultat(aar, fag, periode, trinn, klasseNavn, laererInfo);
-                            }
+                            // 2. Behandle dataene for klassen
+                            const res = behandleKlasseData(aar, fag, periode, trinn, klasseNavn, klasseData, statuser, alleLogger);
 
                             if (res) {
-                                // Registrer at denne kombinasjonen nå er behandlet
-                                behandledeKombinasjoner.add(unikNokkel);
+                                const laererInfo = finnKontaktlaererForKlasse(klasseNavn, aar);
 
                                 g_modalDataCache.push({
                                     aar,
                                     fag,
-                                    periode: funnetPeriode,
-                                    trinn: funnetTrinn,
+                                    periode,
+                                    trinn,
                                     klasseNavn,
                                     laererNavn: laererInfo.navn || 'Ikke tildelt',
                                     laererEpost: laererInfo.epost || '',
@@ -2459,7 +2414,10 @@ async function henteOgByggData() {
             }
         }
 
+        // Fyll skoleår-dropdown med faktiske år fra databasen
         fyllSkoleaarDropdown(Array.from(skoleaarSett).sort().reverse());
+        
+        // Vis dataene i grensesnittet
         filtrerOgRendrerModalData();
 
     } catch (error) {
