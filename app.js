@@ -2238,23 +2238,23 @@ async function purreLaerer(epost, klasse, fag, periode, aar, loggNøkkel, purreN
     const bekreft = confirm(`Vil du sende ${tekstPurring} til ${laererNavn} (${epost}) angående ${proeveNavn}?`);
     if (!bekreft) return;
 
-    // Generer dagens dato på formatet DD.MM (f.eks. 06.10)
-    const na = new Date();
-    const dag = String(na.getDate()).padStart(2, '0');
-    const maaned = String(na.getMonth() + 1).padStart(2, '0');
-    const datoFormatert = `${dag}.${maaned}`;
+// Generer dagens dato på formatet DD.MM.YYYY (f.eks. 06.10.2026)
+const na = new Date();
+const dag = String(na.getDate()).padStart(2, '0');
+const maaned = String(na.getMonth() + 1).padStart(2, '0');
+const aar = na.getFullYear();
+const datoFormatert = `${dag}.${maaned}.${aar}`;
 
-    const nyLoggPost = {
-        antall: purreNummer,
-        dato: datoFormatert,
-        tidspunkt: na.toISOString(),
-        sendtDato: na.toLocaleString('no-NO'),
-        mottakerNavn: laererNavn,
-        mottakerEpost: epost,
-        proeve: proeveNavn,
-        sendtAv: firebase.auth().currentUser?.email || 'Admin'
-    };
-
+const nyLoggPost = {
+    antall: purreNummer,
+    dato: datoFormatert,
+    tidspunkt: na.toISOString(),
+    sendtDato: na.toLocaleString('no-NO'),
+    mottakerNavn: laererNavn,
+    mottakerEpost: epost,
+    proeve: proeveNavn,
+    sendtAv: firebase.auth().currentUser?.email || 'Admin'
+};
     try {
         // 1. Lagre purreloggen i Firebase (Rettet til 'purrelogg')
         await firebase.database().ref(`purrelogg/${loggNøkkel}`).set(nyLoggPost);
@@ -2279,7 +2279,7 @@ async function purreLaerer(epost, klasse, fag, periode, aar, loggNøkkel, purreN
 }
 
 
-// --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
+
 // --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
 function behandleKlasseData(aar, fag, periode, fulltKlassenavn, klasseData, alleLogger) {
     // 1. FINN ELEVER
