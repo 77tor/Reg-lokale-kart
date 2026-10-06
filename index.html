@@ -967,25 +967,40 @@ svg {
             <button class="btn-fjern" style="background: #e2e8f0; color: #475569; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight:600;" onclick="document.getElementById('modalGjennomfoering').style.display='none'">Lukk</button>
         </div>
 
-        <!-- Filter-seksjon -->
-        <div style="display: flex; flex-wrap: wrap; gap: 12px; background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e2e8f0;">
-            <div style="display:flex; flex-direction:column; gap:4px;">
-                <label style="font-size:0.75rem; font-weight:bold; color:#475569;">Skoleår:</label>
-                <select id="filterSkoleaar" onchange="filtrerOgRendrerModalData()" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1;"></select>
-            </div>
-            <div style="display:flex; flex-direction:column; gap:4px;">
-                <label style="font-size:0.75rem; font-weight:bold; color:#475569;">Termin:</label>
-                <select id="filterTermin" onchange="filtrerOgRendrerModalData()" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
-                    <option value="alle">Alle (Høst + Vår)</option>
-                    <option value="Høst">Høst</option>
-                    <option value="Vår">Vår</option>
-                </select>
-            </div>
-            <div style="display:flex; flex-direction:column; gap:4px; flex-grow:1; min-width: 180px;">
-                <label style="font-size:0.75rem; font-weight:bold; color:#475569;">Søk (Lærer / Klasse / Prøve):</label>
-                <input type="text" id="filterSok" oninput="filtrerOgRendrerModalData()" placeholder="Søk her..." style="padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
-            </div>
-        </div>
+<!-- Filter-seksjon -->
+<div style="display: flex; flex-wrap: wrap; gap: 12px; background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e2e8f0;">
+    <!-- Skoleår -->
+    <div style="display:flex; flex-direction:column; gap:4px;">
+        <label style="font-size:0.75rem; font-weight:bold; color:#475569;">Skoleår:</label>
+        <select id="filterSkoleaar" onchange="filtrerOgRendrerModalData()" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1;"></select>
+    </div>
+
+    <!-- Fag (NY) -->
+    <div style="display:flex; flex-direction:column; gap:4px;">
+        <label style="font-size:0.75rem; font-weight:bold; color:#475569;">Fag:</label>
+        <select id="filterFag" onchange="henteOgByggData()" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
+            <option value="ALLE">Alle fag (Lesing & Regning)</option>
+            <option value="Lesing" selected>Lesing</option>
+            <option value="Regning">Regning</option>
+        </select>
+    </div>
+
+    <!-- Termin -->
+    <div style="display:flex; flex-direction:column; gap:4px;">
+        <label style="font-size:0.75rem; font-weight:bold; color:#475569;">Termin:</label>
+        <select id="filterTermin" onchange="filtrerOgRendrerModalData()" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
+            <option value="alle">Alle (Høst + Vår)</option>
+            <option value="Høst">Høst</option>
+            <option value="Vår">Vår</option>
+        </select>
+    </div>
+
+    <!-- Søk -->
+    <div style="display:flex; flex-direction:column; gap:4px; flex-grow:1; min-width: 180px;">
+        <label style="font-size:0.75rem; font-weight:bold; color:#475569;">Søk (Lærer / Klasse / Prøve):</label>
+        <input type="text" id="filterSok" oninput="filtrerOgRendrerModalData()" placeholder="Søk her..." style="padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
+    </div>
+</div>
 
         <!-- KPI / Statistikk-kort -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 15px;">

@@ -2341,6 +2341,7 @@ function byttFaneModal(fane) {
 
 
 // --- HOVEDFUNKSJON FOR Å HENTE OG BYGGE DATA ---
+// --- HOVEDFUNKSJON FOR Å HENTE OG BYGGE DATA ---
 async function henteOgByggData() {
     const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
     if (ikkeFerdigDiv) {
@@ -2360,9 +2361,12 @@ async function henteOgByggData() {
         const statuser = statusSnapshot.val() || {};
         const kartlegging = kartleggingSnapshot.val() || {};
 
-        // Sjekk aktivt fag (f.eks "Lesing")
-        const valgtFagElem = document.getElementById('filterFag') || document.getElementById('aktivtFag');
-        const aktivtFag = valgtFagElem ? valgtFagElem.value : (window.aktivtFag || "Lesing");
+        // Sjekk hvilket fag som er valgt i dropdown
+        const valgtFagElem = document.getElementById('filterFag');
+        const valgtFagVerdi = valgtFagElem ? valgtFagElem.value : "ALLE";
+
+        // Hvis "ALLE" er valgt, behandler vi både Lesing og Regning
+        const fagSomSkalHentes = valgtFagVerdi === "ALLE" ? ["Lesing", "Regning"] : [valgtFagVerdi];
 
         const skoleaarSett = new Set([
             ...Object.keys(statuser),
@@ -2380,61 +2384,63 @@ async function henteOgByggData() {
                     .filter(k => k && k !== "adm" && k !== "")
             )).sort();
 
-            const fagsSpesifikkKartlegging = kartlegging[aar]?.[aktivtFag] || {};
-            const fagsSpesifikkStatus = statuser[aar]?.[aktivtFag] || {};
+            for (let fag of fagSomSkalHentes) {
+                const fagsSpesifikkKartlegging = kartlegging[aar]?.[fag] || {};
+                const fagsSpesifikkStatus = statuser[aar]?.[fag] || {};
 
-            for (let periode of ["Høst", "Vår"]) {
-                const pKartlegging = fagsSpesifikkKartlegging[periode] || {};
-                const pStatus = fagsSpesifikkStatus[periode] || {};
+                for (let periode of ["Høst", "Vår"]) {
+                    const pKartlegging = fagsSpesifikkKartlegging[periode] || {};
+                    const pStatus = fagsSpesifikkStatus[periode] || {};
 
-                for (let fulltKlassenavn of alleKlasser) {
-                    const trinnTall = fulltKlassenavn.match(/\d+/)?.[0];
-                    const bokstav = fulltKlassenavn.replace(/\d+/g, '').trim();
-                    if (!trinnTall) continue;
+                    for (let fulltKlassenavn of alleKlasser) {
+                        const trinnTall = fulltKlassenavn.match(/\d+/)?.[0];
+                        const bokstav = fulltKlassenavn.replace(/\d+/g, '').trim();
+                        if (!trinnTall) continue;
 
-                    // Søk i Firebase etter mulige nodenavn ("1. Trinn", "Trinn 1", "1")
-                    const trinnNøkler = [`${trinnTall}. Trinn`, `Trinn ${trinnTall}`, `${trinnTall}`];
+                        // Søk i Firebase etter mulige nodenavn ("1. Trinn", "Trinn 1", "1")
+                        const trinnNøkler = [`${trinnTall}. Trinn`, `Trinn ${trinnTall}`, `${trinnTall}`];
 
-                    let klasseData = {};
-                    let klasseStatusData = {};
+                        let klasseData = {};
+                        let klasseStatusData = {};
 
-                    for (let tKey of trinnNøkler) {
-                        if (pKartlegging[tKey]) {
-                            const d = pKartlegging[tKey][fulltKlassenavn] || pKartlegging[tKey][bokstav];
-                            if (d) klasseData = { ...klasseData, ...d };
+                        for (let tKey of trinnNøkler) {
+                            if (pKartlegging[tKey]) {
+                                const d = pKartlegging[tKey][fulltKlassenavn] || pKartlegging[tKey][bokstav];
+                                if (d) klasseData = { ...klasseData, ...d };
+                            }
+                            if (pStatus[tKey]) {
+                                const d = pStatus[tKey][fulltKlassenavn] || pStatus[tKey][bokstav];
+                                if (d) klasseStatusData = { ...klasseStatusData, ...d };
+                            }
                         }
-                        if (pStatus[tKey]) {
-                            const d = pStatus[tKey][fulltKlassenavn] || pStatus[tKey][bokstav];
-                            if (d) klasseStatusData = { ...klasseStatusData, ...d };
+
+                        const samletData = { ...klasseStatusData, ...klasseData };
+
+                        const res = behandleKlasseData(
+                            aar, 
+                            fag, 
+                            periode, 
+                            fulltKlassenavn, 
+                            samletData, 
+                            alleLogger
+                        );
+
+                        if (res) {
+                            const laererInfo = finnKontaktlaererForKlasse(fulltKlassenavn, aar);
+
+                            g_modalDataCache.push({
+                                aar,
+                                fag: fag,
+                                periode,
+                                trinn: `${trinnTall}. Trinn`,
+                                klasseNavn: fulltKlassenavn,
+                                laererNavn: laererInfo.navn,
+                                laererEpost: laererInfo.epost,
+                                erFerdig: res.erFerdig,
+                                htmlTotal: res.htmlTotal,
+                                htmlIkkeFerdig: res.htmlIkkeFerdig
+                            });
                         }
-                    }
-
-                    const samletData = { ...klasseStatusData, ...klasseData };
-
-                    const res = behandleKlasseData(
-                        aar, 
-                        aktivtFag, 
-                        periode, 
-                        fulltKlassenavn, 
-                        samletData, 
-                        alleLogger
-                    );
-
-                    if (res) {
-                        const laererInfo = finnKontaktlaererForKlasse(fulltKlassenavn, aar);
-
-                        g_modalDataCache.push({
-                            aar,
-                            fag: aktivtFag,
-                            periode,
-                            trinn: `${trinnTall}. Trinn`,
-                            klasseNavn: fulltKlassenavn,
-                            laererNavn: laererInfo.navn,
-                            laererEpost: laererInfo.epost,
-                            erFerdig: res.erFerdig,
-                            htmlTotal: res.htmlTotal,
-                            htmlIkkeFerdig: res.htmlIkkeFerdig
-                        });
                     }
                 }
             }
@@ -2446,7 +2452,7 @@ async function henteOgByggData() {
     } catch (error) {
         console.error("Feil ved henting:", error);
         if (ikkeFerdigDiv) {
-            ikkeFerdigDiv.innerHTML = `<p style='color:red; padding:20px;'>Feil: ${error.message}</p>`;
+            ikkeFerdigDiv.innerHTML = `<p style='color:red; padding:20px;'>Feil ved lasting: ${error.message}</p>`;
         }
     }
 }
@@ -2578,24 +2584,30 @@ function fyllSkoleaarDropdown(skoleaarListe) {
     }
 }
 
+
 // --- RENDERING basert på aktivt filter ---
 function filtrerOgRendrerModalData() {
     const selectSkoleaar = document.getElementById('filterSkoleaar');
     const selectTermin = document.getElementById('filterTermin');
+    const selectFag = document.getElementById('filterFag'); // Henter fag-elementet
     const inputSok = document.getElementById('filterSok');
 
     const valgtSkoleaar = selectSkoleaar ? selectSkoleaar.value : '';
     const valgtTermin = selectTermin ? selectTermin.value : 'alle';
+    const valgtFag = selectFag ? selectFag.value : 'ALLE'; // Standard til ALLE hvis udefinert
     const sokTekst = inputSok ? inputSok.value.toLowerCase().trim() : '';
 
     const filtrert = g_modalDataCache.filter(item => {
-        // Skoleår-filter
+        // 1. Skoleår-filter
         if (valgtSkoleaar && item.aar !== valgtSkoleaar) return false;
         
-        // Termin-filter
+        // 2. Termin-filter
         if (valgtTermin !== 'alle' && item.periode !== valgtTermin) return false;
+
+        // 3. Fag-filter (Sjekker om et spesifikt fag er valgt, f.eks "Lesing" eller "Regning")
+        if (valgtFag !== 'ALLE' && item.fag !== valgtFag) return false;
         
-        // Søkefilter (Søker på klasse, fag, trinn eller lærer)
+        // 4. Søkefilter (Søker på klasse, fag, trinn eller lærer)
         if (sokTekst) {
             const matchKlasse = item.klasseNavn.toLowerCase().includes(sokTekst);
             const matchLaerer = item.laererNavn.toLowerCase().includes(sokTekst);
