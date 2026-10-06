@@ -2191,114 +2191,105 @@ function sendMeldingTilAdmin() {
 }
 
 // --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
-function behandleKlasseData(aar, fag, periode, trinn, klasse, eleverObjekt, statuser, alleLogger) {
-    let resultat = { htmlTotal: "", htmlIkkeFerdig: "", harApne: false };
+function behandleKlasseData(aar, fag, periode, trinn, klasseNavn, klasseData, statuser, alleLogger) {
+    // klasseData kan inneholde enten en elevliste, et 'ferdigstilt'-flagg eller ligge i undernoder
+    // Sjekk om det finnes elever registrert i klassen
+    const elever = klasseData.elever || klasseData.eleverData || (Array.isArray(klasseData) ? klasseData : null);
     
-    let fulltKlasseNavn = klasse;
-    if (trinn && !klasse.includes(trinn)) {
-        fulltKlasseNavn = trinn + klasse;
+    // Hvis objektet er strukturert med elevnavn som nøkler:
+    let elevNøkler = [];
+    if (elever) {
+        elevNøkler = Array.isArray(elever) ? elever : Object.keys(elever);
+    } else if (typeof klasseData === 'object' && klasseData !== null) {
+        // Filtrer ut metadatanøkler som 'ferdigstilt', 'oppdatert', etc.
+        elevNøkler = Object.keys(klasseData).filter(k => !['ferdigstilt', 'status', 'sistOppdatert', 'laerer'].includes(k));
     }
 
-// Henter kun det 4-sifrede startåret (f.eks. "2026" fra "2026-2027")
-const rentAar = aar.toString().substring(0, 4);
-const totaltAntallElever = hentAntallEleverIRegister(fulltKlasseNavn.trim().toUpperCase(), rentAar);
-    if (!eleverObjekt) return resultat; 
-
-    let antallGjennomfoert = 0;
-    let sumOppnaaddPoeng = 0;
-    let maksMuligPoengForKlassen = 0;
-
-    let infoFraOppsett = oppgaveStruktur[aar]?.[fag]?.[periode]?.[trinn];
-    let korrektMaksPoengPerElev = 30; 
-
-    if (infoFraOppsett && infoFraOppsett.oppgaver) {
-        korrektMaksPoengPerElev = infoFraOppsett.oppgaver.reduce((acc, oppg) => acc + (oppg.maks || 0), 0);
+    // 1. KRITERIUM: Er det ingen elever i listen? Hopp over hele klassen!
+    if (elevNøkler.length === 0) {
+        return null; // Telles ikke med
     }
 
-    Object.entries(eleverObjekt).forEach(([id, node]) => {
-        if (id === "laast" || id === "ferdigstilt" || typeof node !== 'object') return;
-        let råPoeng = node.sum;
-        const markertSomIkkeGjennomfoert = node.ikkeGjennomfort === true;
-        const harGyldigResultat = (råPoeng !== undefined && råPoeng !== null && råPoeng !== "" && !markertSomIkkeGjennomfoert);
+    // Tell hvor mange elever som faktisk har registrert minst én poengsum/svar
+    let antallRegistrert = 0;
+    const totalElever = elevNøkler.length;
 
-        if (harGyldigResultat) {
-            const p = parseFloat(råPoeng);
-            if (!isNaN(p)) {
-                antallGjennomfoert++;
-                sumOppnaaddPoeng += p;
-                maksMuligPoengForKlassen += korrektMaksPoengPerElev;
-            }
+    elevNøkler.forEach(key => {
+        const elev = elever ? elever[key] : klasseData[key];
+        if (elev && typeof elev === 'object') {
+            // Sjekk om elev har registrerte verdier (ikke bare et tomt objekt)
+            const harSvar = Object.keys(elev).some(k => elev[k] !== "" && elev[k] !== null && elev[k] !== undefined);
+            if (harSvar) antallRegistrert++;
         }
     });
 
-    let snittVisning = "0%"; 
-    if (maksMuligPoengForKlassen > 0) {
-        snittVisning = Math.round((sumOppnaaddPoeng / maksMuligPoengForKlassen) * 100) + "%";
+    // Sjekk om prøven eksplisitt er markert som 'ferdigstilt' i databasen
+    const erEksplisittFerdigstilt = klasseData.ferdigstilt === true || 
+                                    klasseData.status === "Ferdigstilt" || 
+                                    klasseData.status === "Ferdig";
+
+    // 2., 3. og 4. KRITERIUM: Bestem status
+    let statusTekst = "";
+    let statusKlasse = "";
+    let erFerdig = false;
+
+    if (erEksplisittFerdigstilt) {
+        statusTekst = "✅ Ferdig";
+        statusKlasse = "status-ferdig";
+        erFerdig = true;
+    } else if (antallRegistrert === 0) {
+        statusTekst = "❌ Ikke startet";
+        statusKlasse = "status-ikke-startet";
+        erFerdig = false;
+    } else {
+        statusTekst = "⚠️ Pågår";
+        statusKlasse = "status-pagaar";
+        erFerdig = false;
     }
 
-    // --- ENDRET: Henter alle lærere for denne klassen ---
-    const alleLaerere = (window.ansatteData && window.ansatteData[aar]) 
-        ? window.ansatteData[aar].filter(a => a.kontaktlaerer === fulltKlasseNavn.trim().toUpperCase() || a.kontaktlaerer === klasse)
-        : [];
+    const laererInfo = finnKontaktlaererForKlasse(klasseNavn, aar);
+    const prøveTittel = `${fag} - ${periode} ${aar}`;
 
-    const laererNavnVisning = alleLaerere.length > 0 
-        ? alleLaerere.map(l => l.navn).join(" / ") 
-        : "Ikke tildelt";
+    // Bygg HTML for 'Trenger oppfølging' (vises kun hvis IKKE ferdig)
+    let htmlIkkeFerdig = "";
+    if (!erFerdig) {
+        const loggNøkkel = `${aar}_${fag}_${periode}_${klasseNavn}`;
+        const harPurret = alleLogger && alleLogger[loggNøkkel];
+        const purrKnappHtml = harPurret 
+            ? `<span class="purret-badge">Purret</span>` 
+            : `<button class="btn-purr" onclick="purreLaerer('${laererInfo.epost}', '${klasseNavn}', '${prøveTittel}', '${loggNøkkel}')">Send påminnelse</button>`;
 
-    // MERK: Linjen "const laererEpost = ..." er fjernet fordi vi nå looper gjennom alleLaerere lenger nede
-
-    const statusObj = statuser[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
-    const erLaast = statusObj.laast || false;
-    const statusTekst = erLaast ? "<span style='color:green; font-weight:bold;'>✅ Ferdig</span>" : "<span style='color:red; font-weight:bold;'>⚠️ Pågår</span>";
-
-    // Bygg rad for hovedtabellen - Bruker nå laererNavnVisning
-    resultat.htmlTotal = `<tr>
-        <td style="text-align:left;">${fag} - ${periode} ${aar}</td>
-        <td><b>${fulltKlasseNavn}</b></td>
-        <td>${laererNavnVisning}</td>
-        <td>${antallGjennomfoert} / ${totaltAntallElever}</td>
-        <td style="font-weight:bold;">${snittVisning}</td>
-        <td>${statusTekst}</td>
-    </tr>`;
-
-    // Bygg rad for purrelisten hvis ikke ferdig
-    if (!erLaast) {
-        resultat.harApne = true;
-        const stisti = `${aar}/${fag}/${periode}/${trinn}/${klasse}`;
-        const proeveNavnFullt = `${fag} (${fulltKlasseNavn}) - ${periode} ${aar}`;
-        const sideUrl = window.location.origin + window.location.pathname;
-        const loggForDenne = alleLogger[aar]?.[fag]?.[periode]?.[trinn]?.[klasse] || {};
-        const loggHtml = Object.values(loggForDenne).length > 0 ? 
-            `<ul style="font-size:0.7em; color:gray; list-style:none; padding:0; margin:5px 0;">
-                ${Object.values(loggForDenne).map(tid => `<li>Sist sendt: ${tid}</li>`).join('')}
-            </ul>` : "";
-
-        let knapperHtml = "";
-        if (alleLaerere.length > 0) {
-            alleLaerere.forEach(l => {
-                if (l.epost) {
-                    knapperHtml += `
-                    <button onclick="sendEpostViaEmailJS('${l.navn}', '${l.epost}', '${proeveNavnFullt}', '${sideUrl}', '${stisti}')" 
-                            class="btn" style="background-color:#27ae60; color:white; border:none; padding:5px 8px; cursor:pointer; border-radius:4px; margin: 2px; font-size: 10px;">
-                        📧 Purr ${l.navn.split(' ')[0]}
-                    </button>`;
-                }
-            });
-        } else {
-            knapperHtml = "Mangler e-post";
-        }
-
-        resultat.htmlIkkeFerdig = `<tr>
-            <td style="text-align:left;"><b>${fag} (${fulltKlasseNavn})</b><br><small>${periode} ${aar}</small></td>
-            <td>${laererNavnVisning}</td>
-            <td style="text-align:center;">
-                ${knapperHtml}${loggHtml}
-            </td>
-        </tr>`;
+        htmlIkkeFerdig = `
+            <tr>
+                <td><strong>${fag} (${klasseNavn})</strong><br><small>${periode} ${aar}</small></td>
+                <td>${laererInfo.navn}</td>
+                <td>
+                    <span class="${statusKlasse}">${statusTekst}</span>
+                    <div style="margin-top:4px;">${purrKnappHtml}</div>
+                </td>
+            </tr>
+        `;
     }
 
-    return resultat;
+    // Bygg HTML for 'Fullstendig oversikt'
+    const htmlTotal = `
+        <tr>
+            <td>${prøveTittel}</td>
+            <td><strong>${klasseNavn}</strong></td>
+            <td>${laererInfo.navn}</td>
+            <td>${antallRegistrert} / ${totalElever}</td>
+            <td>-</td>
+            <td><span class="${statusKlasse}">${statusTekst}</span></td>
+        </tr>
+    `;
+
+    return {
+        harApne: !erFerdig,
+        htmlTotal: htmlTotal,
+        htmlIkkeFerdig: htmlIkkeFerdig
+    };
 }
+
 
 // --- HOVEDFUNKSJON FOR STATUS-MODAL
 let g_modalDataCache = []; // Cache for å slippe å hente fra Firebase hver gang man filtrerer
