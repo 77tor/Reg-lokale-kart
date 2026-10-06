@@ -2123,7 +2123,7 @@ function hentAntallEleverIRegister(klasseNavn, aar) {
 
 
 // --- EMAILJS - UT ---
-function sendEpostViaEmailJS(laererNavn, laererEpost, proeveNavn, sideUrl, stisti) {
+function sendEpostViaEmailJS(laererNavn, laererEpost, proeveNavn, sideUrl, stisti, purreNummer = 1) {
     const params = {
         laererNavn: laererNavn,
         laererEpost: laererEpost,
@@ -2134,13 +2134,20 @@ function sendEpostViaEmailJS(laererNavn, laererEpost, proeveNavn, sideUrl, stist
     emailjs.send("service_paj6cqb", "template_2foprtm", params)
         .then(() => {
             const nå = new Date();
+            const dag = String(nå.getDate()).padStart(2, '0');
+            const maaned = String(nå.getMonth() + 1).padStart(2, '0');
+            const datoKort = `${dag}.${maaned}`; // Genererer f.eks. "06.10"
+
             const tidsstempel = nå.toLocaleString('no-NO', { 
                 day: '2-digit', month: '2-digit', year: 'numeric', 
                 hour: '2-digit', minute: '2-digit' 
             });
 
-            // Lagrer purreobjektet under stisti (f.eks: '2024-2025_Lesing_Høst_1A')
+            // Lagrer purreobjektet med NØDVENDIGE felter for datolapp og 2. purring
             db.ref('purrelogg/' + stisti).set({
+                antall: purreNummer,       // VIKTIG: Gjør at 2. purring fungerer!
+                dato: datoKort,            // VIKTIG: Viser datolappen (f.eks. 06.10)!
+                tidspunkt: nå.toISOString(),
                 sendtDato: tidsstempel,
                 mottakerEpost: laererEpost,
                 mottakerNavn: laererNavn,
@@ -2149,8 +2156,10 @@ function sendEpostViaEmailJS(laererNavn, laererEpost, proeveNavn, sideUrl, stist
 
             alert("✅ E-post sendt til " + laererEpost + "!\nLoggen er oppdatert.");
             
-            // Oppdaterer tabellen og modalen med en gang slik at 'Purret'-badgen dukker opp
-            henteOgByggData(); 
+            // Oppdaterer tabellen og modalen med en gang
+            if (typeof henteOgByggData === 'function') {
+                henteOgByggData(); 
+            }
         })
         .catch((err) => {
             console.error("EmailJS Feil:", err);
@@ -2213,7 +2222,6 @@ function sendMeldingTilAdmin() {
 }
 
 // ---  STATUS-MODAL
-
 async function purreLaerer(epost, klasse, fag, periode, aar, loggNøkkel, purreNummer = 1) {
     if (!epost || epost === '' || epost === 'undefined' || epost === 'null') {
         alert("❌ Fant ingen gyldig e-postadresse registrert på kontaktlærer for " + klasse);
@@ -2224,7 +2232,7 @@ async function purreLaerer(epost, klasse, fag, periode, aar, loggNøkkel, purreN
     const laererInfo = finnKontaktlaererForKlasse(klasse, aar);
     const laererNavn = laererInfo.navn !== "Ikke tildelt" ? laererInfo.navn : "Kontaktlærer";
     const proeveNavn = `${fag} (${klasse}) - ${periode} ${aar}`;
-    const sideUrl = window.location.href; // Lenke til siden der prøven tas/føres
+    const sideUrl = window.location.href;
 
     // Tilpass bekreftelsestekst basert på om det er 1. eller 2. purring
     const tekstPurring = purreNummer === 2 ? "2. påminnelse" : "påminnelse";
@@ -2241,22 +2249,26 @@ async function purreLaerer(epost, klasse, fag, periode, aar, loggNøkkel, purreN
         antall: purreNummer,
         dato: datoFormatert,
         tidspunkt: na.toISOString(),
+        sendtDato: na.toLocaleString('no-NO'),
+        mottakerNavn: laererNavn,
+        mottakerEpost: epost,
+        proeve: proeveNavn,
         sendtAv: firebase.auth().currentUser?.email || 'Admin'
     };
 
     try {
-        // 1. Lagre purreloggen i Firebase
-        await firebase.database().ref(`purreLogger/${loggNøkkel}`).set(nyLoggPost);
+        // 1. Lagre purreloggen i Firebase (Rettet til 'purrelogg')
+        await firebase.database().ref(`purrelogg/${loggNøkkel}`).set(nyLoggPost);
 
         // 2. Oppdater lokal minne-kopi dersom 'alleLogger' er definert globalt
         if (typeof alleLogger !== 'undefined') {
             alleLogger[loggNøkkel] = nyLoggPost;
         }
 
-        // 3. Send e-post via din eksisterende EmailJS-funksjon
+        // 3. Send e-post via EmailJS
         sendEpostViaEmailJS(laererNavn, epost, proeveNavn, sideUrl, loggNøkkel, purreNummer);
 
-        // 4. Oppdater visningen i modalen umiddelbart
+        // 4. Oppdater visningen umiddelbart
         if (typeof oppdaterGjennomforingOversikt === 'function') {
             oppdaterGjennomforingOversikt();
         }
@@ -2266,6 +2278,7 @@ async function purreLaerer(epost, klasse, fag, periode, aar, loggNøkkel, purreN
         alert("Kunne ikke lagre purringen i databasen: " + err.message);
     }
 }
+
 
 
 // --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
@@ -2376,15 +2389,15 @@ console.log(`Klasse: ${fulltKlassenavn}, Data:`, klasseData);
         let antallPurringer = 0;
         let sisteDatoTekst = "";
 
-        if (loggData) {
-            if (typeof loggData === 'object') {
-                antallPurringer = loggData.antall || (loggData.tidspunkt || loggData.dato ? 1 : 0);
-                if (loggData.dato) {
-                    sisteDatoTekst = loggData.dato;
-                } else if (loggData.tidspunkt) {
-                    const d = new Date(loggData.tidspunkt);
-                    sisteDatoTekst = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
-                }
+if (loggData.dato) {
+    sisteDatoTekst = loggData.dato;
+} else if (loggData.sendtDato) {
+    // Henter ut bare dato-delen "DD.MM" fra f.eks. "06.10.2026, 14:04"
+    sisteDatoTekst = loggData.sendtDato.split(',')[0].substring(0, 5); 
+} else if (loggData.tidspunkt) {
+    const d = new Date(loggData.tidspunkt);
+    sisteDatoTekst = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
             } else {
                 // Håndterer eldste format dersom loggData kun var boolean (true/false)
                 antallPurringer = loggData === true ? 1 : 0;
