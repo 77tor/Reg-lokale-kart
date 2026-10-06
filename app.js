@@ -2235,6 +2235,7 @@ async function purreLaerer(epost, klasse, fag, periode, aar, loggNøkkel) {
 }
 
 // --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
+// --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
 function behandleKlasseData(aar, fag, periode, fulltKlassenavn, klasseData, alleLogger) {
     // 1. FINN ELEVER
     const elever = klasseData?.elever || klasseData?.eleverData || null;
@@ -2248,30 +2249,54 @@ function behandleKlasseData(aar, fag, periode, fulltKlassenavn, klasseData, alle
         );
     }
 
-    // 2. TELL REGISTRERTE SVAR & TOTALT I REGISTERET
+    // 2. TELL REGISTRERTE SVAR & TOTALT (EKSKLUDER SLETTEDE OG "IKKE GJENNOMFØRT")
     let antallRegistrert = 0;
-    
-    // Hent antall aktive elever i elevregisteret for denne klassen
-    const totaltIElevregister = hentAntallEleverIRegister(fulltKlassenavn, aar);
+    let antallAktiveIData = 0; // Brukes som fallback dersom elevregisteret mangler
 
     elevNøkler.forEach(key => {
         const elev = elever ? elever[key] : klasseData[key];
+        
         if (elev && typeof elev === 'object') {
-            const harSvar = Object.values(elev).some(v => v !== "" && v !== null && v !== undefined);
-            if (harSvar) antallRegistrert++;
+            // A. Sjekk om eleven er merket som slettet i Firebase
+            const erSlettet = elev.slettet === true || 
+                              elev.status === "slettet" || 
+                              elev.isDeleted === true ||
+                              (elev.navn && String(elev.navn).toLowerCase().includes("slettet"));
+
+            if (erSlettet) return; // Hopp over slettede elever fullstendig
+
+            antallAktiveIData++; // Dette er en gyldig, aktiv elev
+
+            // B. Sjekk om eleven står som "Ikke gjennomført"
+            const erIkkeGjennomført = elev.status === "Ikke gjennomført" || 
+                                     elev.ikkeGjennomfort === true ||
+                                     elev.svar === "Ikke gjennomført";
+
+            // C. Sjekk om det finnes faktiske svar/poeng
+            const harSvar = Object.values(elev).some(v => v !== "" && v !== null && v !== undefined && v !== "Ikke gjennomført");
+
+            // Tell kun med dersom eleven HAR svar OG IKKE er satt til "Ikke gjennomført"
+            if (harSvar && !erIkkeGjennomført) {
+                antallRegistrert++;
+            }
         }
     });
 
+    // 3. BESTEM TOTALT ANTALL ELEVER
+    const totaltIElevregister = hentAntallEleverIRegister(fulltKlassenavn, aar);
+    // Bruker elevregisteret hvis det finnes (>0), ellers antall aktuelt funnet i Firebase (som ikke er slettet)
+    const totaltAntall = totaltIElevregister > 0 ? totaltIElevregister : antallAktiveIData;
+
+    // 4. BESTEM STATUS OG FERDIGSTILLING
     const erEksplisittFerdigstilt = klasseData?.ferdigstilt === true || 
                                     klasseData?.status === "Ferdigstilt" || 
                                     klasseData?.status === "Ferdig";
 
-    // Bestem om hele klassen er ferdig
-    const totaltAntall = totaltIElevregister > 0 ? totaltIElevregister : elevNøkler.length;
     let statusTekst = "";
     let statusKlasse = "";
     let erFerdig = false;
 
+    // Viktig: Sjekker at antallRegistrert faktiske når totaltAntall (og at totaltAntall > 0)
     if (erEksplisittFerdigstilt || (totaltAntall > 0 && antallRegistrert >= totaltAntall)) {
         statusTekst = "✅ Ferdig";
         statusKlasse = "status-ferdig";
@@ -2296,7 +2321,6 @@ function behandleKlasseData(aar, fag, periode, fulltKlassenavn, klasseData, alle
         const loggNøkkel = `${aar}_${fag}_${periode}_${fulltKlassenavn}`;
         const harPurret = alleLogger && alleLogger[loggNøkkel];
 
-        // HER ER ENDRINGEN: Send fag, periode, aar og loggNøkkel som egne parametere
         const purrKnappHtml = harPurret 
             ? `<span class="purret-badge">Purret</span>` 
             : `<button class="btn-purr" onclick="purreLaerer('${laererInfo.epost}', '${fulltKlassenavn}', '${fag}', '${periode}', '${aar}', '${loggNøkkel}')">Send påminnelse</button>`;
