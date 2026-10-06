@@ -2280,6 +2280,7 @@ async function purreLaerer(epost, klasse, fag, periode, aar, loggNøkkel, purreN
 
 
 // --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
+// --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
 function behandleKlasseData(aar, fag, periode, fulltKlassenavn, klasseData, alleLogger) {
     // 1. FINN ELEVER
     const elever = klasseData?.elever || klasseData?.eleverData || null;
@@ -2382,7 +2383,7 @@ function behandleKlasseData(aar, fag, periode, fulltKlassenavn, klasseData, alle
         const loggNøkkel = `${aar}_${fag}_${periode}_${fulltKlassenavn}`;
         const loggData = alleLogger && alleLogger[loggNøkkel];
 
-        // Les ut antall purringer og seneste dato (med støtte for eldre purre-logger)
+        // Les ut antall purringer og seneste dato
         let antallPurringer = 0;
         let sisteDatoTekst = "";
 
@@ -2393,11 +2394,11 @@ function behandleKlasseData(aar, fag, periode, fulltKlassenavn, klasseData, alle
                 if (loggData.dato) {
                     sisteDatoTekst = loggData.dato;
                 } else if (loggData.sendtDato) {
-                    // Henter ut bare dato-delen "DD.MM" fra f.eks. "06.10.2026, 14:04"
-                    sisteDatoTekst = loggData.sendtDato.split(',')[0].substring(0, 5); 
+                    // Henter ut hele dato-delen "DD.MM.YYYY" (f.eks. "06.10.2026" fra "06.10.2026, 14:04")
+                    sisteDatoTekst = loggData.sendtDato.split(',')[0].trim(); 
                 } else if (loggData.tidspunkt) {
                     const d = new Date(loggData.tidspunkt);
-                    sisteDatoTekst = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    sisteDatoTekst = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
                 }
             } else {
                 // Håndterer eldste format dersom loggData kun var boolean (true/false)
@@ -2411,7 +2412,7 @@ function behandleKlasseData(aar, fag, periode, fulltKlassenavn, klasseData, alle
         if (antallPurringer === 0) {
             purrKnappHtml = `<button class="btn-purr" onclick="purreLaerer('${laererInfo.epost}', '${fulltKlassenavn}', '${fag}', '${periode}', '${aar}', '${loggNøkkel}', 1)">Send påminnelse</button>`;
         } 
-        // 2. Purret 1 gang -> Viser dato + knapp for 2. purring
+        // 2. Purret 1 gang -> Viser dato (med årstal) + knapp for 2. purring
         else if (antallPurringer === 1) {
             const datoVisning = sisteDatoTekst ? ` (${sisteDatoTekst})` : '';
             purrKnappHtml = `
@@ -2457,6 +2458,9 @@ function behandleKlasseData(aar, fag, periode, fulltKlassenavn, klasseData, alle
 
     return { erFerdig, htmlTotal, htmlIkkeFerdig };
 }
+
+
+
 
 // --- HOVEDFUNKSJON FOR STATUS-MODAL
 let g_modalDataCache = []; // Cache for å slippe å hente fra Firebase hver gang man filtrerer
