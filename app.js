@@ -2300,49 +2300,7 @@ const totaltAntallElever = hentAntallEleverIRegister(fulltKlasseNavn.trim().toUp
     return resultat;
 }
 
-// --- HOVEDFUNKSJON FOR MODAL ---
-let g_modalDataCache = []; // Cache for å slippe å hente fra Firebase hver gang man filtrerer
-let g_aktivFane = 'uferdig';
-
-// --- ÅPNE MODAL ---
-async function aapneGjennomfoeringModal() {
-    console.log("Åpner gjennomføringsmodal...");
-    const modal = document.getElementById('modalGjennomfoering');
-    if (modal) {
-        modal.style.display = 'flex';
-        await henteOgByggData();
-    } else {
-        console.error("Fant ikke modalGjennomfoering i HTML");
-    }
-}
-
-// --- FANE-BYTTE ---
-function byttFaneModal(fane) {
-    g_aktivFane = fane;
-    const btnUferdig = document.getElementById('tabBtnUferdig');
-    const btnTotal = document.getElementById('tabBtnTotal');
-    const divUferdig = document.getElementById('faneUferdigContent');
-    const divTotal = document.getElementById('faneTotalContent');
-
-    if (fane === 'uferdig') {
-        btnUferdig.style.borderBottomColor = '#ef4444';
-        btnUferdig.style.color = '#ef4444';
-        btnTotal.style.borderBottomColor = 'transparent';
-        btnTotal.style.color = '#64748b';
-        divUferdig.style.display = 'block';
-        divTotal.style.display = 'none';
-    } else {
-        btnTotal.style.borderBottomColor = '#2563eb';
-        btnTotal.style.color = '#2563eb';
-        btnUferdig.style.borderBottomColor = 'transparent';
-        btnUferdig.style.color = '#64748b';
-        divTotal.style.display = 'block';
-        divUferdig.style.display = 'none';
-    }
-}
-
 // --- HOVEDFUNKSJON FOR STATUS-MODAL
-// --- HOVEDFUNKSJON FOR MODAL ---
 let g_modalDataCache = []; // Cache for å slippe å hente fra Firebase hver gang man filtrerer
 let g_aktivFane = 'uferdig';
 
