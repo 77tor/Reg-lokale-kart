@@ -2214,24 +2214,57 @@ function sendMeldingTilAdmin() {
 
 // ---  STATUS-MODAL
 
-async function purreLaerer(epost, klasse, fag, periode, aar, loggNøkkel) {
+async function purreLaerer(epost, klasse, fag, periode, aar, loggNøkkel, purreNummer = 1) {
     if (!epost || epost === '' || epost === 'undefined' || epost === 'null') {
         alert("❌ Fant ingen gyldig e-postadresse registrert på kontaktlærer for " + klasse);
         return;
     }
 
-    // Finn lærerens navn og side-URL om du har det
+    // Finn lærerens navn og side-URL
     const laererInfo = finnKontaktlaererForKlasse(klasse, aar);
     const laererNavn = laererInfo.navn !== "Ikke tildelt" ? laererInfo.navn : "Kontaktlærer";
     const proeveNavn = `${fag} (${klasse}) - ${periode} ${aar}`;
     const sideUrl = window.location.href; // Lenke til siden der prøven tas/føres
 
-    // Bekreftelse før sending
-    const bekreft = confirm(`Vil du sende purre-e-post til ${laererNavn} (${epost}) angående ${proeveNavn}?`);
+    // Tilpass bekreftelsestekst basert på om det er 1. eller 2. purring
+    const tekstPurring = purreNummer === 2 ? "2. påminnelse" : "påminnelse";
+    const bekreft = confirm(`Vil du sende ${tekstPurring} til ${laererNavn} (${epost}) angående ${proeveNavn}?`);
     if (!bekreft) return;
 
-    // Send via EmailJS
-    sendEpostViaEmailJS(laererNavn, epost, proeveNavn, sideUrl, loggNøkkel);
+    // Generer dagens dato på formatet DD.MM (f.eks. 06.10)
+    const na = new Date();
+    const dag = String(na.getDate()).padStart(2, '0');
+    const maaned = String(na.getMonth() + 1).padStart(2, '0');
+    const datoFormatert = `${dag}.${maaned}`;
+
+    const nyLoggPost = {
+        antall: purreNummer,
+        dato: datoFormatert,
+        tidspunkt: na.toISOString(),
+        sendtAv: firebase.auth().currentUser?.email || 'Admin'
+    };
+
+    try {
+        // 1. Lagre purreloggen i Firebase
+        await firebase.database().ref(`purreLogger/${loggNøkkel}`).set(nyLoggPost);
+
+        // 2. Oppdater lokal minne-kopi dersom 'alleLogger' er definert globalt
+        if (typeof alleLogger !== 'undefined') {
+            alleLogger[loggNøkkel] = nyLoggPost;
+        }
+
+        // 3. Send e-post via din eksisterende EmailJS-funksjon
+        sendEpostViaEmailJS(laererNavn, epost, proeveNavn, sideUrl, loggNøkkel, purreNummer);
+
+        // 4. Oppdater visningen i modalen umiddelbart
+        if (typeof oppdaterGjennomforingOversikt === 'function') {
+            oppdaterGjennomforingOversikt();
+        }
+
+    } catch (err) {
+        console.error("Feil ved lagring/sending av purrelogg:", err);
+        alert("Kunne ikke lagre purringen i databasen: " + err.message);
+    }
 }
 
 
@@ -2333,15 +2366,56 @@ console.log(`Klasse: ${fulltKlassenavn}, Data:`, klasseData);
     const prøveTittel = `${fag} (${fulltKlassenavn})`;
     const snittTekst = klasseData?.snitt ? `${klasseData.snitt}%` : '-';
 
-    // HTML for "Trenger oppfølging"
+// HTML for "Trenger oppfølging"
     let htmlIkkeFerdig = "";
     if (!erFerdig) {
         const loggNøkkel = `${aar}_${fag}_${periode}_${fulltKlassenavn}`;
-        const harPurret = alleLogger && alleLogger[loggNøkkel];
+        const loggData = alleLogger && alleLogger[loggNøkkel];
 
-        const purrKnappHtml = harPurret 
-            ? `<span class="purret-badge">Purret</span>` 
-            : `<button class="btn-purr" onclick="purreLaerer('${laererInfo.epost}', '${fulltKlassenavn}', '${fag}', '${periode}', '${aar}', '${loggNøkkel}')">Send påminnelse</button>`;
+        // Les ut antall purringer og seneste dato (med støtte for eldre purre-logger)
+        let antallPurringer = 0;
+        let sisteDatoTekst = "";
+
+        if (loggData) {
+            if (typeof loggData === 'object') {
+                antallPurringer = loggData.antall || (loggData.tidspunkt || loggData.dato ? 1 : 0);
+                if (loggData.dato) {
+                    sisteDatoTekst = loggData.dato;
+                } else if (loggData.tidspunkt) {
+                    const d = new Date(loggData.tidspunkt);
+                    sisteDatoTekst = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+                }
+            } else {
+                // Håndterer eldste format dersom loggData kun var boolean (true/false)
+                antallPurringer = loggData === true ? 1 : 0;
+            }
+        }
+
+        let purrKnappHtml = "";
+
+        // 1. Ingen purring sendt ennå
+        if (antallPurringer === 0) {
+            purrKnappHtml = `<button class="btn-purr" onclick="purreLaerer('${laererInfo.epost}', '${fulltKlassenavn}', '${fag}', '${periode}', '${aar}', '${loggNøkkel}', 1)">Send påminnelse</button>`;
+        } 
+        // 2. Purret 1 gang -> Viser dato + knapp for 2. purring
+        else if (antallPurringer === 1) {
+            const datoVisning = sisteDatoTekst ? ` (${sisteDatoTekst})` : '';
+            purrKnappHtml = `
+                <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start; margin-top:4px;">
+                    <span class="purret-badge">Purret 1. gang${datoVisning}</span>
+                    <button class="btn-purr btn-purr-2" onclick="purreLaerer('${laererInfo.epost}', '${fulltKlassenavn}', '${fag}', '${periode}', '${aar}', '${loggNøkkel}', 2)">Send 2. påminnelse</button>
+                </div>
+            `;
+        } 
+        // 3. Purret 2 ganger -> Viser kun at det er sendt 2 ganger (maks)
+        else {
+            const datoVisning = sisteDatoTekst ? ` (${sisteDatoTekst})` : '';
+            purrKnappHtml = `
+                <div style="margin-top:4px;">
+                    <span class="purret-badge purret-badge-maks">Purret 2 ganger${datoVisning}</span>
+                </div>
+            `;
+        }
 
         htmlIkkeFerdig = `
             <tr>
@@ -2349,11 +2423,12 @@ console.log(`Klasse: ${fulltKlassenavn}, Data:`, klasseData);
                 <td>${laererInfo.navn}</td>
                 <td>
                     <span class="${statusKlasse}">${statusTekst}</span>
-                    <div style="margin-top:4px;">${purrKnappHtml}</div>
+                    ${purrKnappHtml}
                 </td>
             </tr>
         `;
     }
+
 
     // HTML for "Fullstendig oversikt"
     const htmlTotal = `
