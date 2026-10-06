@@ -2334,7 +2334,6 @@ function byttFaneModal(fane) {
 
 
 // --- HOVEDFUNKSJON FOR Å HENTE DATA EN GANG ---
-// --- HOVEDFUNKSJON FOR Å HENTE DATA EN GANG ---
 async function henteOgByggData() {
     const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
     if (ikkeFerdigDiv) {
@@ -2354,61 +2353,70 @@ async function henteOgByggData() {
         const statuser = statusSnapshot.val() || {};
         const kartlegging = kartleggingSnapshot.val() || {};
 
+        // Finn alle tilgjengelige skoleår
         const skoleaarSett = new Set();
+        for (let sa in statuser) skoleaarSett.add(sa);
+        for (let sa in kartlegging) skoleaarSett.add(sa);
+        if (typeof ansatteData !== 'undefined') {
+            for (let sa in ansatteData) skoleaarSett.add(sa);
+        }
 
-        // Les direkte ut fra statuser i Firebase (akkurat som den gamle modalen)
-        for (let aar in statuser) {
-            skoleaarSett.add(aar);
+        const fagListe = ["Lesing", "Regning"]; // Legg til eventuelle andre fag hvis aktuelt
 
-            for (let fag in statuser[aar]) {
-                for (let periode in statuser[aar][fag]) {
-                    for (let trinn in statuser[aar][fag][periode]) {
+        for (let aar of skoleaarSett) {
+            // Hent alle kontaktlærere/klasser som finnes på skolen for dette året
+            const alleKlasserForAar = hentAlleKlasserFraAnsatte(aar); // F.eks. ["1A", "1B", "2A", "2B", ..., "7C"]
+
+            for (let fag of fagListe) {
+                const fagsSpesifikkKartlegging = kartlegging[aar]?.[fag] || {};
+                const fagsSpesifikkStatus = statuser[aar]?.[fag] || {};
+
+                for (let periode of ["Høst", "Vår"]) {
+                    
+                    for (let klasseNavn of alleKlasserForAar) {
+                        // Utled trinn ut fra klassenavnet (f.eks. "1A" -> "1. Trinn" / "1")
+                        const trinnTall = klasseNavn.match(/\d+/)?.[0];
+                        if (!trinnTall) continue;
                         
-                        const klasserObjekt = statuser[aar][fag][periode][trinn] || {};
+                        const trinnNøkkel = `${trinnTall}. Trinn`;
+                        const renBokstav = klasseNavn.replace(/\d+/g, '').trim(); // "1B" -> "B"
 
-                        for (let klasseNavn in klasserObjekt) {
-                            
-                            // 1. Sjekk om klassen ligger under "1B" eller bare "B" i kartlegging-treet
-                            const trinnTall = trinn.replace(/\D/g, ''); // f.eks "1"
-                            let renBokstavKlasse = klasseNavn;
-                            if (trinnTall && klasseNavn.startsWith(trinnTall)) {
-                                renBokstavKlasse = klasseNavn.substring(trinnTall.length).trim(); // "1B" -> "B"
-                            }
+                        // Sjekk kartleggingsdata (sjekker både "1B" og "B")
+                        const kartleggingTrinn = fagsSpesifikkKartlegging[periode]?.[trinnNøkkel] || fagsSpesifikkKartlegging[periode]?.[`Trinn ${trinnTall}`] || {};
+                        const klasseData = kartleggingTrinn[klasseNavn] || kartleggingTrinn[renBokstav] || {};
 
-                            const kartleggingTrinn = kartlegging[aar]?.[fag]?.[periode]?.[trinn] || {};
-                            
-                            // Hent data enten fra "1B" eller "B"
-                            const klasseData = kartleggingTrinn[klasseNavn] || kartleggingTrinn[renBokstavKlasse] || {};
+                        // Sjekk statusdata
+                        const statusTrinn = fagsSpesifikkStatus[periode]?.[trinnNøkkel] || fagsSpesifikkStatus[periode]?.[`Trinn ${trinnTall}`] || {};
+                        const klasseStatusData = statusTrinn[klasseNavn] || statusTrinn[renBokstav] || {};
 
-                            // 2. Behandle dataene for klassen
-                            const res = behandleKlasseData(aar, fag, periode, trinn, klasseNavn, klasseData, statuser, alleLogger);
+                        // Kombiner dataene
+                        const samletKlasseData = { ...klasseStatusData, ...klasseData };
 
-                            if (res) {
-                                const laererInfo = finnKontaktlaererForKlasse(klasseNavn, aar);
+                        // Behandle og kategoriser status
+                        const res = behandleKlasseData(aar, fag, periode, trinnNøkkel, klasseNavn, samletKlasseData, statuser, alleLogger);
 
-                                g_modalDataCache.push({
-                                    aar,
-                                    fag,
-                                    periode,
-                                    trinn,
-                                    klasseNavn,
-                                    laererNavn: laererInfo.navn || 'Ikke tildelt',
-                                    laererEpost: laererInfo.epost || '',
-                                    erFerdig: !res.harApne,
-                                    htmlTotal: res.htmlTotal,
-                                    htmlIkkeFerdig: res.htmlIkkeFerdig
-                                });
-                            }
+                        if (res) {
+                            const laererInfo = finnKontaktlaererForKlasse(klasseNavn, aar);
+
+                            g_modalDataCache.push({
+                                aar,
+                                fag,
+                                periode,
+                                trinn: trinnNøkkel,
+                                klasseNavn,
+                                laererNavn: laererInfo.navn || 'Ikke tildelt',
+                                laererEpost: laererInfo.epost || '',
+                                erFerdig: !res.harApne,
+                                htmlTotal: res.htmlTotal,
+                                htmlIkkeFerdig: res.htmlIkkeFerdig
+                            });
                         }
                     }
                 }
             }
         }
 
-        // Fyll skoleår-dropdown med faktiske år fra databasen
         fyllSkoleaarDropdown(Array.from(skoleaarSett).sort().reverse());
-        
-        // Vis dataene i grensesnittet
         filtrerOgRendrerModalData();
 
     } catch (error) {
@@ -2417,6 +2425,22 @@ async function henteOgByggData() {
             ikkeFerdigDiv.innerHTML = `<p style='color:red; padding:20px;'>Feil: ${error.message}</p>`;
         }
     }
+}
+
+// Hjelpefunksjon for å hente ut alle unike klassenavn fra ansatteData for et gitt skoleår
+function hentAlleKlasserFraAnsatte(aar) {
+    if (typeof ansatteData === 'undefined') return [];
+    const rentAar = aar.toString().substring(0, 4);
+    const skoleaarKey = Object.keys(ansatteData).find(key => key.startsWith(rentAar));
+    if (!skoleaarKey) return [];
+
+    const unikeKlasser = new Set();
+    ansatteData[skoleaarKey].forEach(a => {
+        if (a.kontaktlaerer && a.kontaktlaerer.trim() !== "") {
+            unikeKlasser.add(a.kontaktlaerer.trim());
+        }
+    });
+    return Array.from(unikeKlasser).sort();
 }
 
 // Henter alle gyldige klassenavn for et gitt skoleår fra ansatteData
