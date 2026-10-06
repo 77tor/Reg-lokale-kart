@@ -2288,36 +2288,42 @@ function behandleKlasseData(aar, fag, periode, fulltKlassenavn, klasseData, alle
     const totaltAntall = totaltIElevregister > 0 ? totaltIElevregister : antallAktiveIData;
 
 
-
+console.log(`Klasse: ${fulltKlassenavn}, Data:`, klasseData);
 // 4. BESTEM STATUS OG FERDIGSTILLING
+    // Sjekker alle mulige felter der "ferdigstilt" eller "status" kan ligge i Firebase
+    const statusVerdi = String(klasseData?.status || klasseData?.ferdigstilt || "").toLowerCase();
+    
     const erEksplisittFerdigstilt = klasseData?.ferdigstilt === true || 
-                                    klasseData?.status === "Ferdigstilt" || 
-                                    klasseData?.status === "Ferdig" ||
-                                    klasseData?.status === "ferdigstilt";
+                                    klasseData?.ferdigstilt === "true" ||
+                                    klasseData?.isFinished === true ||
+                                    statusVerdi === "ferdigstilt" || 
+                                    statusVerdi === "ferdig" ||
+                                    statusVerdi === "fullført" ||
+                                    statusVerdi === "låst";
 
     let statusTekst = "";
     let statusKlasse = "";
     let erFerdig = false;
 
-    // A. Manuell overstyring / Knappen "🔒 Ferdigstilt!" har FØRSTEPRIORITET
+    // A. FØRSTEPRIORITET: Om læreren har trykket "🔒 Ferdigstilt!" / Låst prøven
     if (erEksplisittFerdigstilt) {
         statusTekst = "✅ Ferdig";
         statusKlasse = "status-ferdig";
         erFerdig = true;
     } 
-    // B. Automatisk fullført dersom alle aktive elever har registrert svar
+    // B. Om antall registreringer har nådd eller oversteget totalt antall
     else if (totaltAntall > 0 && antallRegistrert >= totaltAntall) {
         statusTekst = "✅ Ferdig";
         statusKlasse = "status-ferdig";
         erFerdig = true;
     } 
-    // C. Ingen svar registrert ennå
+    // C. Om absolut ingen er registrert ennå
     else if (antallRegistrert === 0) {
         statusTekst = "❌ Ikke startet";
         statusKlasse = "status-ikke-startet";
         erFerdig = false;
     } 
-    // D. Noen har svar, men ikke alle
+    // D. Noen er registrert, men prøven er ikke ferdigstilt ennå
     else {
         statusTekst = "⚠️ Pågår";
         statusKlasse = "status-pagaar";
