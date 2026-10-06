@@ -2383,38 +2383,39 @@ async function henteOgByggData() {
                         // Finn klassene som tilhører dette trinnet
                         const klasserForDetteTrinnet = finnKlasserForTrinn(trinn, alleGyldigeKlasser, Object.keys(statusKlasser));
 
-                        for (let klasseNavn of klasserForDetteTrinnet) {
-                            
-                            // NØKKEL-SJEKK: Finnes det NOEN registrerings-data på denne klassen under denne spesifikke prøven?
-                            const harStatusIStatusTre = Object.prototype.hasOwnProperty.call(statusKlasser, klasseNavn);
-                            const harStatusIKartleggingTre = Boolean(kartleggingKlasser[klasseNavn]);
+for (let klasseNavn of klasserForDetteTrinnet) {
+    // Sjekk om det finnes noe data på denne klassen
+    const klasseStatusData = statusKlasser[klasseNavn];
+    const klasseKartleggingData = kartleggingKlasser[klasseNavn];
 
-                            const klasseData = kartleggingKlasser[klasseNavn] || {};
-                            const laererInfo = finnKontaktlaererForKlasse(klasseNavn, aar);
+    const harStartet = Boolean(klasseStatusData || klasseKartleggingData);
 
-                            let res = null;
+    const klasseData = klasseKartleggingData || {};
+    const laererInfo = finnKontaktlaererForKlasse(klasseNavn, aar);
 
-                            if (harStatusIStatusTre || harStatusIKartleggingTre) {
-                                // Klassen har startet eller fullført prøven
-                                res = behandleKlasseData(aar, fag, periode, trinn, klasseNavn, klasseData, statuser, alleLogger);
-                            } else {
-                                // Klassen finnes kun i klasselisten (ansatteData) og HAR IKKE startet på prøven
-                                res = lagTomKlasseDataResultat(aar, fag, periode, trinn, klasseNavn, laererInfo);
-                            }
+    let res = null;
 
-                            if (res) {
-                                g_modalDataCache.push({
-                                    aar,
-                                    fag,
-                                    periode,
-                                    trinn,
-                                    klasseNavn,
-                                    laererNavn: laererInfo.navn || 'Ikke tildelt',
-                                    laererEpost: laererInfo.epost || '',
-                                    erFerdig: !res.harApne,
-                                    htmlTotal: res.htmlTotal,
-                                    htmlIkkeFerdig: res.htmlIkkeFerdig
-                                });
+    if (harStartet) {
+        // Klassen har registrert data i enten status eller kartlegging
+        res = behandleKlasseData(aar, fag, periode, trinn, klasseNavn, klasseData, statuser, alleLogger);
+    } else {
+        // Klassen har INGEN registreringer ennå
+        res = lagTomKlasseDataResultat(aar, fag, periode, trinn, klasseNavn, laererInfo);
+    }
+
+    if (res) {
+        g_modalDataCache.push({
+            aar,
+            fag,
+            periode,
+            trinn,
+            klasseNavn,
+            laererNavn: laererInfo.navn || 'Ikke tildelt',
+            laererEpost: laererInfo.epost || '',
+            erFerdig: !res.harApne,
+            htmlTotal: res.htmlTotal,
+            htmlIkkeFerdig: res.htmlIkkeFerdig
+        });
                             }
                         }
                     }
@@ -2471,17 +2472,22 @@ function finnKlasserForTrinn(trinn, alleGyldigeKlasser, eksisterendeKlasserIStat
 
 // Genererer rad-HTML for klasser som ikke er startet på en gang
 function lagTomKlasseDataResultat(aar, fag, periode, trinn, klasseNavn, laererInfo) {
-    const proveTittel = `${fag} (${periode} - ${trinn})`;
-    const epostLenke = laererInfo.epost ? `<a href="mailto:${laererInfo.epost}?subject=Mangler%20registrering%20for%20${encodeURIComponent(proveTittel)}" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Send påminnelse</a>` : 'Ingen e-post';
+    // Formater tittel på samme måte som påstartede prøver: "Lesing (1A)"
+    const proveTittel = `${fag} (${klasseNavn})`;
+    const undertittel = `${periode} ${aar}`;
+    
+    const epostLenke = laererInfo.epost 
+        ? `<a href="mailto:${laererInfo.epost}?subject=Mangler%20registrering%20for%20${encodeURIComponent(proveTittel)}" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Send påminnelse</a>` 
+        : 'Ingen e-post';
 
     const htmlIkkeFerdig = `
         <tr>
             <td style="padding:10px; border-bottom:1px solid #e2e8f0;">
-                <strong>${fag}</strong> - ${trinn} (${periode})
+                <strong>${proveTittel}</strong><br>
+                <small style="color:#64748b;">${undertittel}</small>
             </td>
             <td style="padding:10px; border-bottom:1px solid #e2e8f0;">
-                <strong>${klasseNavn}</strong><br>
-                <small style="color:#64748b;">${laererInfo.navn}</small>
+                ${laererInfo.navn || 'Ikke tildelt'}
             </td>
             <td style="padding:10px; border-bottom:1px solid #e2e8f0;">
                 <span style="display:inline-block; padding:3px 8px; background:#fee2e2; color:#dc2626; border-radius:4px; font-size:0.8rem; font-weight:bold; margin-bottom:4px;">
@@ -2493,7 +2499,7 @@ function lagTomKlasseDataResultat(aar, fag, periode, trinn, klasseNavn, laererIn
 
     const htmlTotal = `
         <tr>
-            <td style="padding:10px; border-bottom:1px solid #e2e8f0;"><strong>${fag}</strong> (${periode})</td>
+            <td style="padding:10px; border-bottom:1px solid #e2e8f0;"><strong>${proveTittel}</strong></td>
             <td style="padding:10px; border-bottom:1px solid #e2e8f0;">${klasseNavn}</td>
             <td style="padding:10px; border-bottom:1px solid #e2e8f0;">${laererInfo.navn}</td>
             <td style="padding:10px; border-bottom:1px solid #e2e8f0;">0%</td>
@@ -2504,7 +2510,7 @@ function lagTomKlasseDataResultat(aar, fag, periode, trinn, klasseNavn, laererIn
         </tr>`;
 
     return {
-        harApne: true, // Markeres som uferdig slik at den vises under "Trenger oppfølging"
+        harApne: true,
         htmlIkkeFerdig,
         htmlTotal
     };
