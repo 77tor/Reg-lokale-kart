@@ -2343,6 +2343,7 @@ function byttFaneModal(fane) {
 
 
 // --- HOVEDFUNKSJON FOR Å HENTE DATA EN GANG ---
+// --- HOVEDFUNKSJON FOR Å HENTE DATA EN GANG ---
 async function henteOgByggData() {
     const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
     if (ikkeFerdigDiv) {
@@ -2368,6 +2369,9 @@ async function henteOgByggData() {
             for (let sa in ansatteData) skoleaarSett.add(sa);
         }
 
+        // Sett for å garantere at UNIK (aar + fag + klasseNavn + periode) kun legges inn ÉN gang
+        const behandledeKombinasjoner = new Set();
+
         for (let aar of skoleaarSett) {
             const alleGyldigeKlasser = hentGyldigeKlasserForSkoleaar(aar);
             const fagLister = statuser[aar] || {};
@@ -2382,20 +2386,20 @@ async function henteOgByggData() {
 
                         for (let klasseNavn of klasserForDetteTrinnet) {
                             
-                            // 1. UNNGÅ DUPLIKAT: Sjekk om denne klasseNavn + fag + aar allerede er lagt i cachen
-                            const alleredeLagtTil = g_modalDataCache.some(
-                                item => item.aar === aar && item.fag === fag && item.klasseNavn === klasseNavn
-                            );
-                            if (alleredeLagtTil) continue;
-
-                            // 2. FINN VARIANTENE AV KLASSENAVN (f.eks "1B" vs "B")
-                            const trinnTall = trinn.replace(/\D/g, ''); // f.eks "1" fra "1. Trinn"
-                            let renBokstavKlasse = klasseNavn;
-                            if (trinnTall && klasseNavn.startsWith(trinnTall)) {
-                                renBokstavKlasse = klasseNavn.substring(trinnTall.length).trim(); // "1B" -> "B"
+                            // UNIK NØKKEL: Stopper absolutt alle duplikater
+                            const unikNokkel = `${aar}_${fag}_${periode}_${klasseNavn}`;
+                            if (behandledeKombinasjoner.has(unikNokkel)) {
+                                continue; // Hopp over hvis denne klassen og prøven allerede er lagt til!
                             }
 
-                            // 3. SØK I KARTLEGGINGS-TREET ETTER ENTEN "1B" ELLER "B"
+                            // Finn variantene av klassenavnet (f.eks "1B" vs "B")
+                            const trinnTall = trinn.replace(/\D/g, ''); 
+                            let renBokstavKlasse = klasseNavn;
+                            if (trinnTall && klasseNavn.startsWith(trinnTall)) {
+                                renBokstavKlasse = klasseNavn.substring(trinnTall.length).trim();
+                            }
+
+                            // Søk i kartlegging
                             let funnetKlasseData = null;
                             let funnetPeriode = periode;
                             let funnetTrinn = trinn;
@@ -2406,7 +2410,6 @@ async function henteOgByggData() {
                                     const tTre = kartleggingFag[pKey][tKey];
                                     if (!tTre) continue;
 
-                                    // Sjekk om data finnes enten som "1B" eller "B"
                                     if (tTre[klasseNavn]) {
                                         funnetKlasseData = tTre[klasseNavn];
                                         funnetNokkel = klasseNavn;
@@ -2428,14 +2431,15 @@ async function henteOgByggData() {
                             let res = null;
 
                             if (funnetKlasseData) {
-                                // Klassen HAR registrering i databasen
                                 res = behandleKlasseData(aar, fag, funnetPeriode, funnetTrinn, funnetNokkel, funnetKlasseData, statuser, alleLogger);
                             } else {
-                                // Klassen har IKKE registrering ennå
                                 res = lagTomKlasseDataResultat(aar, fag, periode, trinn, klasseNavn, laererInfo);
                             }
 
                             if (res) {
+                                // Registrer at denne kombinasjonen nå er behandlet
+                                behandledeKombinasjoner.add(unikNokkel);
+
                                 g_modalDataCache.push({
                                     aar,
                                     fag,
@@ -2465,7 +2469,6 @@ async function henteOgByggData() {
         }
     }
 }
-
 
 // Henter alle gyldige klassenavn for et gitt skoleår fra ansatteData
 function hentGyldigeKlasserForSkoleaar(aar) {
