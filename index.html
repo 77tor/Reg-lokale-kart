@@ -956,24 +956,71 @@ svg {
 
 
 <div id="modalGjennomfoering" class="modal no-print" style="display:none; position:fixed; z-index:2200; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); align-items:center; justify-content:center;">
-    <div class="modal-content" style="background:white; padding:25px; width: 95%; max-width: 1200px; max-height: 90vh; display:flex; flex-direction:column; border-radius:12px;">
+    <div class="modal-content" style="background:#f8f9fa; padding:25px; width: 95%; max-width: 1200px; max-height: 90vh; display:flex; flex-direction:column; border-radius:12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
         
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c3e50; padding-bottom: 10px; margin-bottom: 15px;">
-            <h2 style="color: #2c3e50; margin: 0;">📋 Status på gjennomføring</h2>
-            <button class="btn-fjern" style="background: #95a5a6; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer;" onclick="document.getElementById('modalGjennomfoering').style.display='none'">Lukk</button>
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 15px;">
+            <div>
+                <h2 style="color: #1e293b; margin: 0; font-size: 1.5rem;">📋 Status på gjennomføring</h2>
+                <span style="font-size: 0.875rem; color: #64748b;">Oversikt over kartleggingsprøver og kontaktlærere</span>
+            </div>
+            <button class="btn-fjern" style="background: #e2e8f0; color: #475569; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight:600;" onclick="document.getElementById('modalGjennomfoering').style.display='none'">Lukk</button>
         </div>
 
-        <div style="overflow-y: auto; flex-grow: 1; padding-right: 10px;">
-            <h4 style="color: #e67e22;">⚠️ Ikke ferdigstilte prøver</h4>
-            <div id="ikkeFerdigstilteListe" style="margin-bottom: 30px;">
-                </div>
+        <!-- Filter-seksjon -->
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e2e8f0;">
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <label style="font-size:0.75rem; font-weight:bold; color:#475569;">Skoleår:</label>
+                <select id="filterSkoleaar" onchange="filtrerOgRendrerModalData()" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1;"></select>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <label style="font-size:0.75rem; font-weight:bold; color:#475569;">Termin:</label>
+                <select id="filterTermin" onchange="filtrerOgRendrerModalData()" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                    <option value="alle">Alle (Høst + Vår)</option>
+                    <option value="Høst">Høst</option>
+                    <option value="Vår">Vår</option>
+                </select>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px; flex-grow:1; min-width: 180px;">
+                <label style="font-size:0.75rem; font-weight:bold; color:#475569;">Søk (Lærer / Klasse / Prøve):</label>
+                <input type="text" id="filterSok" oninput="filtrerOgRendrerModalData()" placeholder="Søk her..." style="padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
+            </div>
+        </div>
 
-            <h4 style="color: #2980b9;">📊 Fullstendig oversikt per klasse</h4>
-            <div id="gjennomfoeringTabellContainer">
-                </div>
+        <!-- KPI / Statistikk-kort -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 15px;">
+            <div style="background:white; padding:12px 16px; border-radius:8px; border-left:4px solid #ef4444; border: 1px solid #e2e8f0; border-left-width: 4px;">
+                <div style="font-size:0.75rem; color:#64748b;">Gjenstående klasser</div>
+                <div id="statUferdig" style="font-size:1.5rem; font-weight:bold; color:#ef4444;">-</div>
+            </div>
+            <div style="background:white; padding:12px 16px; border-radius:8px; border-left:4px solid #10b981; border: 1px solid #e2e8f0; border-left-width: 4px;">
+                <div style="font-size:0.75rem; color:#64748b;">Fullført grad</div>
+                <div id="statProsent" style="font-size:1.5rem; font-weight:bold; color:#10b981;">-%</div>
+            </div>
+        </div>
+
+        <!-- Fane-knapper -->
+        <div style="display: flex; gap: 8px; border-bottom: 1px solid #cbd5e1; margin-bottom: 15px;">
+            <button id="tabBtnUferdig" onclick="byttFaneModal('uferdig')" style="padding: 10px 16px; border: none; background: transparent; border-bottom: 3px solid #ef4444; font-weight: bold; cursor: pointer; color: #ef4444;">
+                ⚠️ Trenger oppfølging (<span id="cntUferdig">0</span>)
+            </button>
+            <button id="tabBtnTotal" onclick="byttFaneModal('total')" style="padding: 10px 16px; border: none; background: transparent; border-bottom: 3px solid transparent; font-weight: bold; cursor: pointer; color: #64748b;">
+                📊 Fullstendig oversikt (<span id="cntTotal">0</span>)
+            </button>
+        </div>
+
+        <!-- Scrollbart innhold -->
+        <div style="overflow-y: auto; flex-grow: 1; padding-right: 5px;">
+            <div id="faneUferdigContent">
+                <div id="ikkeFerdigstilteListe"></div>
+            </div>
+            <div id="faneTotalContent" style="display: none;">
+                <div id="gjennomfoeringTabellContainer"></div>
+            </div>
         </div>
     </div>
 </div>
+
 
 <div id="modalTotalEksport" class="modal">
     <div class="modal-content" style="width: 350px;">

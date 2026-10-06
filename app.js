@@ -2301,34 +2301,53 @@ const totaltAntallElever = hentAntallEleverIRegister(fulltKlasseNavn.trim().toUp
 }
 
 // --- HOVEDFUNKSJON FOR MODAL ---
-async function genererGjennomfoeringsData() {
-    const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
-    const totalTabellDiv = document.getElementById('gjennomfoeringTabellContainer');
-    
-    // --- DATO-LOGIKK FOR FILTRERING ---
-    const nå = new Date();
-    const nåværendeÅr = nå.getFullYear();
-    const nåværendeMåned = nå.getMonth() + 1; // 1-12
-    
-    // Finn ut hvilken termin vi er i nå
-    // 8-12 = Høst, 1-7 = Vår
-    const nåværendeTermin = (nåværendeMåned >= 8) ? "Høst" : "Vår";
-    
-    // Konstruer skoleåret-strengen (f.eks "2025-2026")
-    let aktivtSkoleårStreng = "";
-    if (nåværendeMåned >= 8) {
-        aktivtSkoleårStreng = `${nåværendeÅr}-${nåværendeÅr + 1}`;
+let g_modalDataCache = []; // Cache for å slippe å hente fra Firebase hver gang man filtrerer
+let g_aktivFane = 'uferdig';
+
+// --- ÅPNE MODAL ---
+async function aapneGjennomfoeringModal() {
+    console.log("Åpner gjennomføringsmodal...");
+    const modal = document.getElementById('modalGjennomfoering');
+    if (modal) {
+        modal.style.display = 'flex';
+        await henteOgByggData();
     } else {
-        aktivtSkoleårStreng = `${nåværendeÅr - 1}-${nåværendeÅr}`;
+        console.error("Fant ikke modalGjennomfoering i HTML");
     }
+}
 
-    let htmlIkkeFerdigBody = ""; 
-    let htmlTotalBody = "";
-    let fantData = false;
-    let harApneTotalt = false;
+// --- FANE-BYTTE ---
+function byttFaneModal(fane) {
+    g_aktivFane = fane;
+    const btnUferdig = document.getElementById('tabBtnUferdig');
+    const btnTotal = document.getElementById('tabBtnTotal');
+    const divUferdig = document.getElementById('faneUferdigContent');
+    const divTotal = document.getElementById('faneTotalContent');
 
-    ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Henter data...</p>";
+    if (fane === 'uferdig') {
+        btnUferdig.style.borderBottomColor = '#ef4444';
+        btnUferdig.style.color = '#ef4444';
+        btnTotal.style.borderBottomColor = 'transparent';
+        btnTotal.style.color = '#64748b';
+        divUferdig.style.display = 'block';
+        divTotal.style.display = 'none';
+    } else {
+        btnTotal.style.borderBottomColor = '#2563eb';
+        btnTotal.style.color = '#2563eb';
+        btnUferdig.style.borderBottomColor = 'transparent';
+        btnUferdig.style.color = '#64748b';
+        divTotal.style.display = 'block';
+        divUferdig.style.display = 'none';
+    }
+}
+
+// --- HOVEDFUNKSJON FOR Å HENTE DATA EN GANG ---
+async function henteOgByggData() {
+    const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
+    ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Henter data fra databasen...</p>";
     
+    g_modalDataCache = [];
+
     try {
         const [statusSnapshot, kartleggingSnapshot, loggSnapshot] = await Promise.all([
             db.ref('status').once('value'),
@@ -2340,18 +2359,12 @@ async function genererGjennomfoeringsData() {
         const statuser = statusSnapshot.val() || {};
         const kartlegging = kartleggingSnapshot.val() || {};
 
-        for (let aar in statuser) {
-            // 1. SJEKK: Er prøve-året etter nåværende skoleår? Skip.
-            if (aar > aktivtSkoleårStreng) continue;
+        const skoleaarSett = new Set();
 
+        for (let aar in statuser) {
+            skoleaarSett.add(aar);
             for (let fag in statuser[aar]) {
                 for (let periode in statuser[aar][fag]) {
-                    
-                    // 2. SJEKK: Hvis vi er i samme skoleår, men det er høst og prøven er "Vår"? Skip.
-                    if (aar === aktivtSkoleårStreng && nåværendeTermin === "Høst" && periode === "Vår") {
-                        continue;
-                    }
-
                     for (let trinn in statuser[aar][fag][periode]) {
                         for (let klasseNavn in statuser[aar][fag][periode][trinn]) {
                             
@@ -2359,13 +2372,24 @@ async function genererGjennomfoeringsData() {
                                                ? kartlegging[aar][fag][periode][trinn][klasseNavn] || {} 
                                                : {};
 
+                            const laererInfo = finnKontaktlaererForKlasse(klasseNavn, aar);
+                            
+                            // Kall din behandleKlasseData for å strukturere resultatet
                             const res = behandleKlasseData(aar, fag, periode, trinn, klasseNavn, klasseData, statuser, alleLogger);
                             
                             if (res) {
-                                htmlTotalBody += res.htmlTotal;
-                                htmlIkkeFerdigBody += res.htmlIkkeFerdig;
-                                if (res.harApne) harApneTotalt = true;
-                                fantData = true;
+                                g_modalDataCache.push({
+                                    aar,
+                                    fag,
+                                    periode,
+                                    trinn,
+                                    klasseNavn,
+                                    laererNavn: laererInfo.navn || '',
+                                    laererEpost: laererInfo.epost || '',
+                                    erFerdig: !res.harApne,
+                                    htmlTotal: res.htmlTotal,
+                                    htmlIkkeFerdig: res.htmlIkkeFerdig
+                                });
                             }
                         }
                     }
@@ -2373,26 +2397,101 @@ async function genererGjennomfoeringsData() {
             }
         }
 
-        // --- TEGN RESULTATET (samme som før) ---
-        if (!fantData) {
-            ikkeFerdigDiv.innerHTML = "<p style='padding:20px;'>Ingen aktive prøver for gjeldende termin.</p>";
-            totalTabellDiv.innerHTML = "";
-        } else {
-            const headerIkkeFerdig = `<table class="admin-table"><thead><tr><th style="text-align:left;">Prøve</th><th>Kontaktlærer</th><th>Status/Logg</th></tr></thead><tbody>`;
-            const headerTotal = `<table class="admin-table"><thead><tr><th style="text-align:left;">Prøve</th><th>Klasse</th><th>Kontaktlærer</th><th>Gjennomført</th><th>Snitt (%)</th><th>Status</th></tr></thead><tbody>`;
+        // Fyll Skoleår-dropdown dynamisk hvis den er tom
+        fyllSkoleaarDropdown(Array.from(skoleaarSett).sort().reverse());
 
-            ikkeFerdigDiv.innerHTML = harApneTotalt ? 
-                headerIkkeFerdig + htmlIkkeFerdigBody + "</tbody></table>" : 
-                `<p style='text-align:center; padding:20px; color:green; font-weight:bold;'>Alle prøver for ${nåværendeTermin} ${aktivtSkoleårStreng} er ferdigstilt! 🎉</p>`;
-            
-            totalTabellDiv.innerHTML = headerTotal + htmlTotalBody + "</tbody></table>";
-        }
+        // Filtrer og vis i grensesnittet
+        filtrerOgRendrerModalData();
 
     } catch (error) {
-        console.error("Feil:", error);
-        ikkeFerdigDiv.innerHTML = `<p style='color:red;'>Feil: ${error.message}</p>`;
+        console.error("Feil ved henting:", error);
+        ikkeFerdigDiv.innerHTML = `<p style='color:red; padding:20px;'>Feil: ${error.message}</p>`;
     }
 }
+
+// --- POPULER SKOLEÅR-DROPDOWN OG SETT DEFAULT TIL NÅVÆRENDE ---
+function fyllSkoleaarDropdown(skoleaarListe) {
+    const select = document.getElementById('filterSkoleaar');
+    
+    // Beregn nåværende skoleår
+    const na = new Date();
+    const aar = na.getFullYear();
+    const mnd = na.getMonth() + 1;
+    const naavaerendeSkoleaar = (mnd >= 8) ? `${aar}-${aar+1}` : `${aar-1}-${aar}`;
+
+    if (select.children.length === 0) {
+        skoleaarListe.forEach(sa => {
+            const opt = document.createElement('option');
+            opt.value = sa;
+            opt.textContent = sa;
+            if (sa === naavaerendeSkoleaar) opt.selected = true;
+            select.appendChild(opt);
+        });
+    }
+}
+
+// --- RENDERING basert på aktivt filter ---
+function filtrerOgRendrerModalData() {
+    const valgtSkoleaar = document.getElementById('filterSkoleaar').value;
+    const valgtTermin = document.getElementById('filterTermin').value;
+    const sokTekst = document.getElementById('filterSok').value.toLowerCase().trim();
+
+    const filtrert = g_modalDataCache.filter(item => {
+        // Skoleår-filter
+        if (valgtSkoleaar && item.aar !== valgtSkoleaar) return false;
+        
+        // Termin-filter
+        if (valgtTermin !== 'alle' && item.periode !== valgtTermin) return false;
+        
+        // Søkefilter (Søker på klasse, fag, trinn eller lærer)
+        if (sokTekst) {
+            const matchKlasse = item.klasseNavn.toLowerCase().includes(sokTekst);
+            const matchLaerer = item.laererNavn.toLowerCase().includes(sokTekst);
+            const matchFag = item.fag.toLowerCase().includes(sokTekst);
+            if (!matchKlasse && !matchLaerer && !matchFag) return false;
+        }
+
+        return true;
+    });
+
+    // Splitt i uferdige og totalt
+    const uferdige = filtrert.filter(i => !i.erFerdig);
+    const ferdige = filtrert.filter(i => i.erFerdig);
+
+    // Oppdater KPI-statistikk
+    const totaltAntall = filtrert.length;
+    const uferdigAntall = uferdige.length;
+    const prosentFerdig = totaltAntall > 0 ? Math.round(((totaltAntall - uferdigAntall) / totaltAntall) * 100) : 0;
+
+    document.getElementById('statUferdig').textContent = uferdigAntall;
+    document.getElementById('statProsent').textContent = `${prosentFerdig}%`;
+    document.getElementById('cntUferdig').textContent = uferdigAntall;
+    document.getElementById('cntTotal').textContent = totaltAntall;
+
+    // Bygg HTML for Uferdige
+    const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
+    if (uferdige.length === 0) {
+        ikkeFerdigDiv.innerHTML = `<div style="text-align:center; padding:30px; background:white; border-radius:8px; color:#10b981; font-weight:bold;">
+            🎉 Alle prøver for valgte filtre er fullført!
+        </div>`;
+    } else {
+        const headerIkkeFerdig = `<table class="admin-table" style="width:100%; border-collapse:collapse;">
+            <thead><tr><th style="text-align:left;">Prøve</th><th>Kontaktlærer</th><th>Status/Logg</th></tr></thead><tbody>`;
+        ikkeFerdigDiv.innerHTML = headerIkkeFerdig + uferdige.map(i => i.htmlIkkeFerdig).join('') + "</tbody></table>";
+    }
+
+    // Bygg HTML for Totalt
+    const totalTabellDiv = document.getElementById('gjennomfoeringTabellContainer');
+    if (filtrert.length === 0) {
+        totalTabellDiv.innerHTML = `<p style="padding:20px; text-align:center; color:#64748b;">Ingen data samsvarte med valgte filtre.</p>`;
+    } else {
+        const headerTotal = `<table class="admin-table" style="width:100%; border-collapse:collapse;">
+            <thead><tr><th style="text-align:left;">Prøve</th><th>Klasse</th><th>Kontaktlærer</th><th>Gjennomført</th><th>Snitt (%)</th><th>Status</th></tr></thead><tbody>`;
+        totalTabellDiv.innerHTML = headerTotal + filtrert.map(i => i.htmlTotal).join('') + "</tbody></table>";
+    }
+}
+
+
 
 function oppdaterAnalyseStatus(erFerdig) {
     const analyseBtn = document.getElementById('btnAnalyse');
