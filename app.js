@@ -2361,46 +2361,42 @@ async function henteOgByggData() {
 
         const skoleaarSett = new Set();
 
-        // 1. Legg til alle skoleår som finnes enten i statuser eller i ansatteData
         for (let sa in statuser) skoleaarSett.add(sa);
         if (typeof ansatteData !== 'undefined') {
             for (let sa in ansatteData) skoleaarSett.add(sa);
         }
 
-        // 2. Gå gjennom alle registrerte skoleår
         for (let aar of skoleaarSett) {
-            
-            // Hent alle kjente klasser for dette skoleåret (f.eks. fra ansatteData)
             const alleGyldigeKlasser = hentGyldigeKlasserForSkoleaar(aar);
-
-            // Finn fagenes, periodenes og trinnenes navn fra statuser (eller en definert oppsett-struktur)
             const fagLister = statuser[aar] || {};
 
             for (let fag in fagLister) {
                 for (let periode in fagLister[fag]) {
                     for (let trinn in fagLister[fag][periode]) {
                         
-                        // Hent eksisterende status/kartlegging-objekter for denne prøven
+                        // Hent eksisterende registreringer i status-treet for nøyaktig denne prøven
                         const statusKlasser = fagLister[fag][periode][trinn] || {};
                         const kartleggingKlasser = kartlegging[aar]?.[fag]?.[periode]?.[trinn] || {};
 
-                        // Samle ALLE reelle klasser (både de med status og de fra ansatte-listen for trinnet)
-                        const alleKlasserForTrinn = finnKlasserForTrinn(trinn, alleGyldigeKlasser, Object.keys(statusKlasser));
+                        // Finn klassene som tilhører dette trinnet
+                        const klasserForDetteTrinnet = finnKlasserForTrinn(trinn, alleGyldigeKlasser, Object.keys(statusKlasser));
 
-                        for (let klasseNavn of alleKlasserForTrinn) {
+                        for (let klasseNavn of klasserForDetteTrinnet) {
+                            
+                            // NØKKEL-SJEKK: Finnes det NOEN registrerings-data på denne klassen under denne spesifikke prøven?
+                            const harStatusIStatusTre = Object.prototype.hasOwnProperty.call(statusKlasser, klasseNavn);
+                            const harStatusIKartleggingTre = Boolean(kartleggingKlasser[klasseNavn]);
+
                             const klasseData = kartleggingKlasser[klasseNavn] || {};
                             const laererInfo = finnKontaktlaererForKlasse(klasseNavn, aar);
-                            
-                            // Sjekk om klassen har noe registrert i statuser
-                            const harStatus = Boolean(statusKlasser[klasseNavn]);
 
                             let res = null;
 
-                            if (harStatus) {
-                                // Eksisterende behandleKlasseData håndterer klasser som har startet/fullført
+                            if (harStatusIStatusTre || harStatusIKartleggingTre) {
+                                // Klassen har startet eller fullført prøven
                                 res = behandleKlasseData(aar, fag, periode, trinn, klasseNavn, klasseData, statuser, alleLogger);
                             } else {
-                                // LAGA NY/MANGLENDE: Generer visning for klasser som overhode IKKE har startet
+                                // Klassen finnes kun i klasselisten (ansatteData) og HAR IKKE startet på prøven
                                 res = lagTomKlasseDataResultat(aar, fag, periode, trinn, klasseNavn, laererInfo);
                             }
 
@@ -2424,6 +2420,15 @@ async function henteOgByggData() {
             }
         }
 
+        fyllSkoleaarDropdown(Array.from(skoleaarSett).sort().reverse());
+        filtrerOgRendrerModalData();
+
+    } catch (error) {
+        console.error("Feil ved henting:", error);
+        ikkeFerdigDiv.innerHTML = `<p style='color:red; padding:20px;'>Feil: ${error.message}</p>`;
+    }
+}
+
 // Henter alle gyldige klassenavn for et gitt skoleår fra ansatteData
 function hentGyldigeKlasserForSkoleaar(aar) {
     if (typeof ansatteData === 'undefined') return [];
@@ -2443,15 +2448,19 @@ function hentGyldigeKlasserForSkoleaar(aar) {
 
 // Filtrerer klasser tilhørende et spesifikt trinn (f.eks. fanger opp "8A", "8B" for trinn "8" eller "8. trinn")
 function finnKlasserForTrinn(trinn, alleGyldigeKlasser, eksisterendeKlasserIStatus) {
-    const trinnTall = trinn.replace(/\D/g, ''); // Henter ut sifferet (f.eks "8" fra "8. trinn")
-    
-    // Finn klasser fra ansatteData som starter med trinntallet
-    const matchendeFraAnsatte = alleGyldigeKlasser.filter(k => {
-        const klasseKort = k.trim();
-        return trinnTall ? klasseKort.startsWith(trinnTall) : true;
+    // Henter ut bare tallene fra trinn-strengen (f.eks "1" fra "1. trinn" eller "1")
+    const trinnTall = trinn.replace(/\D/g, ''); 
+
+    const matchendeFraAnsatte = alleGyldigeKlasser.filter(klasseNavn => {
+        const renKlasse = klasseNavn.trim();
+        if (!trinnTall) return true;
+
+        // Sjekk at klassen starter med trinntallet OG at neste tegn ikke er et siffer 
+        // (Slik at trinn 1 matcher "1A", "1B", men IKKE "10A")
+        const regex = new RegExp(`^${trinnTall}[^0-9]`);
+        return regex.test(renKlasse) || renKlasse === trinnTall;
     });
 
-    // Slå sammen med klasser som allerede finnes i status-objektet for å unngå at noen mangler
     const samlet = new Set([...matchendeFraAnsatte, ...eksisterendeKlasserIStatus]);
     return Array.from(samlet);
 }
