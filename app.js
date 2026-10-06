@@ -2017,25 +2017,38 @@ function aapneGjennomfoeringModal() {
 }
 
 // --- HJELPEFUNKSJON FOR Å FINNE LÆRER ---
+// --- HJELPEFUNKSJON FOR Å FINNE LÆRER (STØTTER FLERE LÆRERE PER KLASSE) ---
 function finnKontaktlaererForKlasse(klasseNavn, aar) {
-    // Sjekk om variabelen eksisterer
     if (typeof ansatteData === 'undefined') {
         console.warn("ansatteData er ikke definert. Sjekk ansatte.js");
         return { navn: "Data mangler", epost: "" };
     }
 
-    // Tar "2024" ut fra f.eks "2024-2025"
     const rentAar = aar.toString().substring(0, 4);
-    
-    // Finn riktig skoleår i ansatteData (f.eks "2024-2025")
     const skoleaarKey = Object.keys(ansatteData).find(key => key.startsWith(rentAar));
-    
     if (!skoleaarKey) return { navn: "Ingen liste for " + rentAar, epost: "" };
 
-    const liste = ansatteData[skoleaarKey];
-    const funnet = liste.find(a => a.kontaktlaerer === klasseNavn);
+    const liste = ansatteData[skoleaarKey] || [];
+    
+    // Rengjør og formater klasseNavn
+    const sokKlasse = klasseNavn.toString().trim().toUpperCase();
 
-    return funnet ? { navn: funnet.navn, epost: funnet.epost } : { navn: "Ikke tildelt", epost: "" };
+    // Finn ALLE lærere som matcher klassen (f.eks. "1A" eller "A")
+    const matchendeLaerere = liste.filter(a => {
+        if (!a.kontaktlaerer) return false;
+        const kl = a.kontaktlaerer.toString().trim().toUpperCase();
+        return kl === sokKlasse || (kl.replace(/\d+/g, '') === sokKlasse);
+    });
+
+    if (matchendeLaerere.length === 0) {
+        return { navn: "Ikke tildelt", epost: "" };
+    }
+
+    // Slå sammen navn og e-post om det er flere kontaktlærere i samme klasse
+    const navnStr = matchendeLaerere.map(l => l.navn).join(", ");
+    const epostStr = matchendeLaerere.map(l => l.epost).join(";");
+
+    return { navn: navnStr, epost: epostStr };
 }
 
 // --- OPPDATER ELEVLISTE (Dropdown i registrerings-modalen) ---
@@ -2193,27 +2206,24 @@ function sendMeldingTilAdmin() {
 // ---  STATUS-MODAL
 
 // --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
-function behandleKlasseData(aar, fag, periode, trinn, klasseNavn, klasseData, statuser, alleLogger) {
-    if (!klasseData || typeof klasseData !== 'object') {
-        return null;
-    }
-
-    // 1. FINN ELEVER OG METADATA
-    const elever = klasseData.elever || klasseData.eleverData || null;
+function behandleKlasseData(aar, fag, periode, fulltKlassenavn, klasseData, alleLogger) {
+    // 1. FINN ELEVER
+    const elever = klasseData?.elever || klasseData?.eleverData || null;
     let elevNøkler = [];
 
     if (elever) {
         elevNøkler = Array.isArray(elever) ? elever : Object.keys(elever);
-    } else {
-        // Filtrer ut metadatanøkler
+    } else if (typeof klasseData === 'object' && klasseData !== null) {
         elevNøkler = Object.keys(klasseData).filter(k => 
             !['ferdigstilt', 'status', 'sistOppdatert', 'laerer', 'opprettet', 'snitt'].includes(k)
         );
     }
 
-    // 2. TELL REGISTRERTE SVAR OG BEREGN SNITT
+    // 2. TELL REGISTRERTE SVAR & TOTALT I REGISTERET
     let antallRegistrert = 0;
-    const totalElever = elevNøkler.length;
+    
+    // Hent antall aktive elever i elevregisteret for denne klassen
+    const totaltIElevregister = hentAntallEleverIRegister(fulltKlassenavn, aar);
 
     elevNøkler.forEach(key => {
         const elev = elever ? elever[key] : klasseData[key];
@@ -2223,17 +2233,17 @@ function behandleKlasseData(aar, fag, periode, trinn, klasseNavn, klasseData, st
         }
     });
 
-    // Sjekk om prøven er markert som ferdigstilt
-    const erEksplisittFerdigstilt = klasseData.ferdigstilt === true || 
-                                    klasseData.status === "Ferdigstilt" || 
-                                    klasseData.status === "Ferdig";
+    const erEksplisittFerdigstilt = klasseData?.ferdigstilt === true || 
+                                    klasseData?.status === "Ferdigstilt" || 
+                                    klasseData?.status === "Ferdig";
 
-    // 3. BESTEM STATUS
+    // Bestem om hele klassen er ferdig
+    const totaltAntall = totaltIElevregister > 0 ? totaltIElevregister : elevNøkler.length;
     let statusTekst = "";
     let statusKlasse = "";
     let erFerdig = false;
 
-    if (erEksplisittFerdigstilt || (totalElever > 0 && antallRegistrert === totalElever)) {
+    if (erEksplisittFerdigstilt || (totaltAntall > 0 && antallRegistrert >= totaltAntall)) {
         statusTekst = "✅ Ferdig";
         statusKlasse = "status-ferdig";
         erFerdig = true;
@@ -2247,23 +2257,23 @@ function behandleKlasseData(aar, fag, periode, trinn, klasseNavn, klasseData, st
         erFerdig = false;
     }
 
-    const laererInfo = finnKontaktlaererForKlasse(klasseNavn, aar);
-    const prøveTittel = `${fag} - ${periode} ${aar}`;
-    const snittTekst = klasseData.snitt ? `${klasseData.snitt}%` : '-';
+    const laererInfo = finnKontaktlaererForKlasse(fulltKlassenavn, aar);
+    const prøveTittel = `${fag} (${fulltKlassenavn})`;
+    const snittTekst = klasseData?.snitt ? `${klasseData.snitt}%` : '-';
 
-    // 4. BYGG HTML FOR "TRENGER OPPFØLGING"
+    // HTML for "Trenger oppfølging"
     let htmlIkkeFerdig = "";
     if (!erFerdig) {
-        const loggNøkkel = `${aar}_${fag}_${periode}_${klasseNavn}`;
+        const loggNøkkel = `${aar}_${fag}_${periode}_${fulltKlassenavn}`;
         const harPurret = alleLogger && alleLogger[loggNøkkel];
         const purrKnappHtml = harPurret 
             ? `<span class="purret-badge">Purret</span>` 
-            : `<button class="btn-purr" onclick="purreLaerer('${laererInfo.epost}', '${klasseNavn}', '${prøveTittel}', '${loggNøkkel}')">Send påminnelse</button>`;
+            : `<button class="btn-purr" onclick="purreLaerer('${laererInfo.epost}', '${fulltKlassenavn}', '${fag} - ${periode} ${aar}', '${loggNøkkel}')">Send påminnelse</button>`;
 
         htmlIkkeFerdig = `
             <tr>
-                <td><strong>${fag} (${klasseNavn})</strong><br><small>${periode} ${aar}</small></td>
-                <td>${laererInfo.navn || 'Ikke tildelt'}</td>
+                <td><strong>${prøveTittel}</strong><br><small>${periode} ${aar}</small></td>
+                <td>${laererInfo.navn}</td>
                 <td>
                     <span class="${statusKlasse}">${statusTekst}</span>
                     <div style="margin-top:4px;">${purrKnappHtml}</div>
@@ -2272,24 +2282,21 @@ function behandleKlasseData(aar, fag, periode, trinn, klasseNavn, klasseData, st
         `;
     }
 
-    // 5. BYGG HTML FOR "FULLSTENDIG OVERSIKT"
+    // HTML for "Fullstendig oversikt"
     const htmlTotal = `
         <tr>
-            <td>${prøveTittel}</td>
-            <td><strong>${klasseNavn}</strong></td>
-            <td>${laererInfo.navn || 'Ikke tildelt'}</td>
-            <td>${antallRegistrert} / ${totalElever}</td>
+            <td>${fag} - ${periode} ${aar}</td>
+            <td><strong>${fulltKlassenavn}</strong></td>
+            <td>${laererInfo.navn}</td>
+            <td>${antallRegistrert} / ${totaltAntall}</td>
             <td>${snittTekst}</td>
             <td><span class="${statusKlasse}">${statusTekst}</span></td>
         </tr>
     `;
 
-    return {
-        erFerdig: erFerdig,
-        htmlTotal: htmlTotal,
-        htmlIkkeFerdig: htmlIkkeFerdig
-    };
+    return { erFerdig, htmlTotal, htmlIkkeFerdig };
 }
+
 
 // --- HOVEDFUNKSJON FOR STATUS-MODAL
 let g_modalDataCache = []; // Cache for å slippe å hente fra Firebase hver gang man filtrerer
@@ -2333,7 +2340,7 @@ function byttFaneModal(fane) {
 }
 
 
-// --- HOVEDFUNKSJON FOR Å HENTE DATA EN GANG ---
+// --- HOVEDFUNKSJON FOR Å HENTE OG BYGGE DATA ---
 async function henteOgByggData() {
     const ikkeFerdigDiv = document.getElementById('ikkeFerdigstilteListe');
     if (ikkeFerdigDiv) {
@@ -2353,72 +2360,81 @@ async function henteOgByggData() {
         const statuser = statusSnapshot.val() || {};
         const kartlegging = kartleggingSnapshot.val() || {};
 
-        // 1. BESTEM AKTIVT FAG (Unngår at Regning og Lesing blandes)
-        // Sjekker om det finnes en fag-velger i grensesnittet, ellers benyttes globalt fag/default "Lesing"
+        // Sjekk aktivt fag (f.eks "Lesing")
         const valgtFagElem = document.getElementById('filterFag') || document.getElementById('aktivtFag');
         const aktivtFag = valgtFagElem ? valgtFagElem.value : (window.aktivtFag || "Lesing");
 
-        const skoleaarSett = new Set();
-        for (let sa in statuser) skoleaarSett.add(sa);
-        for (let sa in kartlegging) skoleaarSett.add(sa);
+        const skoleaarSett = new Set([
+            ...Object.keys(statuser),
+            ...Object.keys(kartlegging),
+            ...Object.keys(window.ansatteData || {})
+        ]);
 
         for (let aar of skoleaarSett) {
+            const ansatteForAar = window.ansatteData?.[aar] || [];
+            
+            // Hent alle reelle kontaktlærer-klasser for gjeldende skoleår (1A, 1B, 2A osv.)
+            const alleKlasser = Array.from(new Set(
+                ansatteForAar
+                    .map(a => a.kontaktlaerer)
+                    .filter(k => k && k !== "adm" && k !== "")
+            )).sort();
+
             const fagsSpesifikkKartlegging = kartlegging[aar]?.[aktivtFag] || {};
             const fagsSpesifikkStatus = statuser[aar]?.[aktivtFag] || {};
 
             for (let periode of ["Høst", "Vår"]) {
-                const periodeKartlegging = fagsSpesifikkKartlegging[periode] || {};
-                const periodeStatus = fagsSpesifikkStatus[periode] || {};
+                const pKartlegging = fagsSpesifikkKartlegging[periode] || {};
+                const pStatus = fagsSpesifikkStatus[periode] || {};
 
-                // Hent alle trinn som finnes enten under kartlegging eller status
-                const alleTrinn = new Set([
-                    ...Object.keys(periodeKartlegging),
-                    ...Object.keys(periodeStatus)
-                ]);
+                for (let fulltKlassenavn of alleKlasser) {
+                    const trinnTall = fulltKlassenavn.match(/\d+/)?.[0];
+                    const bokstav = fulltKlassenavn.replace(/\d+/g, '').trim();
+                    if (!trinnTall) continue;
 
-                for (let trinn of alleTrinn) {
-                    const trinnKartlegging = periodeKartlegging[trinn] || {};
-                    const trinnStatus = periodeStatus[trinn] || {};
+                    // Søk i Firebase etter mulige nodenavn ("1. Trinn", "Trinn 1", "1")
+                    const trinnNøkler = [`${trinnTall}. Trinn`, `Trinn ${trinnTall}`, `${trinnTall}`];
 
-                    const alleKlasser = new Set([
-                        ...Object.keys(trinnKartlegging),
-                        ...Object.keys(trinnStatus)
-                    ]);
+                    let klasseData = {};
+                    let klasseStatusData = {};
 
-                    for (let klasseNavn of alleKlasser) {
-                        const klasseData = trinnKartlegging[klasseNavn] || {};
-                        const klasseStatusData = trinnStatus[klasseNavn] || {};
-
-                        // Slå sammen registreringer og status-flagg
-                        const samletData = { ...klasseStatusData, ...klasseData };
-
-                        const res = behandleKlasseData(
-                            aar, 
-                            aktivtFag, 
-                            periode, 
-                            trinn, 
-                            klasseNavn, 
-                            samletData, 
-                            statuser, 
-                            alleLogger
-                        );
-
-                        if (res) {
-                            const laererInfo = finnKontaktlaererForKlasse(klasseNavn, aar);
-
-                            g_modalDataCache.push({
-                                aar,
-                                fag: aktivtFag,
-                                periode,
-                                trinn,
-                                klasseNavn,
-                                laererNavn: laererInfo.navn || 'Ikke tildelt',
-                                laererEpost: laererInfo.epost || '',
-                                erFerdig: res.erFerdig,
-                                htmlTotal: res.htmlTotal,
-                                htmlIkkeFerdig: res.htmlIkkeFerdig
-                            });
+                    for (let tKey of trinnNøkler) {
+                        if (pKartlegging[tKey]) {
+                            const d = pKartlegging[tKey][fulltKlassenavn] || pKartlegging[tKey][bokstav];
+                            if (d) klasseData = { ...klasseData, ...d };
                         }
+                        if (pStatus[tKey]) {
+                            const d = pStatus[tKey][fulltKlassenavn] || pStatus[tKey][bokstav];
+                            if (d) klasseStatusData = { ...klasseStatusData, ...d };
+                        }
+                    }
+
+                    const samletData = { ...klasseStatusData, ...klasseData };
+
+                    const res = behandleKlasseData(
+                        aar, 
+                        aktivtFag, 
+                        periode, 
+                        fulltKlassenavn, 
+                        samletData, 
+                        alleLogger
+                    );
+
+                    if (res) {
+                        const laererInfo = finnKontaktlaererForKlasse(fulltKlassenavn, aar);
+
+                        g_modalDataCache.push({
+                            aar,
+                            fag: aktivtFag,
+                            periode,
+                            trinn: `${trinnTall}. Trinn`,
+                            klasseNavn: fulltKlassenavn,
+                            laererNavn: laererInfo.navn,
+                            laererEpost: laererInfo.epost,
+                            erFerdig: res.erFerdig,
+                            htmlTotal: res.htmlTotal,
+                            htmlIkkeFerdig: res.htmlIkkeFerdig
+                        });
                     }
                 }
             }
