@@ -2543,13 +2543,14 @@ function finnKlasserForTrinn(trinn, alleGyldigeKlasser, eksisterendeKlasserIStat
 
 // Genererer rad-HTML for klasser som ikke er startet på en gang
 function lagTomKlasseDataResultat(aar, fag, periode, trinn, klasseNavn, laererInfo) {
-    // Formater tittel på samme måte som påstartede prøver: "Lesing (1A)"
     const proveTittel = `${fag} (${klasseNavn})`;
     const undertittel = `${periode} ${aar}`;
-    
-    const epostLenke = laererInfo.epost 
-        ? `<a href="mailto:${laererInfo.epost}?subject=Mangler%20registrering%20for%20${encodeURIComponent(proveTittel)}" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Send påminnelse</a>` 
-        : 'Ingen e-post';
+    const loggNøkkel = `${aar}_${fag}_${periode}_${klasseNavn}`;
+
+    // Bruk EmailJS-purren her også istedenfor mailto:
+    const purrKnappHtml = laererInfo.epost 
+        ? `<button class="btn-purr" onclick="purreLaerer('${laererInfo.epost}', '${klasseNavn}', '${fag}', '${periode}', '${aar}', '${loggNøkkel}')">Send påminnelse</button>`
+        : '<small style="color:#94a3b8;">Ingen e-post</small>';
 
     const htmlIkkeFerdig = `
         <tr>
@@ -2564,7 +2565,7 @@ function lagTomKlasseDataResultat(aar, fag, periode, trinn, klasseNavn, laererIn
                 <span style="display:inline-block; padding:3px 8px; background:#fee2e2; color:#dc2626; border-radius:4px; font-size:0.8rem; font-weight:bold; margin-bottom:4px;">
                     ❌ Ikke startet
                 </span><br>
-                <small>${epostLenke}</small>
+                <div style="margin-top:4px;">${purrKnappHtml}</div>
             </td>
         </tr>`;
 
