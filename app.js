@@ -2016,7 +2016,6 @@ function aapneGjennomfoeringModal() {
     }
 }
 
-// --- HJELPEFUNKSJON FOR Å FINNE LÆRER ---
 // --- HJELPEFUNKSJON FOR Å FINNE LÆRER (STØTTER FLERE LÆRERE PER KLASSE) ---
 function finnKontaktlaererForKlasse(klasseNavn, aar) {
     if (typeof ansatteData === 'undefined') {
@@ -2282,6 +2281,7 @@ async function purreLaerer(epost, klasse, fag, periode, aar, loggNøkkel, purreN
 
 
 // --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
+// --- HJELPEFUNKSJON FOR Å BEHANDLE DATA PER KLASSE ---
 function behandleKlasseData(aar, fag, periode, fulltKlassenavn, klasseData, alleLogger) {
     // 1. FINN ELEVER
     const elever = klasseData?.elever || klasseData?.eleverData || null;
@@ -2333,10 +2333,9 @@ function behandleKlasseData(aar, fag, periode, fulltKlassenavn, klasseData, alle
     // Bruker elevregisteret hvis det finnes (>0), ellers antall aktuelt funnet i Firebase (som ikke er slettet)
     const totaltAntall = totaltIElevregister > 0 ? totaltIElevregister : antallAktiveIData;
 
+    console.log(`Klasse: ${fulltKlassenavn}, Data:`, klasseData);
 
-console.log(`Klasse: ${fulltKlassenavn}, Data:`, klasseData);
-// 4. BESTEM STATUS OG FERDIGSTILLING
-    // I databasen din er "laast: true" nøkkelen som forteller at prøven er låst/ferdigstilt av lærer
+    // 4. BESTEM STATUS OG FERDIGSTILLING
     const statusVerdi = String(klasseData?.status || klasseData?.ferdigstilt || "").toLowerCase();
     
     const erEksplisittFerdigstilt = klasseData?.laast === true || 
@@ -2379,7 +2378,7 @@ console.log(`Klasse: ${fulltKlassenavn}, Data:`, klasseData);
     const prøveTittel = `${fag} (${fulltKlassenavn})`;
     const snittTekst = klasseData?.snitt ? `${klasseData.snitt}%` : '-';
 
-// HTML for "Trenger oppfølging"
+    // HTML for "Trenger oppfølging"
     let htmlIkkeFerdig = "";
     if (!erFerdig) {
         const loggNøkkel = `${aar}_${fag}_${periode}_${fulltKlassenavn}`;
@@ -2389,15 +2388,19 @@ console.log(`Klasse: ${fulltKlassenavn}, Data:`, klasseData);
         let antallPurringer = 0;
         let sisteDatoTekst = "";
 
-if (loggData.dato) {
-    sisteDatoTekst = loggData.dato;
-} else if (loggData.sendtDato) {
-    // Henter ut bare dato-delen "DD.MM" fra f.eks. "06.10.2026, 14:04"
-    sisteDatoTekst = loggData.sendtDato.split(',')[0].substring(0, 5); 
-} else if (loggData.tidspunkt) {
-    const d = new Date(loggData.tidspunkt);
-    sisteDatoTekst = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
+        if (loggData) {
+            if (typeof loggData === 'object') {
+                antallPurringer = loggData.antall || (loggData.tidspunkt || loggData.dato ? 1 : 0);
+
+                if (loggData.dato) {
+                    sisteDatoTekst = loggData.dato;
+                } else if (loggData.sendtDato) {
+                    // Henter ut bare dato-delen "DD.MM" fra f.eks. "06.10.2026, 14:04"
+                    sisteDatoTekst = loggData.sendtDato.split(',')[0].substring(0, 5); 
+                } else if (loggData.tidspunkt) {
+                    const d = new Date(loggData.tidspunkt);
+                    sisteDatoTekst = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+                }
             } else {
                 // Håndterer eldste format dersom loggData kun var boolean (true/false)
                 antallPurringer = loggData === true ? 1 : 0;
@@ -2441,7 +2444,6 @@ if (loggData.dato) {
             </tr>
         `;
     }
-
 
     // HTML for "Fullstendig oversikt"
     const htmlTotal = `
